@@ -1,3 +1,4 @@
+import Plant from '@/models/Plant'; // adjust path
 import User from '@/models/User'; // adjust path
 import mongoose from 'mongoose';
 
@@ -23,8 +24,9 @@ async function dbConnect() {
     };
 
     cached.promise = mongoose.connect(MONGODB_URI, opts).then(async (mongoose) => {
-      // ✅ Ensure indexes here
-      await User.init();
+      // ✅ Sync indexes to match current schema (removes old conflicting indexes)
+      await User.syncIndexes();
+      await Plant.syncIndexes();
       return mongoose;
     });
   }
