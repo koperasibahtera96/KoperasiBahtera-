@@ -1,24 +1,28 @@
-import { withAuth } from 'next-auth/middleware';
-import { NextResponse } from 'next/server';
+import { withAuth } from "next-auth/middleware";
+import { NextResponse } from "next/server";
 
 export default withAuth(
   function middleware(req) {
     const { pathname } = req.nextUrl;
-    const token = req.nextauth.token;
+    const token = req.nextauth.token as any;
 
-    // Define role-based access
-    const roleRoutes = {
-      '/staff': ['staff', 'admin'],
-      '/admin': ['admin'],
-      '/finance': ['finance', 'admin'],
+    // === PUBLIC: /checker dan /checker/plant/[id] (bahkan semua turunan /checker) ===
+    if (pathname === "/checker" || pathname.startsWith("/checker/")) {
+      // lewati semua cek role dan jangan redirect
+      return NextResponse.next();
+    }
+
+    // === PROTECTED: role-based untuk route lain ===
+    const roleRoutes: Record<string, string[]> = {
+      "/staff": ["staff", "admin"],
+      "/admin": ["admin"],
+      "/finance": ["finance", "admin"],
     };
 
-    // Check if user has permission for the route
-    for (const [route, allowedRoles] of Object.entries(roleRoutes)) {
+    for (const [route, roles] of Object.entries(roleRoutes)) {
       if (pathname.startsWith(route)) {
-        if (!token || !allowedRoles.includes(token.role as string)) {
-          // Redirect to login without error parameters
-          return NextResponse.redirect(new URL('/login', req.url));
+        if (!token || !roles.includes(token.role)) {
+          return NextResponse.redirect(new URL("/login", req.url));
         }
       }
     }
@@ -30,20 +34,26 @@ export default withAuth(
       authorized: ({ token, req }) => {
         const { pathname } = req.nextUrl;
 
-        // Public routes that don't require authentication
-        const publicRoutes = ['/', '/login', '/register', '/forgot-password'];
+        // exact public
+        const publicExact = ["/", "/login", "/register", "/forgot-password"];
 
-        if (publicRoutes.some(route => pathname === route || pathname.startsWith('/api/auth'))) {
+        // next-auth endpoints dan semua /checker/* selalu public
+        const isAuthApi = pathname.startsWith("/api/auth");
+        const isCheckerPublic =
+          pathname === "/checker" || pathname.startsWith("/checker/");
+
+        if (publicExact.includes(pathname) || isAuthApi || isCheckerPublic) {
           return true;
         }
 
-        // All other routes require authentication
         return !!token;
       },
     },
   }
 );
 
+// Middleware cukup dipasang untuk rute yang memang mau diproteksi.
+// (jangan tambahkan /checker ke matcher)
 export const config = {
-  matcher: ['/staff/:path*', '/admin/:path*', '/finance/:path*']
+  matcher: ["/staff/:path*", "/admin/:path*", "/finance/:path*"],
 };
