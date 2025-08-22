@@ -1,4 +1,4 @@
-import NextAuth from 'next-auth';
+import 'next-auth';
 
 declare module 'next-auth' {
   interface Session {
@@ -8,6 +8,11 @@ declare module 'next-auth' {
       name: string;
       role: string;
       isVerified: boolean;
+      userCode: string;
+      occupationCode: string;
+      phoneNumber: string;
+      province: string;
+      city: string;
     };
   }
 
@@ -17,6 +22,11 @@ declare module 'next-auth' {
     name: string;
     role: string;
     isVerified: boolean;
+    userCode: string;
+    occupationCode: string;
+    phoneNumber: string;
+    province: string;
+    city: string;
   }
 }
 
@@ -24,5 +34,10 @@ declare module 'next-auth/jwt' {
   interface JWT {
     role: string;
     isVerified: boolean;
+    userCode: string;
+    occupationCode: string;
+    phoneNumber: string;
+    province: string;
+    city: string;
   }
 }

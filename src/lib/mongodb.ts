@@ -1,6 +1,7 @@
+import User from '@/models/User'; // adjust path
 import mongoose from 'mongoose';
 
-const MONGODB_URI = process.env.MONGODB_URI!
+const MONGODB_URI = process.env.MONGODB_URI!;
 if (!MONGODB_URI) {
   throw new Error('Please define the MONGODB_URI environment variable inside .env.local');
 }
@@ -21,10 +22,13 @@ async function dbConnect() {
       bufferCommands: false,
     };
 
-    cached.promise = mongoose.connect(MONGODB_URI, opts).then((mongoose) => {
+    cached.promise = mongoose.connect(MONGODB_URI, opts).then(async (mongoose) => {
+      // ✅ Ensure indexes here
+      await User.init();
       return mongoose;
     });
   }
+
   cached.conn = await cached.promise;
   return cached.conn;
 }

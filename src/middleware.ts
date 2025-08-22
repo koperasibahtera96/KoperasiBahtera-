@@ -4,6 +4,7 @@ import { NextResponse } from "next/server";
 export default withAuth(
   function middleware(req) {
     const { pathname } = req.nextUrl;
+    //eslint-disable-next-line @typescript-eslint/no-explicit-any
     const token = req.nextauth.token as any;
 
     // === PUBLIC: /checker dan /checker/plant/[id] (bahkan semua turunan /checker) ===

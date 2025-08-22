@@ -1,44 +1,44 @@
 import dbConnect from '@/lib/mongodb';
 import Investor from '@/models/Investor';
-import Tree from '@/models/Tree';
-import { NextRequest, NextResponse } from 'next/server';
+import Plant from '@/models/Plant';
+import { NextResponse } from 'next/server';
 
 // GET /api/admin/laporan - Get report data for all investors
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     await dbConnect();
 
-    // Get all investors and their trees
+    // Get all investors and plants
     const investors = await Investor.find({});
-    const trees = await Tree.find({}).populate('pemilik', 'name email');
+    const plants = await Plant.find({});
 
-    // Group trees by investor
+    // Group plants by investor (using owner field)
     const investorReports = investors.map(investor => {
-      const investorTrees = trees.filter(tree => 
-        tree.pemilik && tree.pemilik._id.toString() === investor._id.toString()
+      const investorPlants = plants.filter(plant =>
+        plant.owner && plant.owner.toLowerCase() === investor.name.toLowerCase()
       );
 
-      // Calculate tree statistics for this investor
-      const treeStats = {
-        total: investorTrees.length,
+      // Calculate plant statistics for this investor
+      const plantStats = {
+        total: investorPlants.length,
         byCondition: {
-          sehat: investorTrees.filter(t => t.kondisi === 'sehat').length,
-          perlu_perawatan: investorTrees.filter(t => t.kondisi === 'perlu_perawatan').length,
-          sakit: investorTrees.filter(t => t.kondisi === 'sakit').length
+          sehat: investorPlants.filter(p => p.status === 'Tanam Bibit' || p.status === 'Tumbuh Sehat').length,
+          perlu_perawatan: investorPlants.filter(p => p.status === 'Perlu Perawatan').length,
+          sakit: investorPlants.filter(p => p.status === 'Bermasalah' || p.status === 'Sakit').length
         },
-        bySpecies: investorTrees.reduce((acc: any, tree) => {
-          const species = tree.spesiesPohon;
-          if (!acc[species]) {
-            acc[species] = 0;
+        bySpecies: investorPlants.reduce((acc, plant) => {
+          const type = plant.plantType;
+          if (!acc[type]) {
+            acc[type] = 0;
           }
-          acc[species]++;
+          acc[type]++;
           return acc;
         }, {}),
-        avgAge: investorTrees.length > 0 
-          ? Math.round(investorTrees.reduce((sum, tree) => sum + tree.umur, 0) / investorTrees.length)
+        avgAge: investorPlants.length > 0
+          ? Math.round(investorPlants.reduce((sum, plant) => sum + plant.age, 0) / investorPlants.length)
           : 0,
-        avgHeight: investorTrees.length > 0 
-          ? Math.round(investorTrees.reduce((sum, tree) => sum + tree.tinggi, 0) / investorTrees.length)
+        avgHeight: investorPlants.length > 0
+          ? Math.round(investorPlants.reduce((sum, plant) => sum + plant.height, 0) / investorPlants.length)
           : 0
       };
 
@@ -52,24 +52,25 @@ export async function GET(request: NextRequest) {
           status: investor.status,
           createdAt: investor.createdAt
         },
-        trees: investorTrees.map(tree => ({
-          _id: tree._id,
-          spesiesPohon: tree.spesiesPohon,
-          lokasi: tree.lokasi,
-          umur: tree.umur,
-          tinggi: tree.tinggi,
-          tanggalTanam: tree.tanggalTanam,
-          kondisi: tree.kondisi,
-          createdAt: tree.createdAt
+        trees: investorPlants.map(plant => ({
+          _id: plant._id,
+          spesiesPohon: plant.name, // Using name as species for UI compatibility
+          lokasi: plant.location,
+          umur: plant.age,
+          tinggi: plant.height,
+          tanggalTanam: plant.lastUpdate, // Using lastUpdate as plant date
+          kondisi: plant.status === 'Tanam Bibit' || plant.status === 'Tumbuh Sehat' ? 'sehat' :
+                   plant.status === 'Perlu Perawatan' ? 'perlu_perawatan' : 'sakit',
+          createdAt: plant.createdAt
         })),
-        statistics: treeStats
+        statistics: plantStats
       };
     });
 
     // Calculate overall statistics
     const overallStats = {
       totalInvestors: investors.length,
-      totalTrees: trees.length,
+      totalTrees: plants.length,
       totalInvestment: investors.reduce((sum, inv) => sum + inv.totalInvestasi, 0),
       activeInvestors: investors.filter(inv => inv.status === 'active').length,
       inactiveInvestors: investors.filter(inv => inv.status === 'inactive').length

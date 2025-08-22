@@ -1,24 +1,34 @@
 'use client';
 
-import { useState, useEffect } from 'react';
 import { AdminLayout } from '@/components/admin/AdminLayout';
-import { Select } from '@/components/ui/Select';
 import { useAlert } from '@/components/ui/Alert';
 import { useConfirmDialog } from '@/components/ui/ConfirmDialog';
+import { Select } from '@/components/ui/Select';
+import { useEffect, useState } from 'react';
 
-interface Tree {
+interface Plant {
   _id: string;
-  spesiesPohon: string;
-  pemilik: {
-    _id: string;
-    name: string;
-    email: string;
-  };
-  lokasi: string;
-  umur: number; // in months
-  tinggi: number; // in cm
-  tanggalTanam: string;
-  kondisi: 'sehat' | 'perlu_perawatan' | 'sakit';
+  id: number;
+  name: string;
+  qrCode: string;
+  owner: string;
+  fotoGambar?: string | null;
+  memberId: string;
+  contractNumber: string;
+  location: string;
+  plantType: string;
+  status: string;
+  lastUpdate: string;
+  height: number;
+  age: number;
+  history: Array<{
+    id: number;
+    type: string;
+    date: string;
+    description: string;
+    hasImage: boolean;
+    imageUrl?: string | null;
+  }>;
   createdAt: string;
   updatedAt: string;
 }
@@ -30,11 +40,11 @@ interface Investor {
 }
 
 export default function TreesPage() {
-  const [trees, setTrees] = useState<Tree[]>([]);
+  const [plants, setPlants] = useState<Plant[]>([]);
   const [investors, setInvestors] = useState<Investor[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
-  const [editingTree, setEditingTree] = useState<Tree | null>(null);
+  const [editingPlant, setEditingPlant] = useState<Plant | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [kondisiFilter, setKondisiFilter] = useState('all');
 
@@ -42,40 +52,38 @@ export default function TreesPage() {
   const { showDeleteConfirm, ConfirmComponent } = useConfirmDialog();
 
   const [formData, setFormData] = useState({
-    spesiesPohon: '',
-    pemilik: '',
-    lokasi: '',
-    umur: 0,
-    tinggi: 0,
-    tanggalTanam: '',
-    kondisi: 'sehat' as 'sehat' | 'perlu_perawatan' | 'sakit'
+    name: '',
+    owner: '',
+    location: '',
+    age: 0,
+    height: 0,
+    lastUpdate: '',
+    status: 'Tanam Bibit' as string,
+    plantType: 'Pohon'
   });
 
   // Format number helper functions
-  const formatNumber = (num: number) => {
+  const formatNumber = (num: number | null | undefined) => {
+    if (num == null || num === undefined) return '0';
     return num.toLocaleString('id-ID');
   };
 
-  const parseNumber = (str: string) => {
-    const cleaned = str.replace(/[^\d]/g, '');
-    return cleaned === '' ? 0 : parseInt(cleaned);
-  };
 
-  // Fetch trees from API
-  const fetchTrees = async () => {
+  // Fetch plants from API
+  const fetchPlants = async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/admin/trees');
-      
+      const response = await fetch('/api/plants');
+
       if (response.ok) {
         const data = await response.json();
-        setTrees(data.data || []);
+        setPlants(data.data || []);
       } else {
         const errorData = await response.json();
-        showError('Gagal memuat data', errorData.error || 'Terjadi kesalahan saat memuat data pohon');
+        showError('Gagal memuat data', errorData.error || 'Terjadi kesalahan saat memuat data tanaman');
       }
     } catch (error) {
-      console.error('Error fetching trees:', error);
+      console.error('Error fetching plants:', error);
       showError('Kesalahan Jaringan', 'Gagal terhubung ke server. Periksa koneksi internet Anda.');
     } finally {
       setLoading(false);
@@ -86,7 +94,7 @@ export default function TreesPage() {
   const fetchInvestors = async () => {
     try {
       const response = await fetch('/api/admin/investors');
-      
+
       if (response.ok) {
         const data = await response.json();
         setInvestors(data.data || []);
@@ -99,97 +107,202 @@ export default function TreesPage() {
   };
 
   useEffect(() => {
-    fetchTrees();
+    fetchPlants();
     fetchInvestors();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const filteredTrees = trees.filter(tree => {
-    const matchesSearch = tree.spesiesPohon.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         tree.lokasi.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         tree.pemilik.name.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesKondisi = kondisiFilter === 'all' || tree.kondisi === kondisiFilter;
+  const getKondisiFromStatus = (status: string) => {
+    if (status === 'Tanam Bibit' || status === 'Tumbuh Sehat') return 'sehat';
+    if (status === 'Perlu Perawatan') return 'perlu_perawatan';
+    return 'sakit';
+  };
+
+  const filteredPlants = plants.filter(plant => {
+    const matchesSearch = plant.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         plant.location.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         plant.owner.toLowerCase().includes(searchTerm.toLowerCase());
+    const plantKondisi = getKondisiFromStatus(plant.status);
+    const matchesKondisi = kondisiFilter === 'all' || plantKondisi === kondisiFilter;
     return matchesSearch && matchesKondisi;
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!formData.spesiesPohon || !formData.pemilik || !formData.lokasi || !formData.tanggalTanam) {
+
+    if (!formData.name || !formData.owner || !formData.location || !formData.lastUpdate) {
       showError('Form tidak lengkap', 'Mohon lengkapi semua field yang wajib diisi');
       return;
     }
 
     try {
-      const url = editingTree ? '/api/admin/trees' : '/api/admin/trees';
-      const method = editingTree ? 'PUT' : 'POST';
-      const body = editingTree 
-        ? { id: editingTree._id, ...formData }
-        : formData;
+      if (editingPlant) {
+        // Update existing plant using plants/[id] route
+        const plantData = {
+          name: formData.name,
+          owner: formData.owner,
+          location: formData.location,
+          height: formData.height,
+          age: formData.age,
+          lastUpdate: formData.lastUpdate,
+          status: formData.status,
+          plantType: formData.plantType
+        };
 
-      const response = await fetch(url, {
-        method,
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(body),
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        fetchTrees();
-        setShowModal(false);
-        setEditingTree(null);
-        setFormData({
-          spesiesPohon: '',
-          pemilik: '',
-          lokasi: '',
-          umur: 0,
-          tinggi: 0,
-          tanggalTanam: '',
-          kondisi: 'sehat'
+        const response = await fetch(`/api/plants/${editingPlant.id}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(plantData),
         });
-        console.log('🌳 Calling showSuccess from handleSubmit');
-        showSuccess('Berhasil!', data.message);
+
+        if (response.ok) {
+          fetchPlants();
+          setShowModal(false);
+          setEditingPlant(null);
+          setFormData({
+            name: '',
+            owner: '',
+            location: '',
+            age: 0,
+            height: 0,
+            lastUpdate: '',
+            status: 'Tanam Bibit',
+            plantType: 'Pohon'
+          });
+          console.log('🌱 Calling showSuccess from handleSubmit (edit)');
+          showSuccess('Berhasil!', 'Tanaman berhasil diupdate');
+        } else {
+          const errorData = await response.json();
+          showError('Gagal mengupdate', errorData.error || 'Terjadi kesalahan saat mengupdate data tanaman');
+        }
       } else {
-        const errorData = await response.json();
-        showError('Gagal menyimpan', errorData.error || 'Terjadi kesalahan saat menyimpan data pohon');
+        // Create new plant
+        const investor = investors.find(inv => inv.name === formData.owner);
+        if (!investor) {
+          showError('Investor tidak ditemukan', 'Silakan pilih investor yang valid');
+          return;
+        }
+
+        const plantData = {
+          name: formData.name,
+          qrCode: `PL-${Date.now()}`, // Temporary QR code generation
+          owner: formData.owner,
+          memberId: investor._id,
+          contractNumber: `CTR-${new Date().getFullYear()}-${Date.now()}`,
+          location: formData.location,
+          plantType: formData.plantType,
+          status: formData.status,
+          lastUpdate: formData.lastUpdate,
+          height: formData.height,
+          age: formData.age,
+          history: [{
+            id: 1,
+            type: 'Tanam Bibit',
+            date: formData.lastUpdate,
+            description: `Penanaman ${formData.name} di lokasi ${formData.location}.`,
+            hasImage: false,
+            imageUrl: null
+          }]
+        };
+
+        const response = await fetch('/api/plants', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(plantData),
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          fetchPlants();
+          setShowModal(false);
+          setEditingPlant(null);
+          setFormData({
+            name: '',
+            owner: '',
+            location: '',
+            age: 0,
+            height: 0,
+            lastUpdate: '',
+            status: 'Tanam Bibit',
+            plantType: 'Pohon'
+          });
+          console.log('🌱 Calling showSuccess from handleSubmit');
+          showSuccess('Berhasil!', data.message);
+        } else {
+          const errorData = await response.json();
+          showError('Gagal menyimpan', errorData.error || 'Terjadi kesalahan saat menyimpan data tanaman');
+        }
       }
     } catch (error) {
-      console.error('Error saving tree:', error);
+      console.error('Error saving plant:', error);
       showError('Kesalahan Jaringan', 'Gagal terhubung ke server. Periksa koneksi internet Anda.');
     }
   };
 
-  const handleEdit = (tree: Tree) => {
-    setEditingTree(tree);
+  const handleEdit = (plant: Plant) => {
+    // Handle different date formats safely
+    const formatDateForInput = (dateString: string) => {
+      if (!dateString) return '';
+
+      try {
+        // First try parsing as ISO date
+        const date = new Date(dateString);
+        if (!isNaN(date.getTime())) {
+          return date.toISOString().split('T')[0];
+        }
+
+        // If that fails, try parsing DD/M/YYYY or D/M/YYYY format
+        const parts = dateString.split('/');
+        if (parts.length === 3) {
+          const [day, month, year] = parts;
+          const isoDate = new Date(`${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`);
+          if (!isNaN(isoDate.getTime())) {
+            return isoDate.toISOString().split('T')[0];
+          }
+        }
+
+        // If all parsing fails, return today's date
+        return new Date().toISOString().split('T')[0];
+      } catch (error) {
+        console.warn('Failed to parse date:', dateString, error);
+        return new Date().toISOString().split('T')[0];
+      }
+    };
+
+    setEditingPlant(plant);
     setFormData({
-      spesiesPohon: tree.spesiesPohon,
-      pemilik: tree.pemilik._id,
-      lokasi: tree.lokasi,
-      umur: tree.umur,
-      tinggi: tree.tinggi,
-      tanggalTanam: new Date(tree.tanggalTanam).toISOString().split('T')[0],
-      kondisi: tree.kondisi
+      name: plant.name,
+      owner: plant.owner,
+      location: plant.location,
+      age: plant.age || 0,
+      height: plant.height || 0,
+      lastUpdate: formatDateForInput(plant.lastUpdate),
+      status: plant.status,
+      plantType: plant.plantType
     });
     setShowModal(true);
   };
 
-  const handleDelete = async (tree: Tree) => {
-    showDeleteConfirm(`${tree.spesiesPohon} milik ${tree.pemilik.name}`, async () => {
+  const handleDelete = async (plant: Plant) => {
+    showDeleteConfirm(`${plant.name} milik ${plant.owner}`, async () => {
       try {
-        const response = await fetch(`/api/admin/trees?id=${tree._id}`, {
+        const response = await fetch(`/api/plants/${plant.id}`, {
           method: 'DELETE',
         });
 
         if (response.ok) {
-          fetchTrees();
-          showSuccess('Berhasil!', `Pohon "${tree.spesiesPohon}" berhasil dihapus`);
+          fetchPlants();
+          showSuccess('Berhasil!', `Tanaman "${plant.name}" berhasil dihapus`);
         } else {
           const errorData = await response.json();
-          showError('Gagal menghapus', errorData.error || 'Terjadi kesalahan saat menghapus pohon');
+          showError('Gagal menghapus', errorData.error || 'Terjadi kesalahan saat menghapus tanaman');
         }
       } catch (error) {
-        console.error('Error deleting tree:', error);
+        console.error('Error deleting plant:', error);
         showError('Kesalahan Jaringan', 'Gagal terhubung ke server. Periksa koneksi internet Anda.');
       }
     });
@@ -217,11 +330,11 @@ export default function TreesPage() {
     }
   };
 
-  const treeStats = {
-    total: trees.length,
-    sehat: trees.filter(t => t.kondisi === 'sehat').length,
-    perlu_perawatan: trees.filter(t => t.kondisi === 'perlu_perawatan').length,
-    sakit: trees.filter(t => t.kondisi === 'sakit').length
+  const plantStats = {
+    total: plants.length,
+    sehat: plants.filter(p => p.status === 'Tanam Bibit' || p.status === 'Tumbuh Sehat').length,
+    perlu_perawatan: plants.filter(p => p.status === 'Perlu Perawatan').length,
+    sakit: plants.filter(p => p.status === 'Bermasalah' || p.status === 'Sakit').length
   };
 
   return (
@@ -230,12 +343,12 @@ export default function TreesPage() {
         {/* Header */}
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
           <div>
-            <h1 className="text-2xl lg:text-3xl font-bold text-gray-900">Data Pohon</h1>
-            <p className="text-gray-600 mt-2">Kelola data pohon investasi dan monitoring pertumbuhan</p>
+            <h1 className="text-2xl lg:text-3xl font-bold text-gray-900">Data Tanaman</h1>
+            <p className="text-gray-600 mt-2">Kelola data tanaman investasi dan monitoring pertumbuhan</p>
           </div>
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
             <button
-              onClick={fetchTrees}
+              onClick={fetchPlants}
               disabled={loading}
               className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg font-medium transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50"
             >
@@ -247,7 +360,7 @@ export default function TreesPage() {
               className="bg-gradient-to-r from-emerald-500 to-green-600 text-white px-6 py-2 rounded-lg font-semibold hover:shadow-lg transition-all duration-200 flex items-center justify-center gap-2"
             >
               <span>🌱</span>
-              Tambah Pohon
+              Tambah Tanaman
             </button>
           </div>
         </div>
@@ -256,29 +369,29 @@ export default function TreesPage() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
             <div>
-              <p className="text-sm font-medium text-gray-600">🌳 Total Pohon</p>
-              <p className="text-2xl font-bold text-gray-900">{treeStats.total}</p>
+              <p className="text-sm font-medium text-gray-600">🌳 Total Tanaman</p>
+              <p className="text-2xl font-bold text-gray-900">{plantStats.total}</p>
             </div>
           </div>
 
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
             <div>
               <p className="text-sm font-medium text-gray-600">💚 Sehat</p>
-              <p className="text-2xl font-bold text-green-600">{treeStats.sehat}</p>
+              <p className="text-2xl font-bold text-green-600">{plantStats.sehat}</p>
             </div>
           </div>
 
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
             <div>
               <p className="text-sm font-medium text-gray-600">⚠️ Perlu Perawatan</p>
-              <p className="text-2xl font-bold text-yellow-600">{treeStats.perlu_perawatan}</p>
+              <p className="text-2xl font-bold text-yellow-600">{plantStats.perlu_perawatan}</p>
             </div>
           </div>
 
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
             <div>
               <p className="text-sm font-medium text-gray-600">🔴 Sakit</p>
-              <p className="text-2xl font-bold text-red-600">{treeStats.sakit}</p>
+              <p className="text-2xl font-bold text-red-600">{plantStats.sakit}</p>
             </div>
           </div>
         </div>
@@ -289,7 +402,7 @@ export default function TreesPage() {
             <div className="flex-1">
               <input
                 type="text"
-                placeholder="Cari pohon berdasarkan spesies, lokasi, atau pemilik..."
+                placeholder="Cari tanaman berdasarkan nama, lokasi, atau pemilik..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
@@ -314,12 +427,12 @@ export default function TreesPage() {
             <table className="w-full">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-4 lg:px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Spesies</th>
+                  <th className="px-4 lg:px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nama Tanaman</th>
                   <th className="px-4 lg:px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Pemilik</th>
                   <th className="px-4 lg:px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden lg:table-cell">Lokasi</th>
                   <th className="px-4 lg:px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Umur & Tinggi</th>
-                  <th className="px-4 lg:px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell">Tanggal Tanam</th>
-                  <th className="px-4 lg:px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Kondisi</th>
+                  <th className="px-4 lg:px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell">Update Terakhir</th>
+                  <th className="px-4 lg:px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                   <th className="px-4 lg:px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Aksi</th>
                 </tr>
               </thead>
@@ -327,57 +440,57 @@ export default function TreesPage() {
                 {loading ? (
                   <tr>
                     <td colSpan={7} className="px-6 py-8 text-center text-gray-500">
-                      Memuat data pohon...
+                      Memuat data tanaman...
                     </td>
                   </tr>
-                ) : filteredTrees.length === 0 ? (
+                ) : filteredPlants.length === 0 ? (
                   <tr>
                     <td colSpan={7} className="px-6 py-8 text-center text-gray-500">
-                      {searchTerm || kondisiFilter !== 'all' ? 'Tidak ada pohon yang sesuai dengan filter' : 'Belum ada data pohon'}
+                      {searchTerm || kondisiFilter !== 'all' ? 'Tidak ada tanaman yang sesuai dengan filter' : 'Belum ada data tanaman'}
                     </td>
                   </tr>
                 ) : (
-                  filteredTrees.map((tree) => (
-                    <tr key={tree._id} className="hover:bg-gray-50">
+                  filteredPlants.map((plant) => (
+                    <tr key={plant._id} className="hover:bg-gray-50">
                       <td className="px-4 lg:px-6 py-4">
                         <div>
-                          <p className="font-medium text-gray-900">{tree.spesiesPohon}</p>
-                          <p className="text-sm text-gray-500 lg:hidden">{tree.lokasi}</p>
+                          <p className="font-medium text-gray-900">{plant.name}</p>
+                          <p className="text-sm text-gray-500 lg:hidden">{plant.location}</p>
                         </div>
                       </td>
                       <td className="px-4 lg:px-6 py-4">
                         <div>
-                          <p className="text-sm font-medium text-gray-900">{tree.pemilik.name}</p>
-                          <p className="text-xs text-gray-500">{tree.pemilik.email}</p>
+                          <p className="text-sm font-medium text-gray-900">{plant.owner}</p>
+                          <p className="text-xs text-gray-500">{plant.qrCode}</p>
                         </div>
                       </td>
                       <td className="px-4 lg:px-6 py-4 text-sm text-gray-900 hidden lg:table-cell">
-                        {tree.lokasi}
+                        {plant.location}
                       </td>
                       <td className="px-4 lg:px-6 py-4">
                         <div>
-                          <p className="text-sm text-gray-900">{formatNumber(tree.umur)} bulan</p>
-                          <p className="text-xs text-gray-500">{formatNumber(tree.tinggi)} cm</p>
+                          <p className="text-sm text-gray-900">{formatNumber(plant.age)} bulan</p>
+                          <p className="text-xs text-gray-500">{formatNumber(plant.height)} cm</p>
                         </div>
                       </td>
                       <td className="px-4 lg:px-6 py-4 text-sm text-gray-900 hidden sm:table-cell">
-                        {new Date(tree.tanggalTanam).toLocaleDateString('id-ID')}
+                        {new Date(plant.lastUpdate).toLocaleDateString('id-ID')}
                       </td>
                       <td className="px-4 lg:px-6 py-4">
-                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getKondisiBadge(tree.kondisi)}`}>
-                          {getKondisiText(tree.kondisi)}
+                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getKondisiBadge(getKondisiFromStatus(plant.status))}`}>
+                          {getKondisiText(getKondisiFromStatus(plant.status))}
                         </span>
                       </td>
                       <td className="px-4 lg:px-6 py-4">
                         <div className="flex items-center gap-2">
                           <button
-                            onClick={() => handleEdit(tree)}
+                            onClick={() => handleEdit(plant)}
                             className="text-blue-600 hover:text-blue-800 font-medium text-sm"
                           >
                             Edit
                           </button>
                           <button
-                            onClick={() => handleDelete(tree)}
+                            onClick={() => handleDelete(plant)}
                             className="text-red-600 hover:text-red-800 font-medium text-sm"
                           >
                             Hapus
@@ -399,43 +512,43 @@ export default function TreesPage() {
           <div className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
             <div className="p-4 sm:p-6 border-b border-gray-200">
               <h2 className="text-lg sm:text-xl font-bold text-gray-900">
-                {editingTree ? 'Edit Data Pohon' : 'Tambah Pohon Baru'}
+                {editingPlant ? 'Edit Data Tanaman' : 'Tambah Tanaman Baru'}
               </h2>
             </div>
-            
+
             <form onSubmit={handleSubmit} className="p-4 sm:p-6 space-y-4 sm:space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Spesies Pohon *
+                    Nama Tanaman *
                   </label>
                   <input
                     type="text"
                     required
-                    value={formData.spesiesPohon}
-                    onChange={(e) => setFormData({...formData, spesiesPohon: e.target.value})}
+                    value={formData.name}
+                    onChange={(e) => setFormData({...formData, name: e.target.value})}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-                    placeholder="Contoh: Aquilaria malaccensis"
+                    placeholder="Contoh: Durian Montong"
                   />
                 </div>
-                
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Pemilik (Investor) *
                   </label>
                   <Select
-                    value={formData.pemilik}
-                    onValueChange={(value) => setFormData({...formData, pemilik: value})}
+                    value={formData.owner}
+                    onValueChange={(value) => setFormData({...formData, owner: value})}
                     options={[
                       { value: '', label: 'Pilih pemilik...', disabled: true },
                       ...investors.map(investor => ({
-                        value: investor._id,
+                        value: investor.name,
                         label: `${investor.name} (${investor.email})`
                       }))
                     ]}
                   />
                 </div>
-                
+
                 <div className="md:col-span-2">
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Lokasi *
@@ -443,13 +556,13 @@ export default function TreesPage() {
                   <input
                     type="text"
                     required
-                    value={formData.lokasi}
-                    onChange={(e) => setFormData({...formData, lokasi: e.target.value})}
+                    value={formData.location}
+                    onChange={(e) => setFormData({...formData, location: e.target.value})}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-                    placeholder="Contoh: Kebun Gaharu Jakarta Timur"
+                    placeholder="Contoh: Blok A, Zona 1"
                   />
                 </div>
-                
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Umur (bulan) *
@@ -458,13 +571,13 @@ export default function TreesPage() {
                     type="number"
                     min="0"
                     required
-                    value={formData.umur}
-                    onChange={(e) => setFormData({...formData, umur: parseInt(e.target.value) || 0})}
+                    value={formData.age}
+                    onChange={(e) => setFormData({...formData, age: parseInt(e.target.value) || 0})}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
                     placeholder="0"
                   />
                 </div>
-                
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Tinggi (cm) *
@@ -473,62 +586,65 @@ export default function TreesPage() {
                     type="number"
                     min="0"
                     required
-                    value={formData.tinggi}
-                    onChange={(e) => setFormData({...formData, tinggi: parseInt(e.target.value) || 0})}
+                    value={formData.height}
+                    onChange={(e) => setFormData({...formData, height: parseInt(e.target.value) || 0})}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
                     placeholder="0"
                   />
                 </div>
-                
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Tanggal Tanam *
+                    Update Terakhir *
                   </label>
                   <input
                     type="date"
                     required
-                    value={formData.tanggalTanam}
-                    onChange={(e) => setFormData({...formData, tanggalTanam: e.target.value})}
+                    value={formData.lastUpdate}
+                    onChange={(e) => setFormData({...formData, lastUpdate: e.target.value})}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
                   />
                 </div>
-                
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Kondisi
+                    Status
                   </label>
                   <Select
-                    value={formData.kondisi}
-                    onValueChange={(value) => setFormData({...formData, kondisi: value as 'sehat' | 'perlu_perawatan' | 'sakit'})}
+                    value={formData.status}
+                    onValueChange={(value) => setFormData({...formData, status: value})}
                     options={[
-                      { value: 'sehat', label: 'Sehat' },
-                      { value: 'perlu_perawatan', label: 'Perlu Perawatan' },
-                      { value: 'sakit', label: 'Sakit' }
+                      { value: 'Tanam Bibit', label: 'Tanam Bibit' },
+                      { value: 'Tumbuh Sehat', label: 'Tumbuh Sehat' },
+                      { value: 'Perlu Perawatan', label: 'Perlu Perawatan' },
+                      { value: 'Bermasalah', label: 'Bermasalah' },
+                      { value: 'Sakit', label: 'Sakit' }
                     ]}
                   />
                 </div>
               </div>
-              
+
               <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4 pt-4 border-t border-gray-200">
                 <button
                   type="submit"
                   className="bg-gradient-to-r from-emerald-500 to-green-600 text-white px-6 py-3 sm:py-2 rounded-lg font-semibold hover:shadow-lg transition-all duration-200 text-center"
                 >
-                  {editingTree ? 'Update Pohon' : 'Tambah Pohon'}
+                  {editingPlant ? 'Update Tanaman' : 'Tambah Tanaman'}
                 </button>
                 <button
                   type="button"
                   onClick={() => {
                     setShowModal(false);
-                    setEditingTree(null);
+                    setEditingPlant(null);
                     setFormData({
-                      spesiesPohon: '',
-                      pemilik: '',
-                      lokasi: '',
-                      umur: 0,
-                      tinggi: 0,
-                      tanggalTanam: '',
-                      kondisi: 'sehat'
+                      name: '',
+                      owner: '',
+                      location: '',
+                      age: 0,
+                      height: 0,
+                      lastUpdate: '',
+                      status: 'Tanam Bibit',
+                      plantType: 'Pohon'
                     });
                   }}
                   className="px-6 py-3 sm:py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors text-center"

@@ -44,6 +44,11 @@ export const authOptions: NextAuthOptions = {
             name: user.fullName,
             role: user.role,
             isVerified: user.isEmailVerified,
+            userCode: user.userCode,
+            occupationCode: user.occupationCode,
+            phoneNumber: user.phoneNumber,
+            province: user.province,
+            city: user.city,
           };
         } catch (error) {
           console.error('Auth error:', error);
@@ -63,6 +68,11 @@ export const authOptions: NextAuthOptions = {
       if (user) {
         token.role = user.role;
         token.isVerified = user.isVerified;
+        token.userCode = user.userCode;
+        token.occupationCode = user.occupationCode;
+        token.phoneNumber = user.phoneNumber;
+        token.province = user.province;
+        token.city = user.city;
       }
       return token;
     },
@@ -71,6 +81,11 @@ export const authOptions: NextAuthOptions = {
         session.user.id = token.sub!;
         session.user.role = token.role as string;
         session.user.isVerified = token.isVerified as boolean;
+        session.user.userCode = token.userCode as string;
+        session.user.occupationCode = token.occupationCode as string;
+        session.user.phoneNumber = token.phoneNumber as string;
+        session.user.province = token.province as string;
+        session.user.city = token.city as string;
       }
       return session;
     },

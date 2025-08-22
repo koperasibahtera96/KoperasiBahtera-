@@ -2,15 +2,42 @@ import dbConnect from '@/lib/mongodb';
 import User from '@/models/User';
 import bcrypt from 'bcryptjs';
 import { NextRequest, NextResponse } from 'next/server';
+import { occupationOptions } from '@/constant/OCCUPATION';
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
 
-    const { fullName, email, phoneNumber, password } = body;
+    const { 
+      fullName, 
+      email, 
+      phoneNumber, 
+      password,
+      dateOfBirth,
+      address,
+      village,
+      city,
+      province,
+      postalCode,
+      occupation
+    } = body;
+
+    // Log received data for debugging
+    console.log('Registration data received:', {
+      fullName: fullName ? 'Present' : 'Missing',
+      email: email ? 'Present' : 'Missing',
+      phoneNumber: phoneNumber ? 'Present' : 'Missing',
+      dateOfBirth: dateOfBirth ? 'Present' : 'Missing',
+      address: address ? 'Present' : 'Missing',
+      village: village ? 'Present' : 'Missing',
+      city: city ? 'Present' : 'Missing',
+      province: province ? 'Present' : 'Missing',
+      postalCode: postalCode ? 'Present' : 'Missing',
+      occupation: occupation ? 'Present' : 'Missing',
+    });
 
     // Server-side validation
-    if (!fullName || !email || !phoneNumber || !password) {
+    if (!fullName || !email || !phoneNumber || !password || !dateOfBirth || !address || !village || !city || !province || !postalCode || !occupation) {
       return NextResponse.json(
         { error: 'Semua field wajib diisi' },
         { status: 400 }
@@ -84,6 +111,48 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Validate date of birth
+    const dobDate = new Date(dateOfBirth);
+    const today = new Date();
+    let age = today.getFullYear() - dobDate.getFullYear();
+    const monthDiff = today.getMonth() - dobDate.getMonth();
+    
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < dobDate.getDate())) {
+      age--;
+    }
+    
+    if (age < 17) {
+      return NextResponse.json(
+        { error: 'Minimal umur 17 tahun' },
+        { status: 400 }
+      );
+    }
+
+    // Validate address
+    if (address.length < 10) {
+      return NextResponse.json(
+        { error: 'Alamat minimal 10 karakter' },
+        { status: 400 }
+      );
+    }
+
+    // Validate postal code
+    if (!/^[0-9]{5}$/.test(postalCode)) {
+      return NextResponse.json(
+        { error: 'Kode pos harus 5 digit angka' },
+        { status: 400 }
+      );
+    }
+
+    // Validate occupation
+    const validOccupation = occupationOptions.find(opt => opt.value === occupation);
+    if (!validOccupation) {
+      return NextResponse.json(
+        { error: 'Pekerjaan tidak valid' },
+        { status: 400 }
+      );
+    }
+
     // Connect to database
     await dbConnect();
 
@@ -113,12 +182,47 @@ export async function POST(request: NextRequest) {
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 12);
 
+    // Get occupation code
+    const occupationData = occupationOptions.find(opt => opt.value === occupation);
+    const occupationCode = occupationData?.code || '999'; // Default to 'Lainnya' if not found
+
+    // Generate user code - format: IH-{OccupationCode}-{Year}-{Sequential}
+    const currentYear = new Date().getFullYear().toString().slice(-2); // Last 2 digits of year
+    
+    // Find the last user with the same occupation code in the current year
+    const lastUserCode = await User.findOne({
+      occupationCode: occupationCode,
+      userCode: { $regex: `^IH-${occupationCode}-${currentYear}-` }
+    })
+    .sort({ userCode: -1 })
+    .select('userCode');
+
+    let sequential = 1;
+    if (lastUserCode && lastUserCode.userCode) {
+      const lastSequential = parseInt(lastUserCode.userCode.split('-')[3]);
+      sequential = lastSequential + 1;
+    }
+
+    const userCode = `IH-${occupationCode}-${currentYear}-${sequential.toString().padStart(3, '0')}`;
+
+    // Use the already validated date of birth
+    // dobDate was already parsed and validated above
+
     // Create user
     const user = new User({
       email: email.toLowerCase().trim(),
       password: hashedPassword,
       fullName: fullName.trim(),
       phoneNumber: phoneNumber.trim(),
+      dateOfBirth: dobDate,
+      address: address.trim(),
+      village: village.trim(),
+      city: city.trim(),
+      province: province.trim(),
+      postalCode: postalCode.trim(),
+      occupation: occupation.trim(),
+      occupationCode: occupationCode,
+      userCode: userCode,
       role: 'user',
       isEmailVerified: false,
       isPhoneVerified: false,
@@ -127,6 +231,26 @@ export async function POST(request: NextRequest) {
 
     await user.save();
 
+    // Log successful user creation with all fields
+    console.log('User created successfully:', {
+      id: user._id,
+      email: user.email,
+      fullName: user.fullName,
+      phoneNumber: user.phoneNumber,
+      dateOfBirth: user.dateOfBirth,
+      address: user.address,
+      village: user.village,
+      city: user.city,
+      province: user.province,
+      postalCode: user.postalCode,
+      occupation: user.occupation,
+      occupationCode: user.occupationCode,
+      userCode: user.userCode,
+      role: user.role,
+      isActive: user.isActive,
+      createdAt: user.createdAt,
+    });
+
     return NextResponse.json(
       {
         message: 'Akun berhasil dibuat',
@@ -134,9 +258,21 @@ export async function POST(request: NextRequest) {
           id: user._id,
           email: user.email,
           fullName: user.fullName,
+          phoneNumber: user.phoneNumber,
+          dateOfBirth: user.dateOfBirth,
+          address: user.address,
+          village: user.village,
+          city: user.city,
+          province: user.province,
+          postalCode: user.postalCode,
+          occupation: user.occupation,
+          occupationCode: user.occupationCode,
+          userCode: user.userCode,
           role: user.role,
           isEmailVerified: user.isEmailVerified,
           isPhoneVerified: user.isPhoneVerified,
+          isActive: user.isActive,
+          createdAt: user.createdAt,
         }
       },
       { status: 201 }

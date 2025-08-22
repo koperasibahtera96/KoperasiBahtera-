@@ -1,12 +1,12 @@
 import { type NextRequest, NextResponse } from "next/server"
-import connectDB from "@/lib/mongodb"
-import Plant from "@/schemas/Plant"
+import dbConnect from "@/lib/mongodb"
+import Plant from "@/models/Plant"
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params
     console.log(`[v0] Fetching plant ${id} from MongoDB...`)
-    await connectDB()
+    await dbConnect()
     const plant = await Plant.findOne({ id: Number.parseInt(id) })
 
     if (!plant) {
@@ -28,7 +28,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     const updatedPlant = await request.json()
     console.log("[v0] API received plant data for MongoDB update:", JSON.stringify(updatedPlant, null, 2))
 
-    await connectDB()
+    await dbConnect()
 
     const plant = await Plant.findOneAndUpdate({ id: Number.parseInt(id) }, updatedPlant, {
       new: true,
@@ -52,7 +52,7 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
   try {
     const { id } = await params
     console.log(`[v0] Deleting plant ${id} from MongoDB...`)
-    await connectDB()
+    await dbConnect()
 
     const plant = await Plant.findOneAndDelete({ id: Number.parseInt(id) })
 

@@ -1,6 +1,6 @@
 import dbConnect from '@/lib/mongodb';
 import Investor from '@/models/Investor';
-import Tree from '@/models/Tree';
+import Plant from '@/models/Plant';
 import { NextRequest, NextResponse } from 'next/server';
 
 // GET /api/admin/dashboard - Get dashboard data
@@ -8,10 +8,10 @@ export async function GET(_request: NextRequest) {
   try {
     await dbConnect();
 
-    // Get all investors and trees
-    const [investors, trees] = await Promise.all([
+    // Get all investors and plants
+    const [investors, plants] = await Promise.all([
       Investor.find({}),
-      Tree.find({}).populate('pemilik', 'name email')
+      Plant.find({})
     ]);
 
     // Calculate investor statistics
@@ -20,29 +20,29 @@ export async function GET(_request: NextRequest) {
     const inactiveInvestors = investors.filter(inv => inv.status === 'inactive').length;
     const totalInvestment = investors.reduce((sum, inv) => sum + inv.totalInvestasi, 0);
 
-    // Calculate tree statistics
-    const totalTrees = trees.length;
-    const treesByCondition = {
-      sehat: trees.filter(t => t.kondisi === 'sehat').length,
-      perlu_perawatan: trees.filter(t => t.kondisi === 'perlu_perawatan').length,
-      sakit: trees.filter(t => t.kondisi === 'sakit').length
+    // Calculate plant statistics
+    const totalPlants = plants.length;
+    const plantsByStatus = {
+      active: plants.filter(p => p.status === 'Tanam Bibit' || p.status === 'Tumbuh Sehat').length,
+      maintenance: plants.filter(p => p.status === 'Perlu Perawatan').length,
+      problem: plants.filter(p => p.status === 'Bermasalah' || p.status === 'Sakit').length
     };
 
-    // Group trees by species (get top 3)
-    const treesBySpecies = trees.reduce((acc, tree) => {
-      const species = tree.spesiesPohon;
-      if (!acc[species]) {
-        acc[species] = 0;
+    // Group plants by type (get top 3)
+    const plantsByType = plants.reduce((acc, plant) => {
+      const type = plant.plantType;
+      if (!acc[type]) {
+        acc[type] = 0;
       }
-      acc[species]++;
+      acc[type]++;
       return acc;
     }, {});
 
-    const topSpecies = Object.entries(treesBySpecies)
+    const topPlantTypes = Object.entries(plantsByType)
       .sort(([,a], [,b]) => (b as number) - (a as number))
       .slice(0, 3)
-      .map(([species, count], index) => ({
-        name: species,
+      .map(([type, count], index) => ({
+        name: type,
         count: count as number,
         color: index === 0 ? 'amber' : index === 1 ? 'green' : 'emerald'
       }));
@@ -60,9 +60,9 @@ export async function GET(_request: NextRequest) {
         status: investor.status
       }));
 
-    // Calculate average tree age and height
-    const avgTreeAge = trees.length > 0 ? Math.round(trees.reduce((sum, tree) => sum + tree.umur, 0) / trees.length) : 0;
-    const avgTreeHeight = trees.length > 0 ? Math.round(trees.reduce((sum, tree) => sum + tree.tinggi, 0) / trees.length) : 0;
+    // Calculate average plant age and height
+    const avgPlantAge = plants.length > 0 ? Math.round(plants.reduce((sum, plant) => sum + plant.age, 0) / plants.length) : 0;
+    const avgPlantHeight = plants.length > 0 ? Math.round(plants.reduce((sum, plant) => sum + plant.height, 0) / plants.length) : 0;
 
     // Format total investment
     const formattedTotalInvestment = totalInvestment >= 1000000000
@@ -75,9 +75,9 @@ export async function GET(_request: NextRequest) {
     const dashboardData = {
       stats: {
         totalInvestors,
-        totalTrees,
+        totalTrees: totalPlants,
         activeInvestment: formattedTotalInvestment,
-        averageTreeAge: `${avgTreeAge} bulan`,
+        averageTreeAge: `${avgPlantAge} bulan`,
         monthlyGrowth: {
           investors: 0, // Would need historical data to calculate
           trees: 0,
@@ -86,26 +86,26 @@ export async function GET(_request: NextRequest) {
         }
       },
       recentInvestors,
-      treeStats: topSpecies.map(species => ({
-        name: species.name,
-        count: species.count,
-        value: `${species.count} pohon`,
+      treeStats: topPlantTypes.map(type => ({
+        name: type.name,
+        count: type.count,
+        value: `${type.count} tanaman`,
         growth: '+0%', // Would need historical data
-        color: species.color
+        color: type.color
       })),
       investorStats: {
         active: activeInvestors,
         inactive: inactiveInvestors,
         total: totalInvestors
       },
-      treeConditionStats: treesByCondition,
+      treeConditionStats: plantsByStatus,
       summary: {
         totalInvestors,
-        totalTrees,
+        totalTrees: totalPlants,
         totalInvestment,
         activeInvestors,
-        avgTreeAge,
-        avgTreeHeight
+        avgTreeAge: avgPlantAge,
+        avgTreeHeight: avgPlantHeight
       }
     };
 
