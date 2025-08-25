@@ -20,15 +20,9 @@ export const registrationSchema = z.object({
   confirmPassword: z.string()
     .min(1, 'Konfirmasi password wajib diisi'),
   dateOfBirth: z.string()
-    .min(1, 'Tanggal lahir wajib diisi')
-    .refine((date) => {
-      const birthDate = new Date(date);
-      const today = new Date();
-      const age = today.getFullYear() - birthDate.getFullYear();
-      return age >= 17;
-    }, 'Minimal umur 17 tahun'),
+    .min(1, 'Tanggal lahir wajib diisi'),
   address: z.string()
-    .min(10, 'Alamat minimal 10 karakter'),
+    .min(1, 'Alamat wajib diisi'),
   village: z.string()
     .min(1, 'Desa/Kelurahan wajib diisi'),
   city: z.string()

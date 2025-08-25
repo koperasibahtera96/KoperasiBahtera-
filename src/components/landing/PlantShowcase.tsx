@@ -5,75 +5,99 @@ import { useState } from 'react';
 
 const plantFacts = [
   {
-    name: "Gaharu",
-    common: "Aquilaria malaccensis",
-    emoji: "🌳",
-    image: "/gaharu.jpeg",
-    secretFact: "Kayu Termahal di Dunia",
-    mainFact: "Gaharu menghasilkan resin aromatik yang bernilai hingga Rp 50 juta per kg, menjadikannya salah satu komoditas termahal di dunia.",
+    name: "Aren",
+    common: "Arenga pinnata",
+    emoji: "🌴",
+    image: "/aren.png",
+    secretFact: "Pohon Serbaguna Nusantara",
+    mainFact: "Tanaman aren mulai bisa disadap niranya setelah berusia 7-12 tahun. Nira aren dapat diolah menjadi gula aren, kolangkaling, sirup, hingga bioetanol dengan nilai ekonomi tinggi.",
     weirdFacts: [
-      "🌿 Gaharu hanya tumbuh di hutan tropis Asia Tenggara dan India",
-      "💎 Resin gaharu terbentuk secara alami ketika pohon terinfeksi jamur tertentu",
-      "🕰️ Proses pembentukan resin bisa memakan waktu 10-20 tahun",
-      "🌍 Pasar ekspor utama: Timur Tengah, China, dan Jepang",
-      "💰 Harga resin premium bisa mencapai Rp 100 juta per kg",
-      "🏥 Digunakan dalam pengobatan tradisional dan parfum mewah"
+      "🌿 Tumbuh optimal di daerah pegunungan dan perbukitan Indonesia",
+      "🍯 Nira aren mengandung gula alami dengan rasa khas",
+      "🕰️ Pohon bisa terus menghasilkan selama beberapa tahun sebelum menua",
+      "🌍 Produk aren diminati pasar ekspor sebagai pemanis alami",
+      "💰 Gula aren premium bernilai tinggi di pasar internasional",
+      "⚡ Nira aren dapat difermentasi menjadi bioetanol ramah lingkungan"
     ],
-    investmentHook: "ROI 300-500% dalam 8-12 tahun dengan perawatan minimal",
+    investmentHook: "Produksi berkelanjutan 7-15 tahun dengan multiple income streams",
     imageShape: "hexagon",
     textLayout: "left",
     colors: {
-      text: "emerald-600",
-      gradient: "from-emerald-500 to-green-600",
-      light: "from-emerald-50 to-green-100"
-    }
-  },
-  {
-    name: "Alpukat Mentega",
-    common: "Persea americana",
-    emoji: "🥑",
-    image: "/alpukat.jpg",
-    secretFact: "Superfood Ekspor Premium",
-    mainFact: "Alpukat mentega Indonesia memiliki tekstur lembut dan rasa yang unik, membuatnya sangat diminati pasar internasional dengan harga premium.",
-    weirdFacts: [
-      "🌱 Alpukat mentega tumbuh optimal di dataran tinggi 800-1500 mdpl",
-      "🌍 Ekspor utama ke Singapura, Malaysia, dan Timur Tengah",
-      "💪 Kandungan lemak sehat dan antioksidan yang tinggi",
-      "📈 Permintaan pasar meningkat 25% setiap tahun",
-      "🌿 Tanaman tahan hama dan penyakit",
-      "💰 Harga ekspor 3-5x lipat harga lokal"
-    ],
-    investmentHook: "ROI 200-300% dalam 5-8 tahun dengan pasar yang stabil",
-    imageShape: "diamond",
-    textLayout: "right",
-    colors: {
-      text: "yellow-600",
-      gradient: "from-yellow-500 to-orange-600",
-      light: "from-yellow-50 to-orange-100"
+      text: "amber-600",
+      gradient: "from-amber-500 to-orange-600",
+      light: "from-amber-50 to-orange-100"
     }
   },
   {
     name: "Jengkol",
     common: "Archidendron pauciflorum",
     emoji: "🫘",
-    image: "/jengkol.jpg",
-    secretFact: "Investasi Kesehatan Masa Depan",
-    mainFact: "Jengkol tidak hanya lezat, tapi juga kaya protein dan serat. Pasar farmasi dan makanan kesehatan yang berkembang pesat membuat nilai investasi semakin tinggi.",
+    image: "/jengkol.png",
+    secretFact: "Hidden Gem Asia Tenggara",
+    mainFact: "Pohon jengkol mulai berbuah setelah 5-7 tahun dan dapat berproduksi puluhan tahun. Biji jengkol dapat diolah menjadi keripik dan berbagai masakan khas yang bernilai ekonomi.",
     weirdFacts: [
-      "🌿 Jengkol tumbuh optimal di tanah lembab dan subur",
-      "💊 Kaya protein nabati dan serat pangan",
-      "🏥 Digunakan dalam pengobatan tradisional",
-      "📈 Pasar farmasi tumbuh 15% per tahun",
-      "🌍 Ekspor ke Malaysia, Singapura, dan Thailand",
-      "💰 Harga jengkol premium terus meningkat"
+      "🌿 Pohon khas Asia Tenggara dengan aroma kuat namun disukai",
+      "💪 Kaya protein nabati dan mineral penting",
+      "🍳 Dapat diolah menjadi jengkol balado dan gulai jengkol",
+      "📈 Permintaan pasar terus stabil dengan harga yang baik",
+      "🌍 Ekspor ke Malaysia, Singapura, dan negara ASEAN",
+      "💰 Produk olahan jengkol semakin beragam dan bernilai"
     ],
-    investmentHook: "ROI 150-250% dalam 4-6 tahun dengan diversifikasi pasar",
+    investmentHook: "Investasi jangka panjang dengan produksi konsisten 20+ tahun",
+    imageShape: "diamond",
+    textLayout: "right",
+    colors: {
+      text: "green-600",
+      gradient: "from-green-500 to-emerald-600",
+      light: "from-green-50 to-emerald-100"
+    }
+  },
+  {
+    name: "Gaharu",
+    common: "Aquilaria spp",
+    emoji: "🌳",
+    image: "/gaharu.png",
+    secretFact: "Emas Hijau Indonesia",
+    mainFact: "Pohon gaharu siap dipanen setelah 5-8 tahun ketika kayunya mengandung resin wangi. Gaharu menghasilkan kayu, serbuk, minyak atsiri, dan kerajinan bernilai tinggi untuk ritual dan parfum mewah.",
+    weirdFacts: [
+      "🌿 Tumbuh di daerah tropis Asia dengan resin wangi alami",
+      "🕯️ Kayu dan serbuk dibakar untuk aroma harum pada ritual",
+      "💎 Minyak atsiri gaharu digunakan dalam parfum mewah",
+      "🎨 Kayu gaharu diolah menjadi kerajinan seperti tasbih",
+      "🌍 Pasar utama: Timur Tengah, China, dan Asia Timur",
+      "💰 Harga premium karena aroma khas dan kelangkaannya"
+    ],
+    investmentHook: "ROI tinggi dalam 5-8 tahun dengan nilai resin yang terus naik",
     imageShape: "hexagon",
     textLayout: "left",
     colors: {
-      text: "blue-600",
-      gradient: "from-blue-500 to-indigo-600",
-      light: "from-blue-50 to-indigo-100"
+      text: "purple-600",
+      gradient: "from-purple-500 to-indigo-600",
+      light: "from-purple-50 to-indigo-100"
+    }
+  },
+  {
+    name: "Alpukat",
+    common: "Persea americana",
+    emoji: "🥑",
+    image: "/alpukat.png",
+    secretFact: "Superfood Global Favorite",
+    mainFact: "Pohon alpukat mulai berbuah setelah 3-8 tahun dan dapat berproduksi puluhan tahun. Buah alpukat kaya serat tinggi, dapat diolah menjadi guacamole, dan minyak alpukat untuk kesehatan.",
+    weirdFacts: [
+      "🌱 Buah tropis yang dibudidayakan karena rasa lezat dan kaya gizi",
+      "💪 Mengandung serat tinggi dan lemak sehat untuk tubuh",
+      "🥗 Diolah menjadi guacamole, saus khas Meksiko yang populer",
+      "✨ Minyak alpukat digunakan untuk masakan sehat dan perawatan kulit",
+      "📈 Permintaan global terus meningkat sebagai superfood",
+      "🌍 Pasar ekspor berkembang pesat ke berbagai negara"
+    ],
+    investmentHook: "Pasar global yang stabil dengan tren kesehatan yang terus naik",
+    imageShape: "diamond",
+    textLayout: "right",
+    colors: {
+      text: "emerald-600",
+      gradient: "from-emerald-500 to-green-600",
+      light: "from-emerald-50 to-green-100"
     }
   }
 ];

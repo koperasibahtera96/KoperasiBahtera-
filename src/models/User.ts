@@ -14,6 +14,8 @@ export interface IUser extends Document {
   occupation: string;
   occupationCode?: string; // Auto-generated based on occupation
   userCode?: string; // Auto-generated user code
+  ktpImageUrl?: string; // KTP image URL from ImageKit
+  faceImageUrl?: string; // Face verification image URL from ImageKit
   role: 'user' | 'staff' | 'admin' | 'finance';
   isEmailVerified: boolean;
   isPhoneVerified: boolean;
@@ -59,7 +61,6 @@ const UserSchema: Schema = new Schema({
     type: String,
     required: [true, 'Address is required'],
     trim: true,
-    minlength: [10, 'Address must be at least 10 characters'],
   },
   village: {
     type: String,
@@ -94,6 +95,14 @@ const UserSchema: Schema = new Schema({
   userCode: {
     type: String,
     unique: true,
+    trim: true,
+  },
+  ktpImageUrl: {
+    type: String,
+    trim: true,
+  },
+  faceImageUrl: {
+    type: String,
     trim: true,
   },
   role: {

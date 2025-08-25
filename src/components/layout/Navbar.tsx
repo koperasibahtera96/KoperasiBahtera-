@@ -29,7 +29,7 @@ function AuthButtons({ mobile = false }: { mobile?: boolean }) {
         <Link href={`/${session.user.role}`}>
           <Button variant="outline" size="sm" className={cn(
             mobile ? 'w-full' : '',
-            'border-emerald-200 text-emerald-700 hover:bg-emerald-50 hover:border-emerald-300 font-semibold'
+            'border-red-200 text-red-700 hover:bg-emerald-50 hover:border-red-300 font-semibold'
           )}>
             Dashboard
           </Button>
@@ -40,7 +40,7 @@ function AuthButtons({ mobile = false }: { mobile?: boolean }) {
           onClick={() => signOut()}
           className={cn(
             mobile ? 'w-full' : '',
-            'text-gray-600 hover:text-red-600 hover:bg-red-50 font-semibold'
+            'text-gray-600 hover:text-emerald-600 hover:bg-emerald-50 font-semibold'
           )}
         >
           Keluar
@@ -54,7 +54,7 @@ function AuthButtons({ mobile = false }: { mobile?: boolean }) {
       <Link href="/login">
         <Button variant="outline" size="sm" className={cn(
           mobile ? 'w-full' : '',
-          'border-emerald-200 text-emerald-700 hover:bg-emerald-50 hover:border-emerald-300 font-semibold'
+          'border-red-200 text-red-700 hover:bg-emerald-50 hover:border-red-300 font-semibold'
         )}>
           Masuk
         </Button>
@@ -80,20 +80,20 @@ export function Navbar() {
         <div className="flex-between py-4">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-3 group">
-            <div className="relative w-12 h-12 bg-gradient-to-br from-emerald-500 to-green-600 rounded-lg flex-center group-hover:scale-105 transition-transform duration-200 border border-yellow-400/20">
-              {/* Subtle golden accent dot */}
-              <div className="absolute top-0 right-0 w-3 h-3 bg-gradient-to-br from-yellow-400 to-amber-500 rounded-full transform translate-x-1 -translate-y-1 shadow-sm border border-white/50"></div>
-              <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
-              </svg>
+            <div className="relative w-12 h-12 group-hover:scale-105 transition-transform duration-200">
+              <img 
+                src="/images/koperasi-logo.jpg" 
+                alt="Koperasi Bintang Merah Sejahtera (BAHTERA)" 
+                className="w-12 h-12 rounded-full object-cover border-2 border-emerald-500/20 shadow-md"
+              />
             </div>
             <div>
-              <h1 className="text-2xl font-bold bg-gradient-to-r from-emerald-600 via-green-700 to-yellow-600 bg-clip-text text-transparent">Investasi Hijau</h1>
+              <h1 className="text-2xl font-bold bg-gradient-to-r from-emerald-600 via-green-700 to-yellow-600 bg-clip-text text-transparent">BAHTERA</h1>
               <div className="flex items-center gap-2">
-                <p className="text-sm text-emerald-600 font-medium">Tanaman Berkualitas Tinggi</p>
-                {/* Trust indicator dots */}
+                <p className="text-sm text-emerald-600 font-medium">Koperasi Bintang Merah Sejahtera</p>
+                {/* Trust indicator dots matching logo colors */}
                 <div className="flex items-center gap-1">
-                  <div className="w-1 h-1 bg-yellow-500 rounded-full animate-pulse" style={{ animationDelay: '0s' }}></div>
+                  <div className="w-1 h-1 bg-emerald-500 rounded-full animate-pulse" style={{ animationDelay: '0s' }}></div>
                   <div className="w-1 h-1 bg-amber-500 rounded-full animate-pulse" style={{ animationDelay: '0.5s' }}></div>
                   <div className="w-1 h-1 bg-yellow-500 rounded-full animate-pulse" style={{ animationDelay: '1s' }}></div>
                 </div>

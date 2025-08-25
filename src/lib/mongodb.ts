@@ -1,3 +1,4 @@
+import Payment from '@/models/Payment'; // adjust path
 import Plant from '@/models/Plant'; // adjust path
 import User from '@/models/User'; // adjust path
 import mongoose from 'mongoose';
@@ -27,6 +28,7 @@ async function dbConnect() {
       // ✅ Sync indexes to match current schema (removes old conflicting indexes)
       await User.syncIndexes();
       await Plant.syncIndexes();
+      await Payment.syncIndexes();
       return mongoose;
     });
   }

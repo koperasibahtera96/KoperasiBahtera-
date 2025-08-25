@@ -4,9 +4,9 @@ export async function POST(request: NextRequest) {
   try {
     console.log("[v0] Upload API called")
 
-    const publicKey = "public_YSUgdBW9SG/sVApBODMizBBSHIc="
+    // const publicKey = "public_YSUgdBW9SG/sVApBODMizBBSHIc="
     const privateKey = "private_nmGGpZ++RRY1MW+OetGD6yr63wE="
-    const urlEndpoint = "https://ik.imagekit.io/niyfabfxr/"
+    // const urlEndpoint = "https://ik.imagekit.io/niyfabfxr/"
 
     console.log("[v0] Parsing form data")
     const formData = await request.formData()

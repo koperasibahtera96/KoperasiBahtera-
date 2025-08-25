@@ -7,27 +7,27 @@ import { cn } from '@/lib/utils';
 const heroSlides = [
   {
     id: 1,
-    title: "Investasi Tanaman Terpercaya",
-    subtitle: "Masa Depan Hijau, Keuntungan Pasti",
-    description: "Bergabunglah dengan ribuan investor yang telah merasakan keuntungan dari investasi tanaman berkualitas tinggi. Mulai dari Rp 100.000 saja!",
+    title: "Investasi Hijau, Hijaukan Bumi Sejahterakan Hati",
+    subtitle: "Koperasi Bintang Merah Sejahtera",
+    description: "Bersama membangun masa depan hijau dan berkontribusi pada kelestarian lingkungan. Investasi tanaman berkelanjutan dengan sistem koperasi terpercaya.",
     image: "https://images.unsplash.com/photo-1416879595882-3373a0480b5b?ixlib=rb-4.0.3&auto=format&fit=crop&w=2340&q=80",
-    cta: "Mulai Investasi Sekarang"
+    cta: "Gabung Sekarang!"
   },
   {
     id: 2,
-    title: "Tanaman Premium Pilihan",
-    subtitle: "Kualitas Terjamin, Hasil Maksimal",
-    description: "Kami menyediakan bibit tanaman premium dengan tingkat keberhasilan tinggi. Didukung teknologi modern dan pengalaman puluhan tahun.",
+    title: "Tanaman Multi-Komoditas Premium",
+    subtitle: "Aren, Jengkol, Gaharu, Alpukat",
+    description: "Investasi pada tanaman produktif bernilai tinggi. Dari Rp 500.000 per pohon dengan sistem cicilan mulai Rp 8.333 per bulan.",
     image: "https://images.unsplash.com/photo-1574323347407-f5e1ad6d020b?ixlib=rb-4.0.3&auto=format&fit=crop&w=2340&q=80",
-    cta: "Lihat Katalog Tanaman"
+    cta: "Lihat Paket Investasi"
   },
   {
     id: 3,
-    title: "Keuntungan Hingga 25% Per Tahun",
-    subtitle: "Investasi Aman, Return Menarik",
-    description: "Nikmati keuntungan stabil dengan sistem bagi hasil yang transparan. Investasi Anda dikelola oleh ahli pertanian berpengalaman.",
+    title: "Investasi Jangka Panjang Menguntungkan",
+    subtitle: "5-7 Tahun, Hasil Berlipat",
+    description: "Program penghijauan berbasis tanaman multi-komoditas di kawasan Hutan Produksi. Transparansi penuh dengan laporan berkala.",
     image: "https://images.unsplash.com/photo-1465146344425-f00d5f5c8f07?ixlib=rb-4.0.3&auto=format&fit=crop&w=2340&q=80",
-    cta: "Hitung Keuntungan"
+    cta: "Pelajari Simulasi"
   }
 ];
 
@@ -177,7 +177,7 @@ export function HeroCarousel() {
 
         {/* Subtle decorative elements */}
         <div className="absolute top-20 right-20 w-16 h-16 bg-emerald-400/10 rounded-lg blur-lg animate-pulse"></div>
-        <div className="absolute bottom-32 right-32 w-12 h-12 bg-white/10 rounded-lg blur-md animate-pulse delay-700"></div>
+        <div className="absolute bottom-32 right-32 w-12 h-12 bg-yellow-400/10 rounded-lg blur-md animate-pulse delay-700"></div>
       </div>
 
       {/* Trust Indicators */}

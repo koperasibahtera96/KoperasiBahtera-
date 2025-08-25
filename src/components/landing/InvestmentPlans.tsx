@@ -1,68 +1,99 @@
 'use client';
 
 
-import { Grid } from '@/components/layout/Grid';
 import { Button } from '@/components/ui/Button';
+import { useSession } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
+import { useState } from 'react';
 
 export function InvestmentPlans() {
+  const { data: session } = useSession();
+  const router = useRouter();
+  const [isLoading, setIsLoading] = useState<string | null>(null);
+
+  //eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const handleInvestment = async (plan: any) => {
+    if (!session) {
+      router.push('/login');
+      return;
+    }
+
+    setIsLoading(plan.name);
+
+    try {
+      const response = await fetch('/api/payment/create-investment', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          plan,
+          user: session.user,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.redirect_url) {
+        window.location.href = data.redirect_url;
+      } else {
+        // Handle error - maybe show a toast notification
+        console.error("Failed to get redirect URL");
+      }
+    } catch (error) {
+      console.error('Error creating investment payment:', error);
+    } finally {
+      setIsLoading(null);
+    }
+  };
 
 
   const plans = [
     {
-      name: "Paket Pemula",
-      price: "100.000",
-      duration: "6 Bulan",
-      returns: "12-15%",
+      name: "Paket 1 Pohon",
+      price: 500000,
+      duration: "5 Tahun",
+      returns: "Rp 5.400.000",
       popular: false,
-      features: [
-        "Modal minimum Rp 100.000",
-        "Return 12-15% dalam 6 bulan",
-        "Tanaman sayuran organik",
-        "Monitoring bulanan",
-        "Garansi hasil 100%",
-        "Sertifikat kepemilikan"
+      installmentOptions: [
+        { period: "Per 5 Tahun", amount: 5000000, perTree: 500000 },
+        { period: "Per Tahun", amount: 1000000, perTree: 100000 },
+        { period: "Per Bulan", amount: 83333, perTree: 8333 }
       ],
-      plantType: "Sayuran Organik",
-      riskLevel: "Rendah"
+      features: [
+        "1 Pohon pilihan (Aren/Jengkol/Gaharu/Alpukat)",
+        "Proyeksi keuntungan Rp 5.400.000",
+        "Cicilan mulai Rp 8.333/bulan",
+        "Laporan berkala pertumbuhan",
+        "Sertifikat kepemilikan pohon",
+        "Transparansi penuh proses"
+      ],
+      plantType: "Multi-Komoditas",
+      riskLevel: "Bergantung Alam"
     },
     {
-      name: "Paket Standar",
-      price: "500.000",
-      duration: "12 Bulan",
-      returns: "18-22%",
+      name: "Paket 10 Pohon (Kavling)",
+      price: 5000000,
+      duration: "5 Tahun",
+      returns: "Rp 54.000.000",
       popular: true,
-      features: [
-        "Modal minimum Rp 500.000",
-        "Return 18-22% dalam 12 bulan",
-        "Tanaman buah premium",
-        "Monitoring mingguan",
-        "Garansi hasil 100%",
-        "Sertifikat kepemilikan",
-        "Bonus konsultasi gratis",
-        "Update foto progress"
+      installmentOptions: [
+        { period: "Per 5 Tahun", amount: 5000000, perTree: 500000 },
+        { period: "Per Tahun", amount: 1000000, perTree: 100000 },
+        { period: "Per Bulan", amount: 83333, perTree: 8333 }
       ],
-      plantType: "Buah Premium",
-      riskLevel: "Sedang"
-    },
-    {
-      name: "Paket Premium",
-      price: "1.000.000",
-      duration: "18 Bulan",
-      returns: "25-30%",
-      popular: false,
       features: [
-        "Modal minimum Rp 1.000.000",
-        "Return 25-30% dalam 18 bulan",
-        "Tanaman kayu berkualitas tinggi",
-        "Monitoring harian",
-        "Garansi hasil 100%",
-        "Sertifikat kepemilikan",
-        "Konsultasi ahli unlimited",
-        "Kunjungan lapangan gratis",
-        "Prioritas customer service"
+        "10 Pohon dalam 1 kavling",
+        "Proyeksi keuntungan Rp 54.000.000",
+        "Cicilan mulai Rp 83.333/bulan untuk 10 pohon",
+        "Pengelolaan profesional",
+        "Laporan berkala dan transparansi",
+        "Sertifikat kavling investasi",
+        "Kunjungan lokasi berkala",
+        "Dukungan tim ahli"
       ],
-      plantType: "Kayu Premium",
-      riskLevel: "Sedang-Tinggi"
+      plantType: "Kavling Multi-Komoditas",
+      riskLevel: "Bergantung Alam"
     }
   ];
 
@@ -73,17 +104,8 @@ export function InvestmentPlans() {
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
         </svg>
       ),
-      title: "Passive Income",
-      description: "Dapatkan penghasilan tanpa harus bekerja aktif"
-    },
-    {
-      icon: (
-        <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-        </svg>
-      ),
-      title: "Hasil Terjamin",
-      description: "100% garansi hasil sesuai proyeksi yang dijanjikan"
+      title: "Keuntungan Finansial",
+      description: "Tanaman produktif yang memberikan hasil bernilai tinggi setelah masa panen"
     },
     {
       icon: (
@@ -91,8 +113,8 @@ export function InvestmentPlans() {
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
         </svg>
       ),
-      title: "Diversifikasi Portfolio",
-      description: "Tambahkan aset riil ke dalam portfolio investasi Anda"
+      title: "Aset Jangka Panjang",
+      description: "Nilai tanaman bertambah seiring usia, cocok untuk tabungan masa depan"
     },
     {
       icon: (
@@ -100,8 +122,26 @@ export function InvestmentPlans() {
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
         </svg>
       ),
-      title: "Ramah Lingkungan",
-      description: "Investasi yang memberikan dampak positif bagi lingkungan"
+      title: "Kontribusi Lingkungan",
+      description: "Menjaga keseimbangan alam, mengurangi polusi, dan mendukung penghijauan"
+    },
+    {
+      icon: (
+        <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+        </svg>
+      ),
+      title: "Dampak Sosial",
+      description: "Membantu ekonomi petani dan masyarakat sekitar lokasi investasi"
+    },
+    {
+      icon: (
+        <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2-2v2m8 0V6a2 2 0 012 2v6a2 2 0 01-2 2H6a2 2 0 01-2-2V8a2 2 0 012-2V6" />
+        </svg>
+      ),
+      title: "Warisan Masa Depan",
+      description: "Tanaman yang bisa menjadi aset dan dapat diwariskan untuk generasi berikutnya"
     }
   ];
 
@@ -135,7 +175,7 @@ export function InvestmentPlans() {
           <p className="text-xl text-gray-600 max-w-4xl mx-auto leading-relaxed">
             Kami menyediakan berbagai paket investasi tanaman yang disesuaikan dengan
             kebutuhan dan kemampuan finansial Anda. Semua paket dilengkapi dengan
-            <strong className="text-emerald-600"> jaminan hasil 100%</strong> dan monitoring professional.
+            <strong className="text-red-600"> jaminan hasil 100%</strong> dan monitoring professional.
           </p>
         </div>
 
@@ -147,8 +187,8 @@ export function InvestmentPlans() {
             }`}>
               <div className={`bg-white rounded-lg p-8 lg:p-10 transition-all duration-300 group-hover:scale-102 ${
                 plan.popular
-                  ? 'border-2 border-emerald-500 bg-emerald-50/30'
-                  : 'border border-gray-200 hover:border-emerald-200'
+                  ? 'border-2 border-red-500 bg-red-50/30'
+                  : 'border border-gray-200 hover:border-red-200'
               }`}>
 
                 {plan.popular && (
@@ -166,7 +206,7 @@ export function InvestmentPlans() {
                 <div className="text-center mb-8">
                   <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-md text-sm font-semibold mb-4 ${
                     plan.popular
-                      ? 'bg-emerald-100 text-emerald-700'
+                      ? 'bg-red-100 text-red-700'
                       : 'bg-gray-100 text-gray-700'
                   }`}>
                     {plan.plantType}
@@ -179,7 +219,7 @@ export function InvestmentPlans() {
                       <div className="flex items-center justify-center gap-2 mb-1">
                         <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
                         <div className="text-4xl lg:text-5xl font-bold text-gray-900">
-                          Rp {plan.price.toLocaleString()}
+                          Rp {plan.price.toLocaleString('id-ID')}
                         </div>
                         <span className="text-lg font-normal text-gray-600 ml-2">min</span>
                       </div>
@@ -189,21 +229,21 @@ export function InvestmentPlans() {
 
                   <div className={`rounded-lg p-6 border-2 ${
                     plan.popular
-                      ? 'bg-emerald-600 text-white border-yellow-500'
-                      : 'bg-emerald-100 border-emerald-200'
+                      ? 'bg-red-600 text-white border-yellow-500'
+                      : 'bg-red-100 border-red-200'
                   }`}>
                     <div className="flex items-center justify-center gap-2 mb-2">
                       <div className={`w-3 h-3 rounded-full ${
-                        plan.popular ? 'bg-yellow-400' : 'bg-emerald-600'
+                        plan.popular ? 'bg-yellow-400' : 'bg-red-600'
                       }`}></div>
                       <div className={`text-3xl lg:text-4xl font-bold ${
-                        plan.popular ? 'text-white' : 'text-emerald-700'
+                        plan.popular ? 'text-white' : 'text-red-700'
                       }`}>
                         {plan.returns}
                       </div>
                     </div>
                     <div className={`text-sm font-medium text-center ${
-                      plan.popular ? 'text-emerald-100' : 'text-emerald-600'
+                      plan.popular ? 'text-red-100' : 'text-red-600'
                     }`}>
                       Projected Return
                     </div>
@@ -226,8 +266,8 @@ export function InvestmentPlans() {
                 <ul className="space-y-4 mb-10">
                   {plan.features.map((feature, featureIndex) => (
                     <li key={featureIndex} className="flex items-start gap-4">
-                      <div className="flex-shrink-0 w-6 h-6 bg-emerald-100 rounded-md flex items-center justify-center mt-0.5">
-                        <svg className="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <div className="flex-shrink-0 w-6 h-6 bg-red-100 rounded-md flex items-center justify-center mt-0.5">
+                        <svg className="w-4 h-4 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
                         </svg>
                       </div>
@@ -241,10 +281,12 @@ export function InvestmentPlans() {
                   variant={plan.popular ? "primary" : "outline"}
                   className={`w-full py-4 text-lg font-bold transition-all duration-200 ${
                     plan.popular
-                      ? 'bg-emerald-600 hover:bg-emerald-700 hover:scale-102'
-                      : 'border-2 border-emerald-500 text-emerald-600 hover:bg-emerald-500 hover:text-white hover:scale-102'
+                      ? 'bg-red-600 hover:bg-red-700 hover:scale-102'
+                      : 'border-2 border-red-500 text-red-600 hover:bg-red-500 hover:text-white hover:scale-102'
                   }`}
                   size="lg"
+                  onClick={() => handleInvestment(plan)}
+                  loading={isLoading === plan.name}
                 >
                   {plan.popular ? 'Pilih Paket Terpopuler' : 'Pilih Paket Ini'}
                 </Button>
@@ -256,17 +298,17 @@ export function InvestmentPlans() {
         {/* Benefits Section */}
         <div id="manfaat" className="bg-gray-50 rounded-2xl p-8 lg:p-12">
           <div className="text-center mb-12">
-            <h3 className="heading-secondary mb-4">Manfaat Investasi Tanaman</h3>
+            <h3 className="heading-secondary mb-4">Alasan Berinvestasi dengan Kami</h3>
             <p className="text-muted max-w-2xl mx-auto">
-              Investasi tanaman menawarkan keuntungan unik yang tidak bisa Anda dapatkan
-              dari instrumen investasi konvensional lainnya.
+              Investasi hijau yang memberikan keuntungan finansial sekaligus berkontribusi
+              pada kelestarian lingkungan dan kesejahteraan masyarakat.
             </p>
           </div>
 
-          <Grid cols={2}>
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {benefits.map((benefit, index) => (
-              <div key={index} className="flex items-start gap-4 p-6 bg-white rounded-xl">
-                <div className="flex-shrink-0 w-12 h-12 bg-green-100 rounded-lg flex-center">
+              <div key={index} className="flex flex-col items-start gap-4 p-6 bg-white rounded-xl">
+                <div className="flex-shrink-0 w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
                   {benefit.icon}
                 </div>
                 <div>
@@ -275,12 +317,12 @@ export function InvestmentPlans() {
                 </div>
               </div>
             ))}
-          </Grid>
+          </div>
         </div>
 
         {/* CTA Section */}
         <div className="mt-20">
-          <div className="bg-emerald-600 rounded-lg p-8 lg:p-16 text-white">
+          <div className="bg-gradient-to-r from-emerald-500 to-green-600 rounded-lg p-8 lg:p-16 text-white">
             <div className="text-center">
               <div className="inline-flex items-center gap-2 px-6 py-3 bg-white/20 backdrop-blur-sm rounded-md text-emerald-100 text-sm font-semibold mb-8">
                 <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
@@ -290,26 +332,27 @@ export function InvestmentPlans() {
               </div>
 
               <h3 className="text-3xl lg:text-5xl font-bold mb-6 leading-tight">
-                Mulai <span className="text-emerald-200">Investasi Hijau</span> Anda Hari Ini
+                <span className="text-emerald-200">Gabung Sekarang!</span>
               </h3>
 
               <p className="text-xl lg:text-2xl text-emerald-100 mb-10 max-w-3xl mx-auto leading-relaxed">
-                Bergabunglah dengan <strong className="text-white">5000+ investor</strong> yang telah merasakan keuntungan
-                dari investasi tanaman bersama kami. <strong className="text-white">Mulai dari Rp 100.000 saja!</strong>
+                <strong className="text-white">&quot;Bersama membangun masa depan hijau dan berkontribusi pada kelestarian lingkungan&quot;</strong>
+                <br />
+                Investasi Hijau, Hijaukan Bumi Sejahterakan Hati
               </p>
 
               <div className="flex flex-col sm:flex-row gap-6 justify-center">
                 <Button
                   variant="primary"
                   size="lg"
-                  className="bg-white text-emerald-700 hover:bg-emerald-50 font-bold px-10 py-4 text-lg transition-all duration-200 hover:scale-102"
+                  className="bg-white text-red-700 hover:bg-red-50 font-bold px-10 py-4 text-lg transition-all duration-200 hover:scale-102"
                 >
-                  🌱 Mulai Investasi Sekarang
+                  🌱 Gabung Sekarang!
                 </Button>
                 <Button
                   variant="outline"
                   size="lg"
-                  className="border-2 border-white text-white hover:bg-white hover:text-emerald-700 font-bold px-10 py-4 text-lg backdrop-blur-sm transition-all duration-200 hover:scale-102"
+                  className="border-2 border-white text-white hover:bg-white hover:text-red-700 font-bold px-10 py-4 text-lg backdrop-blur-sm transition-all duration-200 hover:scale-102"
                 >
                   📞 Konsultasi Gratis
                 </Button>

@@ -19,7 +19,9 @@ export async function POST(request: NextRequest) {
       city,
       province,
       postalCode,
-      occupation
+      occupation,
+      ktpImageUrl,
+      faceImageUrl
     } = body;
 
     // Log received data for debugging
@@ -34,12 +36,14 @@ export async function POST(request: NextRequest) {
       province: province ? 'Present' : 'Missing',
       postalCode: postalCode ? 'Present' : 'Missing',
       occupation: occupation ? 'Present' : 'Missing',
+      ktpImageUrl: ktpImageUrl ? 'Present' : 'Missing',
+      faceImageUrl: faceImageUrl ? 'Present' : 'Missing',
     });
 
     // Server-side validation
-    if (!fullName || !email || !phoneNumber || !password || !dateOfBirth || !address || !village || !city || !province || !postalCode || !occupation) {
+    if (!fullName || !email || !phoneNumber || !password || !dateOfBirth || !address || !village || !city || !province || !postalCode || !occupation || !ktpImageUrl || !faceImageUrl) {
       return NextResponse.json(
-        { error: 'Semua field wajib diisi' },
+        { error: 'Semua field wajib diisi, termasuk KTP dan foto wajah' },
         { status: 400 }
       );
     }
@@ -113,28 +117,7 @@ export async function POST(request: NextRequest) {
 
     // Validate date of birth
     const dobDate = new Date(dateOfBirth);
-    const today = new Date();
-    let age = today.getFullYear() - dobDate.getFullYear();
-    const monthDiff = today.getMonth() - dobDate.getMonth();
-    
-    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < dobDate.getDate())) {
-      age--;
-    }
-    
-    if (age < 17) {
-      return NextResponse.json(
-        { error: 'Minimal umur 17 tahun' },
-        { status: 400 }
-      );
-    }
 
-    // Validate address
-    if (address.length < 10) {
-      return NextResponse.json(
-        { error: 'Alamat minimal 10 karakter' },
-        { status: 400 }
-      );
-    }
 
     // Validate postal code
     if (!/^[0-9]{5}$/.test(postalCode)) {
@@ -223,6 +206,8 @@ export async function POST(request: NextRequest) {
       occupation: occupation.trim(),
       occupationCode: occupationCode,
       userCode: userCode,
+      ktpImageUrl: ktpImageUrl.trim(),
+      faceImageUrl: faceImageUrl.trim(),
       role: 'user',
       isEmailVerified: false,
       isPhoneVerified: false,
@@ -246,6 +231,8 @@ export async function POST(request: NextRequest) {
       occupation: user.occupation,
       occupationCode: user.occupationCode,
       userCode: user.userCode,
+      ktpImageUrl: user.ktpImageUrl,
+      faceImageUrl: user.faceImageUrl,
       role: user.role,
       isActive: user.isActive,
       createdAt: user.createdAt,
@@ -268,6 +255,8 @@ export async function POST(request: NextRequest) {
           occupation: user.occupation,
           occupationCode: user.occupationCode,
           userCode: user.userCode,
+          ktpImageUrl: user.ktpImageUrl,
+          faceImageUrl: user.faceImageUrl,
           role: user.role,
           isEmailVerified: user.isEmailVerified,
           isPhoneVerified: user.isPhoneVerified,
