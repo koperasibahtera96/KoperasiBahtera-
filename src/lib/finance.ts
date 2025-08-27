@@ -1,23 +1,48 @@
-export type Investor = { name: string; amount: number; date: string } // ISO date
-export type Plant = {
+"use client"
+
+export type Investor = { name: string; amount: number; date: string }
+
+export type OperationalCost = {
+  id: string
+  date: string
+  description: string
+  amount: number
+  category: "fertilizer" | "pesticide" | "labor" | "maintenance" | "other"
+  inputBy: string
+  inputDate: string
+}
+
+export type IncomeRecord = {
+  id: string
+  date: string
+  description: string
+  amount: number
+  addedBy: string
+  inputDate: string
+}
+
+export type PlantInstance = {
+  id: string
+  plantType: string
+  plantTypeName: string
+  instanceName: string
+  baseAnnualROI: number
+  payoutEveryMonths: number
+  investors: Investor[]
+  operationalCosts: OperationalCost[]
+  incomeRecords: IncomeRecord[]
+  location?: string
+  plantedDate: string
+  status: "active" | "inactive" | "harvested"
+}
+
+export type PlantType = {
   id: string
   name: string
-  annualROI: number // 0.125 = 12.5% / tahun
-  payoutEveryMonths: number // 2 atau 3
-  investors: Investor[]
+  baseAnnualROI: number
+  payoutEveryMonths: number
+  description?: string
 }
-
-export type MonthlyRow = {
-  ym: string // YYYY-MM
-  newInvest: number
-  capital: number // modal akhir bulan
-  accrual: number // akrual bulan ini
-  accrualSinceLastPayout: number // saldo akrual menunggu payout
-  payout: number // dibayarkan di bulan ini
-}
-
-export type YearlyRow = { year: number; invest: number; profit: number; roiPct: number }
-export type InvestorSummary = { name: string; invest: number; profit: number; roiPct: number }
 
 export type Member = {
   id: string
@@ -33,880 +58,692 @@ export type Member = {
     profit: number
     roi: number
     investDate: string
+    totalUang?: number
   }[]
   totalInvestment: number
   totalProfit: number
   overallROI: number
 }
 
-export const PLANTS: Plant[] = [
+export const PLANT_TYPES: PlantType[] = [
   {
     id: "gaharu",
     name: "Gaharu",
-    annualROI: 0.125,
+    baseAnnualROI: 0.125,
     payoutEveryMonths: 2,
-    investors: [
-      { name: "Andi", amount: 70_000_000, date: "2024-01-10" },
-      { name: "Sari", amount: 80_000_000, date: "2024-02-18" },
-      { name: "Dewa", amount: 50_000_000, date: "2024-06-02" },
-      { name: "Lina", amount: 50_000_000, date: "2024-09-15" },
-    ],
+    description: "Tanaman penghasil resin aromatik bernilai tinggi",
   },
   {
     id: "alpukat",
     name: "Alpukat",
-    annualROI: 0.2,
+    baseAnnualROI: 0.2,
     payoutEveryMonths: 3,
-    investors: [
-      { name: "Raka", amount: 30_000_000, date: "2025-01-05" },
-      { name: "Nina", amount: 20_000_000, date: "2025-03-12" },
-    ],
+    description: "Tanaman buah dengan permintaan pasar tinggi",
   },
   {
     id: "jengkol",
     name: "Jengkol",
-    annualROI: 0.15,
+    baseAnnualROI: 0.15,
     payoutEveryMonths: 2,
-    investors: [
-      { name: "Ahmad Suryadi", amount: 50_000_000, date: "2024-01-15" },
-      { name: "Siti Nurhaliza", amount: 75_000_000, date: "2024-03-20" },
-      { name: "Budi Santoso", amount: 60_000_000, date: "2024-05-10" },
-    ],
+    description: "Tanaman polong dengan nilai ekonomi stabil",
   },
   {
     id: "aren",
     name: "Aren",
-    annualROI: 0.18,
+    baseAnnualROI: 0.18,
     payoutEveryMonths: 3,
-    investors: [
-      { name: "Dewi Sartika", amount: 40_000_000, date: "2024-02-01" },
-      { name: "Rizki Pratama", amount: 55_000_000, date: "2024-04-15" },
-    ],
-  },
-  {
-    id: "kelapa-sawit",
-    name: "Kelapa Sawit",
-    annualROI: 0.22,
-    payoutEveryMonths: 2,
-    investors: [
-      { name: "Indra Gunawan", amount: 100_000_000, date: "2024-01-05" },
-      { name: "Maya Sari", amount: 85_000_000, date: "2024-02-20" },
-      { name: "Tono Wijaya", amount: 70_000_000, date: "2024-06-01" },
-    ],
-  },
-  {
-    id: "karet",
-    name: "Karet",
-    annualROI: 0.16,
-    payoutEveryMonths: 3,
-    investors: [
-      { name: "Fajar Nugroho", amount: 45_000_000, date: "2024-03-10" },
-      { name: "Lestari Wati", amount: 65_000_000, date: "2024-05-25" },
-    ],
-  },
-  {
-    id: "cengkeh",
-    name: "Cengkeh",
-    annualROI: 0.19,
-    payoutEveryMonths: 2,
-    investors: [
-      { name: "Hendra Kusuma", amount: 80_000_000, date: "2024-01-20" },
-      { name: "Ratna Dewi", amount: 90_000_000, date: "2024-04-05" },
-      { name: "Agus Salim", amount: 55_000_000, date: "2024-07-15" },
-    ],
-  },
-  {
-    id: "pala",
-    name: "Pala",
-    annualROI: 0.21,
-    payoutEveryMonths: 3,
-    investors: [
-      { name: "Sari Indah", amount: 35_000_000, date: "2024-02-10" },
-      { name: "Bambang Sutrisno", amount: 75_000_000, date: "2024-05-20" },
-    ],
-  },
-  {
-    id: "vanili",
-    name: "Vanili",
-    annualROI: 0.25,
-    payoutEveryMonths: 2,
-    investors: [
-      { name: "Wulan Dari", amount: 120_000_000, date: "2024-01-01" },
-      { name: "Dedi Kurniawan", amount: 95_000_000, date: "2024-03-15" },
-      { name: "Eka Putri", amount: 60_000_000, date: "2024-06-10" },
-    ],
-  },
-  {
-    id: "lada",
-    name: "Lada",
-    annualROI: 0.17,
-    payoutEveryMonths: 3,
-    investors: [
-      { name: "Yudi Hermawan", amount: 50_000_000, date: "2024-02-05" },
-      { name: "Nita Sari", amount: 70_000_000, date: "2024-04-20" },
-    ],
-  },
-  {
-    id: "kayu-manis",
-    name: "Kayu Manis",
-    annualROI: 0.14,
-    payoutEveryMonths: 2,
-    investors: [
-      { name: "Rudi Hartono", amount: 40_000_000, date: "2024-01-25" },
-      { name: "Sinta Dewi", amount: 65_000_000, date: "2024-05-10" },
-      { name: "Joni Iskandar", amount: 55_000_000, date: "2024-08-01" },
-    ],
-  },
-  {
-    id: "kemiri",
-    name: "Kemiri",
-    annualROI: 0.13,
-    payoutEveryMonths: 3,
-    investors: [
-      { name: "Fitri Handayani", amount: 30_000_000, date: "2024-03-01" },
-      { name: "Wahyu Setiawan", amount: 45_000_000, date: "2024-06-15" },
-    ],
-  },
-  {
-    id: "kapuk",
-    name: "Kapuk",
-    annualROI: 0.12,
-    payoutEveryMonths: 2,
-    investors: [
-      { name: "Dian Sastro", amount: 35_000_000, date: "2024-02-15" },
-      { name: "Eko Prasetyo", amount: 50_000_000, date: "2024-05-05" },
-      { name: "Rina Marlina", amount: 40_000_000, date: "2024-07-20" },
-    ],
-  },
-  {
-    id: "jahe-merah",
-    name: "Jahe Merah",
-    annualROI: 0.2,
-    payoutEveryMonths: 3,
-    investors: [
-      { name: "Bayu Aji", amount: 25_000_000, date: "2024-01-10" },
-      { name: "Citra Kirana", amount: 40_000_000, date: "2024-04-25" },
-    ],
-  },
-  {
-    id: "kunyit",
-    name: "Kunyit",
-    annualROI: 0.15,
-    payoutEveryMonths: 2,
-    investors: [
-      { name: "Gilang Ramadhan", amount: 30_000_000, date: "2024-02-20" },
-      { name: "Hani Pertiwi", amount: 45_000_000, date: "2024-06-05" },
-      { name: "Ivan Gunawan", amount: 35_000_000, date: "2024-08-10" },
-    ],
-  },
-  {
-    id: "temulawak",
-    name: "Temulawak",
-    annualROI: 0.16,
-    payoutEveryMonths: 3,
-    investors: [
-      { name: "Joko Widodo", amount: 60_000_000, date: "2024-01-15" },
-      { name: "Kartika Sari", amount: 55_000_000, date: "2024-04-10" },
-    ],
-  },
-  {
-    id: "lengkuas",
-    name: "Lengkuas",
-    annualROI: 0.14,
-    payoutEveryMonths: 2,
-    investors: [
-      { name: "Lukman Hakim", amount: 40_000_000, date: "2024-03-05" },
-      { name: "Mega Wati", amount: 50_000_000, date: "2024-06-20" },
-      { name: "Nanda Arsyad", amount: 35_000_000, date: "2024-09-01" },
-    ],
-  },
-  {
-    id: "kencur",
-    name: "Kencur",
-    annualROI: 0.13,
-    payoutEveryMonths: 3,
-    investors: [
-      { name: "Omar Sharif", amount: 25_000_000, date: "2024-02-01" },
-      { name: "Putri Duyung", amount: 35_000_000, date: "2024-05-15" },
-    ],
-  },
-  {
-    id: "serai",
-    name: "Serai",
-    annualROI: 0.11,
-    payoutEveryMonths: 2,
-    investors: [
-      { name: "Qori Sandioriva", amount: 20_000_000, date: "2024-01-30" },
-      { name: "Reza Rahadian", amount: 30_000_000, date: "2024-04-15" },
-      { name: "Sari Nila", amount: 25_000_000, date: "2024-07-01" },
-    ],
-  },
-  {
-    id: "pandan",
-    name: "Pandan",
-    annualROI: 0.12,
-    payoutEveryMonths: 3,
-    investors: [
-      { name: "Tika Panc", amount: 30_000_000, date: "2024-02-25" },
-      { name: "Udin Sedunia", amount: 40_000_000, date: "2024-06-10" },
-    ],
-  },
-  {
-    id: "daun-salam",
-    name: "Daun Salam",
-    annualROI: 0.1,
-    payoutEveryMonths: 2,
-    investors: [
-      { name: "Vina Candrawati", amount: 15_000_000, date: "2024-03-10" },
-      { name: "Wawan Setiawan", amount: 25_000_000, date: "2024-06-25" },
-      { name: "Xenia Gratia", amount: 20_000_000, date: "2024-09-05" },
-    ],
-  },
-  {
-    id: "jeruk-nipis",
-    name: "Jeruk Nipis",
-    annualROI: 0.14,
-    payoutEveryMonths: 3,
-    investors: [
-      { name: "Yanto Basuki", amount: 35_000_000, date: "2024-01-20" },
-      { name: "Zara Adhisty", amount: 45_000_000, date: "2024-05-01" },
-    ],
-  },
-  {
-    id: "belimbing",
-    name: "Belimbing",
-    annualROI: 0.15,
-    payoutEveryMonths: 2,
-    investors: [
-      { name: "Arief Rahman", amount: 50_000_000, date: "2024-02-10" },
-      { name: "Bella Saphira", amount: 60_000_000, date: "2024-05-20" },
-      { name: "Cakra Khan", amount: 40_000_000, date: "2024-08-15" },
-    ],
-  },
-  {
-    id: "jambu-biji",
-    name: "Jambu Biji",
-    annualROI: 0.13,
-    payoutEveryMonths: 3,
-    investors: [
-      { name: "Dimas Anggara", amount: 30_000_000, date: "2024-01-05" },
-      { name: "Enzy Storia", amount: 40_000_000, date: "2024-04-20" },
-    ],
-  },
-  {
-    id: "rambutan",
-    name: "Rambutan",
-    annualROI: 0.16,
-    payoutEveryMonths: 2,
-    investors: [
-      { name: "Fedi Nuril", amount: 45_000_000, date: "2024-03-15" },
-      { name: "Gita Gutawa", amount: 55_000_000, date: "2024-06-30" },
-      { name: "Hamish Daud", amount: 35_000_000, date: "2024-09-10" },
-    ],
-  },
-  {
-    id: "duku",
-    name: "Duku",
-    annualROI: 0.17,
-    payoutEveryMonths: 3,
-    investors: [
-      { name: "Iko Uwais", amount: 60_000_000, date: "2024-02-05" },
-      { name: "Julie Estelle", amount: 50_000_000, date: "2024-05-25" },
-    ],
-  },
-  {
-    id: "langsat",
-    name: "Langsat",
-    annualROI: 0.14,
-    payoutEveryMonths: 2,
-    investors: [
-      { name: "Kevin Aprilio", amount: 40_000_000, date: "2024-01-25" },
-      { name: "Luna Maya", amount: 65_000_000, date: "2024-04-10" },
-      { name: "Morgan Oey", amount: 45_000_000, date: "2024-07-25" },
-    ],
-  },
-  {
-    id: "salak",
-    name: "Salak",
-    annualROI: 0.15,
-    payoutEveryMonths: 3,
-    investors: [
-      { name: "Nirina Zubir", amount: 35_000_000, date: "2024-02-15" },
-      { name: "Oka Antara", amount: 50_000_000, date: "2024-06-01" },
-    ],
-  },
-  {
-    id: "manggis",
-    name: "Manggis",
-    annualROI: 0.18,
-    payoutEveryMonths: 2,
-    investors: [
-      { name: "Pevita Pearce", amount: 70_000_000, date: "2024-03-01" },
-      { name: "Qory Sandioriva", amount: 55_000_000, date: "2024-06-15" },
-      { name: "Raditya Dika", amount: 40_000_000, date: "2024-09-20" },
-    ],
-  },
-  {
-    id: "durian",
-    name: "Durian",
-    annualROI: 0.2,
-    payoutEveryMonths: 3,
-    investors: [
-      { name: "Sheila Dara", amount: 80_000_000, date: "2024-01-10" },
-      { name: "Tarra Budiman", amount: 75_000_000, date: "2024-04-25" },
-    ],
-  },
-  {
-    id: "nangka",
-    name: "Nangka",
-    annualROI: 0.16,
-    payoutEveryMonths: 2,
-    investors: [
-      { name: "Umay Shahab", amount: 45_000_000, date: "2024-02-20" },
-      { name: "Vanesha Prescilla", amount: 60_000_000, date: "2024-05-10" },
-      { name: "Wulan Guritno", amount: 50_000_000, date: "2024-08-05" },
-    ],
-  },
-  {
-    id: "sukun",
-    name: "Sukun",
-    annualROI: 0.12,
-    payoutEveryMonths: 3,
-    investors: [
-      { name: "Xavier Mau", amount: 30_000_000, date: "2024-01-15" },
-      { name: "Yuki Kato", amount: 40_000_000, date: "2024-05-05" },
-    ],
-  },
-  {
-    id: "kluwek",
-    name: "Kluwek",
-    annualROI: 0.13,
-    payoutEveryMonths: 2,
-    investors: [
-      { name: "Zaskia Gotik", amount: 25_000_000, date: "2024-03-20" },
-      { name: "Adipati Dolken", amount: 35_000_000, date: "2024-07-10" },
-      { name: "Bunga Zainal", amount: 30_000_000, date: "2024-10-01" },
-    ],
-  },
-  {
-    id: "petai",
-    name: "Petai",
-    annualROI: 0.14,
-    payoutEveryMonths: 3,
-    investors: [
-      { name: "Chelsea Islan", amount: 40_000_000, date: "2024-02-01" },
-      { name: "Dion Wiyoko", amount: 50_000_000, date: "2024-06-20" },
-    ],
-  },
-  {
-    id: "melinjo",
-    name: "Melinjo",
-    annualROI: 0.11,
-    payoutEveryMonths: 2,
-    investors: [
-      { name: "Ernest Prakasa", amount: 20_000_000, date: "2024-01-30" },
-      { name: "Fachri Albar", amount: 30_000_000, date: "2024-04-15" },
-      { name: "Gading Marten", amount: 25_000_000, date: "2024-07-30" },
-    ],
-  },
-  {
-    id: "kemang",
-    name: "Kemang",
-    annualROI: 0.15,
-    payoutEveryMonths: 3,
-    investors: [
-      { name: "Hannah Al Rashid", amount: 45_000_000, date: "2024-02-25" },
-      { name: "Ibnu Jamil", amount: 55_000_000, date: "2024-06-10" },
-    ],
-  },
-  {
-    id: "bisbul",
-    name: "Bisbul",
-    annualROI: 0.12,
-    payoutEveryMonths: 2,
-    investors: [
-      { name: "Jefri Nichol", amount: 35_000_000, date: "2024-03-10" },
-      { name: "Kimberly Ryder", amount: 40_000_000, date: "2024-06-25" },
-      { name: "Lukman Sardi", amount: 30_000_000, date: "2024-09-15" },
-    ],
-  },
-  {
-    id: "ceremai",
-    name: "Ceremai",
-    annualROI: 0.13,
-    payoutEveryMonths: 3,
-    investors: [
-      { name: "Marsha Timothy", amount: 50_000_000, date: "2024-01-20" },
-      { name: "Nicholas Saputra", amount: 60_000_000, date: "2024-05-01" },
-    ],
-  },
-  {
-    id: "kedondong",
-    name: "Kedondong",
-    annualROI: 0.14,
-    payoutEveryMonths: 2,
-    investors: [
-      { name: "Oka Antara", amount: 40_000_000, date: "2024-02-10" },
-      { name: "Prisia Nasution", amount: 45_000_000, date: "2024-05-20" },
-      { name: "Qausar Harta", amount: 35_000_000, date: "2024-08-15" },
-    ],
-  },
-  {
-    id: "gandaria",
-    name: "Gandaria",
-    annualROI: 0.16,
-    payoutEveryMonths: 3,
-    investors: [
-      { name: "Raihaanun", amount: 55_000_000, date: "2024-01-05" },
-      { name: "Surya Saputra", amount: 65_000_000, date: "2024-04-20" },
-    ],
-  },
-  {
-    id: "matoa",
-    name: "Matoa",
-    annualROI: 0.17,
-    payoutEveryMonths: 2,
-    investors: [
-      { name: "Tara Basro", amount: 70_000_000, date: "2024-03-15" },
-      { name: "Uus", amount: 50_000_000, date: "2024-06-30" },
-      { name: "Vino G Bastian", amount: 45_000_000, date: "2024-09-10" },
-    ],
-  },
-  {
-    id: "kweni",
-    name: "Kweni",
-    annualROI: 0.15,
-    payoutEveryMonths: 3,
-    investors: [
-      { name: "Widyawati", amount: 40_000_000, date: "2024-02-05" },
-      { name: "Yoga Pratama", amount: 50_000_000, date: "2024-05-25" },
-    ],
-  },
-  {
-    id: "sawo",
-    name: "Sawo",
-    annualROI: 0.13,
-    payoutEveryMonths: 2,
-    investors: [
-      { name: "Zara Leola", amount: 30_000_000, date: "2024-01-25" },
-      { name: "Arya Saloka", amount: 40_000_000, date: "2024-04-10" },
-      { name: "Bunga Citra", amount: 35_000_000, date: "2024-07-25" },
-    ],
-  },
-  {
-    id: "jamblang",
-    name: "Jamblang",
-    annualROI: 0.14,
-    payoutEveryMonths: 3,
-    investors: [
-      { name: "Cut Syifa", amount: 45_000_000, date: "2024-02-15" },
-      { name: "Denny Sumargo", amount: 55_000_000, date: "2024-06-01" },
-    ],
-  },
-  {
-    id: "wuni",
-    name: "Wuni",
-    annualROI: 0.12,
-    payoutEveryMonths: 2,
-    investors: [
-      { name: "Endy Arfian", amount: 25_000_000, date: "2024-03-01" },
-      { name: "Febby Rastanty", amount: 35_000_000, date: "2024-06-15" },
-      { name: "Giorgino Abraham", amount: 30_000_000, date: "2024-09-20" },
-    ],
-  },
-  {
-    id: "kepel",
-    name: "Kepel",
-    annualROI: 0.11,
-    payoutEveryMonths: 3,
-    investors: [
-      { name: "Herjunot Ali", amount: 20_000_000, date: "2024-01-10" },
-      { name: "Isyana Sarasvati", amount: 30_000_000, date: "2024-04-25" },
-    ],
-  },
-  {
-    id: "lobi-lobi",
-    name: "Lobi-lobi",
-    annualROI: 0.13,
-    payoutEveryMonths: 2,
-    investors: [
-      { name: "Jessica Mila", amount: 40_000_000, date: "2024-02-20" },
-      { name: "Kevin Julio", amount: 45_000_000, date: "2024-05-10" },
-      { name: "Laura Basuki", amount: 35_000_000, date: "2024-08-05" },
-    ],
+    description: "Tanaman penghasil gula aren dan nira",
   },
 ]
 
-// helpers (pure)
-const startOfMonth = (d: Date) => new Date(d.getFullYear(), d.getMonth(), 1)
-const endOfMonth = (d: Date) => new Date(d.getFullYear(), d.getMonth() + 1, 0)
-const addMonths = (d: Date, m: number) => new Date(d.getFullYear(), d.getMonth() + m, 1)
-const ymKey = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`
-
-function formatNumberForCSV(amount: number): string {
-  return amount.toString()
-}
-
-function formatCurrencyForCSV(amount: number): string {
-  return `Rp ${amount}`
-}
-
-export function generateReport(plant: Plant, until: Date = new Date()) {
-  const invs = [...plant.investors].sort((a, b) => a.date.localeCompare(b.date))
-  if (!invs.length)
-    return {
-      monthly: [] as MonthlyRow[],
-      yearly: [] as YearlyRow[],
-      perInvestor: [] as InvestorSummary[],
-      totals: { invest: 0, profit: 0, roiPct: 0, investors: 0 },
-    } as const
-
-  const first = startOfMonth(new Date(invs[0].date))
-  const last = startOfMonth(until)
-
-  const monthly: MonthlyRow[] = []
-  const perInvestorInvest = new Map<string, number>()
-  const perInvestorProfit = new Map<string, number>()
-  const investorCapital = new Map<string, number>()
-
-  let capital = 0
-  let accrualCarry = 0
-  const monthlyRate = plant.annualROI / 12
-
-  let i = 0 // pointer
-  let step = 0 // bulan berjalan
-
-  for (let d = new Date(first); d <= last; d = addMonths(d, 1)) {
-    const ym = ymKey(d)
-    const mStart = startOfMonth(d)
-    const mEnd = endOfMonth(d)
-
-    // investasi baru di bulan ini
-    let newInvest = 0
-    while (i < invs.length) {
-      const invDate = new Date(invs[i].date)
-      if (invDate >= mStart && invDate <= mEnd) {
-        newInvest += invs[i].amount
-        capital += invs[i].amount
-        perInvestorInvest.set(invs[i].name, (perInvestorInvest.get(invs[i].name) || 0) + invs[i].amount)
-        investorCapital.set(invs[i].name, (investorCapital.get(invs[i].name) || 0) + invs[i].amount)
-        i++
-      } else if (invDate < mStart) {
-        // fallback
-        capital += invs[i].amount
-        perInvestorInvest.set(invs[i].name, (perInvestorInvest.get(invs[i].name) || 0) + invs[i].amount)
-        investorCapital.set(invs[i].name, (investorCapital.get(invs[i].name) || 0) + invs[i].amount)
-        i++
-      } else break
-    }
-
-    // akrual bulan ini
-    const accrual = capital * monthlyRate
-    accrualCarry += accrual
-
-    // payout?
-    step++
-    let payout = 0
-    if (step % plant.payoutEveryMonths === 0 && capital > 0) {
-      payout = accrualCarry
-      for (const [name, cap] of investorCapital.entries()) {
-        const share = cap / capital // porsi modal
-        perInvestorProfit.set(name, (perInvestorProfit.get(name) || 0) + payout * share)
-      }
-      accrualCarry = 0
-    }
-
-    monthly.push({
-      ym,
-      newInvest,
-      capital,
-      accrual,
-      accrualSinceLastPayout: accrualCarry,
-      payout,
-    })
-  }
-
-  // ringkasan per tahun
-  const byYear = new Map<number, { invest: number; profit: number }>()
-  let totalInvest = 0
-  let totalProfit = 0
-  for (const m of monthly) {
-    const y = Number(m.ym.slice(0, 4))
-    const ent = byYear.get(y) ?? { invest: 0, profit: 0 }
-    ent.invest += m.newInvest
-    ent.profit += m.payout
-    byYear.set(y, ent)
-    totalInvest += m.newInvest
-    totalProfit += m.payout
-  }
-  const yearly: YearlyRow[] = Array.from(byYear.entries()).map(([year, v]) => ({
-    year,
-    invest: v.invest,
-    profit: v.profit,
-    roiPct: v.invest > 0 ? (v.profit / v.invest) * 100 : 0,
-  }))
-
-  // per-investor
-  const perInvestor: InvestorSummary[] = Array.from(
-    new Set([...perInvestorInvest.keys(), ...perInvestorProfit.keys()]),
-  ).map((name) => {
-    const invest = perInvestorInvest.get(name) || 0
-    const profit = perInvestorProfit.get(name) || 0
-    return { name, invest, profit, roiPct: invest > 0 ? (profit / invest) * 100 : 0 }
-  })
-
-  const totals = {
-    invest: totalInvest,
-    profit: totalProfit,
-    roiPct: totalInvest > 0 ? (totalProfit / totalInvest) * 100 : 0,
-    investors: perInvestor.length,
-  }
-
-  return { monthly, yearly, perInvestor, totals } as const
-}
-
-// Tiny runtime tests (very small sanity checks)
-if (typeof window !== "undefined") {
-  const tPlant: Plant = {
-    id: "t",
-    name: "Test",
-    annualROI: 0.24,
+export const PLANT_INSTANCES: PlantInstance[] = [
+  {
+    id: "gaharu-001",
+    plantType: "gaharu",
+    plantTypeName: "Gaharu",
+    instanceName: "Gaharu #001",
+    baseAnnualROI: 0.125,
     payoutEveryMonths: 2,
-    investors: [{ name: "X", amount: 1_200_000, date: "2025-01-01" }],
-  }
-  const t = generateReport(tPlant, new Date("2025-03-01"))
-  const jan = t.monthly.find((r) => r.ym === "2025-01")
-  const feb = t.monthly.find((r) => r.ym === "2025-02")
-  console.assert(Math.round(jan?.accrual || 0) === 24_000, "Jan accrual should be 24k")
-  console.assert(Math.round(feb?.payout || 0) === 48_000, "Feb payout should be 48k")
-}
+    investors: [
+      { name: "Ahmad Suryadi", amount: 50000000, date: "2024-01-15" },
+      { name: "Siti Nurhaliza", amount: 75000000, date: "2024-03-20" },
+    ],
+    operationalCosts: [
+      {
+        id: "oc-001",
+        date: "2024-01-20",
+        description: "Pupuk organik",
+        amount: 500000,
+        category: "fertilizer",
+        inputBy: "Admin",
+        inputDate: "2024-01-20",
+      },
+    ],
+    incomeRecords: [
+      {
+        id: "ir-001",
+        date: "2024-02-15",
+        description: "Hasil panen perdana",
+        amount: 2000000,
+        addedBy: "Admin",
+        inputDate: "2024-02-15",
+      },
+    ],
+    location: "Kebun A, Blok 1",
+    plantedDate: "2024-01-01",
+    status: "active",
+  },
+  {
+    id: "alpukat-001",
+    plantType: "alpukat",
+    plantTypeName: "Alpukat",
+    instanceName: "Alpukat #001",
+    baseAnnualROI: 0.2,
+    payoutEveryMonths: 3,
+    investors: [{ name: "Budi Santoso", amount: 30000000, date: "2024-02-10" }],
+    operationalCosts: [],
+    incomeRecords: [],
+    location: "Kebun B, Blok 2",
+    plantedDate: "2024-02-01",
+    status: "active",
+  },
+  {
+    id: "jengkol-001",
+    plantType: "jengkol",
+    plantTypeName: "Jengkol",
+    instanceName: "Jengkol #001",
+    baseAnnualROI: 0.15,
+    payoutEveryMonths: 2,
+    investors: [{ name: "Siti Nurhaliza", amount: 25000000, date: "2024-04-05" }],
+    operationalCosts: [],
+    incomeRecords: [],
+    location: "Kebun C, Blok 1",
+    plantedDate: "2024-04-01",
+    status: "active",
+  },
+  {
+    id: "aren-001",
+    plantType: "aren",
+    plantTypeName: "Aren",
+    instanceName: "Aren #001",
+    baseAnnualROI: 0.18,
+    payoutEveryMonths: 3,
+    investors: [{ name: "Dewi Sartika", amount: 40000000, date: "2024-05-12" }],
+    operationalCosts: [],
+    incomeRecords: [],
+    location: "Kebun D, Blok 3",
+    plantedDate: "2024-05-01",
+    status: "active",
+  },
+]
 
-export function exportMonthlyReportCSV(plant: Plant, year?: number): string {
-  const report = generateReport(plant)
-  const monthlyData = year ? report.monthly.filter((row) => row.ym.startsWith(year.toString())) : report.monthly
+export async function getTopPlantTypesByInvestment(limit = 2) {
+  // Simulate async operation
+  await new Promise((resolve) => setTimeout(resolve, 100))
 
-  const headers = ["Bulan", "Investasi Baru", "Modal Akhir", "Akrual Bulan Ini", "Akrual Tertunda", "Payout"]
+  // Calculate totals for each plant type
+  const plantTypeSummaries = PLANT_TYPES.map((type) => {
+    const instances = PLANT_INSTANCES.filter((instance) => instance.plantType === type.id)
 
-  const rows = monthlyData.map((row) => [
-    row.ym,
-    formatCurrencyForCSV(row.newInvest),
-    formatCurrencyForCSV(row.capital),
-    formatCurrencyForCSV(row.accrual),
-    formatCurrencyForCSV(row.accrualSinceLastPayout),
-    formatCurrencyForCSV(row.payout),
-  ])
+    const totalInvestment = instances.reduce(
+      (sum, instance) => sum + instance.investors.reduce((invSum, inv) => invSum + inv.amount, 0),
+      0,
+    )
 
-  return [headers, ...rows].map((row) => row.join(";")).join("\n")
-}
+    const totalProfit = instances.reduce((sum, instance) => {
+      const totalIncome = instance.incomeRecords.reduce((incSum, inc) => incSum + inc.amount, 0)
+      const totalCosts = instance.operationalCosts.reduce((costSum, cost) => costSum + cost.amount, 0)
+      return sum + (totalIncome - totalCosts)
+    }, 0)
 
-export function exportYearlyReportCSV(plant: Plant): string {
-  const report = generateReport(plant)
+    const roi = totalInvestment > 0 ? (totalProfit / totalInvestment) * 100 : 0
+    const investorCount = instances.reduce((sum, instance) => sum + instance.investors.length, 0)
+    const instanceCount = instances.length
 
-  const headers = ["Tahun", "Total Investasi", "Total Keuntungan", "ROI (%)"]
-
-  const rows = report.yearly.map((row) => [
-    row.year.toString(),
-    formatCurrencyForCSV(row.invest),
-    formatCurrencyForCSV(row.profit),
-    `${row.roiPct.toFixed(2)}%`,
-  ])
-
-  return [headers, ...rows].map((row) => row.join(";")).join("\n")
-}
-
-export function exportInvestorReportCSV(plant: Plant): string {
-  const report = generateReport(plant)
-
-  const headers = ["Nama Investor", "Total Investasi", "Total Keuntungan", "ROI (%)"]
-
-  const rows = report.perInvestor.map((investor) => [
-    investor.name,
-    formatCurrencyForCSV(investor.invest),
-    formatCurrencyForCSV(investor.profit),
-    `${investor.roiPct.toFixed(2)}%`,
-  ])
-
-  return [headers, ...rows].map((row) => row.join(";")).join("\n")
-}
-
-export function exportCompleteReportCSV(plant: Plant): string {
-  const report = generateReport(plant)
-
-  let csv = `Laporan Lengkap - ${plant.name}\n\n`
-
-  // Summary
-  csv += `RINGKASAN\n`
-  csv += `Keterangan;Nilai\n`
-  csv += `Total Investasi;${formatCurrencyForCSV(report.totals.invest)}\n`
-  csv += `Total Keuntungan;${formatCurrencyForCSV(report.totals.profit)}\n`
-  csv += `ROI;${report.totals.roiPct.toFixed(2)}%\n`
-  csv += `Jumlah Investor;${report.totals.investors}\n\n`
-
-  // Monthly Report
-  csv += `LAPORAN BULANAN\n`
-  csv += exportMonthlyReportCSV(plant) + "\n\n"
-
-  // Yearly Report
-  csv += `LAPORAN TAHUNAN\n`
-  csv += exportYearlyReportCSV(plant) + "\n\n"
-
-  // Investor Report
-  csv += `LAPORAN PER INVESTOR\n`
-  csv += exportInvestorReportCSV(plant) + "\n"
-
-  return csv
-}
-
-export function downloadCSV(filename: string, csvContent: string): void {
-  const BOM = "\uFEFF"
-  const blob = new Blob([BOM + csvContent], { type: "text/csv;charset=utf-8;" })
-  const link = document.createElement("a")
-
-  if (link.download !== undefined) {
-    const url = URL.createObjectURL(blob)
-    link.setAttribute("href", url)
-    link.setAttribute("download", filename)
-    link.style.visibility = "hidden"
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
-  }
-}
-
-// Original formatCurrency function is kept for reference
-function formatCurrency(amount: number): string {
-  return new Intl.NumberFormat("id-ID", {
-    style: "currency",
-    currency: "IDR",
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
+    return {
+      id: type.id,
+      name: type.name,
+      totalInvestment,
+      totalProfit: Math.max(0, totalProfit), // Ensure profit is never negative
+      roi,
+      investorCount,
+      instanceCount,
+    }
   })
-    .format(amount)
-    .replace("IDR", "Rp")
+
+  return plantTypeSummaries.sort((a, b) => b.totalInvestment - a.totalInvestment).slice(0, limit)
+}
+
+export function generateDailyReportsForDate(date: Date) {
+  const dateStr = date.toISOString().split("T")[0]
+
+  const dailyOperationalCosts = PLANT_INSTANCES.flatMap((instance) =>
+    instance.operationalCosts
+      .filter((cost) => cost.date === dateStr)
+      .map((cost) => ({
+        ...cost,
+        plantName: instance.instanceName,
+        plantType: instance.plantTypeName,
+      })),
+  )
+
+  const dailyIncome = PLANT_INSTANCES.reduce((total, instance) => {
+    const dailyIncomeRecords = instance.incomeRecords.filter((record) => record.date === dateStr)
+    return total + dailyIncomeRecords.reduce((sum, record) => sum + record.amount, 0)
+  }, 0)
+
+  const totalExpenses = dailyOperationalCosts.reduce((sum, cost) => sum + cost.amount, 0)
+  const netProfit = dailyIncome - totalExpenses
+
+  return {
+    date: dateStr,
+    income: dailyIncome,
+    expenses: totalExpenses,
+    netProfit: netProfit,
+    transactions: dailyOperationalCosts,
+    summary: {
+      totalTransactions: dailyOperationalCosts.length,
+      avgTransactionAmount: dailyOperationalCosts.length > 0 ? totalExpenses / dailyOperationalCosts.length : 0,
+    },
+  }
 }
 
 export function generateMemberData(): Member[] {
-  const members: Member[] = []
-
-  // Get all unique investors from all plants
-  const allInvestors = new Map<
-    string,
+  const members: Member[] = [
     {
-      name: string
-      investments: Array<{
-        plantId: string
-        plantName: string
-        amount: number
-        investDate: string
-      }>
-    }
-  >()
-
-  // Collect all investments per investor
-  PLANTS.forEach((plant) => {
-    plant.investors.forEach((investor) => {
-      if (!allInvestors.has(investor.name)) {
-        allInvestors.set(investor.name, {
-          name: investor.name,
-          investments: [],
-        })
-      }
-      allInvestors.get(investor.name)!.investments.push({
-        plantId: plant.id,
-        plantName: plant.name,
-        amount: investor.amount,
-        investDate: investor.date,
-      })
-    })
-  })
-
-  // Generate member data with dummy contact info
-  const emailDomains = ["gmail.com", "yahoo.com", "hotmail.com", "outlook.com"]
-  const locations = [
-    "Jakarta Selatan",
-    "Jakarta Pusat",
-    "Jakarta Utara",
-    "Jakarta Barat",
-    "Jakarta Timur",
-    "Bogor",
-    "Depok",
-    "Tangerang",
-    "Bekasi",
-    "Bandung",
-    "Surabaya",
-    "Medan",
-    "Semarang",
-    "Yogyakarta",
+      id: "member-1",
+      name: "Ahmad Suryadi",
+      email: "ahmad.suryadi@email.com",
+      phone: "+62 812-3456-7890",
+      location: "Jakarta Selatan",
+      joinDate: "2024-01-15",
+      investments: [],
+      totalInvestment: 0,
+      totalProfit: 0,
+      overallROI: 0,
+    },
+    {
+      id: "member-2",
+      name: "Siti Nurhaliza",
+      email: "siti.nurhaliza@outlook.com",
+      phone: "+62 8421-2952-2274",
+      location: "Tangerang",
+      joinDate: "2024-03-20",
+      investments: [],
+      totalInvestment: 0,
+      totalProfit: 0,
+      overallROI: 0,
+    },
+    {
+      id: "member-3",
+      name: "Budi Santoso",
+      email: "budi.santoso@gmail.com",
+      phone: "+62 813-9876-5432",
+      location: "Bandung",
+      joinDate: "2024-02-10",
+      investments: [],
+      totalInvestment: 0,
+      totalProfit: 0,
+      overallROI: 0,
+    },
+    {
+      id: "member-4",
+      name: "Dewi Sartika",
+      email: "dewi.sartika@yahoo.com",
+      phone: "+62 814-5678-9012",
+      location: "Surabaya",
+      joinDate: "2024-05-12",
+      investments: [],
+      totalInvestment: 0,
+      totalProfit: 0,
+      overallROI: 0,
+    },
   ]
 
-  Array.from(allInvestors.entries()).forEach(([name, data], index) => {
-    const investments = data.investments.map((inv) => {
-      const plant = PLANTS.find((p) => p.id === inv.plantId)!
-      const report = generateReport(plant)
-      const investorSummary = report.perInvestor.find((p) => p.name === name)!
+  // Calculate investments for each member based on PLANT_INSTANCES
+  members.forEach((member) => {
+    PLANT_INSTANCES.forEach((instance) => {
+      const memberInvestment = instance.investors.find((inv) => inv.name === member.name)
+      if (memberInvestment) {
+        const totalIncome = instance.incomeRecords.reduce((sum, inc) => sum + inc.amount, 0)
+        const totalCosts = instance.operationalCosts.reduce((sum, cost) => sum + cost.amount, 0)
+        const totalPlantInvestment = instance.investors.reduce((sum, inv) => sum + inv.amount, 0)
+        const memberShare = totalPlantInvestment > 0 ? memberInvestment.amount / totalPlantInvestment : 0
 
-      return {
-        plantId: inv.plantId,
-        plantName: inv.plantName,
-        amount: inv.amount,
-        profit: investorSummary.profit * (inv.amount / investorSummary.invest),
-        roi: investorSummary.roiPct,
-        investDate: inv.investDate,
+        const memberProfit = (totalIncome - totalCosts) * memberShare
+        const roi = memberInvestment.amount > 0 ? (memberProfit / memberInvestment.amount) * 100 : 0
+
+        member.investments.push({
+          plantId: instance.id,
+          plantName: instance.instanceName,
+          amount: memberInvestment.amount,
+          profit: Math.max(0, memberProfit), // Ensure profit is never negative
+          roi: roi,
+          investDate: memberInvestment.date,
+        })
+
+        member.totalInvestment += memberInvestment.amount
+        member.totalProfit += Math.max(0, memberProfit)
       }
     })
 
-    const totalInvestment = investments.reduce((sum, inv) => sum + inv.amount, 0)
-    const totalProfit = investments.reduce((sum, inv) => sum + inv.profit, 0)
-    const overallROI = totalInvestment > 0 ? (totalProfit / totalInvestment) * 100 : 0
+    member.overallROI = member.totalInvestment > 0 ? (member.totalProfit / member.totalInvestment) * 100 : 0
+  })
 
-    const emailName = name.toLowerCase().replace(/\s+/g, ".")
-    const domain = emailDomains[index % emailDomains.length]
-    const phone = `+62 8${Math.floor(Math.random() * 9) + 1}${Math.floor(Math.random() * 9)}${Math.floor(Math.random() * 9)}-${Math.floor(Math.random() * 9000) + 1000}-${Math.floor(Math.random() * 9000) + 1000}`
+  return members
+}
 
-    members.push({
-      id: `member-${index + 1}`,
-      name,
-      email: `${emailName}@${domain}`,
-      phone,
-      location: locations[index % locations.length],
-      joinDate: investments.sort((a, b) => a.investDate.localeCompare(b.investDate))[0].investDate,
-      investments,
+export function generatePlantTypeReport(plantTypeId: string, date?: Date) {
+  const plantType = PLANT_TYPES.find((type) => type.id === plantTypeId)
+  if (!plantType) return null
+
+  const instances = PLANT_INSTANCES.filter((instance) => instance.plantType === plantTypeId)
+
+  const totalInvestment = instances.reduce(
+    (sum, instance) => sum + instance.investors.reduce((invSum, inv) => invSum + inv.amount, 0),
+    0,
+  )
+
+  const totalProfit = instances.reduce((sum, instance) => {
+    const totalIncome = instance.incomeRecords.reduce((incSum, inc) => incSum + inc.amount, 0)
+    const totalCosts = instance.operationalCosts.reduce((costSum, cost) => costSum + cost.amount, 0)
+    return sum + (totalIncome - totalCosts)
+  }, 0)
+
+  const totalOperationalCosts = instances.reduce(
+    (sum, instance) => sum + instance.operationalCosts.reduce((costSum, cost) => costSum + cost.amount, 0),
+    0,
+  )
+
+  const investorCount = instances.reduce((sum, instance) => sum + instance.investors.length, 0)
+
+  const monthly = []
+  for (let i = 0; i < 12; i++) {
+    const monthDate = new Date(2024, i, 1)
+    const monthStr = `${monthDate.getFullYear()}-${String(monthDate.getMonth() + 1).padStart(2, "0")}`
+
+    const monthlyIncome = instances.reduce((sum, instance) => {
+      return (
+        sum +
+        instance.incomeRecords
+          .filter((record) => record.date.startsWith(monthStr))
+          .reduce((incSum, record) => incSum + record.amount, 0)
+      )
+    }, 0)
+
+    const monthlyExpenses = instances.reduce((sum, instance) => {
+      return (
+        sum +
+        instance.operationalCosts
+          .filter((cost) => cost.date.startsWith(monthStr))
+          .reduce((costSum, cost) => costSum + cost.amount, 0)
+      )
+    }, 0)
+
+    monthly.push({
+      ym: monthStr,
+      newInvest: i === 0 ? totalInvestment : 0,
+      capital: totalInvestment,
+      accrual: monthlyIncome,
+      accrualSinceLastPayout: monthlyIncome,
+      payout: (i + 1) % plantType.payoutEveryMonths === 0 ? monthlyIncome * plantType.payoutEveryMonths : 0,
+    })
+  }
+
+  const yearly = [
+    {
+      year: 2024,
+      invest: totalInvestment,
+      profit: Math.max(0, totalProfit), // Ensure profit is never negative
+      roiPct: totalInvestment > 0 ? (Math.max(0, totalProfit) / totalInvestment) * 100 : 0,
+    },
+  ]
+
+  const perInvestor = instances.flatMap((instance) =>
+    instance.investors.map((investor) => {
+      const totalIncome = instance.incomeRecords.reduce((sum, record) => sum + record.amount, 0)
+      const totalCosts = instance.operationalCosts.reduce((sum, cost) => sum + cost.amount, 0)
+      const totalPlantInvestment = instance.investors.reduce((sum, inv) => sum + inv.amount, 0)
+      const investorShare = totalPlantInvestment > 0 ? investor.amount / totalPlantInvestment : 0
+
+      const profit = (totalIncome - totalCosts) * investorShare
+      const roi = investor.amount > 0 ? (profit / investor.amount) * 100 : 0
+
+      return {
+        name: investor.name,
+        invest: investor.amount,
+        profit: Math.max(0, profit), // Ensure profit is never negative
+        roiPct: roi,
+      }
+    }),
+  )
+
+  return {
+    plantType: plantType.name,
+    totalInvestment,
+    totalProfit: Math.max(0, totalProfit), // Ensure profit is never negative
+    totalOperationalCosts,
+    netProfit: Math.max(0, totalProfit - totalOperationalCosts),
+    roi: totalInvestment > 0 ? (Math.max(0, totalProfit - totalOperationalCosts) / totalInvestment) * 100 : 0,
+    instances: instances.length,
+    investors: investorCount,
+    monthly,
+    yearly,
+    perInvestor,
+    totals: {
+      invest: totalInvestment,
+      profit: Math.max(0, totalProfit), // Ensure profit is never negative
+      roiPct: totalInvestment > 0 ? (Math.max(0, totalProfit) / totalInvestment) * 100 : 0,
+      investors: investorCount,
+    },
+  }
+}
+
+export function getPlantTypesSummary() {
+  const plantTypeSummaries = PLANT_TYPES.map((type) => {
+    const instances = PLANT_INSTANCES.filter((instance) => instance.plantType === type.id)
+
+    const totalInvestment = instances.reduce(
+      (sum, instance) => sum + instance.investors.reduce((invSum, inv) => invSum + inv.amount, 0),
+      0,
+    )
+
+    const totalProfit = instances.reduce((sum, instance) => {
+      const totalIncome = instance.incomeRecords.reduce((incSum, inc) => incSum + inc.amount, 0)
+      const totalCosts = instance.operationalCosts.reduce((costSum, cost) => costSum + cost.amount, 0)
+      return sum + (totalIncome - totalCosts)
+    }, 0)
+
+    const averageROI = totalInvestment > 0 ? (totalProfit / totalInvestment) * 100 : 0
+    const totalInvestors = instances.reduce((sum, instance) => sum + instance.investors.length, 0)
+    const instanceCount = instances.length
+
+    return {
+      id: type.id,
+      name: type.name,
       totalInvestment,
-      totalProfit,
-      overallROI,
+      totalProfit: Math.max(0, totalProfit), // Ensure profit is never negative
+      averageROI,
+      totalInvestors,
+      instanceCount,
+    }
+  })
+
+  return plantTypeSummaries.sort((a, b) => b.totalInvestment - a.totalInvestment)
+}
+
+export function addOperationalCost(
+  plantId: string,
+  cost: {
+    date: Date | string
+    description: string
+    amount: number
+    category: string
+  },
+): boolean {
+  const plantInstance = PLANT_INSTANCES.find((p) => p.id === plantId)
+  if (plantInstance) {
+    const newCost: OperationalCost = {
+      id: `oc-${Date.now()}`,
+      date: typeof cost.date === "string" ? cost.date : cost.date.toISOString().split("T")[0],
+      description: cost.description,
+      amount: cost.amount,
+      category: cost.category as any,
+      inputBy: "Admin",
+      inputDate: new Date().toISOString(),
+    }
+    plantInstance.operationalCosts.push(newCost)
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent("plantDataUpdated", { detail: { plantId } }))
+    }
+    return true
+  }
+  return false
+}
+
+export function addIncomeRecord(
+  plantId: string,
+  income: {
+    date: Date | string
+    description: string
+    amount: number
+    addedBy: string
+  },
+): boolean {
+  const plantInstance = PLANT_INSTANCES.find((p) => p.id === plantId)
+  if (plantInstance) {
+    const newIncome: IncomeRecord = {
+      id: `ir-${Date.now()}`,
+      date: typeof income.date === "string" ? income.date : income.date.toISOString().split("T")[0],
+      description: income.description,
+      amount: income.amount,
+      addedBy: income.addedBy,
+      inputDate: new Date().toISOString(),
+    }
+    plantInstance.incomeRecords.push(newIncome)
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent("plantDataUpdated", { detail: { plantId } }))
+    }
+    return true
+  }
+  return false
+}
+
+export function exportAllPlantsCSV() {
+  const plantsSummary = getPlantTypesSummary()
+
+  const csvContent = [
+    "Jenis Tanaman;Total Investasi;Total Keuntungan;ROI;Jumlah Investor;Jumlah Pohon",
+    ...plantsSummary.map(
+      (plant) =>
+        `${plant.name};${plant.totalInvestment};${plant.totalProfit};${(plant.averageROI * 100).toFixed(2)}%;${plant.totalInvestors};${plant.instanceCount}`,
+    ),
+  ].join("\n")
+
+  const blob = new Blob(["\ufeff" + csvContent], { type: "text/csv;charset=utf-8;" })
+  const link = document.createElement("a")
+  const url = URL.createObjectURL(blob)
+  link.setAttribute("href", url)
+  link.setAttribute("download", `laporan-semua-tanaman-${new Date().toISOString().split("T")[0]}.csv`)
+  link.style.visibility = "hidden"
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+}
+
+export function exportCompleteReportCSV(plantTypeId: string) {
+  const report = generatePlantTypeReport(plantTypeId)
+  if (!report) return
+
+  const csvContent = [
+    "Laporan Lengkap;Nilai",
+    `Jenis Tanaman;${report.plantType}`,
+    `Total Investasi;${report.totalInvestment}`,
+    `Total Keuntungan;${report.totalProfit}`,
+    `Total Biaya Operasional;${report.totalOperationalCosts}`,
+    `Keuntungan Bersih;${report.netProfit}`,
+    `ROI;${report.roi.toFixed(2)}%`,
+    `Jumlah Pohon;${report.instances}`,
+    `Jumlah Investor;${report.investors}`,
+  ].join("\n")
+
+  downloadCSV(csvContent, `laporan-lengkap-${plantTypeId}-${new Date().toISOString().split("T")[0]}.csv`)
+}
+
+export function exportMonthlyReportCSV(plantTypeId: string) {
+  const instances = PLANT_INSTANCES.filter((instance) => instance.plantType === plantTypeId)
+
+  const monthlyData = []
+  for (let i = 0; i < 12; i++) {
+    const month = new Date(2024, i, 1).toLocaleString("id-ID", { month: "long" })
+    const monthlyIncome = instances.reduce((sum, instance) => {
+      return (
+        sum +
+        instance.incomeRecords
+          .filter((record) => new Date(record.date).getMonth() === i)
+          .reduce((incSum, record) => incSum + record.amount, 0)
+      )
+    }, 0)
+
+    const monthlyExpenses = instances.reduce((sum, instance) => {
+      return (
+        sum +
+        instance.operationalCosts
+          .filter((cost) => new Date(cost.date).getMonth() === i)
+          .reduce((costSum, cost) => costSum + cost.amount, 0)
+      )
+    }, 0)
+
+    monthlyData.push({
+      month,
+      income: monthlyIncome,
+      expenses: monthlyExpenses,
+      netProfit: monthlyIncome - monthlyExpenses,
+    })
+  }
+
+  const csvContent = [
+    "Bulan;Pendapatan;Pengeluaran;Keuntungan Bersih",
+    ...monthlyData.map((data) => `${data.month};${data.income};${data.expenses};${data.netProfit}`),
+  ].join("\n")
+
+  downloadCSV(csvContent, `laporan-bulanan-${plantTypeId}-${new Date().toISOString().split("T")[0]}.csv`)
+}
+
+export function exportYearlyReportCSV(plantTypeId: string) {
+  const report = generatePlantTypeReport(plantTypeId)
+  if (!report) return
+
+  const csvContent = [
+    "Laporan Tahunan;2024",
+    `Jenis Tanaman;${report.plantType}`,
+    `Total Investasi;${report.totalInvestment}`,
+    `Total Pendapatan;${report.totalProfit}`,
+    `Total Pengeluaran;${report.totalOperationalCosts}`,
+    `Keuntungan Bersih;${report.netProfit}`,
+    `ROI Tahunan;${report.roi.toFixed(2)}%`,
+    `Jumlah Pohon Aktif;${report.instances}`,
+    `Total Investor;${report.investors}`,
+  ].join("\n")
+
+  downloadCSV(csvContent, `laporan-tahunan-${plantTypeId}-2024.csv`)
+}
+
+export function exportInvestorReportCSV(plantTypeId: string) {
+  const instances = PLANT_INSTANCES.filter((instance) => instance.plantType === plantTypeId)
+
+  const investorData = instances.flatMap((instance) =>
+    instance.investors.map((investor) => {
+      const totalIncome = instance.incomeRecords.reduce((sum, record) => sum + record.amount, 0)
+      const totalCosts = instance.operationalCosts.reduce((sum, cost) => sum + cost.amount, 0)
+      const totalPlantInvestment = instance.investors.reduce((sum, inv) => sum + inv.amount, 0)
+      const investorShare = totalPlantInvestment > 0 ? investor.amount / totalPlantInvestment : 0
+
+      const profit = (totalIncome - totalCosts) * investorShare
+      const roi = investor.amount > 0 ? (profit / investor.amount) * 100 : 0
+
+      return {
+        name: investor.name,
+        plantInstance: instance.instanceName,
+        investment: investor.amount,
+        investDate: investor.date,
+        profit: profit.toFixed(0),
+        roi: roi.toFixed(2),
+      }
+    }),
+  )
+
+  const csvContent = [
+    "Nama Investor;Pohon;Investasi;Tanggal Investasi;Keuntungan;ROI",
+    ...investorData.map(
+      (data) => `${data.name};${data.plantInstance};${data.investment};${data.investDate};${data.profit};${data.roi}%`,
+    ),
+  ].join("\n")
+
+  downloadCSV(csvContent, `laporan-investor-${plantTypeId}-${new Date().toISOString().split("T")[0]}.csv`)
+}
+
+export function getPlantInstances(plantTypeId?: string): PlantInstance[] {
+  if (plantTypeId) {
+    return PLANT_INSTANCES.filter((instance) => instance.plantType === plantTypeId)
+  }
+  return PLANT_INSTANCES
+}
+
+export function exportMemberDetailCSV(memberId: string) {
+  const members = generateMemberData()
+  const member = members.find((m) => m.id === memberId)
+
+  if (!member) return
+
+  const csvContent = [
+    "Detail Anggota;Nilai",
+    `Nama;${member.name}`,
+    `Email;${member.email}`,
+    `Telepon;${member.phone}`,
+    `Lokasi;${member.location}`,
+    `Tanggal Bergabung;${member.joinDate}`,
+    `Total Investasi;${member.totalInvestment}`,
+    `Total Keuntungan;${member.totalProfit}`,
+    `ROI Keseluruhan;${member.overallROI.toFixed(2)}%`,
+    "",
+    "Investasi Detail;",
+    "Nama Pohon;Jumlah Investasi;Keuntungan;ROI;Tanggal Investasi",
+    ...member.investments.map(
+      (inv) => `${inv.plantName};${inv.amount};${inv.profit.toFixed(0)};${inv.roi.toFixed(2)}%;${inv.investDate}`,
+    ),
+  ].join("\n")
+
+  downloadCSV(
+    csvContent,
+    `detail-anggota-${member.name.replace(/\s+/g, "-")}-${new Date().toISOString().split("T")[0]}.csv`,
+  )
+}
+
+export function calculateTotalUang(plantId: string, investorName: string): number {
+  const plantInstance = PLANT_INSTANCES.find((p) => p.id === plantId)
+  if (!plantInstance) return 0
+
+  const investor = plantInstance.investors.find((inv) => inv.name === investorName)
+  if (!investor) return 0
+
+  const initialInvestment = investor.amount
+  const totalIncome = plantInstance.incomeRecords.reduce((sum, record) => sum + record.amount, 0)
+  const totalExpenses = plantInstance.operationalCosts.reduce((sum, cost) => sum + cost.amount, 0)
+
+  const totalPlantInvestment = plantInstance.investors.reduce((sum, inv) => sum + inv.amount, 0)
+  const investmentShare = totalPlantInvestment > 0 ? investor.amount / totalPlantInvestment : 0
+
+  const proportionalIncome = totalIncome * investmentShare
+  const proportionalExpenses = totalExpenses * investmentShare
+
+  return initialInvestment + proportionalIncome - proportionalExpenses
+}
+
+export function generateEnhancedMemberData(): Member[] {
+  const members = generateMemberData()
+
+  members.forEach((member) => {
+    member.investments.forEach((investment) => {
+      const plantInstance = PLANT_INSTANCES.find((p) => p.id === investment.plantId)
+      if (plantInstance) {
+        const totalUang = calculateTotalUang(investment.plantId, member.name)
+        ;(investment as any).totalUang = totalUang
+      }
     })
   })
 
-  return members.sort((a, b) => b.totalInvestment - a.totalInvestment)
+  return members
 }
 
-export function exportMemberDetailCSV(member: Member, year?: number): void {
-  let csv = `Detail Anggota - ${member.name}\n\n`
-
-  // Member Info
-  csv += `INFORMASI ANGGOTA\n`
-  csv += `Keterangan;Nilai\n`
-  csv += `Nama;${member.name}\n`
-  csv += `Email;${member.email}\n`
-  csv += `Telepon;${member.phone}\n`
-  csv += `Lokasi;${member.location}\n`
-  csv += `Tanggal Bergabung;${new Date(member.joinDate).toLocaleDateString("id-ID")}\n\n`
-
-  // Summary
-  csv += `RINGKASAN INVESTASI\n`
-  csv += `Keterangan;Nilai\n`
-  csv += `Total Investasi;${formatCurrencyForCSV(member.totalInvestment)}\n`
-  csv += `Total Keuntungan;${formatCurrencyForCSV(member.totalProfit)}\n`
-  csv += `ROI Keseluruhan;${member.overallROI.toFixed(2)}%\n`
-  csv += `Jumlah Investasi;${member.investments.length}\n\n`
-
-  // Investment Portfolio
-  csv += `PORTFOLIO INVESTASI\n`
-  csv += `Tanaman;Investasi;Keuntungan;ROI (%);Tanggal Investasi\n`
-  member.investments.forEach((investment) => {
-    csv += `${investment.plantName};${formatCurrencyForCSV(investment.amount)};${formatCurrencyForCSV(investment.profit)};${investment.roi.toFixed(2)}%;${new Date(investment.investDate).toLocaleDateString("id-ID")}\n`
-  })
-
-  const filename = `detail-anggota-${member.name.toLowerCase().replace(/\s+/g, "-")}-${new Date().toISOString().slice(0, 10)}.csv`
-  downloadCSV(filename, csv)
+export function downloadCSV(content: string, filename: string) {
+  const blob = new Blob(["\ufeff" + content], { type: "text/csv;charset=utf-8;" })
+  const link = document.createElement("a")
+  const url = URL.createObjectURL(blob)
+  link.setAttribute("href", url)
+  link.setAttribute("download", filename)
+  link.style.visibility = "hidden"
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
 }
