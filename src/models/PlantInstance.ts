@@ -1,0 +1,68 @@
+import mongoose, { Schema, type Document } from "mongoose"
+
+export interface IOperationalCost {
+  id: string
+  date: string
+  description: string
+  amount: number
+  addedBy: string
+  addedAt: string
+}
+
+export interface IIncomeRecord {
+  id: string
+  date: string
+  description: string
+  amount: number
+  addedBy: string
+  addedAt: string
+}
+
+export interface IPlantInstance extends Document {
+  id: string
+  plantType: "gaharu" | "alpukat" | "jengkol" | "aren"
+  instanceName: string
+  baseAnnualROI: number
+  operationalCosts: IOperationalCost[]
+  incomeRecords: IIncomeRecord[]
+  createdAt: Date
+  updatedAt: Date
+}
+
+const OperationalCostSchema = new Schema({
+  id: { type: String, required: true },
+  date: { type: String, required: true },
+  description: { type: String, required: true },
+  amount: { type: Number, required: true },
+  addedBy: { type: String, required: true },
+  addedAt: { type: String, required: true },
+})
+
+const IncomeRecordSchema = new Schema({
+  id: { type: String, required: true },
+  date: { type: String, required: true },
+  description: { type: String, required: true },
+  amount: { type: Number, required: true },
+  addedBy: { type: String, required: true },
+  addedAt: { type: String, required: true },
+})
+
+const PlantInstanceSchema = new Schema(
+  {
+    id: { type: String, required: true, unique: true },
+    plantType: {
+      type: String,
+      required: true,
+      enum: ["gaharu", "alpukat", "jengkol", "aren"],
+    },
+    instanceName: { type: String, required: true },
+    baseAnnualROI: { type: Number, required: true },
+    operationalCosts: [OperationalCostSchema],
+    incomeRecords: [IncomeRecordSchema],
+  },
+  {
+    timestamps: true,
+  },
+)
+
+export default mongoose.models.PlantInstance || mongoose.model<IPlantInstance>("PlantInstance", PlantInstanceSchema)
