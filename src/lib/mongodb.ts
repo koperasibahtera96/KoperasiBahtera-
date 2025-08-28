@@ -3,7 +3,7 @@ import Plant from '@/models/Plant'; // adjust path
 import User from '@/models/User'; // adjust path
 import mongoose from 'mongoose';
 
-const MONGODB_URI = process.env.MONGODB_URI!;
+const MONGODB_URI = process.env.MONGODB_URI||"mongodb+srv://BenZeta:BenZeta@benzeta.lfcf6it.mongodb.net/investasi-hijau?retryWrites=true&w=majority"
 if (!MONGODB_URI) {
   throw new Error('Please define the MONGODB_URI environment variable inside .env.local');
 }

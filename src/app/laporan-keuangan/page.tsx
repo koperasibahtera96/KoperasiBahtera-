@@ -12,8 +12,9 @@ import {
   ChevronLeft,
   ChevronRight,
   ArrowLeft,
+  Plus,
 } from "lucide-react"
-import { PLANTS, generateReport } from "@/lib/finance"
+import { getPlantTypesSummary } from "@/lib/finance"
 import { useState } from "react"
 
 const fmtIDR = (n: number) =>
@@ -26,24 +27,81 @@ const fmtIDR = (n: number) =>
 export default function LaporanKeuanganPage() {
   const [currentPage, setCurrentPage] = useState(1)
   const plantsPerPage = 5
-  const totalPages = Math.ceil(PLANTS.length / plantsPerPage)
-  const startIndex = (currentPage - 1) * plantsPerPage
-  const currentPlants = PLANTS.slice(startIndex, startIndex + plantsPerPage)
 
-  // Calculate overall totals across all plants
-  const overallTotals = PLANTS.reduce(
-    (acc, plant) => {
-      const { totals } = generateReport(plant, new Date())
-      return {
-        invest: acc.invest + totals.invest,
-        profit: acc.profit + totals.profit,
-        investors: acc.investors + totals.investors,
-      }
-    },
+  const plantsSummary = getPlantTypesSummary()
+  const totalPages = Math.ceil(plantsSummary.length / plantsPerPage)
+  const startIndex = (currentPage - 1) * plantsPerPage
+  const currentPlants = plantsSummary.slice(startIndex, startIndex + plantsPerPage)
+
+  const overallTotals = plantsSummary.reduce(
+    (acc, plant) => ({
+      invest: acc.invest + plant.totalInvestment,
+      profit: acc.profit + plant.totalProfit,
+      investors: acc.investors + plant.totalInvestors,
+    }),
     { invest: 0, profit: 0, investors: 0 },
   )
 
   const overallROI = overallTotals.invest > 0 ? (overallTotals.profit / overallTotals.invest) * 100 : 0
+
+  const handleDownloadSummary = () => {
+    const generateExcelReport = () => {
+      let html = `
+        <html>
+        <head>
+          <meta charset="utf-8">
+          <style>
+            body { font-family: Arial, sans-serif; }
+            table { border-collapse: collapse; width: 100%; margin-bottom: 20px; }
+            th { background-color: #90EE90; font-weight: bold; padding: 8px; border: 2px solid #000000; text-align: left; }
+            td { padding: 8px; border: 1px solid #000000; }
+            .header { font-size: 18px; font-weight: bold; margin: 20px 0 10px 0; }
+            .title { font-size: 24px; font-weight: bold; margin-bottom: 10px; }
+          </style>
+        </head>
+        <body>
+      `
+
+      html += `<div class="title">Ringkasan Investasi - Semua Tanaman</div>`
+
+      // RINGKASAN KESELURUHAN Section
+      html += `<div class="header">RINGKASAN KESELURUHAN</div>`
+      html += `<table>`
+      html += `<tr><th>Keterangan</th><th>Nilai</th></tr>`
+      html += `<tr><td>Total Investasi</td><td>Rp ${overallTotals.invest.toLocaleString("id-ID")}</td></tr>`
+      html += `<tr><td>Total Keuntungan</td><td>Rp ${overallTotals.profit.toLocaleString("id-ID")}</td></tr>`
+      html += `<tr><td>ROI Keseluruhan</td><td>${overallROI.toFixed(2)}%</td></tr>`
+      html += `<tr><td>Jumlah Investor</td><td>${overallTotals.investors}</td></tr>`
+      html += `</table>`
+
+      // DETAIL PER TANAMAN Section
+      html += `<div class="header">DETAIL PER TANAMAN</div>`
+      html += `<table>`
+      html += `<tr><th>Nama Tanaman</th><th>Total Investasi</th><th>Total Keuntungan</th><th>ROI Rata-rata</th><th>Jumlah Investor</th><th>Jumlah Pohon</th></tr>`
+      plantsSummary.forEach((plant) => {
+        html += `<tr><td>${plant.name}</td><td>Rp ${plant.totalInvestment.toLocaleString("id-ID")}</td><td>Rp ${plant.totalProfit.toLocaleString("id-ID")}</td><td>${(plant.averageROI * 100).toFixed(2)}%</td><td>${plant.totalInvestors}</td><td>${plant.instanceCount}</td></tr>`
+      })
+      html += `</table>`
+
+      html += `</body></html>`
+
+      // Create and download file
+      const blob = new Blob([html], { type: "application/vnd.ms-excel;charset=utf-8;" })
+      const link = document.createElement("a")
+      const url = URL.createObjectURL(blob)
+
+      link.setAttribute("href", url)
+      link.setAttribute("download", "ringkasan-investasi.xls")
+      link.style.visibility = "hidden"
+
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      URL.revokeObjectURL(url)
+    }
+
+    generateExcelReport()
+  }
 
   return (
     <div className="p-6">
@@ -96,9 +154,16 @@ export default function LaporanKeuanganPage() {
       {/* Plant Cards Section */}
       <div className="mb-8">
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl font-bold text-white">Daftar Tanaman ({PLANTS.length})</h2>
+          <h2 className="text-xl font-bold text-white">Daftar Tanaman ({plantsSummary.length})</h2>
           <div className="flex items-center gap-4">
-            <button className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+            <button className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+              <Plus className="w-4 h-4" />
+              Tambahkan tanaman baru
+            </button>
+            <button
+              onClick={handleDownloadSummary}
+              className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+            >
               <Download className="w-4 h-4" />
               Download Ringkasan
             </button>
@@ -126,72 +191,69 @@ export default function LaporanKeuanganPage() {
 
         {/* Plant Cards Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-          {currentPlants.map((plant) => {
-            const { totals } = generateReport(plant, new Date())
-            return (
-              <div
-                key={plant.id}
-                className="group relative overflow-hidden rounded-2xl bg-slate-800 border border-slate-700 hover:border-emerald-500 transition-all duration-300"
-              >
-                <div className="p-6">
-                  <div className="flex items-start justify-between mb-6">
-                    <div>
-                      <h2 className="text-xl font-bold text-white mb-2">{plant.name}</h2>
-                      <div className="flex items-center gap-4 text-sm text-slate-400">
-                        <span className="flex items-center gap-1">
-                          <BarChart3 className="h-4 w-4" />
-                          ROI {(plant.annualROI * 100).toFixed(1)}%/tahun
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <TrendingUp className="h-4 w-4" />
-                          Payout tiap {plant.payoutEveryMonths} bulan
-                        </span>
-                      </div>
+          {currentPlants.map((plant) => (
+            <div
+              key={plant.id}
+              className="group relative overflow-hidden rounded-2xl bg-slate-800 border border-slate-700 hover:border-emerald-500 transition-all duration-300"
+            >
+              <div className="p-6">
+                <div className="flex items-start justify-between mb-6">
+                  <div>
+                    <h2 className="text-xl font-bold text-white mb-2">{plant.name}</h2>
+                    <div className="flex items-center gap-4 text-sm text-slate-400">
+                      <span className="flex items-center gap-1">
+                        <BarChart3 className="h-4 w-4" />
+                        ROI {(plant.averageROI * 100).toFixed(1)}%/tahun
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <TrendingUp className="h-4 w-4" />
+                        {plant.instanceCount} pohon aktif
+                      </span>
                     </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4 mb-6">
-                    <div className="rounded-xl bg-slate-700 p-4">
-                      <div className="flex items-center gap-2 mb-2">
-                        <DollarSign className="h-4 w-4 text-blue-400" />
-                        <span className="text-sm font-medium text-slate-300">Total Investasi</span>
-                      </div>
-                      <div className="text-lg font-bold text-white">{fmtIDR(totals.invest)}</div>
-                    </div>
-                    <div className="rounded-xl bg-slate-700 p-4">
-                      <div className="flex items-center gap-2 mb-2">
-                        <TrendingUp className="h-4 w-4 text-green-400" />
-                        <span className="text-sm font-medium text-slate-300">Profit Dibayar</span>
-                      </div>
-                      <div className="text-lg font-bold text-green-400">{fmtIDR(totals.profit)}</div>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center justify-between mb-6">
-                    <div className="flex items-center gap-2">
-                      <BarChart3 className="h-4 w-4 text-purple-400" />
-                      <span className="text-sm font-medium text-slate-300">ROI Aktual</span>
-                    </div>
-                    <div className="text-lg font-bold text-purple-400">{totals.roiPct.toFixed(2)}%</div>
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2 text-sm text-slate-400">
-                      <Users className="h-4 w-4" />
-                      <span>{totals.investors} investor aktif</span>
-                    </div>
-                    <Link
-                      href={`/tanaman/${plant.id}`}
-                      className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 px-4 py-2 text-sm font-semibold text-white transition-colors"
-                    >
-                      Lihat Detail
-                      <ArrowUpRight className="h-4 w-4" />
-                    </Link>
                   </div>
                 </div>
+
+                <div className="grid grid-cols-2 gap-4 mb-6">
+                  <div className="rounded-xl bg-slate-700 p-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <DollarSign className="h-4 w-4 text-blue-400" />
+                      <span className="text-sm font-medium text-slate-300">Total Investasi</span>
+                    </div>
+                    <div className="text-lg font-bold text-white">{fmtIDR(plant.totalInvestment)}</div>
+                  </div>
+                  <div className="rounded-xl bg-slate-700 p-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <TrendingUp className="h-4 w-4 text-green-400" />
+                      <span className="text-sm font-medium text-slate-300">Profit Dibayar</span>
+                    </div>
+                    <div className="text-lg font-bold text-green-400">{fmtIDR(plant.totalProfit)}</div>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between mb-6">
+                  <div className="flex items-center gap-2">
+                    <BarChart3 className="h-4 w-4 text-purple-400" />
+                    <span className="text-sm font-medium text-slate-300">ROI Aktual</span>
+                  </div>
+                  <div className="text-lg font-bold text-purple-400">{(plant.averageROI * 100).toFixed(2)}%</div>
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2 text-sm text-slate-400">
+                    <Users className="h-4 w-4" />
+                    <span>{plant.totalInvestors} investor aktif</span>
+                  </div>
+                  <Link
+                    href={`/tanaman/${plant.id}`}
+                    className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 px-4 py-2 text-sm font-semibold text-white transition-colors"
+                  >
+                    Lihat Detail
+                    <ArrowUpRight className="h-4 w-4" />
+                  </Link>
+                </div>
               </div>
-            )
-          })}
+            </div>
+          ))}
         </div>
       </div>
     </div>
