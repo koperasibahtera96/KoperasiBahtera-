@@ -43,34 +43,163 @@ type Member = {
   overallROI: number
 }
 
-
-
 export default function ManajemenAnggotaPage() {
   const [currentPage, setCurrentPage] = useState(1)
-const [members, setMembers] = useState<Member[]>([])
-const [loading, setLoading] = useState(true)
-const [error, setError] = useState<string | null>(null)
+  const [members, setMembers] = useState<Member[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  // KPI ringkas untuk kartu di atas
+  const [kpi, setKpi] = useState({
+    totalInvestment: 0,
+    totalProfit: 0,
+    avgROI: 0,
+    investors: 0,
+    loading: true,
+  })
 
   const membersPerPage = 5
 
-useEffect(() => {
-  (async () => {
-    try {
-      setLoading(true)
-      const res = await fetch("/api/investors?format=membersLike", { cache: "no-store" })
-      if (!res.ok) throw new Error("Failed to load investors")
-      const data: Member[] = await res.json()
-      setMembers(data)
-      setError(null)
-    } catch (e) {
-      console.error(e)
-      setError("Gagal memuat data anggota")
-      setMembers([])
-    } finally {
-      setLoading(false)
+  useEffect(() => {
+    ;(async () => {
+      try {
+        setLoading(true)
+        const res = await fetch("/api/investors?format=membersLike", { cache: "no-store" })
+        if (!res.ok) throw new Error("Failed to load investors")
+        const data: Member[] = await res.json()
+        setMembers(data)
+        setError(null)
+      } catch (e) {
+        console.error(e)
+        setError("Gagal memuat data anggota")
+        setMembers([])
+      } finally {
+        setLoading(false)
+      }
+    })()
+  }, [])
+
+  useEffect(() => {
+    let alive = true
+    ;(async () => {
+      try {
+        const r = await fetch("/api/finance/summary", { cache: "no-store" })
+        if (!r.ok) throw new Error("fail summary")
+        const d = await r.json()
+        if (!alive) return
+        setKpi({
+          totalInvestment: Number(d.totalInvestment || 0),
+          totalProfit: Number(d.totalProfit || 0),
+          avgROI: Number((d.averageRoi ?? d.roi) || 0),
+          investors: Number(d.investorsCount || 0),
+          loading: false,
+        })
+      } catch (e) {
+        if (!alive) return
+        setKpi((s) => ({ ...s, loading: false }))
+      }
+    })()
+    return () => {
+      alive = false
     }
-  })()
-}, [])
+  }, [])
+
+  // === Ambil profit/ROI per investor & per investasi dari /api/investors/:id (versi robust) ===
+  useEffect(() => {
+    if (members.length === 0) return
+
+    const num = (v: any) => Number(v || 0)
+    const keyName = (s: any) => String(s ?? "").trim().toLowerCase()
+
+    // helper: ambil array investasi dari berbagai kemungkinan field
+    const getDetailInvestments = (det: any): any[] => {
+      return (
+        det?.investments ??
+        det?.portfolio ??
+        det?.data?.investments ??
+        det?.data?.portfolio ??
+        det?.member?.investments ??
+        det?.member?.portfolio ??
+        []
+      )
+    }
+
+    // helper: ambil nama instance dari berbagai kemungkinan field
+    const getName = (x: any) =>
+      x?.plantInstanceName ??
+      x?.productName ??
+      x?.name ??
+      x?.instanceName ??
+      x?.plantName ??
+      ""
+
+    // helper: ambil amount dari beberapa nama field
+    const getAmount = (x: any, fallback: number) =>
+      num(x?.amount ?? x?.totalAmount ?? x?.invested ?? x?.amountPaid ?? fallback)
+
+    // helper: ambil profit dari beberapa nama field / atau hitung dari income-expense
+    const getProfit = (x: any) => {
+      const fromDirect = x?.profit ?? x?.netProfit ?? x?.profitPaid
+      if (fromDirect !== undefined) return num(fromDirect)
+      const income =
+        num(x?.totalIncome ?? x?.income) + // agregat
+        (Array.isArray(x?.incomes) ? x.incomes.reduce((s: number, i: any) => s + num(i?.amount), 0) : 0)
+      const expense =
+        num(x?.totalExpense ?? x?.expense ?? x?.expenses) +
+        (Array.isArray(x?.operationalCosts)
+          ? x.operationalCosts.reduce((s: number, c: any) => s + num(c?.amount), 0)
+          : 0)
+      return income - expense
+    }
+
+    ;(async () => {
+      try {
+        const resps = await Promise.all(
+          members.map((m) => fetch(`/api/investors/${encodeURIComponent(m.id)}`, { cache: "no-store" })),
+        )
+        const details = await Promise.all(resps.map((r) => (r.ok ? r.json() : null)))
+
+        setMembers((prev) =>
+          prev.map((m, i) => {
+            const det = details[i]
+            if (!det) return m
+
+            const detInvs = getDetailInvestments(det)
+
+            const updatedInvestments = m.investments.map((iv) => {
+              // cari match by id atau nama
+              const match =
+                detInvs.find(
+                  (di: any) =>
+                    String(di?.plantInstanceId ?? di?.instanceId ?? di?._id ?? "") === iv.plantId,
+                ) ??
+                detInvs.find(
+                  (di: any) => keyName(getName(di)) === keyName(iv.plantName),
+                ) ??
+                {}
+
+              const p = getProfit(match)
+              const amt = getAmount(match, iv.amount)
+              const roi = amt > 0 ? (p / amt) * 100 : 0
+              return { ...iv, profit: p, roi }
+            })
+
+            const totalProfit = updatedInvestments.reduce((s, x) => s + num(x.profit), 0)
+            const overallROI = m.totalInvestment > 0 ? (totalProfit / m.totalInvestment) * 100 : 0
+
+            return {
+              ...m,
+              investments: updatedInvestments,
+              totalProfit,
+              overallROI,
+            }
+          }),
+        )
+      } catch (e) {
+        console.warn("[manajemen-anggota] gagal mengambil detail investors:", e)
+      }
+    })()
+  }, [members.length])
 
   const totalPages = Math.ceil(members.length / membersPerPage)
   const startIndex = (currentPage - 1) * membersPerPage
@@ -127,19 +256,19 @@ useEffect(() => {
               />
               <SummaryCard
                 title="Total Investasi"
-                value={formatCurrency(totalStats.totalInvestment)}
+                value={kpi.loading ? "…" : formatCurrency(kpi.totalInvestment)}
                 icon={<DollarSign className="h-5 w-5" />}
                 colorClass="text-chart-2"
               />
               <SummaryCard
                 title="Total Keuntungan"
-                value={formatCurrency(totalStats.totalProfit)}
+                value={kpi.loading ? "…" : formatCurrency(kpi.totalProfit)}
                 icon={<TrendingUp className="h-5 w-5" />}
                 colorClass="text-chart-3"
               />
               <SummaryCard
                 title="Rata-rata ROI"
-                value={formatPercentage(avgROI)}
+                value={kpi.loading ? "…" : formatPercentage(kpi.avgROI)}
                 icon={<BarChart3 className="h-5 w-5" />}
                 colorClass="text-chart-4"
               />
