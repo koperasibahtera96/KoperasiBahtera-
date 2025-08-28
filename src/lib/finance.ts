@@ -178,41 +178,14 @@ export const PLANT_INSTANCES: PlantInstance[] = [
 ]
 
 export async function getTopPlantTypesByInvestment(limit = 2) {
-  // Simulate async operation
-  await new Promise((resolve) => setTimeout(resolve, 100))
-
-  // Calculate totals for each plant type
-  const plantTypeSummaries = PLANT_TYPES.map((type) => {
-    const instances = PLANT_INSTANCES.filter((instance) => instance.plantType === type.id)
-
-    const totalInvestment = instances.reduce(
-      (sum, instance) => sum + instance.investors.reduce((invSum, inv) => invSum + inv.amount, 0),
-      0,
-    )
-
-    const totalProfit = instances.reduce((sum, instance) => {
-      const totalIncome = instance.incomeRecords.reduce((incSum, inc) => incSum + inc.amount, 0)
-      const totalCosts = instance.operationalCosts.reduce((costSum, cost) => costSum + cost.amount, 0)
-      return sum + (totalIncome - totalCosts)
-    }, 0)
-
-    const roi = totalInvestment > 0 ? (totalProfit / totalInvestment) * 100 : 0
-    const investorCount = instances.reduce((sum, instance) => sum + instance.investors.length, 0)
-    const instanceCount = instances.length
-
-    return {
-      id: type.id,
-      name: type.name,
-      totalInvestment,
-      totalProfit: Math.max(0, totalProfit), // Ensure profit is never negative
-      roi,
-      investorCount,
-      instanceCount,
-    }
-  })
-
-  return plantTypeSummaries.sort((a, b) => b.totalInvestment - a.totalInvestment).slice(0, limit)
+  // DB-backed: read from /api/finance/summary
+  const res = await fetch("/api/finance/summary", { cache: "no-store" })
+  if (!res.ok) throw new Error("Failed to load finance summary")
+  const data = await res.json()
+  const arr = Array.isArray(data?.plantSummaries) ? data.plantSummaries : []
+  return arr.slice(0, limit)
 }
+
 
 export function generateDailyReportsForDate(date: Date) {
   const dateStr = date.toISOString().split("T")[0]
@@ -249,89 +222,12 @@ export function generateDailyReportsForDate(date: Date) {
 }
 
 export function generateMemberData(): Member[] {
-  const members: Member[] = [
-    {
-      id: "member-1",
-      name: "Ahmad Suryadi",
-      email: "ahmad.suryadi@email.com",
-      phone: "+62 812-3456-7890",
-      location: "Jakarta Selatan",
-      joinDate: "2024-01-15",
-      investments: [],
-      totalInvestment: 0,
-      totalProfit: 0,
-      overallROI: 0,
-    },
-    {
-      id: "member-2",
-      name: "Siti Nurhaliza",
-      email: "siti.nurhaliza@outlook.com",
-      phone: "+62 8421-2952-2274",
-      location: "Tangerang",
-      joinDate: "2024-03-20",
-      investments: [],
-      totalInvestment: 0,
-      totalProfit: 0,
-      overallROI: 0,
-    },
-    {
-      id: "member-3",
-      name: "Budi Santoso",
-      email: "budi.santoso@gmail.com",
-      phone: "+62 813-9876-5432",
-      location: "Bandung",
-      joinDate: "2024-02-10",
-      investments: [],
-      totalInvestment: 0,
-      totalProfit: 0,
-      overallROI: 0,
-    },
-    {
-      id: "member-4",
-      name: "Dewi Sartika",
-      email: "dewi.sartika@yahoo.com",
-      phone: "+62 814-5678-9012",
-      location: "Surabaya",
-      joinDate: "2024-05-12",
-      investments: [],
-      totalInvestment: 0,
-      totalProfit: 0,
-      overallROI: 0,
-    },
-  ]
-
-  // Calculate investments for each member based on PLANT_INSTANCES
-  members.forEach((member) => {
-    PLANT_INSTANCES.forEach((instance) => {
-      const memberInvestment = instance.investors.find((inv) => inv.name === member.name)
-      if (memberInvestment) {
-        const totalIncome = instance.incomeRecords.reduce((sum, inc) => sum + inc.amount, 0)
-        const totalCosts = instance.operationalCosts.reduce((sum, cost) => sum + cost.amount, 0)
-        const totalPlantInvestment = instance.investors.reduce((sum, inv) => sum + inv.amount, 0)
-        const memberShare = totalPlantInvestment > 0 ? memberInvestment.amount / totalPlantInvestment : 0
-
-        const memberProfit = (totalIncome - totalCosts) * memberShare
-        const roi = memberInvestment.amount > 0 ? (memberProfit / memberInvestment.amount) * 100 : 0
-
-        member.investments.push({
-          plantId: instance.id,
-          plantName: instance.instanceName,
-          amount: memberInvestment.amount,
-          profit: Math.max(0, memberProfit), // Ensure profit is never negative
-          roi: roi,
-          investDate: memberInvestment.date,
-        })
-
-        member.totalInvestment += memberInvestment.amount
-        member.totalProfit += Math.max(0, memberProfit)
-      }
-    })
-
-    member.overallROI = member.totalInvestment > 0 ? (member.totalProfit / member.totalInvestment) * 100 : 0
-  })
-
-  return members
+  const key = "finance_membersLike_cache"
+  const cached = typeof window !== "undefined" ? sessionStorage.getItem(key) : null
+  if (cached) { try { return JSON.parse(cached) as Member[] } catch { /* ignore */ } }
+  throw new Error("Members data not prefetched")
 }
+
 
 export function generatePlantTypeReport(plantTypeId: string, date?: Date) {
   const plantType = PLANT_TYPES.find((type) => type.id === plantTypeId)
@@ -440,37 +336,12 @@ export function generatePlantTypeReport(plantTypeId: string, date?: Date) {
 }
 
 export function getPlantTypesSummary() {
-  const plantTypeSummaries = PLANT_TYPES.map((type) => {
-    const instances = PLANT_INSTANCES.filter((instance) => instance.plantType === type.id)
-
-    const totalInvestment = instances.reduce(
-      (sum, instance) => sum + instance.investors.reduce((invSum, inv) => invSum + inv.amount, 0),
-      0,
-    )
-
-    const totalProfit = instances.reduce((sum, instance) => {
-      const totalIncome = instance.incomeRecords.reduce((incSum, inc) => incSum + inc.amount, 0)
-      const totalCosts = instance.operationalCosts.reduce((costSum, cost) => costSum + cost.amount, 0)
-      return sum + (totalIncome - totalCosts)
-    }, 0)
-
-    const averageROI = totalInvestment > 0 ? (totalProfit / totalInvestment) * 100 : 0
-    const totalInvestors = instances.reduce((sum, instance) => sum + instance.investors.length, 0)
-    const instanceCount = instances.length
-
-    return {
-      id: type.id,
-      name: type.name,
-      totalInvestment,
-      totalProfit: Math.max(0, totalProfit), // Ensure profit is never negative
-      averageROI,
-      totalInvestors,
-      instanceCount,
-    }
-  })
-
-  return plantTypeSummaries.sort((a, b) => b.totalInvestment - a.totalInvestment)
+  const key = "finance_plantTypesSummary_cache"
+  const cached = typeof window !== "undefined" ? sessionStorage.getItem(key) : null
+  if (cached) { try { return JSON.parse(cached) } catch { /* ignore */ } }
+  throw new Error("Plant types summary not prefetched")
 }
+
 
 export function addOperationalCost(
   plantId: string,
@@ -746,4 +617,28 @@ export function downloadCSV(content: string, filename: string) {
   document.body.appendChild(link)
   link.click()
   document.body.removeChild(link)
+}
+
+
+/** Prefetch DB data for sync helpers used in XLSX generation */
+export async function prefetchFinanceCaches() {
+  try {
+    const res = await fetch("/api/finance/summary", { cache: "no-store" })
+    if (res.ok) {
+      const data = await res.json()
+      if (typeof window !== "undefined") {
+        sessionStorage.setItem("finance_plantTypesSummary_cache", JSON.stringify(data?.plantTypes || []))
+      }
+    }
+  } catch {}
+
+  try {
+    const r2 = await fetch("/api/investors?format=membersLike", { cache: "no-store" })
+    if (r2.ok) {
+      const members = await r2.json()
+      if (typeof window !== "undefined") {
+        sessionStorage.setItem("finance_membersLike_cache", JSON.stringify(members || []))
+      }
+    }
+  } catch {}
 }

@@ -1,3 +1,4 @@
+// src/components/sidebar-layout.tsx
 "use client"
 
 import type React from "react"
@@ -5,6 +6,7 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { BarChart3, Users, LogOut, Menu, Receipt, Calendar } from "lucide-react"
 import { useState } from "react"
+import SidebarKpis from "./sidebar/SidebarKpis"
 
 interface SidebarLayoutProps {
   children: React.ReactNode
@@ -71,18 +73,9 @@ export function SidebarLayout({ children }: SidebarLayoutProps) {
             })}
           </nav>
 
-          {/* Bottom Stats */}
+          {/* Bottom Stats – data realtime dari API */}
           <div className="p-4 border-t border-border">
-            <div className="grid grid-cols-2 gap-3">
-              <div className="bg-muted rounded-lg p-3 text-center">
-                <div className="text-chart-2 text-sm font-medium">ROI Rata-rata</div>
-                <div className="text-foreground font-bold">12.5%</div>
-              </div>
-              <div className="bg-muted rounded-lg p-3 text-center">
-                <div className="text-chart-1 text-sm font-medium">Total AUM</div>
-                <div className="text-foreground font-bold">2.8M</div>
-              </div>
-            </div>
+            <SidebarKpis />
           </div>
 
           {/* Logout */}

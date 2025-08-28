@@ -43,115 +43,34 @@ type Member = {
   overallROI: number
 }
 
-const STATIC_MEMBERS: Member[] = [
-  {
-    id: "member-1",
-    name: "Ahmad Suryadi",
-    email: "ahmad.suryadi@email.com",
-    phone: "+62 812-3456-7890",
-    location: "Jakarta Selatan",
-    joinDate: "2024-01-15",
-    investments: [
-      {
-        plantId: "gaharu-001",
-        plantName: "Gaharu #001",
-        amount: 50000000,
-        profit: 6250000,
-        roi: 12.5,
-        investDate: "2024-01-15",
-      },
-    ],
-    totalInvestment: 50000000,
-    totalProfit: 6250000,
-    overallROI: 12.5,
-  },
-  {
-    id: "member-2",
-    name: "Siti Nurhaliza",
-    email: "siti.nurhaliza@outlook.com",
-    phone: "+62 8421-2952-2274",
-    location: "Tangerang",
-    joinDate: "2024-03-20",
-    investments: [
-      {
-        plantId: "gaharu-002",
-        plantName: "Gaharu #002",
-        amount: 75000000,
-        profit: 9375000,
-        roi: 12.5,
-        investDate: "2024-03-20",
-      },
-      {
-        plantId: "jengkol-001",
-        plantName: "Jengkol #001",
-        amount: 25000000,
-        profit: 3750000,
-        roi: 15.0,
-        investDate: "2024-04-05",
-      },
-    ],
-    totalInvestment: 100000000,
-    totalProfit: 13125000,
-    overallROI: 13.125,
-  },
-  {
-    id: "member-3",
-    name: "Budi Santoso",
-    email: "budi.santoso@gmail.com",
-    phone: "+62 813-9876-5432",
-    location: "Bandung",
-    joinDate: "2024-02-10",
-    investments: [
-      {
-        plantId: "alpukat-001",
-        plantName: "Alpukat #001",
-        amount: 30000000,
-        profit: 6000000,
-        roi: 20.0,
-        investDate: "2024-02-10",
-      },
-    ],
-    totalInvestment: 30000000,
-    totalProfit: 6000000,
-    overallROI: 20.0,
-  },
-  {
-    id: "member-4",
-    name: "Dewi Sartika",
-    email: "dewi.sartika@yahoo.com",
-    phone: "+62 814-5678-9012",
-    location: "Surabaya",
-    joinDate: "2024-05-12",
-    investments: [
-      {
-        plantId: "aren-001",
-        plantName: "Aren #001",
-        amount: 40000000,
-        profit: 7200000,
-        roi: 18.0,
-        investDate: "2024-05-12",
-      },
-    ],
-    totalInvestment: 40000000,
-    totalProfit: 7200000,
-    overallROI: 18.0,
-  },
-]
+
 
 export default function ManajemenAnggotaPage() {
   const [currentPage, setCurrentPage] = useState(1)
-  const [members, setMembers] = useState<Member[]>([])
-  const [loading, setLoading] = useState(true)
+const [members, setMembers] = useState<Member[]>([])
+const [loading, setLoading] = useState(true)
+const [error, setError] = useState<string | null>(null)
 
   const membersPerPage = 5
 
-  useEffect(() => {
-    // Simulate loading
-    setTimeout(() => {
-      setMembers(STATIC_MEMBERS)
+useEffect(() => {
+  (async () => {
+    try {
+      setLoading(true)
+      const res = await fetch("/api/investors?format=membersLike", { cache: "no-store" })
+      if (!res.ok) throw new Error("Failed to load investors")
+      const data: Member[] = await res.json()
+      setMembers(data)
+      setError(null)
+    } catch (e) {
+      console.error(e)
+      setError("Gagal memuat data anggota")
+      setMembers([])
+    } finally {
       setLoading(false)
-    }, 500)
-  }, [])
+    }
+  })()
+}, [])
 
   const totalPages = Math.ceil(members.length / membersPerPage)
   const startIndex = (currentPage - 1) * membersPerPage

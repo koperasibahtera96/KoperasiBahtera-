@@ -1,62 +1,97 @@
+// src/app/finance/page.tsx
 "use client"
 
 import Link from "next/link"
 import { ArrowUpRight, TrendingUp, DollarSign, BarChart3, Users, Download } from "lucide-react"
-import { getTopPlantTypesByInvestment, generateMemberData, getPlantTypesSummary, PLANT_INSTANCES } from "@/lib/finance"
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts"
 import { SidebarLayout } from "@/components/sidebar-layout"
 import { Button } from "@/components/ui-finance/button"
 import { formatCurrency, formatPercentage } from "@/lib/utils"
 import React from "react"
-import * as XLSX from "xlsx"
+
+// ===== XLSX (pakai dynamic import agar aman SSR) =====
+let XLSXMod: any
+async function getXLSX() {
+  if (XLSXMod) return XLSXMod
+  XLSXMod = await import("xlsx-js-style")
+  return XLSXMod as any
+}
 
 const BRUTALIST_COLORS = ["#FF6B35", "#F7931E", "#FFD23F", "#06FFA5", "#118AB2", "#073B4C"]
 
-const FALLBACK_PLANTS = [
-  {
-    id: "gaharu",
-    name: "Gaharu",
-    totalInvestment: 850000000,
-    totalProfit: 106250000,
-    roi: 12.5,
-    instanceCount: 45,
-    investorCount: 45,
-  },
-  {
-    id: "alpukat",
-    name: "Alpukat",
-    totalInvestment: 720000000,
-    totalProfit: 86400000,
-    roi: 12.0,
-    instanceCount: 38,
-    investorCount: 38,
-  },
-]
+// ==== Response type dari /api/finance/summary ====
+type Summary = {
+  totalInvestment: number
+  totalProfit: number
+  roi: number
+  investorsCount: number
+  distribution: { name: string; value: number }[]
+  topPlantTypes: {
+    plantTypeId: string
+    plantTypeName: string
+    totalInvestment: number
+    paidProfit: number
+    roi: number
+    treeCount: number
+    activeInvestors: number
+  }[]
+}
 
 export default function FinancePage() {
-  const [topPlants, setTopPlants] = React.useState(FALLBACK_PLANTS)
+  // Top plants tetap dipakai komponen kartu yang sama
+  const [topPlants, setTopPlants] = React.useState<
+    { id: string; name: string; totalInvestment: number; totalProfit: number; roi: number; instanceCount: number; investorCount: number }[]
+  >([])
+
   const [loading, setLoading] = React.useState(true)
   const [error, setError] = React.useState<string | null>(null)
+
+  // state untuk ringkasan & distribusi
+  const [totals, setTotals] = React.useState({ invest: 0, profit: 0, roi: 0, investors: 0 })
+  const [distribution, setDistribution] = React.useState<{ name: string; value: number; color: string }[]>([])
 
   React.useEffect(() => {
     async function fetchData() {
       try {
         setLoading(true)
-        const plants = await getTopPlantTypesByInvestment(2)
-        const processedPlants = plants.map((plant) => ({
-          ...plant,
-          roi: plant.roi || 0,
-          totalInvestment: plant.totalInvestment || 0,
-          totalProfit: plant.totalProfit || 0,
-          investorCount: plant.investorCount || 0,
-          instanceCount: plant.instanceCount || 0,
+        const res = await fetch("/api/finance/summary", { cache: "no-store" })
+        if (!res.ok) throw new Error("Failed to fetch summary")
+        const data: Summary = await res.json()
+
+        // set ringkasan
+        setTotals({
+          invest: data.totalInvestment || 0,
+          profit: data.totalProfit || 0,
+          roi: data.roi || 0,
+          investors: data.investorsCount || 0,
+        })
+
+        // set distribusi (pie)
+        const dist = (data.distribution || []).map((d, i) => ({
+          name: d.name,
+          value: d.value,
+          color: BRUTALIST_COLORS[i % BRUTALIST_COLORS.length],
         }))
-        setTopPlants(processedPlants)
+        setDistribution(dist)
+
+        // set top tanaman (mapping ke bentuk lama kartu) -> TAMPILKAN 1 TANAMAN DENGAN INVESTOR TERBANYAK
+        const mapped = (data.topPlantTypes || []).map((t) => ({
+          id: t.plantTypeId,
+          name: t.plantTypeName,
+          totalInvestment: t.totalInvestment || 0,
+          totalProfit: t.paidProfit || 0,
+          roi: t.roi || 0,
+          instanceCount: t.treeCount || 0, // jumlah pohon
+          investorCount: t.activeInvestors || 0,
+        }))
+        // pilih satu dengan investorCount terbanyak (kalau seri, ambil yang pertama)
+        const picked = mapped.sort((a, b) => b.investorCount - a.investorCount)[0]
+        setTopPlants(picked ? [picked] : [])
+
         setError(null)
       } catch (err) {
-        console.error("[v0] Failed to get plant data:", err)
-        setError("Failed to load data from database, showing fallback data")
-        setTopPlants(FALLBACK_PLANTS)
+        console.error("[finance] fetch error:", err)
+        setError("Gagal memuat data dari database")
       } finally {
         setLoading(false)
       }
@@ -65,265 +100,76 @@ export default function FinancePage() {
     fetchData()
   }, [])
 
-  const overallTotals = topPlants.reduce(
-    (acc, plant) => ({
-      invest: acc.invest + plant.totalInvestment,
-      profit: acc.profit + plant.totalProfit,
-      investors: acc.investors + plant.investorCount,
-    }),
-    { invest: 0, profit: 0, investors: 0 },
-  )
-
-  const overallROI = overallTotals.invest > 0 ? (overallTotals.profit / overallTotals.invest) * 100 : 0
-
-  const investmentData = topPlants
-    .map((plant, index) => ({
-      name: plant.name,
-      value: plant.totalInvestment,
-      color: BRUTALIST_COLORS[index % BRUTALIST_COLORS.length],
-    }))
-    .filter((item) => item.value > 0)
-
-  const handleDownloadSummary = () => {
+  const handleDownloadSummary = async () => {
     try {
+      const XLSX = await getXLSX()
       const wb = XLSX.utils.book_new()
 
-      const allMembers = generateMemberData()
-      const allPlantTypes = getPlantTypesSummary()
-
-      // Calculate comprehensive totals from database
-      const comprehensiveTotals = {
-        totalInvestment: allMembers.reduce((sum, member) => sum + member.totalInvestment, 0),
-        totalProfit: allMembers.reduce((sum, member) => sum + member.totalProfit, 0),
-        totalMembers: allMembers.length,
-        totalPlantInstances: PLANT_INSTANCES.length,
-      }
-
-      const comprehensiveROI =
-        comprehensiveTotals.totalInvestment > 0
-          ? (comprehensiveTotals.totalProfit / comprehensiveTotals.totalInvestment) * 100
-          : 0
-
-      // Summary Sheet with proper borders and formatting
+      // ringkasan
       const summaryData = [
         ["RINGKASAN INVESTASI KESELURUHAN", "", "", ""],
         ["Tanggal Laporan:", new Date().toLocaleDateString("id-ID"), "", ""],
         ["", "", "", ""],
         ["METRIK UTAMA", "", "", ""],
-        ["Total Investasi", formatCurrency(comprehensiveTotals.totalInvestment), "", ""],
-        ["Total Keuntungan", formatCurrency(comprehensiveTotals.totalProfit), "", ""],
-        ["ROI Keseluruhan", formatPercentage(comprehensiveROI), "", ""],
-        ["Jumlah Anggota", comprehensiveTotals.totalMembers, "", ""],
-        ["Jumlah Pohon", comprehensiveTotals.totalPlantInstances, "", ""],
+        ["Total Investasi", totals.invest, "", ""],
+        ["Total Keuntungan", totals.profit, "", ""],
+        ["ROI Keseluruhan", `${totals.roi.toFixed(2)}%`, "", ""],
+        ["Jumlah Anggota", totals.investors, "", ""],
         ["", "", "", ""],
         ["DISTRIBUSI PER JENIS TANAMAN", "", "", ""],
-        ["Jenis Tanaman", "Total Investasi", "Total Keuntungan", "ROI"],
-        ...allPlantTypes.map((plant) => [
-          plant.name,
-          formatCurrency(plant.totalInvestment),
-          formatCurrency(plant.totalProfit),
-          formatPercentage(plant.averageROI),
-        ]),
+        ["Jenis Tanaman", "Total Investasi", "", ""],
+        ...distribution.map((d) => [d.name, d.value, "", ""]),
+        ["", "", "", ""],
+        ["TOP INVESTASI TANAMAN (Investor Terbanyak)", "", "", ""],
+        ["Jenis Tanaman", "Total Investasi", "Profit Dibayar", "ROI"],
+        ...topPlants.map((p) => [p.name, p.totalInvestment, p.totalProfit, `${(p.roi ?? 0).toFixed(2)}%`]),
       ]
 
-      const summaryWs = XLSX.utils.aoa_to_sheet(summaryData)
-      summaryWs["!cols"] = [{ width: 25 }, { width: 20 }, { width: 20 }, { width: 15 }]
+      const ws = XLSX.utils.aoa_to_sheet(summaryData)
+      ws["!cols"] = [{ width: 28 }, { width: 22 }, { width: 20 }, { width: 14 }]
 
-      const summaryRange = XLSX.utils.decode_range(summaryWs["!ref"] || "A1")
-      for (let row = summaryRange.s.r; row <= summaryRange.e.r; row++) {
-        for (let col = summaryRange.s.c; col <= summaryRange.e.c; col++) {
-          const cellAddress = XLSX.utils.encode_cell({ r: row, c: col })
-          if (!summaryWs[cellAddress]) summaryWs[cellAddress] = { v: "" }
-
-          // Header rows styling
-          if (row === 0 || row === 3 || row === 10) {
-            summaryWs[cellAddress].s = {
-              font: { bold: true, sz: 12, color: { rgb: "FFFFFF" } },
-              fill: { fgColor: { rgb: "4472C4" } },
-              border: {
-                top: { style: "thin", color: { rgb: "000000" } },
-                bottom: { style: "thin", color: { rgb: "000000" } },
-                left: { style: "thin", color: { rgb: "000000" } },
-                right: { style: "thin", color: { rgb: "000000" } },
-              },
-              alignment: { horizontal: "center", vertical: "center" },
-            }
-          } else if (row === 11) {
-            // Table header styling
-            summaryWs[cellAddress].s = {
-              font: { bold: true, sz: 11 },
-              fill: { fgColor: { rgb: "D9E2F3" } },
-              border: {
-                top: { style: "thin", color: { rgb: "000000" } },
-                bottom: { style: "thin", color: { rgb: "000000" } },
-                left: { style: "thin", color: { rgb: "000000" } },
-                right: { style: "thin", color: { rgb: "000000" } },
-              },
-              alignment: { horizontal: "center", vertical: "center" },
-            }
-          } else {
-            // Regular cells with borders
-            summaryWs[cellAddress].s = {
-              border: {
-                top: { style: "thin", color: { rgb: "CCCCCC" } },
-                bottom: { style: "thin", color: { rgb: "CCCCCC" } },
-                left: { style: "thin", color: { rgb: "CCCCCC" } },
-                right: { style: "thin", color: { rgb: "CCCCCC" } },
-              },
-            }
+      // styling sederhana
+      const border = { top: { style: "thin" }, right: { style: "thin" }, bottom: { style: "thin" }, left: { style: "thin" } }
+      const rows = summaryData.length
+      const cols = 4
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          const addr = XLSX.utils.encode_cell({ r, c })
+          const cell = ws[addr]
+          if (!cell) continue
+          cell.s = { ...(cell.s || {}), border }
+          if (r === 0 || r === 3 || r === 10 || r === 12) {
+            cell.s = { ...(cell.s || {}), font: { bold: true } }
+          }
+          if (r === 11 || r === 13) {
+            cell.s = { ...(cell.s || {}), font: { bold: true } }
           }
         }
       }
 
-      XLSX.utils.book_append_sheet(wb, summaryWs, "Ringkasan Umum")
-
-      const memberDetailData = [
-        ["DETAIL ANGGOTA INVESTOR", "", "", "", "", "", ""],
-        ["", "", "", "", "", "", ""],
-        ["Nama", "Email", "Telepon", "Lokasi", "Total Investasi", "Total Keuntungan", "ROI"],
-        ...allMembers.map((member) => [
-          member.name,
-          member.email,
-          member.phone,
-          member.location,
-          member.totalInvestment,
-          member.totalProfit,
-          member.overallROI,
-        ]),
-        ["", "", "", "", "", "", ""],
-        ["TOTAL", "", "", "", comprehensiveTotals.totalInvestment, comprehensiveTotals.totalProfit, comprehensiveROI],
-      ]
-
-      const memberDetailWs = XLSX.utils.aoa_to_sheet(memberDetailData)
-      memberDetailWs["!cols"] = [
-        { width: 20 },
-        { width: 25 },
-        { width: 18 },
-        { width: 15 },
-        { width: 18 },
-        { width: 18 },
-        { width: 12 },
-      ]
-
-      // Add borders to member detail sheet
-      const memberRange = XLSX.utils.decode_range(memberDetailWs["!ref"] || "A1")
-      for (let row = memberRange.s.r; row <= memberRange.e.r; row++) {
-        for (let col = memberRange.s.c; col <= memberRange.e.c; col++) {
-          const cellAddress = XLSX.utils.encode_cell({ r: row, c: col })
-          if (!memberDetailWs[cellAddress]) memberDetailWs[cellAddress] = { v: "" }
-
-          if (row === 0 || row === 2) {
-            memberDetailWs[cellAddress].s = {
-              font: { bold: true, sz: 12, color: { rgb: "FFFFFF" } },
-              fill: { fgColor: { rgb: "70AD47" } },
-              border: {
-                top: { style: "thin", color: { rgb: "000000" } },
-                bottom: { style: "thin", color: { rgb: "000000" } },
-                left: { style: "thin", color: { rgb: "000000" } },
-                right: { style: "thin", color: { rgb: "000000" } },
-              },
-              alignment: { horizontal: "center", vertical: "center" },
-            }
-          } else {
-            memberDetailWs[cellAddress].s = {
-              border: {
-                top: { style: "thin", color: { rgb: "CCCCCC" } },
-                bottom: { style: "thin", color: { rgb: "CCCCCC" } },
-                left: { style: "thin", color: { rgb: "CCCCCC" } },
-                right: { style: "thin", color: { rgb: "CCCCCC" } },
-              },
-            }
-          }
-        }
-      }
-
-      XLSX.utils.book_append_sheet(wb, memberDetailWs, "Detail Anggota")
-
-      const plantInstanceData = [
-        ["DETAIL POHON INVESTASI", "", "", "", "", "", ""],
-        ["", "", "", "", "", "", ""],
-        [
-          "Nama Pohon",
-          "Jenis",
-          "Total Investasi",
-          "Total Pemasukan",
-          "Total Pengeluaran",
-          "Keuntungan Bersih",
-          "Status",
-        ],
-        ...PLANT_INSTANCES.map((instance) => {
-          const totalInvestment = instance.investors.reduce((sum, inv) => sum + inv.amount, 0)
-          const totalIncome = instance.incomeRecords.reduce((sum, inc) => sum + inc.amount, 0)
-          const totalExpenses = instance.operationalCosts.reduce((sum, cost) => sum + cost.amount, 0)
-          const netProfit = totalIncome - totalExpenses
-
-          return [
-            instance.instanceName,
-            instance.plantTypeName,
-            totalInvestment,
-            totalIncome,
-            totalExpenses,
-            netProfit,
-            instance.status === "active" ? "Aktif" : "Tidak Aktif",
-          ]
-        }),
-      ]
-
-      const plantInstanceWs = XLSX.utils.aoa_to_sheet(plantInstanceData)
-      plantInstanceWs["!cols"] = [
-        { width: 18 },
-        { width: 15 },
-        { width: 18 },
-        { width: 18 },
-        { width: 18 },
-        { width: 18 },
-        { width: 12 },
-      ]
-
-      // Add borders to plant instance sheet
-      const plantRange = XLSX.utils.decode_range(plantInstanceWs["!ref"] || "A1")
-      for (let row = plantRange.s.r; row <= plantRange.e.r; row++) {
-        for (let col = plantRange.s.c; col <= plantRange.e.c; col++) {
-          const cellAddress = XLSX.utils.encode_cell({ r: row, c: col })
-          if (!plantInstanceWs[cellAddress]) plantInstanceWs[cellAddress] = { v: "" }
-
-          if (row === 0 || row === 2) {
-            plantInstanceWs[cellAddress].s = {
-              font: { bold: true, sz: 12, color: { rgb: "FFFFFF" } },
-              fill: { fgColor: { rgb: "E67C73" } },
-              border: {
-                top: { style: "thin", color: { rgb: "000000" } },
-                bottom: { style: "thin", color: { rgb: "000000" } },
-                left: { style: "thin", color: { rgb: "000000" } },
-                right: { style: "thin", color: { rgb: "000000" } },
-              },
-              alignment: { horizontal: "center", vertical: "center" },
-            }
-          } else {
-            plantInstanceWs[cellAddress].s = {
-              border: {
-                top: { style: "thin", color: { rgb: "CCCCCC" } },
-                bottom: { style: "thin", color: { rgb: "CCCCCC" } },
-                left: { style: "thin", color: { rgb: "CCCCCC" } },
-                right: { style: "thin", color: { rgb: "CCCCCC" } },
-              },
-            }
-          }
-        }
-      }
-
-      XLSX.utils.book_append_sheet(wb, plantInstanceWs, "Detail Pohon")
-
-      const currentDate = new Date().toISOString().split("T")[0]
-      const filename = `Ringkasan_Investasi_Lengkap_${currentDate}.xlsx`
-
-      XLSX.writeFile(wb, filename)
-
-      console.log("[v0] Comprehensive investment summary Excel file generated successfully")
+      XLSX.utils.book_append_sheet(wb, ws, "Ringkasan")
+      XLSX.writeFile(wb, `Ringkasan_Investasi_${new Date().toISOString().slice(0, 10)}.xlsx`)
     } catch (error) {
-      console.error("[v0] Error generating Excel file:", error)
-      alert("Terjadi kesalahan saat membuat file Excel. Silakan coba lagi.")
+      console.error("[finance] export error:", error)
+      alert("Terjadi kesalahan saat membuat file Excel.")
     }
+  }
+
+  // Pie data pakai state 'distribution'
+  const investmentData = distribution
+  const totalInvestPie = investmentData.reduce((s, d) => s + d.value, 0)
+
+  // Custom tooltip menampilkan nama + nominal
+  function PieTooltip({ active, payload }: any) {
+    if (!active || !payload || !payload.length) return null
+    const p = payload[0]
+    // name ada di payload.name, value ada di payload.value
+    return (
+      <div style={{ background: "#fff", border: "1px solid #000", padding: "8px 10px", borderRadius: 6, fontWeight: 600 }}>
+        <div style={{ marginBottom: 4 }}>{p?.name}</div>
+        <div>Investasi : {formatCurrency(Number(p?.value) || 0)}</div>
+      </div>
+    )
   }
 
   return (
@@ -332,7 +178,9 @@ export default function FinancePage() {
         <header>
           <div className="mb-6">
             <h1 className="text-2xl font-bold text-foreground mb-2">Dashboard</h1>
-            <p className="text-muted-foreground">Jumat, 22 Agustus 2025</p>
+            <p className="text-muted-foreground">
+              {new Date().toLocaleDateString("id-ID", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
+            </p>
             {error && (
               <div className="mt-2 p-3 bg-destructive/10 border border-destructive/20 rounded-lg text-destructive text-sm">
                 ⚠️ {error}
@@ -366,31 +214,32 @@ export default function FinancePage() {
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
                 <SummaryCard
                   title="Total Investasi"
-                  value={formatCurrency(overallTotals.invest)}
+                  value={formatCurrency(totals.invest)}
                   icon={<DollarSign className="h-5 w-5" />}
                   colorClass="text-chart-1"
                 />
                 <SummaryCard
                   title="Total Keuntungan"
-                  value={formatCurrency(overallTotals.profit)}
+                  value={formatCurrency(totals.profit)}
                   icon={<TrendingUp className="h-5 w-5" />}
                   colorClass="text-chart-2"
                 />
                 <SummaryCard
                   title="ROI"
-                  value={formatPercentage(overallROI || 0)}
+                  value={formatPercentage(totals.roi || 0)}
                   icon={<BarChart3 className="h-5 w-5" />}
                   colorClass="text-chart-3"
                 />
                 <SummaryCard
                   title="Jumlah Anggota"
-                  value={`${overallTotals.investors}`}
+                  value={`${totals.investors}`}
                   icon={<Users className="h-5 w-5" />}
                   colorClass="text-chart-4"
                 />
               </div>
             )}
 
+            {/* PIE + LEGEND WARNA */}
             <div className="bg-muted rounded-xl p-6">
               <h3 className="text-lg font-bold text-foreground mb-4">Distribusi Investasi</h3>
               {loading ? (
@@ -398,37 +247,49 @@ export default function FinancePage() {
                   <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-primary"></div>
                 </div>
               ) : (
-                <div className="h-64">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie
-                        data={investmentData}
-                        cx="50%"
-                        cy="50%"
-                        outerRadius={80}
-                        fill="#8884d8"
-                        dataKey="value"
-                        stroke="hsl(var(--background))"
-                        strokeWidth={3}
-                      >
-                        {investmentData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.color} />
-                        ))}
-                      </Pie>
-                      <Tooltip
-                        formatter={(value: number) => [formatCurrency(value), "Investasi"]}
-                        contentStyle={{
-                          backgroundColor: "#ffffff",
-                          border: "2px solid #000000",
-                          borderRadius: "8px",
-                          color: "#000000",
-                          fontWeight: "bold",
-                          boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
-                        }}
-                      />
-                    </PieChart>
-                  </ResponsiveContainer>
-                </div>
+                <>
+                  <div className="h-64">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <PieChart>
+                        <Pie
+                          data={investmentData}
+                          cx="50%"
+                          cy="50%"
+                          outerRadius={86}
+                          dataKey="value"
+                          stroke="hsl(var(--background))"
+                          strokeWidth={3}
+                          label
+                        >
+                          {investmentData.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={entry.color} />
+                          ))}
+                        </Pie>
+                        <Tooltip content={<PieTooltip />} />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </div>
+
+                  {/* Legend mapping warna → nama tanaman + nilai + persentase */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 mt-6">
+                    {investmentData.map((d) => {
+                      const pct = totalInvestPie > 0 ? (d.value / totalInvestPie) * 100 : 0
+                      return (
+                        <div key={d.name} className="flex items-center gap-3 text-sm">
+                          <span
+                            className="inline-block h-3 w-3 rounded-full"
+                            style={{ backgroundColor: d.color }}
+                            aria-label={`Warna ${d.name}`}
+                          />
+                          <span className="font-medium">{d.name}</span>
+                          <span className="text-muted-foreground">
+                            — {formatCurrency(d.value)} ({pct.toFixed(1)}%)
+                          </span>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </>
               )}
             </div>
           </div>
@@ -444,7 +305,7 @@ export default function FinancePage() {
 
           {loading ? (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {[...Array(2)].map((_, i) => (
+              {[...Array(1)].map((_, i) => (
                 <div key={i} className="rounded-2xl bg-card border border-border p-6 animate-pulse">
                   <div className="h-6 bg-muted rounded mb-4 w-1/3"></div>
                   <div className="grid grid-cols-2 gap-4 mb-6">
@@ -462,7 +323,7 @@ export default function FinancePage() {
               ))}
             </div>
           ) : (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 gap-6">
               {topPlants.map((plant) => (
                 <PlantCard key={plant.id} plant={plant} />
               ))}
@@ -488,9 +349,7 @@ function SummaryCard({
   return (
     <div className="rounded-xl bg-card p-4 border border-border">
       <div className="flex items-center justify-between mb-3">
-        <div className={`flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 ${colorClass}`}>
-          {icon}
-        </div>
+        <div className={`flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 ${colorClass}`}>{icon}</div>
       </div>
       <div className="space-y-1">
         <p className="text-sm font-medium text-muted-foreground">{title}</p>
@@ -506,7 +365,7 @@ function PlantCard({ plant }: { plant: any }) {
       <div className="p-6">
         <div className="flex items-start justify-between mb-6">
           <div>
-            <h2 className="text-xl font-bold text-foreground mb-2">{plant.name}</h2>
+            <h2 className="text-xl font-bold text-foreground mb-2 capitalize">{plant.name}</h2>
             <div className="flex items-center gap-4 text-sm text-muted-foreground">
               <span className="flex items-center gap-1">
                 <BarChart3 className="h-4 w-4" />
@@ -531,7 +390,7 @@ function PlantCard({ plant }: { plant: any }) {
           <div className="rounded-xl bg-muted p-4">
             <div className="flex items-center gap-2 mb-2">
               <TrendingUp className="h-4 w-4 text-chart-2" />
-              <span className="text-sm font-medium text-muted-foreground">Profit Dibayar</span>
+              <span className="text-sm font-medium text-muted-foreground">Total Profit</span>
             </div>
             <div className="text-lg font-bold text-chart-2">{formatCurrency(plant.totalProfit)}</div>
           </div>
@@ -551,10 +410,10 @@ function PlantCard({ plant }: { plant: any }) {
             <span>{plant.investorCount} investor aktif</span>
           </div>
           <Button asChild size="sm" className="gap-2">
-            <Link href={`/tanaman/${plant.id}`}>
+            {/* <Link href={`/tanaman/${plant.id}`}>
               Lihat Detail
               <ArrowUpRight className="h-4 w-4" />
-            </Link>
+            </Link> */}
           </Button>
         </div>
       </div>

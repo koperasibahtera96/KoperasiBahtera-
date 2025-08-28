@@ -97,7 +97,7 @@ export default function SemuaInvestasiPage() {
                     <span className="text-white font-medium">{formatCurrency(plant.totalInvestment)}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-slate-400">Profit Dibayar</span>
+                    <span className="text-slate-400">Total Profit </span>
                     <span className="text-green-400 font-medium">{formatCurrency(plant.totalProfit)}</span>
                   </div>
                 </div>
