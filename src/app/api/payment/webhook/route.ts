@@ -1,8 +1,8 @@
 import { occupationOptions } from '@/constant/OCCUPATION';
 import { midtransService } from '@/lib/midtrans';
 import dbConnect from '@/lib/mongodb';
-import Payment from '@/models/Payment';
 import Investor from '@/models/Investor';
+import Payment from '@/models/Payment';
 import User from '@/models/User';
 import { NextRequest, NextResponse } from 'next/server';
 
@@ -180,26 +180,29 @@ export async function POST(request: NextRequest) {
     } else if (shouldCreateUser && orderId.startsWith('INV-')) {
       // Investment payments don't need user creation but need investor record update
       console.log('Investment payment - updating investor record for:', payment.customerData?.email);
-      
+
       try {
         // Update investor record to mark full payment as completed
-        const investor = await Investor.findOne({ 
-          'investments.investmentId': orderId 
+        const investor = await Investor.findOne({
+          'investments.investmentId': orderId
         });
-        
+
+
+
         if (investor) {
           const investment = investor.investments.find(
-            inv => inv.investmentId === orderId
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            (inv: any) => inv.investmentId === orderId
           );
-          
+
           if (investment) {
             investment.status = 'completed';
             investment.amountPaid = investment.totalAmount;
             investment.completionDate = new Date();
-            
+
             // Update investor totals
             investor.totalPaid += investment.totalAmount;
-            
+
             await investor.save();
             console.log('Investor record updated for full payment:', orderId);
           }
@@ -207,7 +210,7 @@ export async function POST(request: NextRequest) {
       } catch (investorError) {
         console.error('Error updating investor record:', investorError);
       }
-      
+
       payment.isProcessed = true;
       message = 'Investment payment successful';
     }

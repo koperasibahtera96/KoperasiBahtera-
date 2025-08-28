@@ -73,24 +73,6 @@ export async function POST(req: NextRequest) {
     await payment.save();
     console.log('Investment payment record created:', orderId);
 
-    // Create or update investor record for full payment
-    let investor = await Investor.findOne({ userId: dbUser._id });
-    
-    if (!investor) {
-      // Create new investor
-      investor = new Investor({
-        userId: dbUser._id,
-        name: dbUser.fullName,
-        email: dbUser.email,
-        phoneNumber: dbUser.phoneNumber,
-        totalInvestasi: 0,
-        totalPaid: 0,
-        jumlahPohon: 0,
-        investments: [],
-        status: 'active'
-      });
-    }
-
     // Add investment record for full payment (will be marked as completed when payment webhook confirms)
     const investmentRecord = {
       investmentId: orderId,
@@ -105,10 +87,25 @@ export async function POST(req: NextRequest) {
       investmentDate: new Date()
     };
 
-    investor.investments.push(investmentRecord);
-    investor.totalInvestasi += plan.price;
-    
-    await investor.save();
+    // Use upsert to handle existing investors - don't update email to avoid unique constraint issues
+    await Investor.findOneAndUpdate(
+      { userId: dbUser._id },
+      {
+        $set: {
+          name: dbUser.fullName,
+          phoneNumber: dbUser.phoneNumber,
+          status: 'active'
+        },
+        $setOnInsert: {
+          email: dbUser.email, // Only set email when creating new document
+          totalPaid: 0,
+          jumlahPohon: 0
+        },
+        $push: { investments: investmentRecord },
+        $inc: { totalInvestasi: plan.price }
+      },
+      { upsert: true, new: true }
+    );
 
     return NextResponse.json(transaction);
   } catch (error) {

@@ -101,24 +101,6 @@ export async function POST(req: NextRequest) {
 
     await CicilanInstallment.insertMany(installments);
 
-    // Create or update investor record
-    let investor = await Investor.findOne({ userId: user._id });
-    
-    if (!investor) {
-      // Create new investor
-      investor = new Investor({
-        userId: user._id,
-        name: user.fullName,
-        email: user.email,
-        phoneNumber: user.phoneNumber,
-        totalInvestasi: 0,
-        totalPaid: 0,
-        jumlahPohon: 0,
-        investments: [],
-        status: 'active'
-      });
-    }
-
     // Add investment record with installment summaries
     const installmentSummaries = installments.map(inst => ({
       installmentNumber: inst.installmentNumber,
@@ -141,10 +123,25 @@ export async function POST(req: NextRequest) {
       investmentDate: new Date()
     };
 
-    investor.investments.push(investmentRecord);
-    investor.totalInvestasi += totalAmount;
-    
-    await investor.save();
+    // Create or update investor record using upsert
+    await Investor.findOneAndUpdate(
+      { userId: user._id },
+      {
+        $set: {
+          name: user.fullName,
+          phoneNumber: user.phoneNumber,
+          status: 'active'
+        },
+        $setOnInsert: {
+          email: user.email,
+          totalPaid: 0,
+          jumlahPohon: 0
+        },
+        $push: { investments: investmentRecord },
+        $inc: { totalInvestasi: totalAmount }
+      },
+      { upsert: true, new: true }
+    );
 
     return NextResponse.json({
       success: true,
