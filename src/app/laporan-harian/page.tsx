@@ -1,11 +1,11 @@
 "use client"
 
-import { useState, useEffect, useMemo } from "react"
-import { ArrowLeft, Calendar, Download, TrendingUp, TrendingDown, DollarSign } from "lucide-react"
-import Link from "next/link"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui-finance/card"
 import { Button } from "@/components/ui-finance/button"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui-finance/card"
 import type { PlantInstance } from "@/lib/api"
+import { ArrowLeft, Calendar, DollarSign, Download, TrendingDown, TrendingUp } from "lucide-react"
+import Link from "next/link"
+import { useEffect, useMemo, useState } from "react"
 
 type Tx = {
   type: "income" | "expense"

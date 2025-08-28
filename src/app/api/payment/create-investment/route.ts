@@ -1,6 +1,7 @@
 import { midtransService } from '@/lib/midtrans';
 import dbConnect from '@/lib/mongodb';
 import Payment from '@/models/Payment';
+import Investor from '@/models/Investor';
 import User from '@/models/User';
 import { NextRequest, NextResponse } from 'next/server';
 
@@ -71,6 +72,43 @@ export async function POST(req: NextRequest) {
 
     await payment.save();
     console.log('Investment payment record created:', orderId);
+
+    // Create or update investor record for full payment
+    let investor = await Investor.findOne({ userId: dbUser._id });
+    
+    if (!investor) {
+      // Create new investor
+      investor = new Investor({
+        userId: dbUser._id,
+        name: dbUser.fullName,
+        email: dbUser.email,
+        phoneNumber: dbUser.phoneNumber,
+        totalInvestasi: 0,
+        totalPaid: 0,
+        jumlahPohon: 0,
+        investments: [],
+        status: 'active'
+      });
+    }
+
+    // Add investment record for full payment (will be marked as completed when payment webhook confirms)
+    const investmentRecord = {
+      investmentId: orderId,
+      productName: plan.name,
+      plantInstanceId: null, // Will be assigned when plant is allocated
+      totalAmount: plan.price,
+      amountPaid: 0, // Will be updated when payment webhook confirms
+      paymentType: 'full' as const,
+      status: 'pending' as const, // Will be updated to completed when payment succeeds
+      installments: undefined,
+      fullPaymentProofUrl: null, // Midtrans handles the payment proof
+      investmentDate: new Date()
+    };
+
+    investor.investments.push(investmentRecord);
+    investor.totalInvestasi += plan.price;
+    
+    await investor.save();
 
     return NextResponse.json(transaction);
   } catch (error) {

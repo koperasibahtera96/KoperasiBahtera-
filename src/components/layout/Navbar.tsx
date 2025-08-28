@@ -26,6 +26,16 @@ function AuthButtons({ mobile = false }: { mobile?: boolean }) {
           </p>
           <p className="text-xs text-green-600 capitalize">{session.user.role}</p>
         </div>
+        {session.user.role === 'user' && (
+          <Link href="/cicilan">
+            <Button variant="outline" size="sm" className={cn(
+              mobile ? 'w-full' : '',
+              'border-emerald-200 text-emerald-700 hover:bg-emerald-50 hover:border-emerald-300 font-semibold'
+            )}>
+              💳 Cicilan Saya
+            </Button>
+          </Link>
+        )}
         <Link href={`/${session.user.role}`}>
           <Button variant="outline" size="sm" className={cn(
             mobile ? 'w-full' : '',

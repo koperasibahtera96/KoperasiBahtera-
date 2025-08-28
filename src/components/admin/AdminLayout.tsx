@@ -11,6 +11,7 @@ interface AdminLayoutProps {
 const navigation = [
   { name: 'Dashboard', href: '/admin', icon: '📊' },
   { name: 'Manajemen Investor', href: '/admin/investors', icon: '👥' },
+  { name: 'Kelola Cicilan', href: '/admin/cicilan', icon: '💳' },
   { name: 'Data Pohon', href: '/admin/trees', icon: '🌳' },
   { name: 'Data Staff', href: '/admin/staff', icon: '👷' },
   { name: 'Laporan', href: '/admin/laporan', icon: '📈' },

@@ -5,11 +5,17 @@ import { Button } from '@/components/ui/Button';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
+import { CicilanModal } from './CicilanModal';
 
 export function InvestmentPlans() {
   const { data: session } = useSession();
   const router = useRouter();
   const [isLoading, setIsLoading] = useState<string | null>(null);
+  //eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [cicilanModal, setCicilanModal] = useState<{ isOpen: boolean; plan: any }>({
+    isOpen: false,
+    plan: null
+  });
 
   //eslint-disable-next-line @typescript-eslint/no-explicit-any
   const handleInvestment = async (plan: any) => {
@@ -45,6 +51,15 @@ export function InvestmentPlans() {
     } finally {
       setIsLoading(null);
     }
+  };
+
+  //eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const handleCicilanSelect = (plan: any) => {
+    if (!session) {
+      router.push('/login');
+      return;
+    }
+    setCicilanModal({ isOpen: true, plan });
   };
 
 
@@ -276,20 +291,32 @@ export function InvestmentPlans() {
                   ))}
                 </ul>
 
-                {/* CTA Button */}
-                <Button
-                  variant={plan.popular ? "primary" : "outline"}
-                  className={`w-full py-4 text-lg font-bold transition-all duration-200 ${
-                    plan.popular
-                      ? 'bg-red-600 hover:bg-red-700 hover:scale-102'
-                      : 'border-2 border-red-500 text-red-600 hover:bg-red-500 hover:text-white hover:scale-102'
-                  }`}
-                  size="lg"
-                  onClick={() => handleInvestment(plan)}
-                  loading={isLoading === plan.name}
-                >
-                  {plan.popular ? 'Pilih Paket Terpopuler' : 'Pilih Paket Ini'}
-                </Button>
+                {/* CTA Buttons */}
+                <div className="space-y-3">
+                  <Button
+                    variant={plan.popular ? "primary" : "outline"}
+                    className={`w-full py-4 text-lg font-bold transition-all duration-200 ${
+                      plan.popular
+                        ? 'bg-red-600 hover:bg-red-700 hover:scale-102'
+                        : 'border-2 border-red-500 text-red-600 hover:bg-red-500 hover:text-white hover:scale-102'
+                    }`}
+                    size="lg"
+                    onClick={() => handleInvestment(plan)}
+                    loading={isLoading === plan.name}
+                  >
+                    {plan.popular ? 'Bayar Langsung Terpopuler' : 'Bayar Langsung'}
+                  </Button>
+
+                  <Button
+                    variant="outline"
+                    className="w-full py-4 text-lg font-bold border-2 border-emerald-500 text-emerald-600 hover:bg-emerald-500 hover:text-white transition-all duration-200 hover:scale-102"
+                    size="lg"
+                    onClick={() => handleCicilanSelect(plan)}
+                    disabled={isLoading === plan.name}
+                  >
+                    💳 Beli dengan Cicilan
+                  </Button>
+                </div>
               </div>
             </div>
           ))}
@@ -382,6 +409,13 @@ export function InvestmentPlans() {
           </div>
         </div>
       </div>
+
+      {/* Cicilan Modal */}
+      <CicilanModal
+        isOpen={cicilanModal.isOpen}
+        onClose={() => setCicilanModal({ isOpen: false, plan: null })}
+        plan={cicilanModal.plan}
+      />
     </section>
   );
 }
