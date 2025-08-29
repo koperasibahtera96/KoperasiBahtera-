@@ -224,7 +224,7 @@ export default function PlantDetail({ params }: { params: Promise<{ id: string }
     if (selectedHistory?.imageUrl) {
       const link = document.createElement("a")
       link.href = selectedHistory.imageUrl
-      link.download = `${plantData?.name}-${selectedHistory.type}-${selectedHistory.date}.jpg`
+      link.download = `${plantData?.instanceName || plantData?.name}-${selectedHistory.type}-${selectedHistory.date}.jpg`
       document.body.appendChild(link)
       link.click()
       document.body.removeChild(link)
@@ -270,7 +270,7 @@ export default function PlantDetail({ params }: { params: Promise<{ id: string }
 
       pdf.setFontSize(18)
       pdf.setFont("helvetica", "bold")
-      pdf.text(`Riwayat Tanaman: ${plantData.name}`, 20, yPosition)
+      pdf.text(`Riwayat Tanaman: ${plantData.instanceName || plantData.name}`, 20, yPosition)
       yPosition += 10
 
       pdf.setFontSize(12)
@@ -350,7 +350,7 @@ export default function PlantDetail({ params }: { params: Promise<{ id: string }
         yPosition += 10
       }
 
-      pdf.save(`Riwayat-${plantData.name}-${plantData.qrCode}.pdf`)
+      pdf.save(`Riwayat-${plantData.instanceName || plantData.name}-${plantData.qrCode}.pdf`)
     } catch {
       console.error("Error generating PDF")
       alert("Gagal membuat PDF. Silakan coba lagi.")
@@ -403,7 +403,9 @@ export default function PlantDetail({ params }: { params: Promise<{ id: string }
             Kembali ke Dashboard
           </Link>
           <h1 className="text-2xl lg:text-3xl font-bold text-gray-900">Detail Tanaman</h1>
-          <p className="text-gray-600 mt-2">Monitor dan kelola tanaman {plantData.name}</p>
+          <p className="text-gray-600 mt-2">
+            Monitor dan kelola tanaman {plantData.instanceName || plantData.name}
+          </p>
         </div>
 
         {/* Plant Info Header */}
@@ -413,7 +415,13 @@ export default function PlantDetail({ params }: { params: Promise<{ id: string }
               {/* Plant Avatar */}
               <div className="relative w-12 h-12 bg-emerald-500 rounded-lg overflow-hidden">
                 {plantData.fotoGambar ? (
-                  <Image src={plantData.fotoGambar} alt={plantData.name} fill sizes="48px" className="object-cover" />
+                  <Image
+                    src={plantData.fotoGambar}
+                    alt={plantData?.instanceName || plantData?.name || "Foto tanaman"}
+                    fill
+                    sizes="48px"
+                    className="object-cover"
+                  />
                 ) : (
                   <Leaf className="w-6 h-6 text-white absolute inset-0 m-auto" />
                 )}
@@ -421,7 +429,9 @@ export default function PlantDetail({ params }: { params: Promise<{ id: string }
 
               <div>
                 <p className="text-sm text-gray-600">Jenis Tanaman</p>
-                <h2 className="text-xl font-bold text-gray-900">{plantData.name}</h2>
+                <h2 className="text-xl font-bold text-gray-900">
+                  {plantData.instanceName || plantData.name}
+                </h2>
               </div>
             </div>
 
@@ -488,7 +498,7 @@ export default function PlantDetail({ params }: { params: Promise<{ id: string }
 
                       const link = document.createElement("a")
                       link.href = url
-                      link.download = `QR-${plantData.name}-${plantData.qrCode}.png`
+                      link.download = `QR-${plantData.instanceName || plantData.name}-${plantData.qrCode}.png`
                       document.body.appendChild(link)
                       link.click()
                       document.body.removeChild(link)
@@ -691,7 +701,7 @@ export default function PlantDetail({ params }: { params: Promise<{ id: string }
                     <div className="aspect-square bg-gray-100 rounded-lg overflow-hidden">
                       {selectedHistory.imageUrl ? (
                         <Image
-                        unoptimized
+                          unoptimized
                           src={selectedHistory.imageUrl || "/placeholder.svg"}
                           alt="Plant photo"
                           className="w-full h-full object-cover"

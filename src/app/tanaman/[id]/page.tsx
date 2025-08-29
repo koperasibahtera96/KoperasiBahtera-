@@ -4,6 +4,7 @@
 import * as React from "react"
 import { useEffect, useMemo, useState } from "react"
 import Link from "next/link"
+import { prefetchFinanceCaches } from "@/lib/finance"
 import {
   ArrowLeft,
   Calendar,
@@ -168,6 +169,12 @@ export default function Page({ params }: { params: { id: string } | Promise<{ id
     baseAnnualROI: 0,
   }
 
+  // ---------- PREFETCH CACHE untuk members (penting agar generateEnhancedMemberData tidak error) ----------
+  const [ready, setReady] = useState(false)
+  useEffect(() => {
+    prefetchFinanceCaches().finally(() => setReady(true))
+  }, [])
+
   // ---------- fetch DB: semua plant instances ----------
   const [instances, setInstances] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
@@ -255,7 +262,9 @@ export default function Page({ params }: { params: { id: string } | Promise<{ id
   }, [instances, plantTypeId])
 
   // ---------- PER INVESTOR ----------
-  const members = useMemo(() => generateEnhancedMemberData(), [])
+  // Ambil data members SETELAH prefetch selesai
+  const members = useMemo(() => (ready ? generateEnhancedMemberData() : []), [ready])
+
   const perInvestor = useMemo(() => {
     const nameSet = new Set(dbAgg.instancesOfType.map((x) => x.instanceName))
 
@@ -318,7 +327,7 @@ export default function Page({ params }: { params: { id: string } | Promise<{ id
     [dbAgg.yearly],
   )
 
-  if (loading) {
+  if (loading || !ready) {
     return (
       <div className="min-h-screen bg-slate-900 text-white p-6">
         <div className="h-64 flex items-center justify-center">Memuat ringkasan…</div>

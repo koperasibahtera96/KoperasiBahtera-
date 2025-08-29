@@ -223,10 +223,20 @@ export function generateDailyReportsForDate(date: Date) {
 
 export function generateMemberData(): Member[] {
   const key = "finance_membersLike_cache"
-  const cached = typeof window !== "undefined" ? sessionStorage.getItem(key) : null
-  if (cached) { try { return JSON.parse(cached) as Member[] } catch { /* ignore */ } }
-  throw new Error("Members data not prefetched")
+  if (typeof window !== "undefined") {
+    const cached = sessionStorage.getItem(key)
+    if (cached) {
+      try {
+        return JSON.parse(cached) as Member[]
+      } catch {
+        // ignore parse error
+      }
+    }
+  }
+  // fallback aman agar halaman tidak crash jika prefetch belum jalan
+  return []
 }
+
 
 
 export function generatePlantTypeReport(plantTypeId: string, date?: Date) {

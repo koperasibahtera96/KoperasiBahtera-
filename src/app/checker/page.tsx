@@ -80,20 +80,41 @@ export default function StaffDashboard() {
   useEffect(() => {
     fetchPlants()
   }, [])
+const fetchPlants = async () => {
+  try {
+    const res = await fetch("/api/plants", { cache: "no-store" });
+    if (!res.ok) throw new Error("Failed to fetch /api/plants");
 
-  const fetchPlants = async () => {
-    try {
-      const response = await fetch("/api/plants")
-      if (response.ok) {
-        const data = await response.json()
-        setPlants(data.data || [])
-      }
-    } catch (error) {
-      console.error("Error fetching plants:", error)
-    } finally {
-      setLoading(false)
-    }
+    const json = await res.json();
+
+    // Terima dua format: array langsung ATAU { data: [...] }
+    const raw: any[] = Array.isArray(json)
+      ? json
+      : Array.isArray(json?.data)
+      ? json.data
+      : [];
+
+    // Normalisasi properti yang dipakai UI (tanpa mengubah layout/logic lain)
+    const normalized = raw.map((p: any) => ({
+      ...p,
+      name: p.name ?? p.instanceName ?? "", // UI pakai 'name'
+      owner: p.owner ?? "",
+      memberId: p.memberId ?? "",
+      location: p.location ?? "",
+      status: p.status ?? "Kontrak Baru",
+      lastUpdate: p.lastUpdate ?? "",
+      fotoGambar: p.fotoGambar ?? "",
+    }));
+
+    setPlants(normalized);
+  } catch (err) {
+    console.error("Error fetching plants:", err);
+    setPlants([]); // biar UI tetap jalan
+  } finally {
+    setLoading(false);
   }
+};
+
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchQuery(e.target.value)
