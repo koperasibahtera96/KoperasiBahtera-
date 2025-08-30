@@ -19,13 +19,13 @@ export interface IInvestmentRecord {
   amountPaid: number;
   paymentType: 'full' | 'cicilan';
   status: 'pending' | 'active' | 'completed' | 'cancelled';
-  
+
   // For cicilan - minimal tracking with proof images
   installments?: IInstallmentSummary[];
-  
+
   // For full payment - proof image
   fullPaymentProofUrl?: string;
-  
+
   investmentDate: Date;
   completionDate?: Date;
 }
@@ -38,10 +38,10 @@ export interface IInvestor extends Document {
   totalInvestasi: number;
   totalPaid: number;
   jumlahPohon: number;
-  
+
   // Investment records with minimal installment info and proof images
   investments: IInvestmentRecord[];
-  
+
   status: 'active' | 'inactive';
   createdAt: Date;
   updatedAt: Date;
@@ -124,9 +124,7 @@ const InvestorSchema: Schema = new Schema({
   timestamps: true,
 });
 
-// Indexes for better query performance
-InvestorSchema.index({ userId: 1 });
-InvestorSchema.index({ email: 1 });
+// Indexes for better query performance (userId and email already indexed via unique: true)
 InvestorSchema.index({ status: 1 });
 InvestorSchema.index({ name: 1 });
 InvestorSchema.index({ 'investments.investmentId': 1 });

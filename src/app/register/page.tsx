@@ -3,7 +3,7 @@
 import { FormActions, FormField, FormRow } from '@/components/forms/FormField';
 import { Select } from '@/components/forms/Select';
 import { ValidationInput } from '@/components/forms/ValidationInput';
-import { Navbar } from '@/components/layout/Navbar';
+import LandingHeader from '@/components/landing/LandingHeader';
 import { Button } from '@/components/ui/Button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { occupationOptions } from '@/constant/OCCUPATION';
@@ -284,14 +284,22 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen bg-white">
-      <Navbar />
-      <div className="container max-w-6xl mx-auto px-4 py-12">
+    <div 
+      className="min-h-screen bg-cover bg-center bg-no-repeat font-[family-name:var(--font-poppins)]"
+      style={{
+        backgroundImage: 'url(/landing/hero-bg.png)',
+      }}
+    >
+      {/* Background overlay */}
+      <div className="absolute inset-0 bg-black/20"></div>
+      
+      <LandingHeader />
+      <div className="container max-w-6xl mx-auto px-4 py-12 relative z-10">
         {/* Header */}
         <div className="text-center mb-8">
           <div className="space-y-2">
-            <h2 className="text-3xl font-bold text-gray-800">Buat Akun Baru</h2>
-            <p className="text-gray-600">Daftar untuk mulai berinvestasi tanaman</p>
+            <h2 className="text-3xl font-bold text-white font-[family-name:var(--font-poppins)]">Buat Akun Baru</h2>
+            <p className="text-white/80">Daftar untuk mulai berinvestasi tanaman</p>
           </div>
         </div>
 
@@ -308,9 +316,9 @@ export default function RegisterPage() {
               <div key={item.step} className="flex items-center">
                 <div className={`relative w-10 h-10 rounded-full flex items-center justify-center text-sm font-medium ${
                   item.completed
-                    ? 'bg-green-600 text-white'
+                    ? 'bg-[#324D3E] text-white'
                     : item.active
-                    ? 'bg-green-600 text-white'
+                    ? 'bg-[#324D3E] text-white'
                     : 'bg-gray-300 text-gray-600'
                 }`}>
                   {item.completed ? (
@@ -323,7 +331,7 @@ export default function RegisterPage() {
                 </div>
                 {index < 4 && (
                   <div className={`w-16 h-1 mx-2 ${
-                    item.completed || (item.active && currentStep > item.step) ? 'bg-green-600' : 'bg-gray-300'
+                    item.completed || (item.active && currentStep > item.step) ? 'bg-[#324D3E]' : 'bg-gray-300'
                   }`} />
                 )}
               </div>
@@ -339,7 +347,7 @@ export default function RegisterPage() {
             ].map((item, index) => (
               <div key={index} className="text-center">
                 <p className={`text-xs font-medium ${
-                  currentStep === item.step ? 'text-green-600' : currentStep > item.step ? 'text-green-500' : 'text-gray-500'
+                  currentStep === item.step ? 'text-white' : currentStep > item.step ? 'text-white/80' : 'text-white/60'
                 }`}>
                   {item.label}
                 </p>
@@ -349,25 +357,25 @@ export default function RegisterPage() {
         </div>
 
         {/* Registration Form */}
-        <Card className="shadow-lg border border-gray-200">
-          <CardHeader className="text-center pb-6">
-            <CardTitle className="text-2xl text-gray-800">
+        <div className="bg-white/95 backdrop-blur-sm rounded-3xl shadow-2xl border border-white/20">
+          <div className="text-center p-6 pb-6">
+            <h3 className="text-2xl text-[#4C3D19] font-bold font-[family-name:var(--font-poppins)]">
               {currentStep === 1 && 'Pendaftaran - Data Diri'}
               {currentStep === 2 && 'Verifikasi KTP'}
               {currentStep === 3 && 'Verifikasi Wajah'}
               {currentStep === 4 && 'Pembayaran'}
               {currentStep === 5 && 'Konfirmasi Pendaftaran'}
-            </CardTitle>
-            <p className="text-gray-500 mt-2">
+            </h3>
+            <p className="text-gray-600 mt-2">
               {currentStep === 1 && 'Isi data diri Anda dengan lengkap dan benar'}
               {currentStep === 2 && 'Upload foto KTP Anda yang jelas dan terbaca'}
               {currentStep === 3 && 'Upload foto selfie Anda untuk verifikasi'}
               {currentStep === 4 && 'Lakukan pembayaran untuk menyelesaikan pendaftaran'}
               {currentStep === 5 && 'Periksa kembali data Anda dan selesaikan pendaftaran'}
             </p>
-          </CardHeader>
+          </div>
 
-          <CardContent className="px-8 pb-8">
+          <div className="px-8 pb-8">
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
               {/* Step 1: Data Diri */}
               {currentStep === 1 && (
@@ -528,12 +536,12 @@ export default function RegisterPage() {
                   <input
                     type="checkbox"
                     {...register('agreeToTerms')}
-                    className="w-5 h-5 text-green-600 border-2 border-gray-300 rounded focus:ring-green-500 focus:ring-2 mt-0.5"
+                    className="w-5 h-5 text-[#324D3E] border-2 border-gray-300 rounded focus:ring-[#324D3E] focus:ring-2 mt-0.5"
                     required
                   />
                   <span className="text-sm text-gray-700 group-hover:text-gray-900">
                     Saya menyetujui{' '}
-                    <Link href="/terms" className="text-green-600 hover:text-green-700 hover:underline font-medium">
+                    <Link href="/terms" className="text-[#324D3E] hover:text-[#4C3D19] hover:underline font-medium">
                       Syarat dan Ketentuan
                     </Link>
                     {' '}yang berlaku
@@ -544,12 +552,12 @@ export default function RegisterPage() {
                   <input
                     type="checkbox"
                     {...register('agreeToPrivacy')}
-                    className="w-5 h-5 text-green-600 border-2 border-gray-300 rounded focus:ring-green-500 focus:ring-2 mt-0.5"
+                    className="w-5 h-5 text-[#324D3E] border-2 border-gray-300 rounded focus:ring-[#324D3E] focus:ring-2 mt-0.5"
                     required
                   />
                   <span className="text-sm text-gray-700 group-hover:text-gray-900">
                     Saya menyetujui{' '}
-                    <Link href="/privacy" className="text-green-600 hover:text-green-700 hover:underline font-medium">
+                    <Link href="/privacy" className="text-[#324D3E] hover:text-[#4C3D19] hover:underline font-medium">
                       Kebijakan Privasi
                     </Link>
                     {' '}yang berlaku
@@ -586,17 +594,16 @@ export default function RegisterPage() {
                           </svg>
                           <span className="text-sm font-medium">KTP berhasil diupload</span>
                         </div>
-                        <Button
+                        <button
                           type="button"
-                          variant="outline"
-                          size="sm"
                           onClick={() => {
                             setKtpImage(null);
                             setKtpImageUrl('');
                           }}
+                          className="px-6 py-2 border-2 border-[#324D3E] text-[#324D3E] rounded-full font-semibold hover:bg-[#324D3E] hover:text-white transition-all duration-300 font-[family-name:var(--font-poppins)]"
                         >
                           Ganti Foto KTP
-                        </Button>
+                        </button>
                       </div>
                     ) : (
                       <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-green-500 transition-colors">
@@ -660,17 +667,16 @@ export default function RegisterPage() {
                           </svg>
                           <span className="text-sm font-medium">Foto berhasil diupload</span>
                         </div>
-                        <Button
+                        <button
                           type="button"
-                          variant="outline"
-                          size="sm"
                           onClick={() => {
                             setFaceImage(null);
                             setFaceImageUrl('');
                           }}
+                          className="px-6 py-2 border-2 border-[#324D3E] text-[#324D3E] rounded-full font-semibold hover:bg-[#324D3E] hover:text-white transition-all duration-300 font-[family-name:var(--font-poppins)]"
                         >
                           Ganti Foto
-                        </Button>
+                        </button>
                       </div>
                     ) : (
                       <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-blue-500 transition-colors">
@@ -746,7 +752,7 @@ export default function RegisterPage() {
                           <button
                             type="button"
                             onClick={() => window.open(paymentUrl, '_blank')}
-                            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors duration-200"
+                            className="w-full bg-gradient-to-r from-[#364D32] to-[#889063] text-white px-8 py-3 rounded-full font-semibold hover:from-[#889063] hover:to-[#364D32] transition-all duration-300 shadow-lg font-[family-name:var(--font-poppins)]"
                           >
                             Bayar Sekarang
                           </button>
@@ -847,21 +853,16 @@ export default function RegisterPage() {
               <FormActions align="center">
                 <div className="flex gap-4 w-full">
                   {currentStep > 1 && (
-                    <Button
+                    <button
                       type="button"
-                      variant="outline"
-                      size="lg"
                       onClick={handlePrevStep}
-                      className="flex-1 py-3 text-base font-semibold"
+                      className="flex-1 py-3 text-base font-semibold border-2 border-[#324D3E] text-[#324D3E] rounded-full hover:bg-[#324D3E] hover:text-white transition-all duration-300 font-[family-name:var(--font-poppins)]"
                     >
                       Kembali
-                    </Button>
+                    </button>
                   )}
-                  <Button
+                  <button
                     type="submit"
-                    variant="primary"
-                    size="lg"
-                    loading={isLoading}
                     disabled={
                       (currentStep === 1 && !isValid) ||
                       (currentStep === 2 && !ktpImageUrl) ||
@@ -869,20 +870,21 @@ export default function RegisterPage() {
                       (currentStep === 4 && (!paymentUrl || isProcessingPayment)) ||
                       uploadingKtp ||
                       uploadingFace ||
-                      isProcessingPayment
+                      isProcessingPayment ||
+                      isLoading
                     }
-                    className={`${currentStep === 1 ? 'w-full' : 'flex-1'} py-3 text-base font-semibold`}
+                    className={`${currentStep === 1 ? 'w-full' : 'flex-1'} py-3 text-base font-semibold bg-gradient-to-r from-[#364D32] to-[#889063] text-white rounded-full hover:from-[#889063] hover:to-[#364D32] transition-all duration-300 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed font-[family-name:var(--font-poppins)]`}
                   >
                     {isLoading ? 'Sedang mendaftar...' :
                      isProcessingPayment ? 'Membuat Pembayaran...' :
                      currentStep === 5 ? 'Daftar Sekarang' : 'Lanjutkan'}
-                  </Button>
+                  </button>
                 </div>
               </FormActions>
 
             </form>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
         {/* Success Alert */}
         {isSuccess && (
@@ -913,7 +915,7 @@ export default function RegisterPage() {
                     }
                     router.push('/login');
                   }}
-                  className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-3 px-4 rounded-lg transition-colors duration-200"
+                  className="w-full bg-gradient-to-r from-[#364D32] to-[#889063] text-white px-8 py-3 rounded-full font-semibold hover:from-[#889063] hover:to-[#364D32] transition-all duration-300 shadow-lg font-[family-name:var(--font-poppins)]"
                 >
                   Login Sekarang
                 </button>
@@ -924,11 +926,11 @@ export default function RegisterPage() {
 
         {/* Login Link */}
         <div className="text-center mt-8">
-          <p className="text-gray-600">
+          <p className="text-white/90">
             Sudah punya akun?{' '}
             <Link
               href="/login"
-              className="text-green-600 hover:text-green-700 font-semibold hover:underline"
+              className="text-white font-semibold hover:text-white/80 hover:underline font-[family-name:var(--font-poppins)]"
             >
               Masuk di sini
             </Link>
@@ -939,7 +941,7 @@ export default function RegisterPage() {
         <div className="text-center mt-4">
           <Link
             href="/"
-            className="text-sm text-gray-500 hover:text-gray-700 hover:underline inline-flex items-center gap-1"
+            className="text-sm text-white/70 hover:text-white hover:underline inline-flex items-center gap-1 font-[family-name:var(--font-poppins)]"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />

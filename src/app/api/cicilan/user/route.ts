@@ -1,5 +1,5 @@
 import dbConnect from '@/lib/mongodb';
-import CicilanPayment from '@/models/CicilanPayment';
+import Payment from '@/models/Payment';
 import User from '@/models/User';
 import { getServerSession } from 'next-auth/next';
 import { NextRequest, NextResponse } from 'next/server';
@@ -24,39 +24,96 @@ export async function GET(req: NextRequest) {
     const status = searchParams.get('status');
     const adminStatus = searchParams.get('adminStatus');
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const query: any = { userId: user._id };
+    // Build query for cicilan installment payments
+    const query: any = {
+      userId: user._id,
+      paymentType: 'cicilan-installment'
+    };
+
     if (status) query.status = status;
     if (adminStatus) query.adminStatus = adminStatus;
 
-    // Get cicilan payments
-    const cicilanPayments = await CicilanPayment.find(query)
-      .sort({ createdAt: -1 })
-      .select('-__v');
+    // Get installment payments
+    const installments = await Payment.find(query)
+      .populate('adminReviewBy', 'fullName email')
+      .sort({ cicilanOrderId: 1, installmentNumber: 1 });
+
+    // Group by cicilanOrderId
+    const groupedPayments = installments.reduce((acc, payment) => {
+      const key = payment.cicilanOrderId;
+      if (!acc[key]) {
+        acc[key] = {
+          cicilanOrderId: key,
+          productName: payment.productName,
+          productId: payment.productId,
+          totalInstallments: payment.totalInstallments,
+          installmentAmount: payment.installmentAmount,
+          paymentTerm: payment.paymentTerm,
+          totalAmount: 0, // Will calculate from installments
+          installments: []
+        };
+      }
+
+      // Add up total amount
+      acc[key].totalAmount += payment.amount;
+      acc[key].installments.push(payment);
+      return acc;
+    }, {} as any);
+
+    // Create complete view showing all expected installments
+    const cicilanGroups = Object.values(groupedPayments).map((group: any) => {
+      const installments = group.installments;
+      const totalInstallments = group.totalInstallments || 0;
+
+      // Create complete installment list
+      const completeInstallments = [];
+      for (let i = 1; i <= totalInstallments; i++) {
+        const existingInstallment = installments.find((inst: any) => inst.installmentNumber === i);
+        if (existingInstallment) {
+          completeInstallments.push({
+            _id: existingInstallment._id,
+            installmentNumber: existingInstallment.installmentNumber,
+            amount: existingInstallment.amount,
+            dueDate: existingInstallment.dueDate,
+            status: existingInstallment.status,
+            adminStatus: existingInstallment.adminStatus,
+            proofImageUrl: existingInstallment.proofImageUrl,
+            proofDescription: existingInstallment.proofDescription,
+            adminReviewDate: existingInstallment.adminReviewDate,
+            adminNotes: existingInstallment.adminNotes,
+            adminReviewBy: existingInstallment.adminReviewBy,
+            createdAt: existingInstallment.createdAt,
+            updatedAt: existingInstallment.updatedAt,
+            exists: true
+          });
+        } else {
+          // Show placeholder for future installments
+          completeInstallments.push({
+            installmentNumber: i,
+            amount: group.installmentAmount,
+            dueDate: null, // Will be calculated when created
+            status: 'not_created',
+            adminStatus: 'not_created',
+            exists: false
+          });
+        }
+      }
+
+      return {
+        cicilanOrderId: group.cicilanOrderId,
+        productName: group.productName,
+        productId: group.productId,
+        totalAmount: group.totalAmount,
+        totalInstallments: group.totalInstallments,
+        installmentAmount: group.installmentAmount,
+        paymentTerm: group.paymentTerm,
+        installments: completeInstallments
+      };
+    });
 
     return NextResponse.json({
       success: true,
-      cicilanPayments: cicilanPayments.map(payment => ({
-        orderId: payment.orderId,
-        productName: payment.productName,
-        totalAmount: payment.totalAmount,
-        amountPaid: payment.amountPaid,
-        remainingAmount: payment.remainingAmount,
-        installmentAmount: payment.installmentAmount,
-        paymentTerm: payment.paymentTerm,
-        totalInstallments: payment.totalInstallments,
-        currentInstallment: payment.currentInstallment,
-        nextPaymentDue: payment.nextPaymentDue,
-        status: payment.status,
-        adminStatus: payment.adminStatus,
-        proofImageUrl: payment.proofImageUrl,
-        proofDescription: payment.proofDescription,
-        submissionDate: payment.submissionDate,
-        adminReviewDate: payment.adminReviewDate,
-        adminNotes: payment.adminNotes,
-        createdAt: payment.createdAt,
-        updatedAt: payment.updatedAt,
-      }))
+      cicilanGroups
     });
 
   } catch (error) {

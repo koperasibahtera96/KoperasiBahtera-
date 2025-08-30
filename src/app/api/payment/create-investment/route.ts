@@ -6,9 +6,9 @@ import User from '@/models/User';
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(req: NextRequest) {
-  await dbConnect();
-
   try {
+    await dbConnect();
+
     const { plan, user } = await req.json();
 
     if (!plan || !user || !user.email) {
@@ -21,7 +21,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
-    const orderId = `INV-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    const orderId = `INV-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
 
     const transaction = await midtransService.createTransaction({
       orderId,
@@ -48,9 +48,13 @@ export async function POST(req: NextRequest) {
 
     const payment = new Payment({
       orderId,
+      userId: dbUser._id,
       amount: plan.price,
       currency: 'IDR',
+      paymentType: 'full-investment',
       transactionStatus: 'pending',
+      productName: plan.name,
+      productId: plan.name.toLowerCase().replace(/\s+/g, '-'),
       customerData: {
         fullName: dbUser.fullName,
         email: dbUser.email,
@@ -107,9 +111,29 @@ export async function POST(req: NextRequest) {
       { upsert: true, new: true }
     );
 
-    return NextResponse.json(transaction);
+
+    return NextResponse.json({
+      success: true,
+      data: transaction,
+    });
   } catch (error) {
     console.error('Error creating investment payment:', error);
-    return NextResponse.json({ error: 'Failed to create payment' }, { status: 500 });
+
+    // Provide more specific error messages
+    let errorMessage = 'Failed to create payment';
+    if (error instanceof Error) {
+      if (error.message.includes('validation failed')) {
+        errorMessage = 'Invalid payment data provided';
+      } else if (error.message.includes('Midtrans')) {
+        errorMessage = 'Payment gateway error. Please try again.';
+      } else {
+        errorMessage = error.message;
+      }
+    }
+
+    return NextResponse.json({
+      error: errorMessage,
+      details: error instanceof Error ? error.message : 'Unknown error'
+    }, { status: 500 });
   }
 }

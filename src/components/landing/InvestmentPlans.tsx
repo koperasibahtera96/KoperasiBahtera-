@@ -40,11 +40,12 @@ export function InvestmentPlans() {
 
       const data = await response.json();
 
-      if (data.redirect_url) {
-        window.location.href = data.redirect_url;
+      if (data.success && data.data && data.data.redirect_url) {
+        window.location.href = data.data.redirect_url;
       } else {
         // Handle error - maybe show a toast notification
         console.error("Failed to get redirect URL");
+        console.error("Full response data:", data);
       }
     } catch (error) {
       console.error('Error creating investment payment:', error);

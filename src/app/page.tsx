@@ -1,10 +1,10 @@
 'use client';
 
+import { AboutUs } from '@/components/landing/AboutUs';
 import { ContactSection, Footer } from '@/components/landing/ContactFooter';
 import { HeroCarousel } from '@/components/landing/HeroCarousel';
 import { InvestmentPlans } from '@/components/landing/InvestmentPlans';
 import { InvestmentRules } from '@/components/landing/InvestmentRules';
-import { AboutUs } from '@/components/landing/AboutUs';
 import { PlantDetail } from '@/components/landing/PlantDetail';
 import { PlantShowcase } from '@/components/landing/PlantShowcase';
 import { Navbar } from '@/components/layout/Navbar';

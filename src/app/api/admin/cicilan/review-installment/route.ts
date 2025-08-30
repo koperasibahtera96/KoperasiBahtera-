@@ -1,143 +1,73 @@
 import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
-import CicilanInstallment from '@/models/CicilanInstallment';
-import CicilanPayment from '@/models/CicilanPayment';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
+import Payment from '@/models/Payment';
 import Investor from '@/models/Investor';
-import User from '@/models/User';
-import { getServerSession } from 'next-auth/next';
 
-export async function POST(req: NextRequest) {
-  await dbConnect();
-
+export async function POST(request: NextRequest) {
   try {
-    const session = await getServerSession();
-    if (!session?.user?.email) {
+    const session = await getServerSession(authOptions);
+    if (!session || session.user.role !== 'admin') {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Check if user is admin
-    const adminUser = await User.findOne({ email: session.user.email });
-    if (!adminUser || adminUser.role !== 'admin') {
-      return NextResponse.json({ error: 'Access denied' }, { status: 403 });
+    const { paymentId, action, adminNotes } = await request.json();
+
+    if (!paymentId || !action || !['approve', 'reject'].includes(action)) {
+      return NextResponse.json({ error: 'Invalid request data' }, { status: 400 });
     }
 
-    const { installmentId, action, adminNotes } = await req.json();
+    await dbConnect();
 
-    if (!installmentId || !action || !['approve', 'reject'].includes(action)) {
-      return NextResponse.json({ 
-        error: 'Missing required fields: installmentId, action (approve/reject)' 
-      }, { status: 400 });
+    // Find the payment record
+    const payment = await Payment.findById(paymentId);
+    if (!payment) {
+      return NextResponse.json({ error: 'Payment not found' }, { status: 404 });
     }
 
-    // Find installment
-    const installment = await CicilanInstallment.findById(installmentId)
-      .populate('cicilanPaymentId');
+    // Update payment with admin review
+    payment.adminStatus = action === 'approve' ? 'approved' : 'rejected';
+    payment.status = action === 'approve' ? 'approved' : 'rejected';
+    payment.adminNotes = adminNotes || '';
+    payment.adminReviewBy = session.user.id;
+    payment.adminReviewDate = new Date();
+    await payment.save();
 
-    if (!installment) {
-      return NextResponse.json({ error: 'Installment not found' }, { status: 404 });
-    }
-
-    if (installment.adminStatus !== 'pending') {
-      return NextResponse.json({ 
-        error: 'This installment has already been reviewed' 
-      }, { status: 400 });
-    }
-
-    const now = new Date();
-
+    // If approved, also update the corresponding installment in the investor record
     if (action === 'approve') {
-      // Update installment status
-      installment.status = 'approved';
-      installment.adminStatus = 'approved';
-      installment.paidDate = now;
-
-      // Update main cicilan payment progress
-      const cicilanPayment = installment.cicilanPaymentId;
-      cicilanPayment.amountPaid += installment.amount;
-      cicilanPayment.remainingAmount = Math.max(0, cicilanPayment.totalAmount - cicilanPayment.amountPaid);
-      cicilanPayment.currentInstallment += 1;
-
-      // Check if cicilan payment is completed
-      if (cicilanPayment.remainingAmount <= 0 || cicilanPayment.currentInstallment >= cicilanPayment.totalInstallments) {
-        cicilanPayment.status = 'completed';
-        cicilanPayment.remainingAmount = 0;
-      }
-
-      await cicilanPayment.save();
-    } else {
-      // Reject installment
-      installment.status = 'rejected';
-      installment.adminStatus = 'rejected';
-    }
-
-    // Update admin review details
-    installment.adminReviewDate = now;
-    installment.adminReviewBy = adminUser._id;
-    installment.adminNotes = adminNotes || '';
-
-    // Clear submission details for rejected payments (they can resubmit)
-    if (action === 'reject') {
-      installment.proofImageUrl = undefined;
-      installment.proofDescription = undefined;
-      installment.submissionDate = undefined;
-    }
-
-    await installment.save();
-
-    // Update investor record
-    if (action === 'approve') {
-      const investor = await Investor.findOne({ 
-        'investments.investmentId': installment.cicilanPaymentId.orderId 
-      });
-      
+      const investor = await Investor.findOne({ userId: payment.userId });
       if (investor) {
-        const investment = investor.investments.find(
-          inv => inv.investmentId === installment.cicilanPaymentId.orderId
-        );
-        
-        if (investment && investment.installments) {
-          const installmentSummary = investment.installments.find(
-            inst => inst.installmentNumber === installment.installmentNumber
-          );
-          
-          if (installmentSummary) {
-            installmentSummary.isPaid = true;
-            installmentSummary.paidDate = now;
-            installmentSummary.proofImageUrl = installment.proofImageUrl;
-            
-            // Update totals
-            investment.amountPaid += installment.amount;
-            investor.totalPaid += installment.amount;
-            
-            // Check if investment is completed
-            const allPaid = investment.installments.every(inst => inst.isPaid);
-            if (allPaid) {
-              investment.status = 'completed';
-              investment.completionDate = now;
-            }
-            
-            await investor.save();
+        // Find the investment and installment
+        const investment = investor.investments.find(inv => inv.investmentId === payment.cicilanOrderId);
+        if (investment) {
+          const installment = investment.installments?.find(inst => inst.installmentNumber === payment.installmentNumber);
+          if (installment) {
+            installment.isPaid = true;
+            installment.paidDate = new Date();
+            installment.proofImageUrl = payment.proofImageUrl;
           }
+          
+          // Update investment amount paid
+          investment.amountPaid += payment.amount;
         }
+        
+        // Update total paid amount for the investor
+        investor.totalPaid += payment.amount;
+        await investor.save();
       }
     }
 
-    return NextResponse.json({
-      success: true,
-      message: `Installment ${action}d successfully`,
-      installment: {
-        _id: installment._id,
-        installmentNumber: installment.installmentNumber,
-        status: installment.status,
-        adminStatus: installment.adminStatus,
-        paidDate: installment.paidDate,
-        adminReviewDate: installment.adminReviewDate,
-        adminNotes: installment.adminNotes,
-      }
+    return NextResponse.json({ 
+      success: true, 
+      message: `Payment ${action === 'approve' ? 'approved' : 'rejected'} successfully` 
     });
 
   } catch (error) {
     console.error('Error reviewing installment:', error);
-    return NextResponse.json({ error: 'Failed to review installment' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
   }
 }

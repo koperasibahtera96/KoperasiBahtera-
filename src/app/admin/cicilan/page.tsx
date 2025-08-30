@@ -1,154 +1,70 @@
 'use client';
 
 import { AdminLayout } from '@/components/admin/AdminLayout';
+import { useAlert } from '@/components/ui/Alert';
+import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-
-interface CicilanInstallment {
-  _id: string;
-  installmentNumber: number;
-  amount: number;
-  dueDate: string;
-  status: 'pending' | 'submitted' | 'approved' | 'rejected' | 'overdue';
-  proofImageUrl?: string;
-  proofDescription?: string;
-  submissionDate?: string;
-  adminStatus: 'pending' | 'approved' | 'rejected';
-  adminReviewDate?: string;
-  adminReviewBy?: {
-    _id: string;
-    fullName: string;
-    email: string;
-  };
-  adminNotes?: string;
-  paidDate?: string;
-  cicilanPayment: {
-    _id: string;
-    orderId: string;
-    productName: string;
-    userId: {
-      _id: string;
-      fullName: string;
-      email: string;
-      phoneNumber: string;
-    };
-  };
-  createdAt: string;
-  updatedAt: string;
-}
-
-interface Pagination {
-  page: number;
-  limit: number;
-  totalCount: number;
-  totalPages: number;
-  hasNext: boolean;
-  hasPrev: boolean;
-}
+import { InvestorGroup, Pagination, InvestorGroupsResponse } from '@/types/cicilan';
 
 export default function AdminCicilanPage() {
-  const [installments, setInstallments] = useState<CicilanInstallment[]>([]);
+  const [investorGroups, setInvestorGroups] = useState<InvestorGroup[]>([]);
   const [pagination, setPagination] = useState<Pagination | null>(null);
   const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState({
     status: '',
-    adminStatus: '',
+    search: '',
     page: 1
   });
-  const [reviewModal, setReviewModal] = useState<{
-    isOpen: boolean;
-    installment: CicilanInstallment | null;
-  }>({ isOpen: false, installment: null });
-  const [isReviewing, setIsReviewing] = useState(false);
+  const { showSuccess, showError, AlertComponent } = useAlert();
+  const router = useRouter();
 
-  const fetchInstallments = async () => {
+  const fetchInvestorGroups = async () => {
     try {
       setLoading(true);
       const params = new URLSearchParams();
       if (filters.status) params.append('status', filters.status);
-      if (filters.adminStatus) params.append('adminStatus', filters.adminStatus);
+      if (filters.search) params.append('search', filters.search);
       params.append('page', filters.page.toString());
       params.append('limit', '10');
 
-      const response = await fetch(`/api/admin/cicilan/installments?${params}`);
+      const response = await fetch(`/api/admin/cicilan/investors?${params}`);
       if (response.ok) {
         const data = await response.json();
-        setInstallments(data.installments);
+        setInvestorGroups(data.investors);
         setPagination(data.pagination);
       } else {
-        console.error('Failed to fetch installments');
+        console.error('Failed to fetch investor groups');
       }
     } catch (error) {
-      console.error('Error fetching installments:', error);
+      console.error('Error fetching investor groups:', error);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchInstallments();
+    fetchInvestorGroups();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filters]);
 
-  const handleReview = async (action: 'approve' | 'reject', adminNotes: string) => {
-    if (!reviewModal.installment) return;
-
-    setIsReviewing(true);
-    try {
-      const response = await fetch('/api/admin/cicilan/review-installment', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          installmentId: reviewModal.installment._id,
-          action,
-          adminNotes,
-        }),
-      });
-
-      const data = await response.json();
-
-      if (data.success) {
-        alert(`Angsuran berhasil ${action === 'approve' ? 'disetujui' : 'ditolak'}!`);
-        setReviewModal({ isOpen: false, installment: null });
-        await fetchInstallments();
-      } else {
-        alert('Gagal memproses review: ' + data.error);
-      }
-    } catch (error) {
-      console.error('Error reviewing installment:', error);
-      alert('Terjadi kesalahan saat memproses review');
-    } finally {
-      setIsReviewing(false);
-    }
+  const handleViewDetails = (userId: string) => {
+    router.push(`/admin/cicilan/${userId}`);
   };
 
-  const getStatusColor = (status: string) => {
+  const getInvestmentStatusColor = (status: string) => {
     switch (status) {
-      case 'pending': return 'bg-gray-100 text-gray-800';
-      case 'submitted': return 'bg-yellow-100 text-yellow-800';
-      case 'approved': return 'bg-green-100 text-green-800';
-      case 'rejected': return 'bg-red-100 text-red-800';
+      case 'active': return 'bg-blue-100 text-blue-800';
+      case 'completed': return 'bg-green-100 text-green-800';
       case 'overdue': return 'bg-red-100 text-red-800';
       default: return 'bg-gray-100 text-gray-800';
     }
   };
 
-  const getStatusText = (status: string) => {
+  const getInvestmentStatusText = (status: string) => {
     switch (status) {
-      case 'pending': return 'Belum Bayar';
-      case 'submitted': return 'Sudah Upload';
-      case 'approved': return 'Disetujui';
-      case 'rejected': return 'Ditolak';
+      case 'active': return 'Aktif';
+      case 'completed': return 'Selesai';
       case 'overdue': return 'Terlambat';
-      default: return status;
-    }
-  };
-
-  const getAdminStatusText = (status: string) => {
-    switch (status) {
-      case 'pending': return 'Menunggu Review';
-      case 'approved': return 'Sudah Disetujui';
-      case 'rejected': return 'Sudah Ditolak';
       default: return status;
     }
   };
@@ -165,6 +81,7 @@ export default function AdminCicilanPage() {
 
   return (
     <AdminLayout>
+      <AlertComponent />
       <div className="space-y-6">
         {/* Header */}
         <div>
@@ -172,11 +89,21 @@ export default function AdminCicilanPage() {
           <p className="text-gray-600 mt-2">Kelola pembayaran cicilan investasi dari pengguna</p>
         </div>
 
-        {/* Filters */}
+        {/* Search and Filters */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium text-gray-700 mb-2">Cari Investor</label>
+              <input
+                type="text"
+                placeholder="Cari berdasarkan nama atau email..."
+                value={filters.search}
+                onChange={(e) => setFilters(prev => ({ ...prev, search: e.target.value, page: 1 }))}
+                className="w-full border border-gray-300 rounded-lg p-2"
+              />
+            </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Status Cicilan</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Status Investasi</label>
               <select
                 value={filters.status}
                 onChange={(e) => setFilters(prev => ({ ...prev, status: e.target.value, page: 1 }))}
@@ -185,25 +112,12 @@ export default function AdminCicilanPage() {
                 <option value="">Semua Status</option>
                 <option value="active">Aktif</option>
                 <option value="completed">Selesai</option>
-                <option value="cancelled">Dibatalkan</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Status Review</label>
-              <select
-                value={filters.adminStatus}
-                onChange={(e) => setFilters(prev => ({ ...prev, adminStatus: e.target.value, page: 1 }))}
-                className="w-full border border-gray-300 rounded-lg p-2"
-              >
-                <option value="">Semua Review</option>
-                <option value="pending">Menunggu Review</option>
-                <option value="approved">Disetujui</option>
-                <option value="rejected">Ditolak</option>
+                <option value="overdue">Terlambat</option>
               </select>
             </div>
             <div className="flex items-end">
               <button
-                onClick={() => setFilters({ status: '', adminStatus: '', page: 1 })}
+                onClick={() => setFilters({ status: '', search: '', page: 1 })}
                 className="w-full px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
               >
                 Reset Filter
@@ -217,20 +131,20 @@ export default function AdminCicilanPage() {
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600">Total Cicilan</p>
+                <p className="text-sm text-gray-600">Total Investor</p>
                 <p className="text-2xl font-bold text-gray-900">{pagination?.totalCount || 0}</p>
               </div>
               <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                <span className="text-blue-600">💳</span>
+                <span className="text-blue-600">👥</span>
               </div>
             </div>
           </div>
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600">Menunggu Review</p>
+                <p className="text-sm text-gray-600">Perlu Review</p>
                 <p className="text-2xl font-bold text-yellow-600">
-                  {installments.filter(i => i.adminStatus === 'pending' && i.status === 'submitted').length}
+                  {investorGroups.reduce((sum, group) => sum + group.pendingReviews, 0)}
                 </p>
               </div>
               <div className="w-10 h-10 bg-yellow-100 rounded-lg flex items-center justify-center">
@@ -241,141 +155,134 @@ export default function AdminCicilanPage() {
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600">Sudah Disetujui</p>
+                <p className="text-sm text-gray-600">Total Investasi</p>
                 <p className="text-2xl font-bold text-green-600">
-                  {installments.filter(i => i.status === 'approved').length}
+                  {investorGroups.reduce((sum, group) => sum + group.totalInvestments, 0)}
                 </p>
               </div>
               <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
-                <span className="text-green-600">✅</span>
+                <span className="text-green-600">💰</span>
               </div>
             </div>
           </div>
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-600">Ditolak</p>
+                <p className="text-sm text-gray-600">Terlambat</p>
                 <p className="text-2xl font-bold text-red-600">
-                  {installments.filter(i => i.status === 'rejected').length}
+                  {investorGroups.reduce((sum, group) => sum + group.overdueCount, 0)}
                 </p>
               </div>
               <div className="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center">
-                <span className="text-red-600">❌</span>
+                <span className="text-red-600">⚠️</span>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Cicilan List */}
+        {/* Investor List */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200">
           {loading ? (
             <div className="p-8 text-center">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-500 mx-auto mb-4"></div>
-              <p className="text-gray-600">Memuat data cicilan...</p>
+              <p className="text-gray-600">Memuat data investor...</p>
             </div>
-          ) : installments.length === 0 ? (
+          ) : investorGroups.length === 0 ? (
             <div className="p-8 text-center">
-              <div className="text-gray-400 text-4xl mb-4">💳</div>
-              <h3 className="text-lg font-semibold text-gray-600 mb-2">Belum ada data cicilan</h3>
-              <p className="text-gray-500">Data cicilan akan muncul di sini ketika pengguna membuat cicilan</p>
+              <div className="text-gray-400 text-4xl mb-4">👥</div>
+              <h3 className="text-lg font-semibold text-gray-600 mb-2">Belum ada data investor</h3>
+              <p className="text-gray-500">Data investor akan muncul di sini ketika pengguna membuat cicilan</p>
             </div>
           ) : (
             <>
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead className="bg-gray-50 border-b border-gray-200">
-                    <tr>
-                      <th className="text-left px-6 py-3 text-sm font-medium text-gray-700">Pengguna</th>
-                      <th className="text-left px-6 py-3 text-sm font-medium text-gray-700">Produk & Angsuran</th>
-                      <th className="text-left px-6 py-3 text-sm font-medium text-gray-700">Jumlah & Jatuh Tempo</th>
-                      <th className="text-left px-6 py-3 text-sm font-medium text-gray-700">Status</th>
-                      <th className="text-left px-6 py-3 text-sm font-medium text-gray-700">Bukti Bayar</th>
-                      <th className="text-left px-6 py-3 text-sm font-medium text-gray-700">Aksi</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-200">
-                    {installments.map((installment) => (
-                      <tr key={installment._id} className="hover:bg-gray-50">
-                        <td className="px-6 py-4">
-                          <div>
-                            <div className="font-medium text-gray-900">{installment.cicilanPayment.userId.fullName}</div>
-                            <div className="text-sm text-gray-500">{installment.cicilanPayment.userId.email}</div>
-                            <div className="text-xs text-gray-400">ID: {installment.cicilanPayment.orderId}</div>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4">
-                          <div>
-                            <div className="font-medium text-gray-900">{installment.cicilanPayment.productName}</div>
-                            <div className="text-sm text-gray-500">
-                              Angsuran #{installment.installmentNumber}
-                            </div>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4">
-                          <div>
-                            <div className="font-medium text-gray-900">
-                              Rp {installment.amount.toLocaleString('id-ID')}
-                            </div>
-                            <div className="text-sm text-gray-500">
-                              Jatuh tempo: {formatDate(installment.dueDate)}
-                            </div>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4">
-                          <div className="space-y-1">
-                            <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(installment.status)}`}>
-                              {getStatusText(installment.status)}
+              <div className="divide-y divide-gray-200">
+                {investorGroups.map((investor) => (
+                  <div key={investor.userId} className="p-6 hover:bg-gray-50 transition-colors">
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-4">
+                          <div className="w-12 h-12 bg-gradient-to-br from-emerald-100 to-emerald-200 rounded-full flex items-center justify-center">
+                            <span className="text-emerald-600 font-semibold text-lg">
+                              {investor.userInfo.fullName.charAt(0).toUpperCase()}
                             </span>
-                            <div className="text-xs text-gray-500">
-                              Review: {getAdminStatusText(installment.adminStatus)}
+                          </div>
+                          <div>
+                            <h3 className="text-lg font-semibold text-gray-900">{investor.userInfo.fullName}</h3>
+                            <p className="text-sm text-gray-500">{investor.userInfo.email}</p>
+                            <p className="text-xs text-gray-400">{investor.userInfo.phoneNumber}</p>
+                          </div>
+                        </div>
+
+                        <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-4">
+                          <div className="bg-blue-50 p-3 rounded-lg">
+                            <div className="text-sm text-gray-600">Total Investasi</div>
+                            <div className="text-lg font-semibold text-blue-600">{investor.totalInvestments}</div>
+                          </div>
+                          <div className="bg-green-50 p-3 rounded-lg">
+                            <div className="text-sm text-gray-600">Nilai Investasi</div>
+                            <div className="text-lg font-semibold text-green-600">
+                              Rp {investor.totalAmount.toLocaleString('id-ID')}
                             </div>
                           </div>
-                        </td>
-                        <td className="px-6 py-4">
-                          {installment.proofImageUrl ? (
-                            <div className="space-y-2">
-                              <img
-                                src={installment.proofImageUrl}
-                                alt="Payment Proof"
-                                className="w-16 h-16 object-cover rounded border cursor-pointer"
-                                onClick={() => window.open(installment.proofImageUrl, '_blank')}
-                              />
-                              {installment.submissionDate && (
-                                <div className="text-xs text-gray-500">
-                                  {formatDate(installment.submissionDate)}
-                                </div>
-                              )}
+                          <div className="bg-emerald-50 p-3 rounded-lg">
+                            <div className="text-sm text-gray-600">Sudah Dibayar</div>
+                            <div className="text-lg font-semibold text-emerald-600">
+                              Rp {investor.totalPaid.toLocaleString('id-ID')}
                             </div>
-                          ) : (
-                            <span className="text-xs text-gray-400">Belum ada bukti</span>
-                          )}
-                        </td>
-                        <td className="px-6 py-4">
-                          {installment.adminStatus === 'pending' && installment.proofImageUrl && (
-                            <button
-                              onClick={() => setReviewModal({ isOpen: true, installment })}
-                              className="px-3 py-1 bg-emerald-600 text-white text-sm rounded hover:bg-emerald-700 transition-colors"
-                            >
-                              Review
-                            </button>
-                          )}
-                          {installment.adminNotes && (
-                            <div className="mt-2 text-xs text-gray-600 bg-yellow-50 p-2 rounded">
-                              <strong>Catatan:</strong> {installment.adminNotes}
-                            </div>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                          </div>
+                          <div className="bg-yellow-50 p-3 rounded-lg">
+                            <div className="text-sm text-gray-600">Perlu Review</div>
+                            <div className="text-lg font-semibold text-yellow-600">{investor.pendingReviews}</div>
+                          </div>
+                        </div>
+
+                        {/* Investment Summary */}
+                        <div className="mt-4">
+                          <div className="text-sm text-gray-600 mb-2">Investasi Aktif:</div>
+                          <div className="flex flex-wrap gap-2">
+                            {investor.investments.slice(0, 3).map((investment) => (
+                              <div key={investment.cicilanOrderId} className="flex items-center gap-2 bg-gray-100 px-3 py-1 rounded-full text-sm">
+                                <span className="text-gray-700">{investment.productName}</span>
+                                <span className={`px-2 py-0.5 text-xs rounded-full ${getInvestmentStatusColor(investment.status)}`}>
+                                  {getInvestmentStatusText(investment.status)}
+                                </span>
+                              </div>
+                            ))}
+                            {investor.investments.length > 3 && (
+                              <span className="text-sm text-gray-500">+{investor.investments.length - 3} lainnya</span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex flex-col gap-2">
+                        {investor.pendingReviews > 0 && (
+                          <div className="bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full text-sm font-medium">
+                            {investor.pendingReviews} Review
+                          </div>
+                        )}
+                        {investor.overdueCount > 0 && (
+                          <div className="bg-red-100 text-red-800 px-3 py-1 rounded-full text-sm font-medium">
+                            {investor.overdueCount} Terlambat
+                          </div>
+                        )}
+                        <button
+                          onClick={() => handleViewDetails(investor.userId)}
+                          className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors text-sm font-medium"
+                        >
+                          Lihat Detail
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
 
               {/* Pagination */}
               {pagination && pagination.totalPages > 1 && (
                 <div className="flex justify-between items-center p-6 border-t border-gray-200">
                   <div className="text-sm text-gray-500">
-                    Menampilkan {((pagination.page - 1) * pagination.limit) + 1} - {Math.min(pagination.page * pagination.limit, pagination.totalCount)} dari {pagination.totalCount} data
+                    Menampilkan {((pagination.page - 1) * pagination.limit) + 1} - {Math.min(pagination.page * pagination.limit, pagination.totalCount)} dari {pagination.totalCount} investor
                   </div>
                   <div className="flex gap-2">
                     <button
@@ -402,155 +309,9 @@ export default function AdminCicilanPage() {
           )}
         </div>
 
-        {/* Review Modal */}
-        <ReviewModal
-          isOpen={reviewModal.isOpen}
-          installment={reviewModal.installment}
-          onClose={() => setReviewModal({ isOpen: false, installment: null })}
-          onReview={handleReview}
-          isReviewing={isReviewing}
-        />
+
       </div>
     </AdminLayout>
   );
 }
 
-interface ReviewModalProps {
-  isOpen: boolean;
-  installment: CicilanInstallment | null;
-  onClose: () => void;
-  onReview: (action: 'approve' | 'reject', notes: string) => Promise<void>;
-  isReviewing: boolean;
-}
-
-function ReviewModal({ isOpen, installment, onClose, onReview, isReviewing }: ReviewModalProps) {
-  const [notes, setNotes] = useState('');
-  const [action, setAction] = useState<'approve' | 'reject' | null>(null);
-
-  const handleSubmit = async () => {
-    if (!action) return;
-    await onReview(action, notes);
-    setNotes('');
-    setAction(null);
-  };
-
-  if (!isOpen || !installment) return null;
-
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-        <div className="p-6">
-          <div className="flex justify-between items-center mb-6">
-            <h3 className="text-xl font-bold text-gray-900">Review Bukti Pembayaran</h3>
-            <button
-              onClick={onClose}
-              className="text-gray-400 hover:text-gray-600"
-              disabled={isReviewing}
-            >
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-          </div>
-
-          {/* Installment Info */}
-          <div className="bg-gray-50 p-4 rounded-lg mb-6">
-            <div className="grid grid-cols-2 gap-4 text-sm">
-              <div>
-                <span className="text-gray-600">Pengguna:</span>
-                <div className="font-medium">{installment.cicilanPayment.userId.fullName}</div>
-              </div>
-              <div>
-                <span className="text-gray-600">Produk:</span>
-                <div className="font-medium">{installment.cicilanPayment.productName}</div>
-              </div>
-              <div>
-                <span className="text-gray-600">Angsuran ke:</span>
-                <div className="font-medium">#{installment.installmentNumber}</div>
-              </div>
-              <div>
-                <span className="text-gray-600">Jumlah:</span>
-                <div className="font-medium">Rp {installment.amount.toLocaleString('id-ID')}</div>
-              </div>
-              <div>
-                <span className="text-gray-600">Jatuh Tempo:</span>
-                <div className="font-medium">{new Date(installment.dueDate).toLocaleDateString('id-ID')}</div>
-              </div>
-              <div>
-                <span className="text-gray-600">Order ID:</span>
-                <div className="font-medium text-xs">{installment.cicilanPayment.orderId}</div>
-              </div>
-            </div>
-          </div>
-
-          {/* Proof Image */}
-          {installment.proofImageUrl && (
-            <div className="mb-6">
-              <h4 className="font-semibold mb-3">Bukti Pembayaran</h4>
-              <div className="border border-gray-200 rounded-lg p-4">
-                <img
-                  src={installment.proofImageUrl}
-                  alt="Bukti Pembayaran"
-                  className="max-w-full h-auto rounded-lg"
-                />
-              </div>
-            </div>
-          )}
-
-          {/* Description */}
-          {installment.proofDescription && (
-            <div className="mb-6">
-              <h4 className="font-semibold mb-2">Keterangan</h4>
-              <p className="text-gray-700 bg-gray-50 p-3 rounded-lg">{installment.proofDescription}</p>
-            </div>
-          )}
-
-          {/* Admin Notes */}
-          <div className="mb-6">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Catatan Admin
-            </label>
-            <textarea
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              className="w-full border border-gray-300 rounded-lg p-3 h-24"
-              placeholder="Tambahkan catatan untuk pengguna..."
-              disabled={isReviewing}
-            />
-          </div>
-
-          {/* Action Buttons */}
-          <div className="flex gap-3">
-            <button
-              onClick={onClose}
-              disabled={isReviewing}
-              className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 disabled:opacity-50"
-            >
-              Batal
-            </button>
-            <button
-              onClick={() => {
-                setAction('reject');
-                handleSubmit();
-              }}
-              disabled={isReviewing}
-              className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50"
-            >
-              {isReviewing && action === 'reject' ? 'Memproses...' : 'Tolak'}
-            </button>
-            <button
-              onClick={() => {
-                setAction('approve');
-                handleSubmit();
-              }}
-              disabled={isReviewing}
-              className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50"
-            >
-              {isReviewing && action === 'approve' ? 'Memproses...' : 'Setujui'}
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}

@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
-import CicilanPayment from '@/models/CicilanPayment';
-import CicilanInstallment from '@/models/CicilanInstallment';
+import Payment from '@/models/Payment';
 import User from '@/models/User';
 import { getServerSession } from 'next-auth/next';
 
@@ -22,57 +21,58 @@ export async function GET(req: NextRequest) {
 
     // Get URL parameters
     const { searchParams } = new URL(req.url);
-    const cicilanPaymentId = searchParams.get('cicilanPaymentId');
+    const cicilanOrderId = searchParams.get('cicilanOrderId');
 
-    let query = {};
-    if (cicilanPaymentId) {
-      // Get installments for specific cicilan payment
-      query = { cicilanPaymentId };
+    // Build query for cicilan installment payments
+    const query: any = { 
+      userId: user._id, 
+      paymentType: 'cicilan-installment' 
+    };
+    
+    if (cicilanOrderId) {
+      query.cicilanOrderId = cicilanOrderId;
     }
 
-    // Get user's cicilan payments first
-    const userCicilanPayments = await CicilanPayment.find({ userId: user._id }).select('_id orderId productName');
-    const cicilanIds = userCicilanPayments.map(cp => cp._id);
+    // Get installment payments
+    const installments = await Payment.find(query)
+      .sort({ cicilanOrderId: 1, installmentNumber: 1 });
 
-    // Get installments for user's cicilan payments
-    const installmentsQuery = cicilanPaymentId ? 
-      { cicilanPaymentId } : 
-      { cicilanPaymentId: { $in: cicilanIds } };
-
-    const installments = await CicilanInstallment.find(installmentsQuery)
-      .populate({
-        path: 'cicilanPaymentId',
-        select: 'orderId productName totalAmount'
-      })
-      .sort({ dueDate: 1, installmentNumber: 1 });
-
-    // Group installments by cicilan payment
-    const groupedInstallments = installments.reduce((acc, installment) => {
-      const cicilanId = installment.cicilanPaymentId._id.toString();
+    // Group installments by cicilan order ID
+    const groupedInstallments = installments.reduce((acc, payment) => {
+      const cicilanId = payment.cicilanOrderId;
       if (!acc[cicilanId]) {
         acc[cicilanId] = {
-          cicilanPayment: installment.cicilanPaymentId,
+          cicilanPayment: {
+            _id: payment.cicilanOrderId,
+            orderId: payment.cicilanOrderId,
+            productName: payment.productName,
+            totalAmount: 0 // Will calculate from installments
+          },
           installments: []
         };
       }
+      
+      // Add up total amount
+      acc[cicilanId].cicilanPayment.totalAmount += payment.amount;
+      
       acc[cicilanId].installments.push({
-        _id: installment._id,
-        installmentNumber: installment.installmentNumber,
-        amount: installment.amount,
-        dueDate: installment.dueDate,
-        status: installment.status,
-        proofImageUrl: installment.proofImageUrl,
-        proofDescription: installment.proofDescription,
-        submissionDate: installment.submissionDate,
-        adminStatus: installment.adminStatus,
-        adminReviewDate: installment.adminReviewDate,
-        adminNotes: installment.adminNotes,
-        paidDate: installment.paidDate,
-        createdAt: installment.createdAt,
-        updatedAt: installment.updatedAt,
+        _id: payment._id,
+        installmentNumber: payment.installmentNumber,
+        amount: payment.amount,
+        dueDate: payment.dueDate,
+        status: payment.status,
+        proofImageUrl: payment.proofImageUrl,
+        proofDescription: payment.proofDescription,
+        submissionDate: payment.createdAt, // Use createdAt as submission date for now
+        adminStatus: payment.adminStatus,
+        adminReviewDate: payment.adminReviewDate,
+        adminNotes: payment.adminNotes,
+        paidDate: payment.status === 'approved' ? payment.adminReviewDate : null,
+        createdAt: payment.createdAt,
+        updatedAt: payment.updatedAt,
       });
       return acc;
-    }, {});
+    }, {} as any);
 
     return NextResponse.json({
       success: true,

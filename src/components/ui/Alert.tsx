@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 interface AlertProps {
   type: 'success' | 'error' | 'warning' | 'info';
@@ -13,7 +13,7 @@ interface AlertProps {
 
 export function Alert({ type, title, message, isOpen, onClose, duration = 3000 }: AlertProps) {
   console.log('🔔 Alert component rendered:', { type, title, message, isOpen });
-  
+
   useEffect(() => {
     console.log('🔔 Alert useEffect triggered:', { isOpen, duration });
     if (isOpen && duration > 0) {
@@ -98,7 +98,7 @@ export function useAlert() {
   const showAlert = (type: 'success' | 'error' | 'warning' | 'info', title: string, message: string) => {
     console.log('🚨 showAlert called with:', { type, title, message });
     console.trace('Call stack:');
-    
+
     const newId = Date.now();
     const newAlert = {
       type,
@@ -106,9 +106,9 @@ export function useAlert() {
       message,
       id: newId
     };
-    
+
     setAlerts(prev => [...prev, newAlert]);
-    
+
     // Auto remove after 3 seconds
     setTimeout(() => {
       setAlerts(prev => prev.filter(alert => alert.id !== newId));

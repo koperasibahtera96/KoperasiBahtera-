@@ -1,10 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
-import CicilanPayment from '@/models/CicilanPayment';
-import CicilanInstallment from '@/models/CicilanInstallment';
 import Investor from '@/models/Investor';
+import Payment from '@/models/Payment';
 import User from '@/models/User';
 import { getServerSession } from 'next-auth/next';
+import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(req: NextRequest) {
   await dbConnect();
@@ -18,16 +17,16 @@ export async function POST(req: NextRequest) {
     const { productId, productName, totalAmount, paymentTerm } = await req.json();
 
     if (!productId || !productName || !totalAmount || !paymentTerm) {
-      return NextResponse.json({ 
-        error: 'Missing required fields: productId, productName, totalAmount, paymentTerm' 
+      return NextResponse.json({
+        error: 'Missing required fields: productId, productName, totalAmount, paymentTerm'
       }, { status: 400 });
     }
 
     // Validate payment term
     const validTerms = ['monthly', 'quarterly', 'semiannual', 'annual'];
     if (!validTerms.includes(paymentTerm)) {
-      return NextResponse.json({ 
-        error: 'Invalid payment term. Must be one of: monthly, quarterly, semiannual, annual' 
+      return NextResponse.json({
+        error: 'Invalid payment term. Must be one of: monthly, quarterly, semiannual, annual'
       }, { status: 400 });
     }
 
@@ -48,113 +47,102 @@ export async function POST(req: NextRequest) {
     const paymentTermMonths = termToMonths[paymentTerm as keyof typeof termToMonths];
     const totalInstallments = Math.ceil(24 / paymentTermMonths); // Default 2 years
     const installmentAmount = Math.ceil(totalAmount / totalInstallments);
-    
-    // First payment is due today (immediate payment)
+
+    // First payment is due 24 hours from creation
     const nextPaymentDue = new Date();
+    nextPaymentDue.setHours(nextPaymentDue.getHours() + 24);
 
-    const orderId = `CICILAN-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+    const cicilanOrderId = `CICILAN-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
-    const cicilanPayment = new CicilanPayment({
-      orderId,
+    // Create only the first installment Payment record (due 24 hours from now)
+    const firstInstallmentOrderId = `${cicilanOrderId}-INST-1`;
+    const firstDueDate = new Date();
+    firstDueDate.setHours(firstDueDate.getHours() + 24); // Due 24 hours from now
+
+    const firstInstallment = new Payment({
+      orderId: firstInstallmentOrderId,
       userId: user._id,
-      productId,
-      productName,
-      totalAmount,
-      amountPaid: 0,
-      remainingAmount: totalAmount,
+      amount: installmentAmount,
+      currency: 'IDR',
+      paymentType: 'cicilan-installment',
+      cicilanOrderId,
+      installmentNumber: 1,
+      totalInstallments,
       installmentAmount,
       paymentTerm,
-      paymentTermMonths,
-      totalInstallments,
-      currentInstallment: 0,
-      nextPaymentDue,
-      status: 'active',
+      dueDate: firstDueDate,
+      productName,
+      productId,
       adminStatus: 'pending',
+      status: 'pending',
+      isProcessed: false,
     });
 
-    await cicilanPayment.save();
+    await firstInstallment.save();
 
-    // Create individual installment records
-    const installments = [];
-    const startDate = new Date();
-    
-    for (let i = 1; i <= totalInstallments; i++) {
-      const dueDate = new Date(startDate);
-      // First installment is due today, subsequent installments follow payment term
-      // For example: monthly installment 1 = due today (28 Aug)
-      //             monthly installment 2 = due in 1 month (28 Sep)  
-      //             quarterly installment 1 = due today (28 Aug)
-      //             quarterly installment 2 = due in 3 months (28 Nov)
-      dueDate.setMonth(dueDate.getMonth() + ((i - 1) * paymentTermMonths));
-
-      const installment = new CicilanInstallment({
-        cicilanPaymentId: cicilanPayment._id,
-        installmentNumber: i,
-        amount: installmentAmount,
-        dueDate,
-        status: 'pending',
-        adminStatus: 'pending',
-      });
-
-      installments.push(installment);
-    }
-
-    await CicilanInstallment.insertMany(installments);
-
-    // Add investment record with installment summaries
-    const installmentSummaries = installments.map(inst => ({
-      installmentNumber: inst.installmentNumber,
-      amount: inst.amount,
-      dueDate: inst.dueDate,
+    // Create first installment summary for Investor tracking
+    const firstInstallmentSummary = {
+      installmentNumber: 1,
+      amount: installmentAmount,
+      dueDate: firstDueDate,
       isPaid: false,
       paidDate: null,
-      proofImageUrl: null
-    }));
+    };
 
     const investmentRecord = {
-      investmentId: orderId,
+      investmentId: cicilanOrderId,
       productName,
       plantInstanceId: null, // Will be assigned when plant is allocated
       totalAmount,
       amountPaid: 0,
       paymentType: 'cicilan' as const,
       status: 'active' as const,
-      installments: installmentSummaries,
+      totalInstallments, // Store total for tracking
+      currentInstallment: 1, // Track current installment number
+      installments: [firstInstallmentSummary], // Start with first installment
       investmentDate: new Date()
     };
 
-    // Create or update investor record using upsert
-    await Investor.findOneAndUpdate(
-      { userId: user._id },
-      {
-        $set: {
-          name: user.fullName,
-          phoneNumber: user.phoneNumber,
-          status: 'active'
-        },
-        $setOnInsert: {
-          email: user.email,
-          totalPaid: 0,
-          jumlahPohon: 0
-        },
-        $push: { investments: investmentRecord },
-        $inc: { totalInvestasi: totalAmount }
-      },
-      { upsert: true, new: true }
-    );
+    // Create or update investor record safely
+    let investor = await Investor.findOne({ userId: user._id });
+    
+    if (investor) {
+      // Update existing investor
+      investor.name = user.fullName;
+      investor.email = user.email;
+      investor.phoneNumber = user.phoneNumber;
+      investor.status = 'active';
+      investor.investments.push(investmentRecord);
+      investor.totalInvestasi += totalAmount;
+      await investor.save();
+    } else {
+      // Create new investor
+      investor = new Investor({
+        userId: user._id,
+        name: user.fullName,
+        email: user.email,
+        phoneNumber: user.phoneNumber,
+        totalInvestasi: totalAmount,
+        totalPaid: 0,
+        jumlahPohon: 0,
+        investments: [investmentRecord],
+        status: 'active'
+      });
+      await investor.save();
+    }
 
     return NextResponse.json({
       success: true,
-      orderId,
+      orderId: cicilanOrderId,
       cicilanPayment: {
-        orderId: cicilanPayment.orderId,
-        productName: cicilanPayment.productName,
-        totalAmount: cicilanPayment.totalAmount,
-        installmentAmount: cicilanPayment.installmentAmount,
-        paymentTerm: cicilanPayment.paymentTerm,
-        totalInstallments: cicilanPayment.totalInstallments,
-        nextPaymentDue: cicilanPayment.nextPaymentDue,
-        status: cicilanPayment.status,
+        orderId: cicilanOrderId,
+        productName,
+        totalAmount,
+        installmentAmount,
+        paymentTerm,
+        totalInstallments,
+        nextPaymentDue,
+        status: 'active',
       }
     });
 

@@ -3,14 +3,42 @@ import mongoose, { Document, Schema } from 'mongoose';
 export interface IPayment extends Document {
   orderId: string;
   transactionId?: string;
-  userId?: string;
+  userId: string;
   amount: number;
   currency: string;
-  paymentType: string;
-  transactionStatus: string;
+  
+  // Payment type: registration, full-investment, cicilan-installment
+  paymentType: 'registration' | 'full-investment' | 'cicilan-installment';
+  
+  // For Midtrans payments (registration & full investment)
+  transactionStatus?: 'pending' | 'settlement' | 'capture' | 'deny' | 'cancel' | 'expire' | 'failure';
   fraudStatus?: string;
   transactionTime?: Date;
   settlementTime?: Date;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  midtransResponse?: any;
+
+  // For cicilan installments
+  cicilanOrderId?: string; // Parent cicilan ID
+  installmentNumber?: number;
+  totalInstallments?: number; // Total expected installments for this cicilan order
+  installmentAmount?: number; // Amount per installment
+  paymentTerm?: string; // monthly, quarterly, semiannual, annual
+  dueDate?: Date;
+  
+  // Payment proof (for cicilan installments)
+  proofImageUrl?: string;
+  proofDescription?: string;
+  
+  // Admin review (for cicilan installments)
+  adminStatus?: 'pending' | 'approved' | 'rejected';
+  adminReviewDate?: Date;
+  adminReviewBy?: string;
+  adminNotes?: string;
+  
+  // Product info
+  productName?: string;
+  productId?: string;
 
   // Customer details for registration
   customerData?: {
@@ -24,18 +52,17 @@ export interface IPayment extends Document {
     province: string;
     postalCode: string;
     occupation: string;
-    password: string; // Add missing password field
+    password: string;
     ktpImageUrl: string;
     faceImageUrl: string;
   };
 
-  // Midtrans response data
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  midtransResponse?: any;
-
   // Status tracking
   isProcessed: boolean;
   processingError?: string;
+  
+  // General status (for all payment types)
+  status: 'pending' | 'approved' | 'rejected' | 'completed' | 'cancelled';
 
   createdAt: Date;
   updatedAt: Date;
@@ -55,6 +82,7 @@ const PaymentSchema: Schema = new Schema({
   userId: {
     type: Schema.Types.ObjectId,
     ref: 'User',
+    required: true,
   },
   amount: {
     type: Number,
@@ -66,11 +94,13 @@ const PaymentSchema: Schema = new Schema({
   },
   paymentType: {
     type: String,
-    trim: true,
+    required: true,
+    enum: ['registration', 'full-investment', 'cicilan-installment'],
   },
+  
+  // For Midtrans payments
   transactionStatus: {
     type: String,
-    required: true,
     enum: ['pending', 'settlement', 'capture', 'deny', 'cancel', 'expire', 'failure'],
   },
   fraudStatus: {
@@ -83,6 +113,74 @@ const PaymentSchema: Schema = new Schema({
   settlementTime: {
     type: Date,
   },
+  midtransResponse: {
+    type: Schema.Types.Mixed,
+  },
+  
+  // For cicilan installments
+  cicilanOrderId: {
+    type: String,
+    trim: true,
+  },
+  installmentNumber: {
+    type: Number,
+    min: 1,
+  },
+  totalInstallments: {
+    type: Number,
+    min: 1,
+  },
+  installmentAmount: {
+    type: Number,
+    min: 0,
+  },
+  paymentTerm: {
+    type: String,
+    enum: ['monthly', 'quarterly', 'semiannual', 'annual'],
+  },
+  dueDate: {
+    type: Date,
+  },
+  
+  // Payment proof
+  proofImageUrl: {
+    type: String,
+    trim: true,
+  },
+  proofDescription: {
+    type: String,
+    trim: true,
+  },
+  
+  // Admin review
+  adminStatus: {
+    type: String,
+    enum: ['pending', 'approved', 'rejected'],
+    default: 'pending',
+  },
+  adminReviewDate: {
+    type: Date,
+  },
+  adminReviewBy: {
+    type: Schema.Types.ObjectId,
+    ref: 'User',
+  },
+  adminNotes: {
+    type: String,
+    trim: true,
+  },
+  
+  // Product info
+  productName: {
+    type: String,
+    trim: true,
+  },
+  productId: {
+    type: String,
+    trim: true,
+  },
+  
+  // Customer details for registration
   customerData: {
     fullName: String,
     email: String,
@@ -94,19 +192,24 @@ const PaymentSchema: Schema = new Schema({
     province: String,
     postalCode: String,
     occupation: String,
-    password: String, // Add missing password field
+    password: String,
     ktpImageUrl: String,
     faceImageUrl: String,
   },
-  midtransResponse: {
-    type: Schema.Types.Mixed,
-  },
+  
+  // Status tracking
   isProcessed: {
     type: Boolean,
     default: false,
   },
   processingError: {
     type: String,
+  },
+  status: {
+    type: String,
+    required: true,
+    enum: ['pending', 'approved', 'rejected', 'completed', 'cancelled'],
+    default: 'pending',
   },
 }, {
   timestamps: true,

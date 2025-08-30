@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
-import CicilanInstallment from '@/models/CicilanInstallment';
-import CicilanPayment from '@/models/CicilanPayment';
+import Payment from '@/models/Payment';
 import User from '@/models/User';
 import { getServerSession } from 'next-auth/next';
 
@@ -14,11 +13,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { installmentId, proofImageUrl, proofDescription } = await req.json();
+    const { paymentId, proofImageUrl, proofDescription } = await req.json();
 
-    if (!installmentId || !proofImageUrl) {
+    if (!paymentId || !proofImageUrl) {
       return NextResponse.json({ 
-        error: 'Missing required fields: installmentId, proofImageUrl' 
+        error: 'Missing required fields: paymentId, proofImageUrl' 
       }, { status: 400 });
     }
 
@@ -28,49 +27,52 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
-    // Find installment and verify ownership
-    const installment = await CicilanInstallment.findById(installmentId)
-      .populate('cicilanPaymentId');
+    // Find payment record and verify ownership
+    const payment = await Payment.findById(paymentId);
 
-    if (!installment) {
-      return NextResponse.json({ error: 'Installment not found' }, { status: 404 });
+    if (!payment) {
+      return NextResponse.json({ error: 'Payment not found' }, { status: 404 });
     }
 
-    // Verify that this installment belongs to the user
-    if (installment.cicilanPaymentId.userId.toString() !== user._id.toString()) {
+    // Verify that this payment belongs to the user
+    if (payment.userId.toString() !== user._id.toString()) {
       return NextResponse.json({ error: 'Access denied' }, { status: 403 });
     }
 
-    if (installment.status === 'approved') {
+    // Verify it's a cicilan installment payment
+    if (payment.paymentType !== 'cicilan-installment') {
+      return NextResponse.json({ error: 'Invalid payment type' }, { status: 400 });
+    }
+
+    if (payment.status === 'approved') {
       return NextResponse.json({ 
         error: 'This installment has already been approved' 
       }, { status: 400 });
     }
 
-    if (installment.status === 'submitted' && installment.adminStatus === 'pending') {
+    if (payment.proofImageUrl && payment.adminStatus === 'pending') {
       return NextResponse.json({ 
         error: 'There is already a pending submission for this installment' 
       }, { status: 400 });
     }
 
-    // Update installment with payment proof
-    installment.proofImageUrl = proofImageUrl;
-    installment.proofDescription = proofDescription || '';
-    installment.submissionDate = new Date();
-    installment.status = 'submitted';
-    installment.adminStatus = 'pending';
+    // Update payment with proof
+    payment.proofImageUrl = proofImageUrl;
+    payment.proofDescription = proofDescription || '';
+    payment.adminStatus = 'pending';
 
-    await installment.save();
+    await payment.save();
 
     return NextResponse.json({
       success: true,
       message: 'Payment proof submitted successfully',
-      installment: {
-        _id: installment._id,
-        installmentNumber: installment.installmentNumber,
-        submissionDate: installment.submissionDate,
-        status: installment.status,
-        adminStatus: installment.adminStatus,
+      payment: {
+        _id: payment._id,
+        cicilanOrderId: payment.cicilanOrderId,
+        installmentNumber: payment.installmentNumber,
+        proofImageUrl: payment.proofImageUrl,
+        status: payment.status,
+        adminStatus: payment.adminStatus,
       }
     });
 

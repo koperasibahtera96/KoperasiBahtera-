@@ -1,8 +1,8 @@
-import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
-import CicilanInstallment from '@/models/CicilanInstallment';
+import Payment from '@/models/Payment';
 import User from '@/models/User';
 import { getServerSession } from 'next-auth/next';
+import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(req: NextRequest) {
   await dbConnect();
@@ -28,48 +28,45 @@ export async function GET(req: NextRequest) {
     const skip = (page - 1) * limit;
 
     // Build query
-    const query: any = {};
+
+
+    const query: any = { paymentType: 'cicilan-installment' };
     if (status) query.status = status;
     if (adminStatus) query.adminStatus = adminStatus;
 
     // Get total count
-    const totalCount = await CicilanInstallment.countDocuments(query);
+    const totalCount = await Payment.countDocuments(query);
 
-    // Get installments with related data
-    const installments = await CicilanInstallment.find(query)
-      .populate({
-        path: 'cicilanPaymentId',
-        select: 'orderId productName userId',
-        populate: {
-          path: 'userId',
-          select: 'fullName email phoneNumber'
-        }
-      })
+    // Get installment payments with related data
+    const installments = await Payment.find(query)
+      .populate('userId', 'fullName email phoneNumber')
       .populate('adminReviewBy', 'fullName email')
-      .sort({ submissionDate: -1, createdAt: -1 })
+      .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit)
       .select('-__v');
 
     return NextResponse.json({
       success: true,
-      installments: installments.map(installment => ({
-        _id: installment._id,
-        installmentNumber: installment.installmentNumber,
-        amount: installment.amount,
-        dueDate: installment.dueDate,
-        status: installment.status,
-        proofImageUrl: installment.proofImageUrl,
-        proofDescription: installment.proofDescription,
-        submissionDate: installment.submissionDate,
-        adminStatus: installment.adminStatus,
-        adminReviewDate: installment.adminReviewDate,
-        adminReviewBy: installment.adminReviewBy,
-        adminNotes: installment.adminNotes,
-        paidDate: installment.paidDate,
-        cicilanPayment: installment.cicilanPaymentId,
-        createdAt: installment.createdAt,
-        updatedAt: installment.updatedAt,
+      installments: installments.map(payment => ({
+        _id: payment._id,
+        orderId: payment.orderId,
+        cicilanOrderId: payment.cicilanOrderId,
+        installmentNumber: payment.installmentNumber,
+        amount: payment.amount,
+        dueDate: payment.dueDate,
+        status: payment.status,
+        productName: payment.productName,
+        productId: payment.productId,
+        proofImageUrl: payment.proofImageUrl,
+        proofDescription: payment.proofDescription,
+        adminStatus: payment.adminStatus,
+        adminReviewDate: payment.adminReviewDate,
+        adminReviewBy: payment.adminReviewBy,
+        adminNotes: payment.adminNotes,
+        userId: payment.userId,
+        createdAt: payment.createdAt,
+        updatedAt: payment.updatedAt,
       })),
       pagination: {
         page,
