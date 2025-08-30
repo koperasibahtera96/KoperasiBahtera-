@@ -4,6 +4,59 @@ import { signOut, useSession } from 'next-auth/react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+
+const navVariants = {
+  hidden: { 
+    y: -100,
+    opacity: 0
+  },
+  visible: { 
+    y: 0,
+    opacity: 1,
+    transition: {
+      type: "spring",
+      stiffness: 100,
+      damping: 20,
+      duration: 0.8,
+      staggerChildren: 0.1,
+      delayChildren: 0.2
+    }
+  }
+};
+
+const itemVariants = {
+  hidden: { 
+    y: -20,
+    opacity: 0
+  },
+  visible: { 
+    y: 0,
+    opacity: 1,
+    transition: {
+      type: "spring",
+      stiffness: 120,
+      damping: 15
+    }
+  }
+};
+
+const logoVariants = {
+  hidden: { 
+    scale: 0,
+    rotate: -180
+  },
+  visible: { 
+    scale: 1,
+    rotate: 0,
+    transition: {
+      type: "spring",
+      stiffness: 200,
+      damping: 20,
+      duration: 0.8
+    }
+  }
+};
 
 export default function LandingNavbar() {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -36,13 +89,29 @@ export default function LandingNavbar() {
   };
 
   return (
-    <nav className={`w-full bg-white/75 px-4 sm:px-6 lg:px-10 transition-all duration-300 ${
-      isScrolled ? 'py-2' : 'py-1'
-    }`}>
+    <motion.nav 
+      className={`w-full bg-white/75 px-4 sm:px-6 lg:px-10 transition-all duration-300 ${
+        isScrolled ? 'py-2' : 'py-1'
+      }`}
+      initial="hidden"
+      animate="visible"
+      variants={navVariants}
+    >
       <div className="max-w-7xl mx-auto">
-        <div className="flex items-center justify-between">
+        <motion.div 
+          className="flex items-center justify-between"
+          variants={navVariants}
+        >
           {/* Logo */}
-          <div className="flex items-center">
+          <motion.div 
+            className="flex items-center"
+            variants={logoVariants}
+            whileHover={{ 
+              scale: 1.1,
+              rotate: 5,
+              transition: { duration: 0.3 }
+            }}
+          >
             <Image
               src="/images/koperasi-logo.jpg"
               alt="Logo"
@@ -50,111 +119,208 @@ export default function LandingNavbar() {
               height={isScrolled ? 40 : 60}
               className="rounded-full transition-all duration-300"
             />
-          </div>
+          </motion.div>
 
           {/* Navigation - Hide when scrolled */}
-          <div className={`hidden md:flex items-center space-x-8 transition-all duration-300 ${
-            isScrolled ? 'opacity-0 pointer-events-none' : 'opacity-100'
-          }`}>
-            <a href="/landing#beranda" className="text-gray-700 transition-colors font-medium px-3 py-1 rounded-full hover:bg-[#324D3E] hover:text-white">
-              Beranda
-            </a>
-            <a href="/landing#investasi" className="text-gray-700 transition-colors font-medium px-3 py-1 rounded-full hover:bg-[#324D3E] hover:text-white">
-              Investasi
-            </a>
-            <a href="/landing#tentang-kami" className="text-gray-700 transition-colors font-medium px-3 py-1 rounded-full hover:bg-[#324D3E] hover:text-white">
-              Tentang Kami
-            </a>
-            <a href="/landing#produk" className="text-gray-700 transition-colors font-medium px-3 py-1 rounded-full hover:bg-[#324D3E] hover:text-white">
-              Produk
-            </a>
-            <a href="/landing#faq" className="text-gray-700 transition-colors font-medium px-3 py-1 rounded-full hover:bg-[#324D3E] hover:text-white">
-              FAQ
-            </a>
-          </div>
+          <motion.div 
+            className={`hidden md:flex items-center space-x-8 transition-all duration-300 ${
+              isScrolled ? 'opacity-0 pointer-events-none' : 'opacity-100'
+            }`}
+            variants={navVariants}
+          >
+            {['Beranda', 'Investasi', 'Tentang Kami', 'Produk', 'FAQ'].map((item, index) => (
+              <motion.a 
+                key={item}
+                href={`/landing#${item.toLowerCase().replace(' ', '-')}`} 
+                className="text-gray-700 transition-colors font-medium px-3 py-1 rounded-full hover:bg-[#324D3E] hover:text-white"
+                variants={itemVariants}
+                whileHover={{ 
+                  scale: 1.05,
+                  backgroundColor: "#324D3E",
+                  color: "#ffffff",
+                  transition: { duration: 0.2 }
+                }}
+                whileTap={{ scale: 0.95 }}
+              >
+                {item}
+              </motion.a>
+            ))}
+          </motion.div>
 
           {/* Auth Buttons / User Menu */}
-          <div className="hidden sm:flex items-center space-x-2 lg:space-x-4">
+          <motion.div 
+            className="hidden sm:flex items-center space-x-2 lg:space-x-4"
+            variants={navVariants}
+          >
             {status === 'loading' ? (
-              <div className="w-10 h-10 bg-gray-200 rounded-full animate-pulse"></div>
+              <motion.div 
+                className="w-10 h-10 bg-gray-200 rounded-full"
+                animate={{ 
+                  scale: [1, 1.1, 1],
+                  opacity: [0.5, 1, 0.5]
+                }}
+                transition={{ 
+                  duration: 1.5,
+                  repeat: Infinity,
+                  ease: "easeInOut"
+                }}
+              />
             ) : session?.user ? (
-              <div className="flex items-center space-x-3">
+              <motion.div 
+                className="flex items-center space-x-3"
+                variants={itemVariants}
+              >
                 {/* Cicilan Saya Button */}
-                <Link
-                  href="/cicilan"
-                  className="px-3 lg:px-6 py-1 text-gray-700 transition-all duration-300 font-medium rounded-full border border-[#324D3E] hover:border-[#4C3D19] hover:bg-[#4C3D19] hover:text-white text-sm lg:text-base"
+                <motion.div
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
                 >
-                  Cicilan Saya
-                </Link>
+                  <Link
+                    href="/cicilan"
+                    className="px-3 lg:px-6 py-1 text-gray-700 transition-all duration-300 font-medium rounded-full border border-[#324D3E] hover:border-[#4C3D19] hover:bg-[#4C3D19] hover:text-white text-sm lg:text-base"
+                  >
+                    Cicilan Saya
+                  </Link>
+                </motion.div>
 
                 {/* User Avatar with Dropdown */}
                 <div className="relative user-menu">
-                  <button
+                  <motion.button
                     onClick={() => setShowUserMenu(!showUserMenu)}
                     className="flex items-center space-x-2 p-1 rounded-full hover:bg-gray-100 transition-colors"
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
                   >
-                    <div className="w-8 h-8 lg:w-10 lg:h-10 bg-[#324D3E] rounded-full flex items-center justify-center text-white font-bold text-sm lg:text-base">
+                    <motion.div 
+                      className="w-8 h-8 lg:w-10 lg:h-10 bg-[#324D3E] rounded-full flex items-center justify-center text-white font-bold text-sm lg:text-base"
+                      whileHover={{ 
+                        backgroundColor: "#4C3D19",
+                        rotate: 360
+                      }}
+                      transition={{ duration: 0.6 }}
+                    >
                       {session.user.name?.charAt(0).toUpperCase() || 'U'}
-                    </div>
+                    </motion.div>
                     <span className="text-gray-700 font-medium text-sm lg:text-base hidden lg:inline">
                       Hello, {session.user.name?.split(' ')[0] || 'User'}
                     </span>
-                    <svg
-                      className={`w-4 h-4 text-gray-500 transition-transform ${showUserMenu ? 'rotate-180' : ''}`}
+                    <motion.svg
+                      className="w-4 h-4 text-gray-500"
                       fill="none"
                       stroke="currentColor"
                       viewBox="0 0 24 24"
+                      animate={{ 
+                        rotate: showUserMenu ? 180 : 0
+                      }}
+                      transition={{ duration: 0.3 }}
                     >
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                    </svg>
-                  </button>
+                    </motion.svg>
+                  </motion.button>
 
                   {/* Dropdown Menu */}
-                  {showUserMenu && (
-                    <div className="absolute right-0 mt-2 w-48 bg-white rounded-2xl shadow-2xl border border-gray-200 py-2 z-50">
-                      <button
-                        onClick={handleLogout}
-                        className="w-full px-4 py-2 text-left text-red-600 hover:bg-red-50 transition-colors font-medium"
+                  <AnimatePresence>
+                    {showUserMenu && (
+                      <motion.div 
+                        className="absolute right-0 mt-2 w-48 bg-white rounded-2xl shadow-2xl border border-gray-200 py-2 z-50"
+                        initial={{ 
+                          opacity: 0, 
+                          scale: 0.95,
+                          y: -10
+                        }}
+                        animate={{ 
+                          opacity: 1, 
+                          scale: 1,
+                          y: 0
+                        }}
+                        exit={{ 
+                          opacity: 0, 
+                          scale: 0.95,
+                          y: -10
+                        }}
+                        transition={{ duration: 0.2 }}
                       >
-                        <div className="flex items-center space-x-2">
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                          </svg>
-                          <span>Logout</span>
-                        </div>
-                      </button>
-                    </div>
-                  )}
+                        <motion.button
+                          onClick={handleLogout}
+                          className="w-full px-4 py-2 text-left text-red-600 hover:bg-red-50 transition-colors font-medium"
+                          whileHover={{ 
+                            backgroundColor: "rgba(254, 242, 242, 1)",
+                            x: 5
+                          }}
+                          whileTap={{ scale: 0.98 }}
+                        >
+                          <div className="flex items-center space-x-2">
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                            </svg>
+                            <span>Logout</span>
+                          </div>
+                        </motion.button>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </div>
-              </div>
+              </motion.div>
             ) : (
-              <>
-                <Link
-                  href="/login"
-                  className={`px-3 lg:px-6 py-1 text-gray-700 transition-all duration-300 font-medium rounded-full border border-[#324D3E] hover:border-[#4C3D19] hover:bg-[#4C3D19] hover:text-white text-sm lg:text-base ${
-                    isScrolled ? 'opacity-0 pointer-events-none' : 'opacity-100'
-                  }`}
+              <motion.div
+                className="flex items-center space-x-2 lg:space-x-4"
+                variants={itemVariants}
+              >
+                <motion.div
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
                 >
-                  Masuk
-                </Link>
-                <Link
-                  href="/register"
-                  className="px-3 lg:px-6 py-1 bg-[#324D3E] text-white font-medium rounded-full transition-colors hover:bg-[#4C3D19] text-sm lg:text-base"
+                  <Link
+                    href="/login"
+                    className={`px-3 lg:px-6 py-1 text-gray-700 transition-all duration-300 font-medium rounded-full border border-[#324D3E] hover:border-[#4C3D19] hover:bg-[#4C3D19] hover:text-white text-sm lg:text-base ${
+                      isScrolled ? 'opacity-0 pointer-events-none' : 'opacity-100'
+                    }`}
+                  >
+                    Masuk
+                  </Link>
+                </motion.div>
+                <motion.div
+                  whileHover={{ 
+                    scale: 1.05,
+                    boxShadow: "0 10px 25px -3px rgba(0, 0, 0, 0.1)"
+                  }}
+                  whileTap={{ scale: 0.95 }}
                 >
-                  Daftar Sekarang
-                </Link>
-              </>
+                  <Link
+                    href="/register"
+                    className="px-3 lg:px-6 py-1 bg-[#324D3E] text-white font-medium rounded-full transition-colors hover:bg-[#4C3D19] text-sm lg:text-base"
+                  >
+                    Daftar Sekarang
+                  </Link>
+                </motion.div>
+              </motion.div>
             )}
-          </div>
+          </motion.div>
 
           {/* Mobile menu button */}
-          <button className="md:hidden p-2 text-gray-700">
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <motion.button 
+            className="md:hidden p-2 text-gray-700"
+            variants={itemVariants}
+            whileHover={{ 
+              scale: 1.1,
+              backgroundColor: "rgba(0, 0, 0, 0.05)",
+              borderRadius: "50%"
+            }}
+            whileTap={{ scale: 0.9 }}
+          >
+            <motion.svg 
+              className="w-6 h-6" 
+              fill="none" 
+              stroke="currentColor" 
+              viewBox="0 0 24 24"
+              whileHover={{ rotate: 90 }}
+              transition={{ duration: 0.3 }}
+            >
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-            </svg>
-          </button>
-        </div>
+            </motion.svg>
+          </motion.button>
+        </motion.div>
       </div>
-    </nav>
+    </motion.nav>
   );
 }

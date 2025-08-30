@@ -6,6 +6,8 @@ import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { useAlert } from '@/components/ui/Alert';
 import { CicilanModal } from './CicilanModal';
+import { motion } from 'framer-motion';
+import { useInView } from 'framer-motion';
 
 const plants = [
   {
@@ -238,6 +240,105 @@ const plants = [
   }
 ];
 
+// Animation variants
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.3,
+      delayChildren: 0.2
+    }
+  }
+};
+
+const slideInFromLeft = {
+  hidden: { 
+    opacity: 0, 
+    x: -100,
+    scale: 0.8
+  },
+  visible: { 
+    opacity: 1, 
+    x: 0,
+    scale: 1,
+    transition: {
+      type: "spring",
+      stiffness: 100,
+      damping: 15,
+      duration: 0.8
+    }
+  }
+};
+
+const slideInFromRight = {
+  hidden: { 
+    opacity: 0, 
+    x: 100,
+    scale: 0.8
+  },
+  visible: { 
+    opacity: 1, 
+    x: 0,
+    scale: 1,
+    transition: {
+      type: "spring",
+      stiffness: 100,
+      damping: 15,
+      duration: 0.8
+    }
+  }
+};
+
+const fadeInUp = {
+  hidden: { 
+    opacity: 0, 
+    y: 60,
+    scale: 0.9
+  },
+  visible: { 
+    opacity: 1, 
+    y: 0,
+    scale: 1,
+    transition: {
+      type: "spring",
+      stiffness: 120,
+      damping: 20,
+      duration: 0.6
+    }
+  }
+};
+
+const scaleIn = {
+  hidden: { 
+    opacity: 0, 
+    scale: 0.5,
+    rotate: -10
+  },
+  visible: { 
+    opacity: 1, 
+    scale: 1,
+    rotate: 0,
+    transition: {
+      type: "spring",
+      stiffness: 200,
+      damping: 20,
+      duration: 0.7
+    }
+  }
+};
+
+const floatingAnimation = {
+  animate: {
+    y: [-10, 10, -10],
+    transition: {
+      duration: 4,
+      repeat: Infinity,
+      ease: "easeInOut"
+    }
+  }
+};
+
 export default function PlantShowcaseSection() {
   const { data: session } = useSession();
   const router = useRouter();
@@ -299,160 +400,363 @@ export default function PlantShowcaseSection() {
     setCicilanModal({ isOpen: true, plant: plant.investmentPlan });
   };
   return (
-    <section className="bg-[#4A5C57]">
+    <motion.section 
+      className="bg-[#4A5C57]"
+      initial="hidden"
+      animate="visible"
+      variants={containerVariants}
+    >
       <AlertComponent />
       <div>
         {plants.map((plant, index) => (
-          <div
+          <motion.div
             key={index}
             className="min-h-screen relative overflow-hidden bg-cover bg-center bg-no-repeat"
             style={{
               backgroundImage: 'url(/landing/product-bg.png)',
             }}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, amount: 0.3 }}
+            variants={containerVariants}
           >
             {/* Inner content container - 75% of width and height */}
             <div className={`min-h-screen flex items-center justify-center px-4 sm:px-6 lg:px-8 ${index === 0 ? 'pt-8 sm:pt-12 lg:pt-16' : 'py-8 sm:py-12 lg:py-16'}`}>
-              <div className="bg-[#FFFCE3] rounded-3xl p-4 sm:p-6 lg:p-8 relative overflow-hidden shadow-lg w-full max-w-7xl lg:max-w-none xl:max-w-7xl" style={{ minHeight: '70vh', width: '95%' }}>
+              <motion.div 
+                className="bg-[#FFFCE3] rounded-3xl p-4 sm:p-6 lg:p-8 relative overflow-hidden shadow-lg w-full max-w-7xl lg:max-w-none xl:max-w-7xl" 
+                style={{ minHeight: '70vh', width: '95%' }}
+                variants={scaleIn}
+                whileHover={{ 
+                  scale: 1.02,
+                  boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.25)",
+                  transition: { duration: 0.3 }
+                }}
+              >
                 <div className="h-full flex flex-col">
                   {/* Main Content Area */}
-                  <div className="flex-1 w-full grid grid-cols-1 md:grid-cols-2 xl:grid-cols-[500px_1fr_350px] gap-4 sm:gap-6 lg:gap-8 items-center">
+                  <motion.div 
+                    className="flex-1 w-full grid grid-cols-1 md:grid-cols-2 xl:grid-cols-[500px_1fr_350px] gap-4 sm:gap-6 lg:gap-8 items-center"
+                    variants={containerVariants}
+                  >
                     {/* Left Section - Plant Info */}
-                    <div className="space-y-6">
+                    <motion.div 
+                      className="space-y-6"
+                      variants={slideInFromLeft}
+                    >
                       {/* Plant Title */}
-                      <div className="bg-[#324D3E] rounded-r-2xl w-max px-4 sm:px-6 lg:px-8 py-3 lg:py-4 text-white -ml-4 sm:-ml-6 lg:-ml-8">
-                        <h3 className="text-2xl sm:text-3xl lg:text-4xl xl:text-5xl font-bold font-[family-name:var(--font-poppins)] capitalize">
+                      <motion.div 
+                        className="bg-[#324D3E] rounded-r-2xl w-max px-4 sm:px-6 lg:px-8 py-3 lg:py-4 text-white -ml-4 sm:-ml-6 lg:-ml-8"
+                        whileHover={{ 
+                          scale: 1.05,
+                          x: 10,
+                          transition: { duration: 0.3 }
+                        }}
+                        whileTap={{ scale: 0.95 }}
+                      >
+                        <motion.h3 
+                          className="text-2xl sm:text-3xl lg:text-4xl xl:text-5xl font-bold font-[family-name:var(--font-poppins)] capitalize"
+                          initial={{ opacity: 0, y: 20 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: 0.5, duration: 0.6 }}
+                        >
                           Tanaman {plant.name}
-                        </h3>
-                      </div>
+                        </motion.h3>
+                      </motion.div>
 
                       {/* Plant Details - Outside/below the title box */}
-                      <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 lg:gap-4 text-xs sm:text-sm font-medium text-gray-700 pl-2">
-                        <span className="text-gray-700">{plant.nameEn}</span>
+                      <motion.div 
+                        className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 lg:gap-4 text-xs sm:text-sm font-medium text-gray-700 pl-2"
+                        variants={fadeInUp}
+                      >
+                        <motion.span 
+                          className="text-gray-700"
+                          whileHover={{ scale: 1.1, color: "#324D3E" }}
+                        >
+                          {plant.nameEn}
+                        </motion.span>
                         <div className="hidden sm:block w-px h-3 sm:h-4 bg-gray-400"></div>
-                        <span className="text-gray-700">{plant.years}</span>
+                        <motion.span 
+                          className="text-gray-700"
+                          whileHover={{ scale: 1.1, color: "#324D3E" }}
+                        >
+                          {plant.years}
+                        </motion.span>
                         <div className="hidden sm:block w-px h-3 sm:h-4 bg-gray-400"></div>
-                        <span className="text-gray-700">{plant.location}</span>
-                      </div>
+                        <motion.span 
+                          className="text-gray-700"
+                          whileHover={{ scale: 1.1, color: "#324D3E" }}
+                        >
+                          {plant.location}
+                        </motion.span>
+                      </motion.div>
 
                       {/* Description */}
-                      <div className="hidden lg:block">
-                        <p className="text-sm lg:text-base leading-relaxed text-gray-700 font-medium">
+                      <motion.div 
+                        className="hidden lg:block"
+                        variants={fadeInUp}
+                      >
+                        <motion.p 
+                          className="text-sm lg:text-base leading-relaxed text-gray-700 font-medium"
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          transition={{ delay: 0.8, duration: 0.8 }}
+                        >
                           {plant.description}
-                        </p>
-                      </div>
+                        </motion.p>
+                      </motion.div>
 
                       {/* Product Information */}
-                      <div className="hidden xl:block">
-                        <h4 className="text-base lg:text-lg font-bold text-[#4A5C57] mb-3 font-[family-name:var(--font-poppins)]">
+                      <motion.div 
+                        className="hidden xl:block"
+                        variants={fadeInUp}
+                      >
+                        <motion.h4 
+                          className="text-base lg:text-lg font-bold text-[#4A5C57] mb-3 font-[family-name:var(--font-poppins)]"
+                          whileHover={{ scale: 1.05 }}
+                        >
                           Produk Olahan dari {plant.name}:
-                        </h4>
-                        <ul className="space-y-2 text-xs lg:text-sm">
+                        </motion.h4>
+                        <motion.ul 
+                          className="space-y-2 text-xs lg:text-sm"
+                          variants={containerVariants}
+                        >
                           {plant.productOlahan.map((product, idx) => (
-                            <li key={idx} className="flex items-start">
+                            <motion.li 
+                              key={idx} 
+                              className="flex items-start"
+                              variants={fadeInUp}
+                              whileHover={{ 
+                                x: 10,
+                                transition: { duration: 0.2 }
+                              }}
+                            >
                               <span className="text-[#4A5C57] mr-2">•</span>
                               <div>
                                 <strong>{product.name}</strong><br />
                                 <span className="text-gray-600">{product.description}</span>
                               </div>
-                            </li>
+                            </motion.li>
                           ))}
-                        </ul>
-                      </div>
-                    </div>
+                        </motion.ul>
+                      </motion.div>
+                    </motion.div>
 
                     {/* Center Section - Plant Image */}
-                    <div className="flex justify-center items-center md:col-span-2 xl:col-span-1 order-first md:order-none">
-                      <Image
-                        src={`/landing/${plant.name}.png`}
-                        alt={`Tanaman ${plant.name}`}
-                        width={250}
-                        height={350}
-                        className="object-contain max-h-[250px] sm:max-h-[300px] lg:max-h-[400px] w-auto"
-                      />
-                    </div>
+                    <motion.div 
+                      className="flex justify-center items-center md:col-span-2 xl:col-span-1 order-first md:order-none"
+                      variants={scaleIn}
+                    >
+                      <motion.div
+                        {...floatingAnimation}
+                        whileHover={{ 
+                          scale: 1.1,
+                          rotate: 5,
+                          transition: { duration: 0.3 }
+                        }}
+                        whileTap={{ scale: 0.95 }}
+                      >
+                        <Image
+                          src={`/landing/${plant.name}.png`}
+                          alt={`Tanaman ${plant.name}`}
+                          width={250}
+                          height={350}
+                          className="object-contain max-h-[250px] sm:max-h-[300px] lg:max-h-[400px] w-auto drop-shadow-2xl"
+                        />
+                      </motion.div>
+                    </motion.div>
 
                     {/* Right Section - Investment Info */}
-                    <div className="space-y-3 sm:space-y-4 flex flex-col justify-start md:col-span-2 xl:col-span-1">
+                    <motion.div 
+                      className="space-y-3 sm:space-y-4 flex flex-col justify-start md:col-span-2 xl:col-span-1"
+                      variants={slideInFromRight}
+                    >
                       {/* Investment Simulation Card */}
-                      <div className="bg-gradient-to-r from-[#324D3E] via-[#507863] via-[#669D7E] to-[#748390] rounded-2xl p-3 sm:p-4 text-white shadow-md relative z-10">
-                        <h4 className="text-base sm:text-lg font-bold mb-2 font-[family-name:var(--font-poppins)]">
+                      <motion.div 
+                        className="bg-gradient-to-r from-[#324D3E] via-[#507863] via-[#669D7E] to-[#748390] rounded-2xl p-3 sm:p-4 text-white shadow-md relative z-10"
+                        whileHover={{ 
+                          scale: 1.05,
+                          y: -5,
+                          boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)",
+                          transition: { duration: 0.3 }
+                        }}
+                        whileTap={{ scale: 0.98 }}
+                      >
+                        <motion.h4 
+                          className="text-base sm:text-lg font-bold mb-2 font-[family-name:var(--font-poppins)]"
+                          initial={{ opacity: 0, y: 20 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: 0.6, duration: 0.5 }}
+                        >
                           Simulasi Cicilan Per 10 Pohon
-                        </h4>
-                        <p className="text-xs sm:text-sm mb-2">Mulai Dari</p>
-                        <div className="text-xl sm:text-2xl font-bold mb-3 sm:mb-4">
+                        </motion.h4>
+                        <motion.p 
+                          className="text-xs sm:text-sm mb-2"
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          transition={{ delay: 0.8, duration: 0.5 }}
+                        >
+                          Mulai Dari
+                        </motion.p>
+                        <motion.div 
+                          className="text-xl sm:text-2xl font-bold mb-3 sm:mb-4"
+                          initial={{ opacity: 0, scale: 0.5 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          transition={{ delay: 1, duration: 0.5, type: "spring" }}
+                        >
                           Rp {plant.pricing.monthly} <span className="text-xs sm:text-sm font-normal">/bulan</span>
-                        </div>
-                        <button
+                        </motion.div>
+                        <motion.button
                           className="w-full bg-white text-[#4A5C57] py-2 px-4 rounded-full font-bold text-xs sm:text-sm hover:bg-gray-100 transition-colors disabled:opacity-50"
                           onClick={() => handleInvestment(plant)}
                           disabled={isLoading === plant.name}
+                          whileHover={{ 
+                            scale: 1.05,
+                            boxShadow: "0 4px 15px rgba(0, 0, 0, 0.2)"
+                          }}
+                          whileTap={{ scale: 0.95 }}
+                          initial={{ opacity: 0, y: 20 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: 1.2, duration: 0.5 }}
                         >
                           {isLoading === plant.name ? 'Processing...' : 'Bayar Langsung'}
-                        </button>
-                      </div>
+                        </motion.button>
+                      </motion.div>
 
                       {/* Investment Details */}
-                      <div className="relative -mt-8 sm:-mt-12">
-                        <div className="bg-white rounded-2xl p-4 shadow-md border relative z-0 pt-8 sm:pt-12">
-                          <h5 className="text-lg font-bold text-[#4A5C57] mb-3 font-[family-name:var(--font-poppins)]">
+                      <motion.div 
+                        className="relative -mt-8 sm:-mt-12"
+                        variants={fadeInUp}
+                      >
+                        <motion.div 
+                          className="bg-white rounded-2xl p-4 shadow-md border relative z-0 pt-8 sm:pt-12"
+                          whileHover={{ 
+                            scale: 1.03,
+                            y: -3,
+                            boxShadow: "0 10px 25px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)",
+                            transition: { duration: 0.3 }
+                          }}
+                        >
+                          <motion.h5 
+                            className="text-lg font-bold text-[#4A5C57] mb-3 font-[family-name:var(--font-poppins)]"
+                            whileHover={{ scale: 1.05 }}
+                          >
                             Lainnya
-                          </h5>
-                          <div className="space-y-2 text-sm">
-                            <div className="flex justify-between">
+                          </motion.h5>
+                          <motion.div 
+                            className="space-y-2 text-sm"
+                            variants={containerVariants}
+                          >
+                            <motion.div 
+                              className="flex justify-between"
+                              variants={fadeInUp}
+                              whileHover={{ x: 5, transition: { duration: 0.2 } }}
+                            >
                               <span className="text-gray-700">Per Tahun</span>
                               <span className="font-bold text-gray-900">Rp {plant.pricing.yearly}</span>
-                            </div>
-                            <div className="flex justify-between">
+                            </motion.div>
+                            <motion.div 
+                              className="flex justify-between"
+                              variants={fadeInUp}
+                              whileHover={{ x: 5, transition: { duration: 0.2 } }}
+                            >
                               <span className="text-gray-700">Per 5 Tahun</span>
                               <span className="font-bold text-gray-900">Rp {plant.pricing.fiveYears}</span>
-                            </div>
-                            <div className="flex justify-between border-t pt-2">
+                            </motion.div>
+                            <motion.div 
+                              className="flex justify-between border-t pt-2"
+                              variants={fadeInUp}
+                              whileHover={{ x: 5, transition: { duration: 0.2 } }}
+                            >
                               <span className="text-gray-700">Harga Jual Pohon</span>
                               <span className="font-bold text-gray-900">Rp {plant.pricing.sellPrice}</span>
-                            </div>
-                          </div>
-                          <button
+                            </motion.div>
+                          </motion.div>
+                          <motion.button
                             className="w-full mt-3 bg-[#324D3E] text-white py-2 px-4 rounded-full font-bold text-xs sm:text-sm hover:bg-[#4C3D19] transition-colors"
                             onClick={() => handleCicilanSelect(plant)}
                             disabled={isLoading === plant.name}
+                            whileHover={{ 
+                              scale: 1.05,
+                              boxShadow: "0 4px 15px rgba(50, 77, 62, 0.3)"
+                            }}
+                            whileTap={{ scale: 0.95 }}
+                            variants={fadeInUp}
                           >
                             💳 Beli dengan Cicilan
-                          </button>
-                        </div>
-                      </div>
+                          </motion.button>
+                        </motion.div>
+                      </motion.div>
 
                       {/* Profit Projection */}
-                      <div className="bg-white border-2 border-gray-200 rounded-2xl p-4 shadow-md">
-                        <h5 className="text-lg font-bold text-[#4A5C57] mb-2 font-[family-name:var(--font-poppins)]">
+                      <motion.div 
+                        className="bg-white border-2 border-gray-200 rounded-2xl p-4 shadow-md"
+                        variants={fadeInUp}
+                        whileHover={{ 
+                          scale: 1.03,
+                          y: -5,
+                          borderColor: "#324D3E",
+                          boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)",
+                          transition: { duration: 0.3 }
+                        }}
+                      >
+                        <motion.h5 
+                          className="text-lg font-bold text-[#4A5C57] mb-2 font-[family-name:var(--font-poppins)]"
+                          whileHover={{ scale: 1.05 }}
+                        >
                           Pendapatan / Keuntungan Bersih
-                        </h5>
-                        <div className="text-2xl font-bold text-[#4A5C57] mb-3">
+                        </motion.h5>
+                        <motion.div 
+                          className="text-2xl font-bold text-[#4A5C57] mb-3"
+                          initial={{ opacity: 0, scale: 0.5 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          transition={{ delay: 1.4, duration: 0.5, type: "spring" }}
+                        >
                           Rp {plant.pricing.profit.yearly} <span className="text-sm font-normal">/tahun</span>
-                        </div>
-                        <div className="space-y-1 text-xs">
-                          <div className="flex justify-between">
+                        </motion.div>
+                        <motion.div 
+                          className="space-y-1 text-xs"
+                          variants={containerVariants}
+                        >
+                          <motion.div 
+                            className="flex justify-between"
+                            variants={fadeInUp}
+                            whileHover={{ x: 5, transition: { duration: 0.2 } }}
+                          >
                             <span className="text-gray-600">Bulanan</span>
                             <span className="font-semibold">Rp {plant.pricing.profit.monthly}</span>
-                          </div>
-                          <div className="flex justify-between">
+                          </motion.div>
+                          <motion.div 
+                            className="flex justify-between"
+                            variants={fadeInUp}
+                            whileHover={{ x: 5, transition: { duration: 0.2 } }}
+                          >
                             <span className="text-gray-600">Mingguan</span>
                             <span className="font-semibold">Rp {plant.pricing.profit.weekly}</span>
-                          </div>
-                          <div className="flex justify-between">
+                          </motion.div>
+                          <motion.div 
+                            className="flex justify-between"
+                            variants={fadeInUp}
+                            whileHover={{ x: 5, transition: { duration: 0.2 } }}
+                          >
                             <span className="text-gray-600">Harian</span>
                             <span className="font-semibold">Rp {plant.pricing.profit.daily}</span>
-                          </div>
-                        </div>
-                        <p className="text-xs text-gray-500 mt-3">
+                          </motion.div>
+                        </motion.div>
+                        <motion.p 
+                          className="text-xs text-gray-500 mt-3"
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          transition={{ delay: 1.8, duration: 0.5 }}
+                        >
                           *Simulasi Perhitungan Keuntungan investasi setelah dikurangi biaya - biaya lainnya
-                        </p>
-                      </div>
-                    </div>
-                  </div>
+                        </motion.p>
+                      </motion.div>
+                    </motion.div>
+                  </motion.div>
                 </div>
-              </div>
+              </motion.div>
             </div>
-          </div>
+          </motion.div>
         ))}
       </div>
 
@@ -464,6 +768,6 @@ export default function PlantShowcaseSection() {
         onSuccess={showSuccess}
         onError={showError}
       />
-    </section>
+    </motion.section>
   );
 }

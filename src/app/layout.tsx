@@ -20,9 +20,8 @@ const poppins = Poppins({
 });
 
 export const metadata: Metadata = {
-  title: "Investasi Hijau - Platform Investasi Tanaman Terpercaya",
-  description: "Investasi tanaman berkualitas tinggi dengan keuntungan menarik dan ramah lingkungan. Mulai dari Rp 100.000 saja!",
-  keywords: "investasi tanaman, investasi hijau, pertanian, passive income, ramah lingkungan",
+  title: 'Investasi Pertanian Berkelanjutan | Koperasi Banteng Merah Sejahtera',
+  description: 'Solusi tepat bagi Anda yang ingin meraih keuntungan sekaligus memberikan dampak positif bagi lingkungan dan masyarakat.',
 };
 
 export default function RootLayout({

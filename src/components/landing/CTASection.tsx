@@ -1,16 +1,92 @@
 'use client';
 
 import Image from 'next/image';
+import { motion } from 'framer-motion';
+
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.3,
+      delayChildren: 0.2
+    }
+  }
+};
+
+const slideInFromLeft = {
+  hidden: { 
+    opacity: 0, 
+    x: -100
+  },
+  visible: { 
+    opacity: 1, 
+    x: 0,
+    transition: {
+      type: "spring",
+      stiffness: 100,
+      damping: 15,
+      duration: 0.8
+    }
+  }
+};
+
+const slideInFromRight = {
+  hidden: { 
+    opacity: 0, 
+    x: 100
+  },
+  visible: { 
+    opacity: 1, 
+    x: 0,
+    transition: {
+      type: "spring",
+      stiffness: 100,
+      damping: 15,
+      duration: 0.8
+    }
+  }
+};
+
+const pulseAnimation = {
+  animate: {
+    scale: [1, 1.1, 1],
+    transition: {
+      duration: 2,
+      repeat: Infinity,
+      ease: "easeInOut"
+    }
+  }
+};
 
 export default function CTASection() {
   return (
-    <section className="py-8 sm:py-10 lg:py-12 px-4 sm:px-6 bg-[#E5D7C4]">
+    <motion.section 
+      className="py-8 sm:py-10 lg:py-12 px-4 sm:px-6 bg-[#E5D7C4]"
+      initial="hidden"
+      whileInView="visible"
+      viewport={{ once: true, amount: 0.3 }}
+      variants={containerVariants}
+    >
       <div className="max-w-7xl mx-auto">
-        <div className="flex flex-col lg:flex-row items-center justify-between gap-6 lg:gap-8">
+        <motion.div 
+          className="flex flex-col lg:flex-row items-center justify-between gap-6 lg:gap-8"
+          variants={containerVariants}
+        >
           {/* Left side with icon and text */}
-          <div className="flex items-center space-x-3 sm:space-x-4 text-center lg:text-left">
+          <motion.div 
+            className="flex items-center space-x-3 sm:space-x-4 text-center lg:text-left"
+            variants={slideInFromLeft}
+          >
             {/* Light bulb icon */}
-            <div className="flex-shrink-0">
+            <motion.div 
+              className="flex-shrink-0"
+              {...pulseAnimation}
+              whileHover={{ 
+                rotate: [0, -10, 10, -10, 0],
+                transition: { duration: 0.5 }
+              }}
+            >
               <Image
                 src="/landing/light.png"
                 alt="Light bulb"
@@ -18,27 +94,66 @@ export default function CTASection() {
                 height={50}
                 className="object-contain sm:w-[60px] sm:h-[60px]"
               />
-            </div>
+            </motion.div>
 
             {/* Text content */}
-            <div>
-              <h3 className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold text-[#4C3D19] mb-1 sm:mb-2 font-[family-name:var(--font-poppins)]">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.5, duration: 0.6 }}
+            >
+              <motion.h3 
+                className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold text-[#4C3D19] mb-1 sm:mb-2 font-[family-name:var(--font-poppins)]"
+                whileHover={{ 
+                  scale: 1.02,
+                  color: "#364D32",
+                  transition: { duration: 0.3 }
+                }}
+              >
                 Investasi Hijau, Hijaukan Bumi Sejahterakan Hati
-              </h3>
-              <p className="text-gray-600 text-sm sm:text-base lg:text-lg">
+              </motion.h3>
+              <motion.p 
+                className="text-gray-600 text-sm sm:text-base lg:text-lg"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.7, duration: 0.6 }}
+              >
                 Bersama membangun masa depan hijau dan berkontribusi pada kelestarian lingkungan
-              </p>
-            </div>
-          </div>
+              </motion.p>
+            </motion.div>
+          </motion.div>
 
           {/* Right side with CTA button */}
-          <div className="flex-shrink-0 w-full lg:w-auto">
-            <button className="w-full lg:w-auto bg-[#4C3D19] text-white px-8 sm:px-10 lg:px-12 py-4 sm:py-5 lg:py-6 rounded-full text-base sm:text-lg lg:text-xl font-semibold hover:bg-[#344C3D] transition-colors shadow-lg font-[family-name:var(--font-poppins)] lg:min-w-[240px]">
+          <motion.div 
+            className="flex-shrink-0 w-full lg:w-auto"
+            variants={slideInFromRight}
+          >
+            <motion.button 
+              className="w-full lg:w-auto bg-[#4C3D19] text-white px-8 sm:px-10 lg:px-12 py-4 sm:py-5 lg:py-6 rounded-full text-base sm:text-lg lg:text-xl font-semibold hover:bg-[#344C3D] transition-colors shadow-lg font-[family-name:var(--font-poppins)] lg:min-w-[240px]"
+              whileHover={{ 
+                scale: 1.05,
+                boxShadow: "0 10px 25px rgba(76, 61, 25, 0.3)",
+                y: -3
+              }}
+              whileTap={{ scale: 0.95 }}
+              animate={{
+                boxShadow: [
+                  "0 4px 15px rgba(76, 61, 25, 0.2)",
+                  "0 8px 25px rgba(76, 61, 25, 0.3)",
+                  "0 4px 15px rgba(76, 61, 25, 0.2)"
+                ],
+                transition: {
+                  duration: 2,
+                  repeat: Infinity,
+                  ease: "easeInOut"
+                }
+              }}
+            >
               Gabung Sekarang
-            </button>
-          </div>
-        </div>
+            </motion.button>
+          </motion.div>
+        </motion.div>
       </div>
-    </section>
+    </motion.section>
   );
 }
