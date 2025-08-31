@@ -20,6 +20,14 @@ export interface IUser extends Document {
   isEmailVerified: boolean;
   isPhoneVerified: boolean;
   isActive: boolean;
+  
+  // Verification status fields
+  verificationStatus: 'pending' | 'approved' | 'rejected';
+  verificationNotes?: string; // Admin notes for rejection/approval
+  verifiedBy?: string; // Admin who verified
+  verifiedAt?: Date; // When verification was completed
+  canPurchase: boolean; // Whether user can buy products
+  
   lastLogin?: Date;
   createdAt: Date;
   updatedAt: Date;
@@ -123,6 +131,30 @@ const UserSchema: Schema = new Schema({
     type: Boolean,
     default: true,
   },
+  
+  // Verification status fields
+  verificationStatus: {
+    type: String,
+    enum: ['pending', 'approved', 'rejected'],
+    default: 'pending',
+    required: true,
+  },
+  verificationNotes: {
+    type: String,
+    trim: true,
+  },
+  verifiedBy: {
+    type: Schema.Types.ObjectId,
+    ref: 'User',
+  },
+  verifiedAt: {
+    type: Date,
+  },
+  canPurchase: {
+    type: Boolean,
+    default: false,
+  },
+  
   lastLogin: {
     type: Date,
   },

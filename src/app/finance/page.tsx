@@ -1,7 +1,7 @@
 // src/app/finance/page.tsx
 "use client"
 
-import { SidebarLayout } from "@/components/sidebar-layout"
+import { FinanceSidebar } from "@/components/finance/FinanceSidebar"
 import { Button } from "@/components/ui-finance/button"
 import { formatCurrency, formatPercentage } from "@/lib/utils"
 import { BarChart3, DollarSign, Download, TrendingUp, Users } from "lucide-react"
@@ -173,45 +173,48 @@ export default function FinancePage() {
   }
 
   return (
-    <SidebarLayout>
-      <div className="p-6 space-y-8">
+    <FinanceSidebar>
+      <div className="p-6 space-y-8 font-[family-name:var(--font-poppins)]">
         <header>
-          <div className="mb-6">
-            <h1 className="text-2xl font-bold text-foreground mb-2">Dashboard</h1>
-            <p className="text-muted-foreground">
+          <div className="mb-8">
+            <h1 className="text-3xl lg:text-4xl font-bold text-[#324D3E] mb-4">Dashboard Finance</h1>
+            <p className="text-[#889063] text-lg">
               {new Date().toLocaleDateString("id-ID", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
             </p>
             {error && (
-              <div className="mt-2 p-3 bg-destructive/10 border border-destructive/20 rounded-lg text-destructive text-sm">
+              <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-2xl text-red-600 text-sm">
                 ⚠️ {error}
               </div>
             )}
           </div>
 
-          <div className="bg-card rounded-2xl p-6 border border-border">
-            <div className="flex items-center justify-between mb-6">
+          <div className="bg-white/90 backdrop-blur-xl rounded-3xl p-8 border border-[#324D3E]/10 shadow-xl">
+            <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between mb-8 gap-4">
               <div>
-                <h2 className="text-xl font-bold text-chart-2 mb-2">Ringkasan Investasi</h2>
-                <p className="text-muted-foreground">Analisis detail per jenis tanaman dan kinerja anggota</p>
+                <h2 className="text-2xl font-bold text-[#324D3E] mb-2">Ringkasan Investasi</h2>
+                <p className="text-[#889063] text-lg">Analisis detail per jenis tanaman dan kinerja anggota</p>
               </div>
-              <Button className="gap-2" onClick={handleDownloadSummary}>
+              <Button 
+                className="bg-gradient-to-r from-[#324D3E] to-[#4C3D19] hover:shadow-lg text-white font-semibold px-6 py-3 rounded-2xl transition-all duration-300 flex items-center gap-2" 
+                onClick={handleDownloadSummary}
+              >
                 <Download className="w-4 h-4" />
                 Download Ringkasan
               </Button>
             </div>
 
             {loading ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
                 {[...Array(4)].map((_, i) => (
-                  <div key={i} className="rounded-xl bg-muted p-4 border border-border animate-pulse">
-                    <div className="h-10 w-10 bg-muted-foreground/20 rounded-lg mb-3"></div>
-                    <div className="h-4 bg-muted-foreground/20 rounded mb-2"></div>
-                    <div className="h-6 bg-muted-foreground/20 rounded"></div>
+                  <div key={i} className="rounded-3xl bg-white/60 p-6 border border-[#324D3E]/10 animate-pulse">
+                    <div className="h-12 w-12 bg-[#324D3E]/20 rounded-2xl mb-4"></div>
+                    <div className="h-4 bg-[#324D3E]/20 rounded-full mb-2"></div>
+                    <div className="h-8 bg-[#324D3E]/20 rounded-full"></div>
                   </div>
                 ))}
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
                 <SummaryCard
                   title="Total Investasi"
                   value={formatCurrency(totals.invest)}
@@ -240,11 +243,11 @@ export default function FinancePage() {
             )}
 
             {/* PIE + LEGEND WARNA */}
-            <div className="bg-muted rounded-xl p-6">
-              <h3 className="text-lg font-bold text-foreground mb-4">Distribusi Investasi</h3>
+            <div className="bg-white/60 backdrop-blur-lg rounded-3xl p-8 border border-[#324D3E]/10">
+              <h3 className="text-2xl font-bold text-[#324D3E] mb-6">Distribusi Investasi</h3>
               {loading ? (
-                <div className="h-64 flex items-center justify-center">
-                  <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-primary"></div>
+                <div className="h-80 flex items-center justify-center">
+                  <div className="animate-spin rounded-full h-20 w-20 border-b-4 border-[#324D3E]"></div>
                 </div>
               ) : (
                 <>
@@ -296,34 +299,34 @@ export default function FinancePage() {
         </header>
 
         <div>
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-bold text-foreground">Top Investasi Tanaman</h2>
-            <Link href="/semua-investasi" className="text-primary hover:text-primary/80 text-sm font-medium">
+          <div className="flex items-center justify-between mb-8">
+            <h2 className="text-2xl font-bold text-[#324D3E]">Top Investasi Tanaman</h2>
+            <Link href="/semua-investasi" className="text-[#4C3D19] hover:text-[#324D3E] text-lg font-semibold hover:underline transition-all duration-300">
               Lihat Semua →
             </Link>
           </div>
 
           {loading ? (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 gap-8">
               {[...Array(1)].map((_, i) => (
-                <div key={i} className="rounded-2xl bg-card border border-border p-6 animate-pulse">
-                  <div className="h-6 bg-muted rounded mb-4 w-1/3"></div>
-                  <div className="grid grid-cols-2 gap-4 mb-6">
-                    <div className="rounded-xl bg-muted p-4">
-                      <div className="h-4 bg-muted-foreground/20 rounded mb-2"></div>
-                      <div className="h-6 bg-muted-foreground/20 rounded"></div>
+                <div key={i} className="rounded-3xl bg-white/90 backdrop-blur-xl border border-[#324D3E]/10 p-8 animate-pulse shadow-xl">
+                  <div className="h-8 bg-[#324D3E]/20 rounded-full mb-6 w-1/3"></div>
+                  <div className="grid grid-cols-2 gap-6 mb-8">
+                    <div className="rounded-2xl bg-white/60 p-6">
+                      <div className="h-4 bg-[#324D3E]/20 rounded-full mb-3"></div>
+                      <div className="h-8 bg-[#324D3E]/20 rounded-full"></div>
                     </div>
-                    <div className="rounded-xl bg-muted p-4">
-                      <div className="h-4 bg-muted-foreground/20 rounded mb-2"></div>
-                      <div className="h-6 bg-muted-foreground/20 rounded"></div>
+                    <div className="rounded-2xl bg-white/60 p-6">
+                      <div className="h-4 bg-[#324D3E]/20 rounded-full mb-3"></div>
+                      <div className="h-8 bg-[#324D3E]/20 rounded-full"></div>
                     </div>
                   </div>
-                  <div className="h-10 bg-muted rounded"></div>
+                  <div className="h-12 bg-[#324D3E]/20 rounded-2xl"></div>
                 </div>
               ))}
             </div>
           ) : (
-            <div className="grid grid-cols-1 gap-6">
+            <div className="grid grid-cols-1 gap-8">
               {topPlants.map((plant) => (
                 <PlantCard key={plant.id} plant={plant} />
               ))}
@@ -331,7 +334,7 @@ export default function FinancePage() {
           )}
         </div>
       </div>
-    </SidebarLayout>
+    </FinanceSidebar>
   )
 }
 
@@ -346,14 +349,25 @@ function SummaryCard({
   icon: React.ReactNode
   colorClass: string
 }) {
+  const colors = {
+    'text-chart-1': { bg: 'bg-[#324D3E]/10', text: 'text-[#324D3E]', hover: 'group-hover:bg-[#324D3E]/20' },
+    'text-chart-2': { bg: 'bg-green-500/10', text: 'text-green-600', hover: 'group-hover:bg-green-500/20' },
+    'text-chart-3': { bg: 'bg-blue-500/10', text: 'text-blue-600', hover: 'group-hover:bg-blue-500/20' },
+    'text-chart-4': { bg: 'bg-purple-500/10', text: 'text-purple-600', hover: 'group-hover:bg-purple-500/20' },
+  }
+  
+  const color = colors[colorClass as keyof typeof colors] || colors['text-chart-1']
+  
   return (
-    <div className="rounded-xl bg-card p-4 border border-border">
-      <div className="flex items-center justify-between mb-3">
-        <div className={`flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 ${colorClass}`}>{icon}</div>
+    <div className="group rounded-3xl bg-white/90 backdrop-blur-xl p-6 border border-[#324D3E]/10 shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300">
+      <div className="flex items-center justify-between mb-4">
+        <div className={`flex h-12 w-12 items-center justify-center rounded-2xl ${color.bg} ${color.text} ${color.hover} transition-all duration-300 group-hover:scale-110`}>
+          {icon}
+        </div>
       </div>
-      <div className="space-y-1">
-        <p className="text-sm font-medium text-muted-foreground">{title}</p>
-        <p className="text-xl font-bold text-foreground">{value}</p>
+      <div className="space-y-2">
+        <p className="text-sm font-medium text-[#889063]">{title}</p>
+        <p className="text-2xl font-bold text-[#324D3E] group-hover:text-[#4C3D19] transition-colors duration-300">{value}</p>
       </div>
     </div>
   )
@@ -361,60 +375,54 @@ function SummaryCard({
 
 function PlantCard({ plant }: { plant: any }) {
   return (
-    <div className="group relative overflow-hidden rounded-2xl bg-card border border-border hover:border-primary/50 transition-all duration-300">
-      <div className="p-6">
-        <div className="flex items-start justify-between mb-6">
+    <div className="group relative overflow-hidden rounded-3xl bg-white/90 backdrop-blur-xl border border-[#324D3E]/10 hover:border-[#324D3E]/30 transition-all duration-300 shadow-xl hover:shadow-2xl hover:scale-105">
+      <div className="p-8">
+        <div className="flex items-start justify-between mb-8">
           <div>
-            <h2 className="text-xl font-bold text-foreground mb-2 capitalize">{plant.name}</h2>
-            <div className="flex items-center gap-4 text-sm text-muted-foreground">
-              <span className="flex items-center gap-1">
-                <BarChart3 className="h-4 w-4" />
+            <h2 className="text-2xl font-bold text-[#324D3E] mb-4 capitalize group-hover:text-[#4C3D19] transition-colors duration-300">{plant.name}</h2>
+            <div className="flex items-center gap-4 text-sm">
+              <span className="flex items-center gap-2 text-[#889063]">
+                <BarChart3 className="h-4 w-4 text-[#324D3E]" />
                 ROI {formatPercentage(plant.roi || 0)}
               </span>
-              <span className="flex items-center gap-1">
-                <TrendingUp className="h-4 w-4" />
+              <span className="flex items-center gap-2 text-[#889063]">
+                <TrendingUp className="h-4 w-4 text-[#4C3D19]" />
                 {plant.instanceCount} pohon
               </span>
             </div>
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-4 mb-6">
-          <div className="rounded-xl bg-muted p-4">
-            <div className="flex items-center gap-2 mb-2">
-              <DollarSign className="h-4 w-4 text-chart-1" />
-              <span className="text-sm font-medium text-muted-foreground">Total Investasi</span>
+        <div className="grid grid-cols-2 gap-6 mb-8">
+          <div className="rounded-2xl bg-white/60 backdrop-blur-lg p-6 border border-[#324D3E]/10 group-hover:bg-white/80 transition-all duration-300">
+            <div className="flex items-center gap-3 mb-3">
+              <DollarSign className="h-5 w-5 text-[#324D3E]" />
+              <span className="text-sm font-medium text-[#889063]">Total Investasi</span>
             </div>
-            <div className="text-lg font-bold text-foreground">{formatCurrency(plant.totalInvestment)}</div>
+            <div className="text-xl font-bold text-[#324D3E]">{formatCurrency(plant.totalInvestment)}</div>
           </div>
-          <div className="rounded-xl bg-muted p-4">
-            <div className="flex items-center gap-2 mb-2">
-              <TrendingUp className="h-4 w-4 text-chart-2" />
-              <span className="text-sm font-medium text-muted-foreground">Total Profit</span>
+          <div className="rounded-2xl bg-white/60 backdrop-blur-lg p-6 border border-[#324D3E]/10 group-hover:bg-white/80 transition-all duration-300">
+            <div className="flex items-center gap-3 mb-3">
+              <TrendingUp className="h-5 w-5 text-green-600" />
+              <span className="text-sm font-medium text-[#889063]">Total Profit</span>
             </div>
-            <div className="text-lg font-bold text-chart-2">{formatCurrency(plant.totalProfit)}</div>
+            <div className="text-xl font-bold text-green-600">{formatCurrency(plant.totalProfit)}</div>
           </div>
         </div>
 
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-2">
-            <BarChart3 className="h-4 w-4 text-chart-3" />
-            <span className="text-sm font-medium text-muted-foreground">ROI Aktual</span>
+        <div className="flex items-center justify-between mb-8 p-4 bg-[#324D3E]/5 rounded-2xl border border-[#324D3E]/10">
+          <div className="flex items-center gap-3">
+            <BarChart3 className="h-5 w-5 text-blue-600" />
+            <span className="text-lg font-medium text-[#324D3E]">ROI Aktual</span>
           </div>
-          <div className="text-lg font-bold text-chart-3">{formatPercentage(plant.roi || 0)}</div>
+          <div className="text-2xl font-bold text-blue-600">{formatPercentage(plant.roi || 0)}</div>
         </div>
 
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Users className="h-4 w-4" />
-            <span>{plant.investorCount} investor aktif</span>
+          <div className="flex items-center gap-3 text-[#889063]">
+            <Users className="h-5 w-5 text-[#324D3E]" />
+            <span className="font-medium">{plant.investorCount} investor aktif</span>
           </div>
-          <Button asChild size="sm" className="gap-2">
-            {/* <Link href={`/tanaman/${plant.id}`}>
-              Lihat Detail
-              <ArrowUpRight className="h-4 w-4" />
-            </Link> */}
-          </Button>
         </div>
       </div>
     </div>

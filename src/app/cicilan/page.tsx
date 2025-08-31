@@ -126,7 +126,7 @@ export default function CicilanPage() {
     }
   };
 
-  const isOverdue = (dueDate: string) => {
+  const isOverdue = (dueDate: Date) => {
     return new Date(dueDate) < new Date() && new Date(dueDate).toDateString() !== new Date().toDateString();
   };
 

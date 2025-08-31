@@ -125,6 +125,12 @@ export default function InvestorsPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    // Validate userId is selected for new investors
+    if (!editingInvestor && !selectedUserId) {
+      showError('User Required', 'Please select a user to create an investor account');
+      return;
+    }
+
     try {
       if (editingInvestor) {
         // Update existing investor
@@ -143,11 +149,13 @@ export default function InvestorsPage() {
           showError('Gagal memperbarui', errorData.error || 'Terjadi kesalahan saat memperbarui investor');
         }
       } else {
-        // Add new investor
+        // Add new investor - userId is required
+        const requestData = { ...formData, userId: selectedUserId };
+        
         const response = await fetch('/api/admin/investors', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(formData)
+          body: JSON.stringify(requestData)
         });
 
         if (response.ok) {
@@ -240,59 +248,59 @@ export default function InvestorsPage() {
     <AdminLayout>
       <div className="space-y-6">
         {/* Header */}
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-          <div>
-            <h1 className="text-2xl lg:text-3xl font-bold text-gray-900">Manajemen Investor</h1>
-            <p className="text-gray-600 mt-2">Kelola data investor dan portfolio mereka</p>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+          <div className="min-w-0 flex-1">
+            <h1 className="text-2xl sm:text-3xl font-bold text-[#324D3E] font-[family-name:var(--font-poppins)] truncate">Manajemen Investor</h1>
+            <p className="text-[#889063] mt-1 sm:mt-2 text-sm sm:text-base">Kelola data investor dan portfolio mereka</p>
           </div>
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3">
             <button
               onClick={fetchInvestors}
               disabled={loading}
-              className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg font-medium transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50"
+              className="bg-[#324D3E]/10 hover:bg-[#324D3E]/20 text-[#324D3E] px-3 sm:px-4 py-2 rounded-xl font-medium transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 text-sm sm:text-base whitespace-nowrap"
             >
               <span className={loading ? 'animate-spin' : ''}>🔄</span>
               <span className="hidden sm:inline">Refresh</span>
             </button>
             <button
               onClick={() => setShowModal(true)}
-              className="bg-gradient-to-r from-emerald-500 to-green-600 text-white px-6 py-3 rounded-lg font-semibold hover:shadow-lg transition-all duration-200 flex items-center justify-center gap-2"
+              className="bg-gradient-to-r from-[#324D3E] to-[#4C3D19] text-white px-4 sm:px-6 py-2 sm:py-3 rounded-xl font-semibold hover:shadow-lg transition-all duration-200 flex items-center justify-center gap-2 text-sm sm:text-base whitespace-nowrap"
             >
               <span>➕</span>
-              <span>Tambah Investor</span>
+              <span className="sm:hidden">+ Investor</span>
+              <span className="hidden sm:inline">Tambah Investor</span>
             </button>
           </div>
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6 mb-6">
+          <div className="bg-white/80 backdrop-blur-lg rounded-2xl shadow-lg border border-[#324D3E]/10 p-4 sm:p-6 hover:shadow-xl hover:scale-105 transition-all duration-300">
             <div>
-              <p className="text-sm font-medium text-gray-600">👥 Total Investor</p>
-              <p className="text-2xl font-bold text-gray-900">{investors.length}</p>
+              <p className="text-xs sm:text-sm font-medium text-[#889063] truncate">👥 Total Investor</p>
+              <p className="text-lg sm:text-xl lg:text-2xl font-bold text-[#324D3E]">{investors.length}</p>
             </div>
           </div>
 
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+          <div className="bg-white/80 backdrop-blur-lg rounded-2xl shadow-lg border border-[#324D3E]/10 p-4 sm:p-6 hover:shadow-xl hover:scale-105 transition-all duration-300">
             <div>
-              <p className="text-sm font-medium text-gray-600">✅ Investor Aktif</p>
-              <p className="text-2xl font-bold text-gray-900">{investors.filter(i => i.status === 'active').length}</p>
+              <p className="text-xs sm:text-sm font-medium text-[#889063] truncate">✅ Investor Aktif</p>
+              <p className="text-lg sm:text-xl lg:text-2xl font-bold text-[#4C3D19]">{investors.filter(i => i.status === 'active').length}</p>
             </div>
           </div>
 
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+          <div className="bg-white/80 backdrop-blur-lg rounded-2xl shadow-lg border border-[#324D3E]/10 p-4 sm:p-6 hover:shadow-xl hover:scale-105 transition-all duration-300">
             <div>
-              <p className="text-sm font-medium text-gray-600">❌ Tidak Aktif</p>
-              <p className="text-2xl font-bold text-gray-900">{investors.filter(i => i.status === 'inactive').length}</p>
+              <p className="text-xs sm:text-sm font-medium text-[#889063] truncate">❌ Tidak Aktif</p>
+              <p className="text-lg sm:text-xl lg:text-2xl font-bold text-red-600">{investors.filter(i => i.status === 'inactive').length}</p>
             </div>
           </div>
 
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+          <div className="bg-white/80 backdrop-blur-lg rounded-2xl shadow-lg border border-[#324D3E]/10 p-4 sm:p-6 hover:shadow-xl hover:scale-105 transition-all duration-300">
             <div className="min-w-0">
-              <p className="text-sm font-medium text-gray-600">💰 Total Investasi</p>
+              <p className="text-xs sm:text-sm font-medium text-[#889063] truncate">💰 Total Investasi</p>
               <div className="flex flex-col">
-                {/* <span className="text-xs text-gray-500">Rp</span> */}
-                <p className="text-md sm:text-lg lg:text-xl font-bold text-gray-900 leading-tight break-all">
+                <p className="text-sm sm:text-base lg:text-lg font-bold text-[#324D3E] leading-tight break-all">
                  Rp. {investors.reduce((sum, inv) => sum + inv.totalInvestasi, 0).toLocaleString('id-ID')}
                 </p>
               </div>
@@ -301,7 +309,7 @@ export default function InvestorsPage() {
         </div>
 
         {/* Filters and Search */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 lg:p-6">
+        <div className="bg-white/80 backdrop-blur-lg rounded-2xl shadow-lg border border-[#324D3E]/10 p-4 lg:p-6">
           <div className="flex flex-col lg:flex-row gap-4">
             <div className="flex-1">
               <input
@@ -309,7 +317,7 @@ export default function InvestorsPage() {
                 placeholder="Cari investor berdasarkan nama atau email..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                className="w-full px-4 py-2 border border-[#324D3E]/20 rounded-xl focus:ring-2 focus:ring-[#324D3E]/20 focus:border-[#324D3E] text-[#324D3E] placeholder-[#889063]"
               />
             </div>
             <Select
@@ -326,20 +334,20 @@ export default function InvestorsPage() {
         </div>
 
         {/* Investors Table */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+        <div className="bg-white/80 backdrop-blur-lg rounded-2xl shadow-lg border border-[#324D3E]/10 overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full">
-              <thead className="bg-gray-50">
+              <thead className="bg-[#324D3E]/5">
                 <tr>
-                  <th className="px-3 lg:px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Investor</th>
-                  <th className="hidden md:table-cell px-3 lg:px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
-                  <th className="px-3 lg:px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Investasi</th>
-                  <th className="hidden lg:table-cell px-3 lg:px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Pohon</th>
-                  <th className="px-3 lg:px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                  <th className="px-3 lg:px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Aksi</th>
+                  <th className="px-3 lg:px-6 py-4 text-left text-xs font-medium text-[#324D3E] uppercase tracking-wider">Investor</th>
+                  <th className="hidden md:table-cell px-3 lg:px-6 py-4 text-left text-xs font-medium text-[#324D3E] uppercase tracking-wider">Email</th>
+                  <th className="px-3 lg:px-6 py-4 text-left text-xs font-medium text-[#324D3E] uppercase tracking-wider">Investasi</th>
+                  <th className="hidden lg:table-cell px-3 lg:px-6 py-4 text-left text-xs font-medium text-[#324D3E] uppercase tracking-wider">Pohon</th>
+                  <th className="px-3 lg:px-6 py-4 text-left text-xs font-medium text-[#324D3E] uppercase tracking-wider">Status</th>
+                  <th className="px-3 lg:px-6 py-4 text-left text-xs font-medium text-[#324D3E] uppercase tracking-wider">Aksi</th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+              <tbody className="bg-white/50 divide-y divide-[#324D3E]/10">
                 {loading ? (
                   <tr>
                     <td colSpan={6} className="px-6 py-12 text-center">
@@ -357,33 +365,37 @@ export default function InvestorsPage() {
                   </tr>
                 ) : (
                   filteredInvestors.map((investor) => (
-                  <tr key={investor._id} className="hover:bg-gray-50">
+                  <tr key={investor._id} className="hover:bg-[#324D3E]/5 transition-colors">
                     <td className="px-3 lg:px-6 py-4">
                       <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 lg:w-10 lg:h-10 bg-gradient-to-r from-emerald-500 to-green-600 rounded-full flex items-center justify-center">
+                        <div className="w-8 h-8 lg:w-10 lg:h-10 bg-gradient-to-r from-[#324D3E] to-[#4C3D19] rounded-full flex items-center justify-center">
                           <span className="text-white font-bold text-sm lg:text-base">{investor.name.charAt(0)}</span>
                         </div>
                         <div className="min-w-0">
-                          <p className="font-medium text-gray-900 text-sm lg:text-base truncate">{investor.name}</p>
-                          <p className="text-xs lg:text-sm text-gray-500 md:hidden">{investor.email}</p>
-                          <p className="text-xs text-gray-500">ID: {investor._id.slice(-6)}</p>
+                          <p className="font-medium text-[#324D3E] text-sm lg:text-base truncate">{investor.name}</p>
+                          <p className="text-xs lg:text-sm text-[#889063] md:hidden">{investor.email}</p>
+                          <p className="text-xs text-[#889063]">ID: {investor._id.slice(-6)}</p>
                         </div>
                       </div>
                     </td>
                     <td className="hidden md:table-cell px-3 lg:px-6 py-4">
-                      <p className="text-sm text-gray-900 truncate">{investor.email}</p>
+                      <p className="text-sm text-[#324D3E] truncate">{investor.email}</p>
                     </td>
                     <td className="px-3 lg:px-6 py-4">
-                      <p className="font-medium text-gray-900 text-sm lg:text-base">
+                      <p className="font-medium text-[#324D3E] text-sm lg:text-base">
                         Rp {investor.totalInvestasi.toLocaleString('id-ID')}
                       </p>
-                      <p className="text-xs text-gray-500 lg:hidden">{investor.jumlahPohon} pohon</p>
+                      <p className="text-xs text-[#889063] lg:hidden">{investor.jumlahPohon} pohon</p>
                     </td>
                     <td className="hidden lg:table-cell px-3 lg:px-6 py-4">
-                      <p className="font-medium text-gray-900">{investor.jumlahPohon}</p>
+                      <p className="font-medium text-[#324D3E]">{investor.jumlahPohon}</p>
                     </td>
                     <td className="px-3 lg:px-6 py-4">
-                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusBadge(investor.status)}`}>
+                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                        investor.status === 'active' 
+                          ? 'bg-[#4C3D19]/10 text-[#4C3D19] border border-[#4C3D19]/20' 
+                          : 'bg-red-100 text-red-800'
+                      }`}>
                         {getStatusText(investor.status)}
                       </span>
                     </td>
@@ -391,13 +403,13 @@ export default function InvestorsPage() {
                       <div className="flex flex-col lg:flex-row items-start lg:items-center gap-1 lg:gap-2">
                         <button
                           onClick={() => handleEdit(investor)}
-                          className="text-blue-600 hover:text-blue-800 font-medium text-xs lg:text-sm"
+                          className="text-[#324D3E] hover:text-[#4C3D19] font-medium text-xs lg:text-sm transition-colors"
                         >
                           Edit
                         </button>
                         <button
                           onClick={() => handleDelete(investor._id, investor.name)}
-                          className="text-red-600 hover:text-red-800 font-medium text-xs lg:text-sm"
+                          className="text-red-600 hover:text-red-800 font-medium text-xs lg:text-sm transition-colors"
                         >
                           Hapus
                         </button>
@@ -415,9 +427,9 @@ export default function InvestorsPage() {
       {/* Modal */}
       {showModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6 border-b border-gray-200">
-              <h2 className="text-xl font-bold text-gray-900">
+          <div className="bg-white/95 backdrop-blur-lg rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl border border-[#324D3E]/10">
+            <div className="p-6 border-b border-[#324D3E]/10">
+              <h2 className="text-xl font-bold text-[#324D3E] font-[family-name:var(--font-poppins)]">
                 {editingInvestor ? 'Edit Investor' : 'Tambah Investor Baru'}
               </h2>
             </div>
@@ -448,7 +460,7 @@ export default function InvestorsPage() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-[#324D3E] mb-2">
                     Nama Lengkap *
                   </label>
                   <input
@@ -456,14 +468,14 @@ export default function InvestorsPage() {
                     required
                     value={formData.name}
                     onChange={(e) => setFormData({...formData, name: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                    className="w-full px-3 py-2 border border-[#324D3E]/20 rounded-xl focus:ring-2 focus:ring-[#324D3E]/20 focus:border-[#324D3E] text-[#324D3E] placeholder-[#889063]"
                     placeholder="Masukkan nama lengkap"
                     readOnly={!editingInvestor && selectedUserId !== ''}
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-[#324D3E] mb-2">
                     Email *
                   </label>
                   <input
@@ -471,14 +483,14 @@ export default function InvestorsPage() {
                     required
                     value={formData.email}
                     onChange={(e) => setFormData({...formData, email: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                    className="w-full px-3 py-2 border border-[#324D3E]/20 rounded-xl focus:ring-2 focus:ring-[#324D3E]/20 focus:border-[#324D3E] text-[#324D3E] placeholder-[#889063]"
                     placeholder="investor@email.com"
                     readOnly={!editingInvestor && selectedUserId !== ''}
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-[#324D3E] mb-2">
                     Total Investasi (IDR)
                   </label>
                   <input
@@ -489,13 +501,13 @@ export default function InvestorsPage() {
                       setFormData({...formData, totalInvestasi: parsed});
                       setDisplayTotalInvestasi(parsed > 0 ? formatNumber(parsed) : e.target.value);
                     }}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                    className="w-full px-3 py-2 border border-[#324D3E]/20 rounded-xl focus:ring-2 focus:ring-[#324D3E]/20 focus:border-[#324D3E] text-[#324D3E] placeholder-[#889063]"
                     placeholder="0"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-[#324D3E] mb-2">
                     Jumlah Pohon
                   </label>
                   <input
@@ -506,7 +518,7 @@ export default function InvestorsPage() {
                       setFormData({...formData, jumlahPohon: parsed});
                       setDisplayJumlahPohon(parsed > 0 ? formatNumber(parsed) : e.target.value);
                     }}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                    className="w-full px-3 py-2 border border-[#324D3E]/20 rounded-xl focus:ring-2 focus:ring-[#324D3E]/20 focus:border-[#324D3E] text-[#324D3E] placeholder-[#889063]"
                     placeholder="0"
                   />
                 </div>
@@ -529,7 +541,7 @@ export default function InvestorsPage() {
               <div className="flex items-center gap-4 pt-4">
                 <button
                   type="submit"
-                  className="bg-gradient-to-r from-emerald-500 to-green-600 text-white px-6 py-2 rounded-lg font-semibold hover:shadow-lg transition-all duration-200"
+                  className="bg-gradient-to-r from-[#324D3E] to-[#4C3D19] text-white px-6 py-2 rounded-xl font-semibold hover:shadow-lg transition-all duration-200"
                 >
                   {editingInvestor ? 'Update Investor' : 'Tambah Investor'}
                 </button>
@@ -547,7 +559,7 @@ export default function InvestorsPage() {
                       status: 'active'
                     });
                   }}
-                  className="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                  className="px-6 py-2 border border-[#324D3E]/20 text-[#324D3E] rounded-xl hover:bg-[#324D3E]/5 transition-colors"
                 >
                   Batal
                 </button>

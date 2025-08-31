@@ -1,6 +1,6 @@
-import { NextResponse } from "next/server"
 import { ensureConnection } from "@/lib/utils/utils/database"
 import { Investor, PlantInstance, Transaction } from "@/models"
+import { NextResponse } from "next/server"
 
 export async function GET(req: Request) {
   try {
@@ -16,7 +16,7 @@ export async function GET(req: Request) {
 
     // Siapkan mapping untuk plantName + profit per instance
     const allProducts = new Set<string>()
-    investors.forEach((inv) => (inv.investments ?? []).forEach((r: any) => r?.productName && allProducts.add(r.productName)))
+    investors.forEach((inv) => (inv.investments ?? []).forEach((r) => r?.productName && allProducts.add(r.productName)))
     const productArr = Array.from(allProducts)
 
     const [instances, txs] = await Promise.all([

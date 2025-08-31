@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 interface AlertProps {
   type: 'success' | 'error' | 'warning' | 'info';
@@ -95,7 +95,7 @@ export function useAlert() {
     id: number;
   }>>([]);
 
-  const showAlert = (type: 'success' | 'error' | 'warning' | 'info', title: string, message: string) => {
+  const showAlert = useCallback((type: 'success' | 'error' | 'warning' | 'info', title: string, message: string) => {
     console.log('🚨 showAlert called with:', { type, title, message });
     console.trace('Call stack:');
 
@@ -113,27 +113,27 @@ export function useAlert() {
     setTimeout(() => {
       setAlerts(prev => prev.filter(alert => alert.id !== newId));
     }, 3000);
-  };
+  }, []);
 
   const hideAlert = (id: number) => {
     setAlerts(prev => prev.filter(alert => alert.id !== id));
   };
 
-  const showSuccess = (title: string, message: string = '') => {
+  const showSuccess = useCallback((title: string, message: string = '') => {
     showAlert('success', title, message);
-  };
+  }, [showAlert]);
 
-  const showError = (title: string, message: string = '') => {
+  const showError = useCallback((title: string, message: string = '') => {
     showAlert('error', title, message);
-  };
+  }, [showAlert]);
 
-  const showWarning = (title: string, message: string = '') => {
+  const showWarning = useCallback((title: string, message: string = '') => {
     showAlert('warning', title, message);
-  };
+  }, [showAlert]);
 
-  const showInfo = (title: string, message: string = '') => {
+  const showInfo = useCallback((title: string, message: string = '') => {
     showAlert('info', title, message);
-  };
+  }, [showAlert]);
 
   return {
     alerts,

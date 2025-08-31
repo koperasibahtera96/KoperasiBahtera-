@@ -4,7 +4,23 @@ import dbConnect from '@/lib/mongodb';
 import Investor from '@/models/Investor';
 import Payment from '@/models/Payment';
 import User from '@/models/User';
+import PlantInstance from '@/models/PlantInstance';
 import { NextRequest, NextResponse } from 'next/server';
+
+// Helper function to extract tree count from product name
+function extractTreeCount(productName: string): number {
+  if (!productName) return 1; // Default fallback
+  
+  // Look for "1 Pohon" or "10 Pohon" in the product name
+  if (productName.includes('1 Pohon')) {
+    return 1;
+  } else if (productName.includes('10 Pohon')) {
+    return 10;
+  }
+  
+  // Default to 10 if pattern not found (backward compatibility)
+  return 10;
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -58,7 +74,7 @@ export async function POST(request: NextRequest) {
     payment.transactionId = transactionId;
     payment.transactionStatus = transactionStatus;
     payment.fraudStatus = fraudStatus;
-    payment.paymentType = paymentType;
+    // Note: Don't update paymentType - it's our internal type, not Midtrans payment method
     payment.transactionTime = new Date(body.transaction_time);
     payment.midtransResponse = body;
 
@@ -178,41 +194,120 @@ export async function POST(request: NextRequest) {
         message = 'Transaction successful but user creation failed';
       }
     } else if (shouldCreateUser && orderId.startsWith('INV-')) {
-      // Investment payments don't need user creation but need investor record update
-      console.log('Investment payment - updating investor record for:', payment.customerData?.email);
+      // Investment payments - create PlantInstance and investor record
+      console.log('Investment payment successful - creating PlantInstance and investor record for:', orderId);
 
       try {
-        // Update investor record to mark full payment as completed
-        const investor = await Investor.findOne({
-          'investments.investmentId': orderId
+        // Find the user for this payment
+        const user = await User.findById(payment.userId);
+        if (!user) {
+          throw new Error('User not found for investment payment');
+        }
+
+        // Create PlantInstance for this investment
+        const plantInstanceId = `PLANT-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+        
+        // Map product name to plant type
+        const getPlantType = (productName: string): "gaharu" | "alpukat" | "jengkol" | "aren" => {
+          const name = productName.toLowerCase();
+          if (name.includes('gaharu')) return 'gaharu';
+          if (name.includes('alpukat')) return 'alpukat';
+          if (name.includes('jengkol')) return 'jengkol';
+          if (name.includes('aren')) return 'aren';
+          return 'gaharu'; // default
+        };
+
+        const getBaseROI = (plantType: "gaharu" | "alpukat" | "jengkol" | "aren"): number => {
+          const roiMap = { gaharu: 0.15, alpukat: 0.12, jengkol: 0.10, aren: 0.18 };
+          return roiMap[plantType] || 0.12;
+        };
+
+        const productName = payment.productName || 'gaharu';
+        const plantType = getPlantType(productName);
+        const instanceName = `${plantType.charAt(0).toUpperCase() + plantType.slice(1)} - ${user.fullName} - ${orderId}`;
+
+        const plantInstance = new PlantInstance({
+          id: plantInstanceId,
+          plantType,
+          instanceName,
+          baseAnnualROI: getBaseROI(plantType),
+          operationalCosts: [],
+          incomeRecords: [],
+          qrCode: `QR-${plantInstanceId}`,
+          owner: user.fullName,
+          fotoGambar: null,
+          memberId: user._id.toString(),
+          contractNumber: `CONTRACT-${orderId}`,
+          location: 'TBD',
+          status: 'active', // Payment succeeded, plant is now active
+          lastUpdate: new Date().toISOString(),
+          history: [{
+            action: 'created',
+            date: new Date().toISOString(),
+            description: `Plant instance created for successful full payment ${orderId}`,
+            addedBy: 'system'
+          }]
         });
 
+        const savedPlantInstance = await plantInstance.save();
+        console.log(`PlantInstance created: ${plantInstanceId} for investment ${orderId}`);
 
+        // Create investment record for investor collection
+        const investmentRecord = {
+          investmentId: orderId,
+          productName: productName,
+          plantInstanceId: savedPlantInstance._id.toString(),
+          totalAmount: payment.amount,
+          amountPaid: payment.amount, // Full payment completed
+          paymentType: 'full' as const,
+          status: 'completed' as const, // Payment succeeded
+          installments: undefined,
+          fullPaymentProofUrl: null, // Midtrans handles the payment proof
+          investmentDate: new Date(),
+          completionDate: new Date()
+        };
 
-        if (investor) {
-          const investment = investor.investments.find(
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            (inv: any) => inv.investmentId === orderId
-          );
-
-          if (investment) {
-            investment.status = 'completed';
-            investment.amountPaid = investment.totalAmount;
-            investment.completionDate = new Date();
-
-            // Update investor totals
-            investor.totalPaid += investment.totalAmount;
-
-            await investor.save();
-            console.log('Investor record updated for full payment:', orderId);
-          }
+        // Check if investor already exists to avoid conflicts
+        let existingInvestor = await Investor.findOne({ userId: user._id });
+        
+        if (existingInvestor) {
+          // Update existing investor
+          existingInvestor.name = user.fullName;
+          existingInvestor.phoneNumber = user.phoneNumber;
+          existingInvestor.status = 'active';
+          existingInvestor.investments.push(investmentRecord);
+          existingInvestor.totalInvestasi += payment.amount;
+          existingInvestor.totalPaid += payment.amount;
+          existingInvestor.jumlahPohon += extractTreeCount(payment.productName);
+          await existingInvestor.save();
+        } else {
+          // Create new investor
+          existingInvestor = new Investor({
+            userId: user._id,
+            name: user.fullName,
+            email: user.email,
+            phoneNumber: user.phoneNumber,
+            status: 'active',
+            investments: [investmentRecord],
+            totalInvestasi: payment.amount,
+            totalPaid: payment.amount,
+            jumlahPohon: extractTreeCount(payment.productName)
+          });
+          await existingInvestor.save();
         }
+
+        console.log('Investor record created/updated for successful full payment:', orderId);
+
+        // Set contract redirect URL for successful payment
+        payment.contractRedirectUrl = `/contract/${orderId}`;
+
       } catch (investorError) {
-        console.error('Error updating investor record:', investorError);
+        console.error('Error creating PlantInstance and investor record:', investorError);
+        payment.processingError = `Investment processing failed: ${investorError instanceof Error ? investorError.message : 'Unknown error'}`;
       }
 
       payment.isProcessed = true;
-      message = 'Investment payment successful';
+      message = 'Investment payment successful - Contract ready for signing';
     }
 
     await payment.save();

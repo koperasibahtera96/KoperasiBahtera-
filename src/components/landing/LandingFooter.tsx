@@ -14,7 +14,7 @@ const containerVariants = {
   }
 };
 
-const itemVariants = {
+const itemVariants: any = {
   hidden: { 
     opacity: 0, 
     y: 30
@@ -65,7 +65,7 @@ export default function LandingFooter() {
           {/* Company Info */}
           <motion.div 
             className="lg:col-span-2"
-            variants={itemVariants}
+            variants={itemVariants as any}
           >
             <motion.div 
               className="flex items-center mb-4"
@@ -113,7 +113,7 @@ export default function LandingFooter() {
                   key={index}
                   href="#" 
                   className="text-gray-300 hover:text-white transition-colors"
-                  variants={socialIconVariants}
+                  variants={socialIconVariants as any}
                   whileHover={{ 
                     scale: 1.2,
                     color: "#E5D7C4",

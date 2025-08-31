@@ -16,6 +16,21 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [loginSuccess, setLoginSuccess] = useState(false);
 
+  // Pre-fill email from localStorage (from successful registration)
+  useEffect(() => {
+    const registrationEmail = localStorage.getItem('registrationEmail');
+    console.log('Login page - registrationEmail from localStorage:', registrationEmail);
+    if (registrationEmail) {
+      console.log('Pre-filling email:', registrationEmail);
+      setFormData(prev => ({
+        ...prev,
+        email: registrationEmail
+      }));
+      // Clear the stored email after using it
+      localStorage.removeItem('registrationEmail');
+    }
+  }, []);
+
   // Handle redirect after successful login
   useEffect(() => {
     if (loginSuccess && session?.user?.role) {

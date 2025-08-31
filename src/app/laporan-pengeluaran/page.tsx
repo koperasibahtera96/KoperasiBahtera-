@@ -1,23 +1,25 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { ArrowLeft, Download, TrendingDown, DollarSign, Calendar, BarChart3, Filter, ChevronDown } from "lucide-react"
-import Link from "next/link"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui-finance/card"
+import { FinanceSidebar } from "@/components/finance/FinanceSidebar"
 import { Button } from "@/components/ui-finance/button"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui-finance/card"
+import type { PlantInstance } from "@/lib/api"
+import { motion } from "framer-motion"
+import { ArrowLeft, BarChart3, Calendar, ChevronDown, DollarSign, Download, Filter, TrendingDown } from "lucide-react"
+import Link from "next/link"
+import { useEffect, useState } from "react"
 import {
-  PieChart,
-  Pie,
+  CartesianGrid,
   Cell,
-  ResponsiveContainer,
-  LineChart,
   Line,
+  LineChart,
+  Pie,
+  PieChart,
+  ResponsiveContainer,
+  Tooltip,
   XAxis,
   YAxis,
-  CartesianGrid,
-  Tooltip,
 } from "recharts"
-import type { PlantInstance } from "@/lib/api"
 
 const BRUTALIST_COLORS = ["#FF6B35", "#F7931E", "#FFD23F", "#06FFA5", "#118AB2", "#073B4C", "#EF476F", "#FFB3C6"]
 
@@ -331,41 +333,58 @@ export default function LaporanPengeluaranPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-900 text-white p-6">
-        <div className="flex items-center justify-center h-64">
-          <div className="text-lg">Memuat laporan pengeluaran...</div>
+      <FinanceSidebar>
+        <div className="p-4 sm:p-6 lg:p-8 flex items-center justify-center min-h-[50vh]">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#324D3E] mx-auto mb-4"></div>
+            <p className="text-[#889063] text-lg">Memuat laporan pengeluaran...</p>
+          </div>
         </div>
-      </div>
+      </FinanceSidebar>
     )
   }
 
   return (
-    <div className="min-h-screen bg-slate-900 text-white">
-      <div className="p-6">
-        <div className="flex items-center justify-between mb-8">
+    <FinanceSidebar>
+      <div className="p-4 sm:p-6 lg:p-8">
+        <motion.div
+          className="flex items-center justify-between mb-8"
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+        >
           <div className="flex items-center gap-4">
             <Link href="/finance">
-              <Button variant="outline" size="sm" className="bg-slate-800 border-slate-700 hover:bg-slate-700">
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                Kembali
-              </Button>
+              <motion.button
+                className="group flex items-center gap-2 px-3 sm:px-4 py-2 bg-white/90 backdrop-blur-xl rounded-xl sm:rounded-2xl shadow-lg border border-[#324D3E]/10 text-[#324D3E] hover:bg-[#324D3E] hover:text-white transition-all duration-300 self-start"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                <ArrowLeft className="h-4 w-4 transition-transform group-hover:-translate-x-1" />
+                <span className="text-sm sm:text-base">Kembali</span>
+              </motion.button>
             </Link>
             <div>
-              <h1 className="text-3xl font-bold text-white">Laporan Pengeluaran</h1>
-              <p className="text-slate-400 mt-1">Analisis dan manajemen pengeluaran operasional</p>
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-[#324D3E]">Laporan Pengeluaran</h1>
+              <p className="text-[#889063] mt-1 text-sm sm:text-base lg:text-lg">Analisis dan manajemen pengeluaran operasional</p>
             </div>
           </div>
           <div className="flex gap-3">
-            <Button onClick={handleExportCSV} className="bg-green-600 hover:bg-green-700">
-              <Download className="h-4 w-4 mr-2" />
+            <motion.button
+              onClick={handleExportCSV}
+              className="inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-green-500 to-[#324D3E] hover:from-green-600 hover:to-[#4C3D19] px-4 py-2 text-sm font-medium text-white transition-all duration-300 shadow-lg hover:shadow-xl"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+            >
+              <Download className="h-4 w-4" />
               Export CSV
-            </Button>
+            </motion.button>
           </div>
-        </div>
+        </motion.div>
 
-        <Card className="bg-slate-800 border-slate-700 mb-6">
+        <Card className="bg-white/90 mb-6">
           <CardHeader>
-            <CardTitle className="text-white flex items-center gap-2">
+            <CardTitle className="text-black flex items-center gap-2">
               <Filter className="h-5 w-5" />
               Filter Laporan
             </CardTitle>
@@ -373,12 +392,12 @@ export default function LaporanPengeluaranPage() {
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">Tahun</label>
+                <label className="block text-sm font-medium text-black mb-2">Tahun</label>
                 <div className="relative">
                   <select
                     value={selectedYear}
                     onChange={(e) => setSelectedYear(Number(e.target.value))}
-                    className="w-full bg-slate-700 border border-slate-600 text-white px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none cursor-pointer"
+                    className="w-full border bg-white/90 border-gray-200 text-black px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none cursor-pointer"
                   >
                     <option value={2024}>2024</option>
                     <option value={2025}>2025</option>
@@ -387,12 +406,12 @@ export default function LaporanPengeluaranPage() {
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">Bulan</label>
+                <label className="block text-sm font-medium text-black mb-2">Bulan</label>
                 <div className="relative">
                   <select
                     value={selectedMonth || ""}
                     onChange={(e) => setSelectedMonth(e.target.value ? Number(e.target.value) : null)}
-                    className="w-full bg-slate-700 border border-slate-600 text-white px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none cursor-pointer"
+                    className="w-full border bg-white/90 border-gray-200 text-black px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none cursor-pointer"
                   >
                     <option value="">Semua Bulan</option>
                     {Array.from({ length: 12 }, (_, i) => (
@@ -405,12 +424,12 @@ export default function LaporanPengeluaranPage() {
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-300 mb-2">Tanaman</label>
+                <label className="block text-sm font-medium text-black mb-2">Tanaman</label>
                 <div className="relative">
                   <select
                     value={selectedPlant}
                     onChange={(e) => setSelectedPlant(e.target.value)}
-                    className="w-full bg-slate-700 border border-slate-600 text-white px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none cursor-pointer hover:bg-slate-600 transition-colors"
+                    className="w-full border bg-white/90 border-gray-200 text-black px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none cursor-pointer hover:bg-slate-600 transition-colors"
                   >
                     <option value="all">Semua Tanaman</option>
                     {plantTypes.map((plantType) => (
@@ -429,7 +448,7 @@ export default function LaporanPengeluaranPage() {
                     setSelectedPlant("all")
                   }}
                   variant="outline"
-                  className="w-full bg-slate-700 border-slate-600 hover:bg-slate-600"
+                  className="w-full border bg-white/90 border-gray-200 text-black hover:bg-gray-200"
                 >
                   Reset Filter
                 </Button>
@@ -438,196 +457,227 @@ export default function LaporanPengeluaranPage() {
           </CardContent>
         </Card>
 
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <Card className="bg-slate-800 border-slate-700">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-slate-400 text-sm">Total Pengeluaran</p>
-                  <p className="text-2xl font-bold text-red-400">{formatCurrency(totalExpenses)}</p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-8">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.2 }}
+          >
+            <Card className="bg-white/90 backdrop-blur-xl border-[#324D3E]/10 shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="text-sm text-[#889063]">Total Pengeluaran</div>
+                  <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-red-500/10 text-red-600">
+                    <TrendingDown className="h-5 w-5" />
+                  </div>
                 </div>
-                <div className="bg-red-500/20 p-3 rounded-full">
-                  <TrendingDown className="h-6 w-6 text-red-400" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+                <div className="text-2xl font-bold text-red-600">{formatCurrency(totalExpenses)}</div>
+              </CardContent>
+            </Card>
+          </motion.div>
 
-          <Card className="bg-slate-800 border-slate-700">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-slate-400 text-sm">Jumlah Transaksi</p>
-                  <p className="text-2xl font-bold text-blue-400">{filteredExpenses.length}</p>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.3 }}
+          >
+            <Card className="bg-white/90 backdrop-blur-xl border-[#324D3E]/10 shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="text-sm text-[#889063]">Jumlah Transaksi</div>
+                  <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-blue-500/10 text-blue-600">
+                    <BarChart3 className="h-5 w-5" />
+                  </div>
                 </div>
-                <div className="bg-blue-500/20 p-3 rounded-full">
-                  <BarChart3 className="h-6 w-6 text-blue-400" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+                <div className="text-2xl font-bold text-blue-600">{filteredExpenses.length}</div>
+              </CardContent>
+            </Card>
+          </motion.div>
 
-          <Card className="bg-slate-800 border-slate-700">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-slate-400 text-sm">Rata-rata per Transaksi</p>
-                  <p className="text-2xl font-bold text-yellow-400">
-                    {filteredExpenses.length > 0 ? formatCurrency(totalExpenses / filteredExpenses.length) : "Rp 0"}
-                  </p>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.4 }}
+          >
+            <Card className="bg-white/90 backdrop-blur-xl border-[#324D3E]/10 shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="text-sm text-[#889063]">Rata-rata per Transaksi</div>
+                  <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-yellow-500/10 text-yellow-600">
+                    <DollarSign className="h-5 w-5" />
+                  </div>
                 </div>
-                <div className="bg-yellow-500/20 p-3 rounded-full">
-                  <DollarSign className="h-6 w-6 text-yellow-400" />
+                <div className="text-2xl font-bold text-yellow-600">
+                  {filteredExpenses.length > 0 ? formatCurrency(totalExpenses / filteredExpenses.length) : "Rp 0"}
                 </div>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          </motion.div>
 
-          <Card className="bg-slate-800 border-slate-700">
-            <CardHeader>
-              <CardTitle className="text-white">Periode</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-slate-400 text-sm">Periode</p>
-                  <p className="text-2xl font-bold text-green-400">
-                    {selectedMonth
-                      ? `${new Date(selectedYear, selectedMonth - 1, 1).toLocaleDateString("id-ID", { month: "long" })} ${selectedYear}`
-                      : selectedYear}
-                  </p>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.5 }}
+          >
+            <Card className="bg-white/90 backdrop-blur-xl border-[#324D3E]/10 shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="text-sm text-[#889063]">Periode</div>
+                  <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-green-500/10 text-green-600">
+                    <Calendar className="h-5 w-5" />
+                  </div>
                 </div>
-                <div className="bg-green-500/20 p-3 rounded-full">
-                  <Calendar className="h-6 w-6 text-green-400" />
+                <div className="text-2xl font-bold text-green-600">
+                  {selectedMonth
+                    ? `${new Date(selectedYear, selectedMonth - 1, 1).toLocaleDateString("id-ID", { month: "long" })} ${selectedYear}`
+                    : selectedYear}
                 </div>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          </motion.div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-          <Card className="bg-slate-800 border-slate-700">
-            <CardHeader>
-              <CardTitle className="text-white">Pengeluaran per Tanaman</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="h-80">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={expensesByPlant.filter((plant) => plant.value > 0)}
-                      cx="50%"
-                      cy="50%"
-                      labelLine={false}
-                      label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                      outerRadius={100}
-                      fill="#8884d8"
-                      dataKey="value"
-                      stroke="#000"
-                      strokeWidth={3}
-                    >
-                      {expensesByPlant.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} />
-                      ))}
-                    </Pie>
-                    <Tooltip
-                      formatter={(value: number) => [formatCurrency(value), "Pengeluaran"]}
-                      contentStyle={{
-                        backgroundColor: "#ffffff",
-                        border: "3px solid #000000",
-                        borderRadius: "8px",
-                        color: "#000000",
-                        fontWeight: "bold",
-                        boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
-                      }}
-                    />
-                  </PieChart>
-                </ResponsiveContainer>
-              </div>
-            </CardContent>
-          </Card>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.6 }}
+          >
+            <Card className="bg-white/90 backdrop-blur-xl border-[#324D3E]/10 shadow-lg">
+              <CardHeader>
+                <CardTitle className="text-[#324D3E]">Pengeluaran per Tanaman</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="h-80">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={expensesByPlant.filter((plant) => plant.value > 0)}
+                        cx="50%"
+                        cy="50%"
+                        labelLine={false}
+                        label={({ name, percent }) => `${name}: ${((percent || 0) * 100).toFixed(0)}%`}
+                        outerRadius={100}
+                        fill="#8884d8"
+                        dataKey="value"
+                        stroke="#000"
+                        strokeWidth={3}
+                      >
+                        {expensesByPlant.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} />
+                        ))}
+                      </Pie>
+                      <Tooltip
+                        formatter={(value: number) => [formatCurrency(value), "Pengeluaran"]}
+                        contentStyle={{
+                          backgroundColor: "#ffffff",
+                          border: "3px solid #000000",
+                          borderRadius: "8px",
+                          color: "#000000",
+                          fontWeight: "bold",
+                          boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
+                        }}
+                      />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
 
-          <Card className="bg-slate-800 border-slate-700">
-            <CardHeader>
-              <CardTitle className="text-white">Tren Pengeluaran Bulanan {selectedYear}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="h-80">
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={monthlyTrends}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                    <XAxis dataKey="month" stroke="#9ca3af" style={{ fontSize: "12px", fontWeight: "bold" }} />
-                    <YAxis
-                      stroke="#9ca3af"
-                      style={{ fontSize: "12px", fontWeight: "bold" }}
-                      tickFormatter={(value) => `${(value / 1000000).toFixed(0)}M`}
-                    />
-                    <Tooltip
-                      formatter={(value: number) => [formatCurrency(value), "Pengeluaran"]}
-                      contentStyle={{
-                        backgroundColor: "#ffffff",
-                        border: "3px solid #000000",
-                        borderRadius: "8px",
-                        color: "#000000",
-                        fontWeight: "bold",
-                        boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
-                      }}
-                    />
-                    <Line
-                      type="monotone"
-                      dataKey="expenses"
-                      stroke="#ef4444"
-                      strokeWidth={4}
-                      dot={{ fill: "#ef4444", strokeWidth: 3, stroke: "#000", r: 6 }}
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
-              </div>
-            </CardContent>
-          </Card>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.7 }}
+          >
+            <Card className="bg-white/90 backdrop-blur-xl border-[#324D3E]/10 shadow-lg">
+              <CardHeader>
+                <CardTitle className="text-[#324D3E]">Tren Pengeluaran Bulanan {selectedYear}</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="h-80">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={monthlyTrends}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                      <XAxis dataKey="month" stroke="#9ca3af" style={{ fontSize: "12px", fontWeight: "bold" }} />
+                      <YAxis
+                        stroke="#9ca3af"
+                        style={{ fontSize: "12px", fontWeight: "bold" }}
+                        tickFormatter={(value) => `${(value / 1000000).toFixed(0)}M`}
+                      />
+                      <Tooltip
+                        formatter={(value: number) => [formatCurrency(value), "Pengeluaran"]}
+                        contentStyle={{
+                          backgroundColor: "#ffffff",
+                          border: "3px solid #000000",
+                          borderRadius: "8px",
+                          color: "#000000",
+                          fontWeight: "bold",
+                          boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
+                        }}
+                      />
+                      <Line
+                        type="monotone"
+                        dataKey="expenses"
+                        stroke="#ef4444"
+                        strokeWidth={4}
+                        dot={{ fill: "#ef4444", strokeWidth: 3, stroke: "#000", r: 6 }}
+                      />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
         </div>
 
-        <Card className="bg-slate-800 border-slate-700">
-          <CardHeader>
-            <CardTitle className="text-white">Detail Pengeluaran</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {filteredExpenses.length > 0 ? (
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b border-slate-700">
-                      <th className="text-left py-3 px-4 text-slate-300">Tanggal</th>
-                      <th className="text-left py-3 px-4 text-slate-300">Deskripsi</th>
-                      <th className="text-right py-3 px-4 text-slate-300">Jumlah</th>
-                      <th className="text-left py-3 px-4 text-slate-300">Input Oleh</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredExpenses
-                      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-                      .map((expense, index) => (
-                        <tr key={index} className="border-b border-slate-700/50 hover:bg-slate-700">
-                          <td className="py-3 px-4 text-white">{new Date(expense.date).toLocaleDateString("id-ID")}</td>
-                          <td className="py-3 px-4 text-white">{expense.description}</td>
-                          <td className="py-3 px-4 text-right text-red-400 font-medium">
-                            {formatCurrency(expense.amount)}
-                          </td>
-                          <td className="py-3 px-4 text-slate-300">{expense.addedBy}</td>
-                        </tr>
-                      ))}
-                  </tbody>
-                </table>
-              </div>
-            ) : (
-              <div className="text-center py-8 text-slate-400">
-                <TrendingDown className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                <p>Tidak ada pengeluaran ditemukan untuk filter yang dipilih</p>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.8 }}
+        >
+          <Card className="bg-white/90 backdrop-blur-xl border-[#324D3E]/10 shadow-lg">
+            <CardHeader>
+              <CardTitle className="text-[#324D3E]">Detail Pengeluaran</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {filteredExpenses.length > 0 ? (
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b-2 border-[#324D3E]/10">
+                        <th className="text-left py-3 px-4 text-[#324D3E] font-semibold">Tanggal</th>
+                        <th className="text-left py-3 px-4 text-[#324D3E] font-semibold">Deskripsi</th>
+                        <th className="text-right py-3 px-4 text-[#324D3E] font-semibold">Jumlah</th>
+                        <th className="text-left py-3 px-4 text-[#324D3E] font-semibold">Input Oleh</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredExpenses
+                        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+                        .map((expense, index) => (
+                          <tr key={index} className={`border-b border-[#324D3E]/5 ${index % 2 === 0 ? 'bg-white/40' : 'bg-[#324D3E]/5'} hover:bg-[#324D3E]/10 transition-colors duration-200`}>
+                            <td className="py-3 px-4 text-[#324D3E]">{new Date(expense.date).toLocaleDateString("id-ID")}</td>
+                            <td className="py-3 px-4 text-[#324D3E]">{expense.description}</td>
+                            <td className="py-3 px-4 text-right text-red-600 font-medium">
+                              {formatCurrency(expense.amount)}
+                            </td>
+                            <td className="py-3 px-4 text-[#889063]">{expense.addedBy}</td>
+                          </tr>
+                        ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <div className="text-center py-8 text-[#889063]">
+                  <TrendingDown className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                  <p>Tidak ada pengeluaran ditemukan untuk filter yang dipilih</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </motion.div>
       </div>
-    </div>
+    </FinanceSidebar>
   )
 }

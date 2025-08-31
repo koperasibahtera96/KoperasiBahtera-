@@ -13,6 +13,8 @@ declare module 'next-auth' {
       phoneNumber: string;
       province: string;
       city: string;
+      verificationStatus: string;
+      canPurchase: boolean;
     };
   }
 
@@ -27,6 +29,8 @@ declare module 'next-auth' {
     phoneNumber: string;
     province: string;
     city: string;
+    verificationStatus: string;
+    canPurchase: boolean;
   }
 }
 
@@ -39,5 +43,7 @@ declare module 'next-auth/jwt' {
     phoneNumber: string;
     province: string;
     city: string;
+    verificationStatus: string;
+    canPurchase: boolean;
   }
 }

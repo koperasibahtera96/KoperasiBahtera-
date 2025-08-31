@@ -1,27 +1,25 @@
 "use client"
-import { useState, useEffect } from "react"
 import type React from "react"
+import { useEffect, useState } from "react"
 
-import Link from "next/link"
-import {
-  Users,
-  Mail,
-  Phone,
-  MapPin,
-  Calendar,
-  DollarSign,
-  TrendingUp,
-  BarChart3,
-  ChevronLeft,
-  ChevronRight,
-  Edit,
-  Trash2,
-  Eye,
-  ArrowLeft,
-} from "lucide-react"
-import { SidebarLayout } from "@/components/sidebar-layout"
+import { FinanceSidebar } from "@/components/finance/FinanceSidebar"
 import { Button } from "@/components/ui-finance/button"
 import { formatCurrency, formatPercentage } from "@/lib/utils"
+import { motion } from "framer-motion"
+import {
+  ArrowLeft,
+  BarChart3,
+  Calendar,
+  ChevronLeft,
+  ChevronRight,
+  DollarSign,
+  Eye,
+  Mail,
+  Phone,
+  TrendingUp,
+  Users
+} from "lucide-react"
+import Link from "next/link"
 
 type Member = {
   id: string
@@ -47,7 +45,7 @@ export default function ManajemenAnggotaPage() {
   const [currentPage, setCurrentPage] = useState(1)
   const [members, setMembers] = useState<Member[]>([])
   const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const [_, setError] = useState<string | null>(null)
 
   // KPI ringkas untuk kartu di atas
   const [kpi, setKpi] = useState({
@@ -95,6 +93,7 @@ export default function ManajemenAnggotaPage() {
           loading: false,
         })
       } catch (e) {
+        console.error(e)
         if (!alive) return
         setKpi((s) => ({ ...s, loading: false }))
       }
@@ -199,55 +198,54 @@ export default function ManajemenAnggotaPage() {
         console.warn("[manajemen-anggota] gagal mengambil detail investors:", e)
       }
     })()
-  }, [members.length])
+  }, [members.length, members])
 
   const totalPages = Math.ceil(members.length / membersPerPage)
   const startIndex = (currentPage - 1) * membersPerPage
   const currentMembers = members.slice(startIndex, startIndex + membersPerPage)
 
-  const totalStats = members.reduce(
-    (acc, member) => ({
-      totalInvestment: acc.totalInvestment + member.totalInvestment,
-      totalProfit: acc.totalProfit + member.totalProfit,
-      avgROI: acc.avgROI + member.overallROI,
-    }),
-    { totalInvestment: 0, totalProfit: 0, avgROI: 0 },
-  )
 
-  const avgROI = members.length > 0 ? totalStats.avgROI / members.length : 0
 
   return (
-    <SidebarLayout>
-      <div className="p-6 space-y-8">
+    <FinanceSidebar>
+      <div className="p-4 sm:p-6 lg:p-8 space-y-8">
         {/* Header */}
-        <header>
+        <motion.header
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+        >
           <div className="flex items-center gap-4 mb-6">
-            <Button variant="outline" size="sm" asChild>
-              <Link href="/finance" className="gap-2">
-                <ArrowLeft className="w-4 h-4" />
-                Kembali
-              </Link>
-            </Button>
+            <Link href="/finance">
+              <motion.button
+                className="group flex items-center gap-2 px-3 sm:px-4 py-2 bg-white/90 backdrop-blur-xl rounded-xl sm:rounded-2xl shadow-lg border border-[#324D3E]/10 text-[#324D3E] hover:bg-[#324D3E] hover:text-white transition-all duration-300 self-start"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                <ArrowLeft className="h-4 w-4 transition-transform group-hover:-translate-x-1" />
+                <span className="text-sm sm:text-base">Kembali</span>
+              </motion.button>
+            </Link>
           </div>
 
           <div className="mb-6">
-            <h1 className="text-2xl font-bold text-foreground mb-2">Manajemen Anggota</h1>
-            <p className="text-muted-foreground">Kelola data investor dan kontrak investasi</p>
+            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-[#324D3E] mb-2">Manajemen Anggota</h1>
+            <p className="text-[#889063] text-sm sm:text-base lg:text-lg">Kelola data investor dan kontrak investasi</p>
           </div>
 
           {/* Summary Stats */}
           {loading ? (
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-6">
               {[...Array(4)].map((_, i) => (
-                <div key={i} className="bg-card rounded-xl p-4 border border-border animate-pulse">
-                  <div className="h-10 w-10 bg-muted rounded-lg mb-3"></div>
-                  <div className="h-4 bg-muted rounded mb-2"></div>
-                  <div className="h-6 bg-muted rounded"></div>
+                <div key={i} className="bg-white/60 backdrop-blur-xl rounded-3xl p-6 border border-[#324D3E]/10 animate-pulse">
+                  <div className="h-12 w-12 bg-[#324D3E]/20 rounded-2xl mb-4"></div>
+                  <div className="h-4 bg-[#324D3E]/20 rounded-full mb-2"></div>
+                  <div className="h-8 bg-[#324D3E]/20 rounded-full"></div>
                 </div>
               ))}
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-6">
               <SummaryCard
                 title="Total Anggota"
                 value={members.length.toString()}
@@ -274,22 +272,23 @@ export default function ManajemenAnggotaPage() {
               />
             </div>
           )}
-        </header>
+        </motion.header>
 
         {/* Member List */}
         <div>
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-bold text-foreground">Daftar Anggota ({members.length})</h2>
+            <h2 className="text-xl font-bold text-[#324D3E]">Daftar Anggota ({members.length})</h2>
             <div className="flex items-center gap-2">
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
                 disabled={currentPage === 1}
+                className="border-[#324D3E]/20 text-[#324D3E] hover:bg-[#324D3E] hover:text-white"
               >
                 <ChevronLeft className="w-4 h-4" />
               </Button>
-              <span className="text-sm text-muted-foreground px-2">
+              <span className="text-sm text-[#889063] px-2">
                 Halaman {currentPage} dari {totalPages}
               </span>
               <Button
@@ -297,6 +296,7 @@ export default function ManajemenAnggotaPage() {
                 size="sm"
                 onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
                 disabled={currentPage === totalPages}
+                className="border-[#324D3E]/20 text-[#324D3E] hover:bg-[#324D3E] hover:text-white"
               >
                 <ChevronRight className="w-4 h-4" />
               </Button>
@@ -307,19 +307,19 @@ export default function ManajemenAnggotaPage() {
           {loading ? (
             <div className="space-y-4">
               {[...Array(3)].map((_, i) => (
-                <div key={i} className="bg-card rounded-2xl p-6 border border-border animate-pulse">
+                <div key={i} className="bg-white/60 backdrop-blur-xl rounded-3xl p-6 border border-[#324D3E]/10 animate-pulse">
                   <div className="flex items-start justify-between mb-6">
                     <div className="flex items-center gap-4">
-                      <div className="h-12 w-12 bg-muted rounded-xl"></div>
+                      <div className="h-12 w-12 bg-[#324D3E]/20 rounded-2xl"></div>
                       <div>
-                        <div className="h-6 bg-muted rounded mb-2 w-32"></div>
-                        <div className="h-4 bg-muted rounded w-48"></div>
+                        <div className="h-6 bg-[#324D3E]/20 rounded-full mb-2 w-32"></div>
+                        <div className="h-4 bg-[#324D3E]/20 rounded-full w-48"></div>
                       </div>
                     </div>
                     <div className="flex gap-2">
-                      <div className="h-8 w-16 bg-muted rounded"></div>
-                      <div className="h-8 w-8 bg-muted rounded"></div>
-                      <div className="h-8 w-8 bg-muted rounded"></div>
+                      <div className="h-8 w-16 bg-[#324D3E]/20 rounded-xl"></div>
+                      <div className="h-8 w-8 bg-[#324D3E]/20 rounded-xl"></div>
+                      <div className="h-8 w-8 bg-[#324D3E]/20 rounded-xl"></div>
                     </div>
                   </div>
                 </div>
@@ -334,7 +334,7 @@ export default function ManajemenAnggotaPage() {
           )}
         </div>
       </div>
-    </SidebarLayout>
+    </FinanceSidebar>
   )
 }
 
@@ -349,16 +349,25 @@ function SummaryCard({
   icon: React.ReactNode
   colorClass: string
 }) {
+  const colors = {
+    'text-chart-1': { bg: 'bg-[#324D3E]/10', text: 'text-[#324D3E]', hover: 'group-hover:bg-[#324D3E]/20' },
+    'text-chart-2': { bg: 'bg-green-500/10', text: 'text-green-600', hover: 'group-hover:bg-green-500/20' },
+    'text-chart-3': { bg: 'bg-blue-500/10', text: 'text-blue-600', hover: 'group-hover:bg-blue-500/20' },
+    'text-chart-4': { bg: 'bg-purple-500/10', text: 'text-purple-600', hover: 'group-hover:bg-purple-500/20' },
+  }
+
+  const color = colors[colorClass as keyof typeof colors] || colors['text-chart-1']
+
   return (
-    <div className="bg-card rounded-xl p-4 border border-border">
-      <div className="flex items-center gap-3 mb-2">
-        <div className={`flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 ${colorClass}`}>
+    <div className="group rounded-3xl bg-white/90 backdrop-blur-xl p-6 border border-[#324D3E]/10 shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300">
+      <div className="flex items-center justify-between mb-4">
+        <div className={`flex h-12 w-12 items-center justify-center rounded-2xl ${color.bg} ${color.text} ${color.hover} transition-all duration-300 group-hover:scale-110`}>
           {icon}
         </div>
-        <div>
-          <p className="text-sm font-medium text-muted-foreground">{title}</p>
-          <p className="text-xl font-bold text-foreground">{value}</p>
-        </div>
+      </div>
+      <div className="space-y-2">
+        <p className="text-sm font-medium text-[#889063]">{title}</p>
+        <p className="text-2xl font-bold text-[#324D3E] group-hover:text-[#4C3D19] transition-colors duration-300">{value}</p>
       </div>
     </div>
   )
@@ -366,15 +375,15 @@ function SummaryCard({
 
 function MemberCard({ member }: { member: Member }) {
   return (
-    <div className="bg-card rounded-2xl p-6 border border-border hover:border-primary/50 transition-all duration-300">
+    <div className="bg-white/90 backdrop-blur-xl rounded-3xl p-6 border border-[#324D3E]/10 shadow-lg hover:shadow-xl hover:border-[#324D3E]/30 transition-all duration-300">
       <div className="flex items-start justify-between mb-6">
         <div className="flex items-center gap-4">
-          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary text-primary-foreground font-bold text-lg">
+          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#324D3E] text-white font-bold text-lg">
             {member.name.charAt(0)}
           </div>
           <div>
-            <h3 className="text-xl font-bold text-foreground mb-1">{member.name}</h3>
-            <div className="flex items-center gap-4 text-sm text-muted-foreground">
+            <h3 className="text-xl font-bold text-[#324D3E] mb-1">{member.name}</h3>
+            <div className="flex items-center gap-4 text-sm text-[#889063]">
               <span className="flex items-center gap-1">
                 <Mail className="h-4 w-4" />
                 {member.email}
@@ -387,64 +396,54 @@ function MemberCard({ member }: { member: Member }) {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <Button size="sm" asChild>
+          <Button size="sm" asChild className="bg-[#324D3E] hover:bg-[#4C3D19] text-white">
             <Link href={`/anggota/${member.id}`} className="gap-2">
               <Eye className="w-4 h-4" />
               Detail
             </Link>
-          </Button>
-          <Button variant="outline" size="sm">
-            <Edit className="w-4 h-4" />
-          </Button>
-          <Button variant="destructive" size="sm">
-            <Trash2 className="w-4 h-4" />
           </Button>
         </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
         <div className="space-y-3">
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <MapPin className="h-4 w-4" />
-            <span>{member.location}</span>
-          </div>
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <div className="flex items-center gap-2 text-sm text-[#889063]">
             <Calendar className="h-4 w-4" />
             <span>Bergabung: {new Date(member.joinDate).toLocaleDateString("id-ID")}</span>
           </div>
         </div>
         <div className="grid grid-cols-3 gap-4">
           <div>
-            <p className="text-sm font-medium text-muted-foreground mb-1">Investasi</p>
-            <p className="text-lg font-bold text-foreground">{formatCurrency(member.totalInvestment)}</p>
+            <p className="text-sm font-medium text-[#889063] mb-1">Investasi</p>
+            <p className="text-lg font-bold text-[#324D3E]">{formatCurrency(member.totalInvestment)}</p>
           </div>
           <div>
-            <p className="text-sm font-medium text-muted-foreground mb-1">Keuntungan</p>
-            <p className="text-lg font-bold text-chart-2">{formatCurrency(member.totalProfit)}</p>
+            <p className="text-sm font-medium text-[#889063] mb-1">Keuntungan</p>
+            <p className="text-lg font-bold text-green-600">{formatCurrency(member.totalProfit)}</p>
           </div>
           <div>
-            <p className="text-sm font-medium text-muted-foreground mb-1">ROI</p>
-            <p className="text-lg font-bold text-chart-3">{formatPercentage(member.overallROI)}</p>
+            <p className="text-sm font-medium text-[#889063] mb-1">ROI</p>
+            <p className="text-lg font-bold text-blue-600">{formatPercentage(member.overallROI)}</p>
           </div>
         </div>
       </div>
 
       {/* Investment Details */}
-      <div className="bg-muted rounded-xl p-4">
-        <h4 className="text-sm font-bold text-foreground mb-3">
+      <div className="bg-[#324D3E]/5 rounded-2xl p-4 border border-[#324D3E]/10">
+        <h4 className="text-sm font-bold text-[#324D3E] mb-3">
           Portfolio Investasi ({member.investments.length} tanaman)
         </h4>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
           {member.investments.map((investment, index) => (
-            <div key={index} className="bg-card rounded-lg p-3 border border-border">
+            <div key={index} className="bg-white/80 backdrop-blur-xl rounded-xl p-3 border border-[#324D3E]/10">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-medium text-foreground">{investment.plantName}</span>
-                <span className="text-xs text-chart-3">{formatPercentage(investment.roi)}</span>
+                <span className="text-sm font-medium text-[#324D3E]">{investment.plantName}</span>
+                <span className="text-xs text-blue-600">{formatPercentage(investment.roi)}</span>
               </div>
-              <div className="text-xs text-muted-foreground space-y-1">
+              <div className="text-xs text-[#889063] space-y-1">
                 <div>Investasi: {formatCurrency(investment.amount)}</div>
                 <div>
-                  Profit: <span className="text-chart-2">{formatCurrency(investment.profit)}</span>
+                  Profit: <span className="text-green-600">{formatCurrency(investment.profit)}</span>
                 </div>
               </div>
             </div>

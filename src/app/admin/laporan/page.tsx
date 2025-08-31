@@ -163,62 +163,63 @@ export default function LaporanPage() {
     <AdminLayout>
       <div className="space-y-6">
         {/* Header */}
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-          <div>
-            <h1 className="text-2xl lg:text-3xl font-bold text-gray-900">Laporan Investasi</h1>
-            <p className="text-gray-600 mt-2">Ringkasan investasi dan kepemilikan pohon per investor</p>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+          <div className="min-w-0 flex-1">
+            <h1 className="text-2xl sm:text-3xl font-bold text-[#324D3E] font-[family-name:var(--font-poppins)] truncate">Laporan Investasi</h1>
+            <p className="text-[#889063] mt-1 sm:mt-2 text-sm sm:text-base">Ringkasan investasi dan kepemilikan pohon per investor</p>
           </div>
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3">
             <button
               onClick={fetchReportData}
               disabled={loading}
-              className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg font-medium transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50"
+              className="bg-[#324D3E]/10 hover:bg-[#324D3E]/20 text-[#324D3E] px-3 sm:px-4 py-2 rounded-xl font-medium transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 text-sm sm:text-base whitespace-nowrap"
             >
               <span>🔄</span>
-              {loading ? 'Memuat...' : 'Refresh'}
+              <span className="hidden sm:inline">{loading ? 'Memuat...' : 'Refresh'}</span>
             </button>
             <button
-              className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg font-medium transition-all duration-200 flex items-center justify-center gap-2"
+              className="bg-gradient-to-r from-[#324D3E] to-[#4C3D19] text-white px-3 sm:px-4 py-2 rounded-xl font-medium transition-all duration-200 flex items-center justify-center gap-2 text-sm sm:text-base whitespace-nowrap"
             >
               <span>📥</span>
-              Download Semua
+              <span className="sm:hidden">Download</span>
+              <span className="hidden sm:inline">Download Semua</span>
             </button>
           </div>
         </div>
 
         {/* Summary Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+          <div className="bg-white/80 backdrop-blur-lg rounded-2xl shadow-lg border border-[#324D3E]/10 p-6 hover:shadow-xl hover:scale-105 transition-all duration-300">
             <div>
-              <p className="text-sm font-medium text-gray-600">👥 Total Investor</p>
-              <p className="text-2xl font-bold text-gray-900">{reportData.summary.totalInvestors}</p>
+              <p className="text-sm font-medium text-[#889063]">👥 Total Investor</p>
+              <p className="text-2xl font-bold text-[#324D3E]">{reportData.summary.totalInvestors}</p>
             </div>
           </div>
 
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+          <div className="bg-white/80 backdrop-blur-lg rounded-2xl shadow-lg border border-[#324D3E]/10 p-6 hover:shadow-xl hover:scale-105 transition-all duration-300">
             <div>
-              <p className="text-sm font-medium text-gray-600">🌳 Total Pohon</p>
-              <p className="text-2xl font-bold text-gray-900">{reportData.summary.totalTrees}</p>
+              <p className="text-sm font-medium text-[#889063]">🌳 Total Pohon</p>
+              <p className="text-2xl font-bold text-[#4C3D19]">{reportData.summary.totalTrees}</p>
             </div>
           </div>
 
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+          <div className="bg-white/80 backdrop-blur-lg rounded-2xl shadow-lg border border-[#324D3E]/10 p-6 hover:shadow-xl hover:scale-105 transition-all duration-300">
             <div>
-              <p className="text-sm font-medium text-gray-600">💰 Total Investasi</p>
-              <p className="text-xl font-bold text-gray-900">{formatCurrency(reportData.summary.totalInvestment)}</p>
+              <p className="text-sm font-medium text-[#889063]">💰 Total Investasi</p>
+              <p className="text-xl font-bold text-[#889063]">{formatCurrency(reportData.summary.totalInvestment)}</p>
             </div>
           </div>
 
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+          <div className="bg-white/80 backdrop-blur-lg rounded-2xl shadow-lg border border-[#324D3E]/10 p-6 hover:shadow-xl hover:scale-105 transition-all duration-300">
             <div>
-              <p className="text-sm font-medium text-gray-600">✅ Investor Aktif</p>
-              <p className="text-2xl font-bold text-green-600">{reportData.summary.activeInvestors}</p>
+              <p className="text-sm font-medium text-[#889063]">✅ Investor Aktif</p>
+              <p className="text-2xl font-bold text-[#4C3D19]">{reportData.summary.activeInvestors}</p>
             </div>
           </div>
         </div>
 
         {/* Search */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 lg:p-6">
+        <div className="bg-white/80 backdrop-blur-lg rounded-2xl shadow-lg border border-[#324D3E]/10 p-4 lg:p-6">
           <div className="flex flex-col lg:flex-row gap-4">
             <div className="flex-1">
               <input
@@ -226,7 +227,7 @@ export default function LaporanPage() {
                 placeholder="Cari investor berdasarkan nama atau email..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                className="w-full px-4 py-2 border border-[#324D3E]/20 rounded-xl focus:ring-2 focus:ring-[#324D3E]/20 focus:border-[#324D3E] text-[#324D3E] placeholder-[#889063]"
               />
             </div>
           </div>
@@ -235,34 +236,34 @@ export default function LaporanPage() {
         {/* Investor Reports */}
         <div className="space-y-4">
           {filteredReports.length === 0 ? (
-            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 text-center text-gray-500">
+            <div className="bg-white/80 backdrop-blur-lg rounded-2xl shadow-lg border border-[#324D3E]/10 p-8 text-center text-[#889063]">
               {searchTerm ? 'Tidak ada investor yang sesuai dengan pencarian' : 'Belum ada data investor'}
             </div>
           ) : (
             filteredReports.map((report) => (
-              <div key={report.investor._id} className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+              <div key={report.investor._id} className="bg-white/80 backdrop-blur-lg rounded-2xl shadow-lg border border-[#324D3E]/10 overflow-hidden">
                 {/* Investor Header */}
-                <div className="p-4 lg:p-6 border-b border-gray-200">
+                <div className="p-4 lg:p-6 border-b border-[#324D3E]/10">
                   <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
                     <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 bg-gradient-to-r from-emerald-500 to-green-600 rounded-full flex items-center justify-center">
+                      <div className="w-12 h-12 bg-gradient-to-r from-[#324D3E] to-[#4C3D19] rounded-full flex items-center justify-center">
                         <span className="text-white font-bold text-lg">{report.investor.name.charAt(0)}</span>
                       </div>
                       <div>
-                        <h3 className="text-lg lg:text-xl font-bold text-gray-900">{report.investor.name}</h3>
-                        <p className="text-sm text-gray-600">{report.investor.email}</p>
+                        <h3 className="text-lg lg:text-xl font-bold text-[#324D3E] font-[family-name:var(--font-poppins)]">{report.investor.name}</h3>
+                        <p className="text-sm text-[#889063]">{report.investor.email}</p>
                       </div>
                     </div>
                     <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
                       <span className={`inline-flex px-3 py-1 text-sm font-semibold rounded-full ${
                         report.investor.status === 'active' 
-                          ? 'bg-green-100 text-green-800' 
+                          ? 'bg-[#4C3D19]/10 text-[#4C3D19] border border-[#4C3D19]/20' 
                           : 'bg-red-100 text-red-800'
                       }`}>
                         {report.investor.status === 'active' ? 'Aktif' : 'Tidak Aktif'}
                       </span>
                       <button
-                        className="bg-emerald-100 hover:bg-emerald-200 text-emerald-700 px-3 py-1 rounded-lg text-sm font-medium transition-colors"
+                        className="bg-[#324D3E]/10 hover:bg-[#324D3E]/20 text-[#324D3E] px-3 py-1 rounded-xl text-sm font-medium transition-colors"
                       >
                         📥 Download
                       </button>
@@ -271,23 +272,23 @@ export default function LaporanPage() {
                 </div>
 
                 {/* Investment Summary */}
-                <div className="p-4 lg:p-6 bg-gray-50 border-b border-gray-200">
+                <div className="p-4 lg:p-6 bg-gradient-to-r from-[#324D3E]/5 to-[#4C3D19]/5 border-b border-[#324D3E]/10">
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                     <div className="text-center">
-                      <p className="text-2xl font-bold text-gray-900">{formatCurrency(report.investor.totalInvestasi)}</p>
-                      <p className="text-sm text-gray-600">Total Investasi</p>
+                      <p className="text-2xl font-bold text-[#324D3E]">{formatCurrency(report.investor.totalInvestasi)}</p>
+                      <p className="text-sm text-[#889063]">Total Investasi</p>
                     </div>
                     <div className="text-center">
-                      <p className="text-2xl font-bold text-emerald-600">{report.statistics.total}</p>
-                      <p className="text-sm text-gray-600">Total Pohon</p>
+                      <p className="text-2xl font-bold text-[#4C3D19]">{report.statistics.total}</p>
+                      <p className="text-sm text-[#889063]">Total Pohon</p>
                     </div>
                     <div className="text-center">
-                      <p className="text-2xl font-bold text-green-600">{report.statistics.byCondition.sehat}</p>
-                      <p className="text-sm text-gray-600">Pohon Sehat</p>
+                      <p className="text-2xl font-bold text-[#889063]">{report.statistics.byCondition.sehat}</p>
+                      <p className="text-sm text-[#889063]">Pohon Sehat</p>
                     </div>
                     <div className="text-center">
-                      <p className="text-2xl font-bold text-blue-600">{report.statistics.avgAge}</p>
-                      <p className="text-sm text-gray-600">Rata-rata Umur (bulan)</p>
+                      <p className="text-2xl font-bold text-[#324D3E]">{report.statistics.avgAge}</p>
+                      <p className="text-sm text-[#889063]">Rata-rata Umur (bulan)</p>
                     </div>
                   </div>
                 </div>
@@ -296,12 +297,12 @@ export default function LaporanPage() {
                 <div className="p-4 lg:p-6">
                   <button
                     onClick={() => toggleExpanded(report.investor._id)}
-                    className="flex items-center justify-between w-full text-left"
+                    className="flex items-center justify-between w-full text-left hover:bg-[#324D3E]/5 p-2 rounded-xl transition-colors"
                   >
-                    <span className="text-lg font-medium text-gray-900">
+                    <span className="text-lg font-medium text-[#324D3E] font-[family-name:var(--font-poppins)]">
                       Detail Pohon ({report.statistics.total})
                     </span>
-                    <span className={`transform transition-transform duration-200 ${
+                    <span className={`transform transition-transform duration-200 text-[#324D3E] ${
                       expandedInvestor === report.investor._id ? 'rotate-180' : ''
                     }`}>
                       ▼
@@ -318,9 +319,9 @@ export default function LaporanPage() {
                           {/* Tree Species Summary */}
                           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-4">
                             {Object.entries(report.statistics.bySpecies).map(([species, count]) => (
-                              <div key={species} className="bg-emerald-50 p-3 rounded-lg">
-                                <p className="font-medium text-emerald-900">{species}</p>
-                                <p className="text-sm text-emerald-700">{count} pohon</p>
+                              <div key={species} className="bg-gradient-to-r from-[#324D3E]/10 to-[#4C3D19]/10 p-3 rounded-xl border border-[#324D3E]/20">
+                                <p className="font-medium text-[#324D3E]">{species}</p>
+                                <p className="text-sm text-[#889063]">{count} pohon</p>
                               </div>
                             ))}
                           </div>
@@ -328,32 +329,32 @@ export default function LaporanPage() {
                           {/* Tree List */}
                           <div className="overflow-x-auto">
                             <table className="w-full text-sm">
-                              <thead className="bg-gray-100">
+                              <thead className="bg-[#324D3E]/5">
                                 <tr>
-                                  <th className="px-3 py-2 text-left font-medium text-gray-600">Spesies</th>
-                                  <th className="px-3 py-2 text-left font-medium text-gray-600 hidden sm:table-cell">Lokasi</th>
-                                  <th className="px-3 py-2 text-left font-medium text-gray-600">Umur</th>
-                                  <th className="px-3 py-2 text-left font-medium text-gray-600 hidden lg:table-cell">Tinggi</th>
-                                  <th className="px-3 py-2 text-left font-medium text-gray-600 hidden sm:table-cell">Tanggal Tanam</th>
-                                  <th className="px-3 py-2 text-left font-medium text-gray-600">Kondisi</th>
+                                  <th className="px-3 py-2 text-left font-medium text-[#324D3E]">Spesies</th>
+                                  <th className="px-3 py-2 text-left font-medium text-[#324D3E] hidden sm:table-cell">Lokasi</th>
+                                  <th className="px-3 py-2 text-left font-medium text-[#324D3E]">Umur</th>
+                                  <th className="px-3 py-2 text-left font-medium text-[#324D3E] hidden lg:table-cell">Tinggi</th>
+                                  <th className="px-3 py-2 text-left font-medium text-[#324D3E] hidden sm:table-cell">Tanggal Tanam</th>
+                                  <th className="px-3 py-2 text-left font-medium text-[#324D3E]">Kondisi</th>
                                 </tr>
                               </thead>
-                              <tbody className="divide-y divide-gray-200">
+                              <tbody className="divide-y divide-[#324D3E]/10">
                                 {report.trees.map((tree) => (
-                                  <tr key={tree._id} className="hover:bg-gray-50">
+                                  <tr key={tree._id} className="hover:bg-[#324D3E]/5 transition-colors">
                                     <td className="px-3 py-2">
                                       <div>
-                                        <p className="font-medium text-gray-900">{tree.spesiesPohon}</p>
-                                        <p className="text-xs text-gray-500 sm:hidden">{tree.lokasi}</p>
+                                        <p className="font-medium text-[#324D3E]">{tree.spesiesPohon}</p>
+                                        <p className="text-xs text-[#889063] sm:hidden">{tree.lokasi}</p>
                                       </div>
                                     </td>
-                                    <td className="px-3 py-2 text-gray-600 hidden sm:table-cell">{tree.lokasi}</td>
+                                    <td className="px-3 py-2 text-[#889063] hidden sm:table-cell">{tree.lokasi}</td>
                                     <td className="px-3 py-2">
-                                      <span className="text-gray-900">{formatNumber(tree.umur)} bln</span>
-                                      <span className="text-xs text-gray-500 block lg:hidden">{formatNumber(tree.tinggi)} cm</span>
+                                      <span className="text-[#324D3E]">{formatNumber(tree.umur)} bln</span>
+                                      <span className="text-xs text-[#889063] block lg:hidden">{tree.tinggi > 0 ? `${formatNumber(tree.tinggi)} cm` : '-'}</span>
                                     </td>
-                                    <td className="px-3 py-2 text-gray-600 hidden lg:table-cell">{formatNumber(tree.tinggi)} cm</td>
-                                    <td className="px-3 py-2 text-gray-600 hidden sm:table-cell">
+                                    <td className="px-3 py-2 text-[#889063] hidden lg:table-cell">{tree.tinggi > 0 ? `${formatNumber(tree.tinggi)} cm` : '-'}</td>
+                                    <td className="px-3 py-2 text-[#889063] hidden sm:table-cell">
                                       {new Date(tree.tanggalTanam).toLocaleDateString('id-ID')}
                                     </td>
                                     <td className="px-3 py-2">

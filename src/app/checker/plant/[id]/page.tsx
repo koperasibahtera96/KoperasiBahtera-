@@ -1,12 +1,12 @@
 "use client"
 
-import { CheckerLayout } from "@/components/admin/CheckerLayout"
+import LandingNavbar from '@/components/landing/LandingNavbar'
 import { Badge } from "@/components/ui-staff/badge"
 import { Button } from "@/components/ui-staff/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui-staff/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui-staff/select"
 import { Textarea } from "@/components/ui-staff/textarea"
-import type { Plant, PlantHistory, StatusOption } from "@/types/checker"
+import type { PlantInstance, PlantHistory, StatusOption } from "@/types/checker"
 import jsPDF from "jspdf"
 import {
   ArrowLeft,
@@ -29,14 +29,14 @@ import Link from "next/link"
 import { use, useEffect, useState } from "react"
 
 const statusColors: Record<string, string> = {
-  "Tanam Bibit": "bg-green-100 text-green-800",
-  "Persiapan Bibit": "bg-blue-100 text-blue-800",
-  "Buka Lahan": "bg-orange-100 text-orange-800",
-  "Kontrak Baru": "bg-purple-100 text-purple-800",
-  Pemupukan: "bg-yellow-100 text-yellow-800",
-  Panen: "bg-red-100 text-red-800",
-  Penyiraman: "bg-cyan-100 text-cyan-800",
-  Pemangkasan: "bg-pink-100 text-pink-800",
+  "Tanam Bibit": "bg-[#4C3D19]/10 text-[#4C3D19] border border-[#4C3D19]/20",
+  "Persiapan Bibit": "bg-blue-50 text-blue-600 border border-blue-200",
+  "Buka Lahan": "bg-orange-50 text-orange-600 border border-orange-200",
+  "Kontrak Baru": "bg-[#324D3E]/10 text-[#324D3E] border border-[#324D3E]/20",
+  Pemupukan: "bg-yellow-50 text-yellow-600 border border-yellow-200",
+  Panen: "bg-red-50 text-red-600 border border-red-200",
+  Penyiraman: "bg-cyan-50 text-cyan-600 border border-cyan-200",
+  Pemangkasan: "bg-pink-50 text-pink-600 border border-pink-200",
 }
 
 const statusOptions: StatusOption[] = [
@@ -49,7 +49,7 @@ const statusOptions: StatusOption[] = [
 
 export default function PlantDetail({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params)
-  const [plantData, setPlantData] = useState<Plant | null>(null)
+  const [plantData, setPlantData] = useState<PlantInstance | null>(null)
   const [reportStatus, setReportStatus] = useState("")
   const [notes, setNotes] = useState("")
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
@@ -117,7 +117,7 @@ export default function PlantDetail({ params }: { params: Promise<{ id: string }
         }
       }
 
-      const newHistoryEntry: PlantHistory = {
+      const newHistoryEntry: any = {
         id: Date.now(),
         type: statusOptions.find((s) => s.value === reportStatus)?.label || reportStatus,
         date: new Date().toLocaleDateString("id-ID"),
@@ -127,7 +127,7 @@ export default function PlantDetail({ params }: { params: Promise<{ id: string }
       }
 
       if (plantData) {
-        const updatedPlant: Plant = {
+        const updatedPlant: PlantInstance = {
           ...plantData,
           status: newHistoryEntry.type,
           lastUpdate: newHistoryEntry.date,
@@ -176,7 +176,7 @@ export default function PlantDetail({ params }: { params: Promise<{ id: string }
         item.id === selectedHistory.id ? { ...item, description: editNotes } : item,
       )
 
-      const updatedPlant: Plant = { ...plantData, history: updatedHistory }
+      const updatedPlant: PlantInstance = { ...plantData, history: updatedHistory }
 
       const response = await fetch(`/api/plants/${id}`, {
         method: "PUT",
@@ -201,7 +201,7 @@ export default function PlantDetail({ params }: { params: Promise<{ id: string }
 
     try {
       const updatedHistory = plantData.history.filter((item) => item.id !== historyId)
-      const updatedPlant: Plant = { ...plantData, history: updatedHistory }
+      const updatedPlant: PlantInstance = { ...plantData, history: updatedHistory }
 
       const response = await fetch(`/api/plants/${id}`, {
         method: "PUT",
@@ -224,7 +224,7 @@ export default function PlantDetail({ params }: { params: Promise<{ id: string }
     if (selectedHistory?.imageUrl) {
       const link = document.createElement("a")
       link.href = selectedHistory.imageUrl
-      link.download = `${plantData?.instanceName || plantData?.name}-${selectedHistory.type}-${selectedHistory.date}.jpg`
+      link.download = `${plantData?.instanceName || ""}-${selectedHistory.type}-${selectedHistory.date}.jpg`
       document.body.appendChild(link)
       link.click()
       document.body.removeChild(link)
@@ -270,7 +270,7 @@ export default function PlantDetail({ params }: { params: Promise<{ id: string }
 
       pdf.setFontSize(18)
       pdf.setFont("helvetica", "bold")
-      pdf.text(`Riwayat Tanaman: ${plantData.instanceName || plantData.name}`, 20, yPosition)
+      pdf.text(`Riwayat Tanaman: ${plantData.instanceName || ""}`, 20, yPosition)
       yPosition += 10
 
       pdf.setFontSize(12)
@@ -350,7 +350,7 @@ export default function PlantDetail({ params }: { params: Promise<{ id: string }
         yPosition += 10
       }
 
-      pdf.save(`Riwayat-${plantData.instanceName || plantData.name}-${plantData.qrCode}.pdf`)
+      pdf.save(`Riwayat-${plantData.instanceName || ""}-${plantData.qrCode}.pdf`)
     } catch {
       console.error("Error generating PDF")
       alert("Gagal membuat PDF. Silakan coba lagi.")
@@ -359,341 +359,360 @@ export default function PlantDetail({ params }: { params: Promise<{ id: string }
 
   if (loading) {
     return (
-      <CheckerLayout>
-        <div className="space-y-6">
-          <div>
-            <h1 className="text-2xl lg:text-3xl font-bold text-gray-900">Detail Tanaman</h1>
-            <p className="text-gray-600 mt-2">Memuat data tanaman...</p>
+      <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-emerald-50 font-[family-name:var(--font-poppins)]">
+        <header className="w-full fixed top-0 z-50">
+          <LandingNavbar hideNavigation={true} />
+        </header>
+        
+        <main className="pt-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+          <div className="space-y-8 py-8">
+            <div className="text-center">
+              <h1 className="text-3xl lg:text-4xl font-bold text-[#324D3E] mb-4">Detail Tanaman</h1>
+              <p className="text-[#889063] text-lg">Memuat data tanaman...</p>
+            </div>
+            <div className="bg-white/90 backdrop-blur-xl rounded-3xl shadow-xl border border-[#324D3E]/10 p-12 text-center">
+              <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-[#324D3E] mx-auto mb-6"></div>
+              <p className="text-[#889063] text-lg">Memuat data tanaman...</p>
+            </div>
           </div>
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-500 mx-auto mb-4"></div>
-            <p className="text-gray-600">Memuat data tanaman...</p>
-          </div>
-        </div>
-      </CheckerLayout>
+        </main>
+      </div>
     )
   }
 
   if (!plantData) {
     return (
-      <CheckerLayout>
-        <div className="space-y-6">
-          <div>
-            <h1 className="text-2xl lg:text-3xl font-bold text-gray-900">Detail Tanaman</h1>
-            <p className="text-gray-600 mt-2">Tanaman tidak ditemukan</p>
+      <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-emerald-50 font-[family-name:var(--font-poppins)]">
+        <header className="w-full fixed top-0 z-50">
+          <LandingNavbar hideNavigation={true} />
+        </header>
+        
+        <main className="pt-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+          <div className="space-y-8 py-8">
+            <div className="text-center">
+              <h1 className="text-3xl lg:text-4xl font-bold text-[#324D3E] mb-4">Detail Tanaman</h1>
+              <p className="text-[#889063] text-lg">Tanaman tidak ditemukan</p>
+            </div>
+            <div className="bg-white/90 backdrop-blur-xl rounded-3xl shadow-xl border border-[#324D3E]/10 p-12 text-center">
+              <h2 className="text-2xl font-bold text-[#324D3E] mb-4">Tanaman Tidak Ditemukan</h2>
+              <Link href="/checker" className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-[#324D3E] to-[#4C3D19] text-white font-medium rounded-2xl hover:shadow-lg transition-all duration-300">
+                <ArrowLeft className="w-4 h-4" />
+                Kembali ke Dashboard
+              </Link>
+            </div>
           </div>
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 text-center">
-            <h1 className="text-2xl font-bold text-gray-900 mb-4">Tanaman Tidak Ditemukan</h1>
-            <Link href="/checker" className="text-emerald-600 hover:text-emerald-700 font-medium">
-              Kembali ke Dashboard
-            </Link>
-          </div>
-        </div>
-      </CheckerLayout>
+        </main>
+      </div>
     )
   }
 
   return (
-    <CheckerLayout>
-      <div className="space-y-6">
-        {/* Page Header */}
-        <div>
-          <Link href="/checker" className="inline-flex items-center gap-2 text-emerald-600 hover:text-emerald-700 mb-4">
-            <ArrowLeft className="w-4 h-4" />
-            Kembali ke Dashboard
-          </Link>
-          <h1 className="text-2xl lg:text-3xl font-bold text-gray-900">Detail Tanaman</h1>
-          <p className="text-gray-600 mt-2">
-            Monitor dan kelola tanaman {plantData.instanceName || plantData.name}
-          </p>
-        </div>
+    <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-emerald-50 font-[family-name:var(--font-poppins)]">
+      <header className="w-full fixed top-0 z-50">
+        <LandingNavbar hideNavigation={true} />
+      </header>
+      
+      <main className="pt-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+        <div className="space-y-8 py-8">
+          {/* Page Header */}
+          <div className="text-center">
+            <Link href="/checker" className="inline-flex items-center gap-2 px-6 py-3 bg-white/80 backdrop-blur-lg text-[#324D3E] hover:bg-[#324D3E] hover:text-white font-medium rounded-2xl border border-[#324D3E]/20 mb-6 transition-all duration-300">
+              <ArrowLeft className="w-4 h-4" />
+              Kembali ke Dashboard
+            </Link>
+            <h1 className="text-3xl lg:text-4xl font-bold text-[#324D3E] mb-4">Detail Tanaman</h1>
+            <p className="text-[#889063] text-lg">
+              Monitor dan kelola tanaman {plantData.instanceName ||""}
+            </p>
+          </div>
 
-        {/* Plant Info Header */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="flex items-center gap-3">
-              {/* Plant Avatar */}
-              <div className="relative w-12 h-12 bg-emerald-500 rounded-lg overflow-hidden">
-                {plantData.fotoGambar ? (
-                  <Image
-                    src={plantData.fotoGambar}
-                    alt={plantData?.instanceName || plantData?.name || "Foto tanaman"}
-                    fill
-                    sizes="48px"
-                    className="object-cover"
-                  />
-                ) : (
-                  <Leaf className="w-6 h-6 text-white absolute inset-0 m-auto" />
-                )}
-              </div>
+          {/* Plant Info Header */}
+          <div className="bg-white/90 backdrop-blur-xl rounded-3xl shadow-xl border border-[#324D3E]/10 p-8 mb-8">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              <div className="flex items-center gap-4">
+                {/* Plant Avatar */}
+                <div className="relative w-16 h-16 bg-gradient-to-br from-[#324D3E] to-[#4C3D19] rounded-2xl overflow-hidden shadow-lg">
+                  {plantData.fotoGambar ? (
+                    <Image
+                      src={plantData.fotoGambar}
+                      alt={plantData?.instanceName ||  "Foto tanaman"}
+                      fill
+                      sizes="64px"
+                      className="object-cover"
+                    />
+                  ) : (
+                    <Leaf className="w-8 h-8 text-white absolute inset-0 m-auto" />
+                  )}
+                </div>
 
-              <div>
-                <p className="text-sm text-gray-600">Jenis Tanaman</p>
-                <h2 className="text-xl font-bold text-gray-900">
-                  {plantData.instanceName || plantData.name}
-                </h2>
-              </div>
-            </div>
-
-            <div className="space-y-4">
-              <div>
-                <p className="text-sm text-gray-600">QR Code</p>
-                <div className="flex items-center gap-2">
-                  <QrCode className="w-4 h-4 text-emerald-500" />
-                  <span className="font-semibold text-gray-900">{plantData.qrCode}</span>
+                <div>
+                  <p className="text-sm text-[#889063] mb-1">Jenis Tanaman</p>
+                  <h2 className="text-2xl font-bold text-[#324D3E]">
+                    {plantData.instanceName || ""}
+                  </h2>
                 </div>
               </div>
-              <div>
-                <p className="text-sm text-gray-600">No. Kontrak</p>
-                <div className="flex items-center gap-2">
-                  <FileText className="w-4 h-4 text-emerald-500" />
-                  <span className="font-semibold text-gray-900">{plantData.contractNumber}</span>
-                </div>
-              </div>
-            </div>
 
-            <div className="flex items-center justify-between">
               <div className="space-y-4">
-                <div>
-                  <p className="text-sm text-gray-600">Pemilik</p>
+                <div className="bg-white/60 rounded-2xl p-4 border border-[#324D3E]/10">
+                  <p className="text-sm text-[#889063] mb-1">QR Code</p>
                   <div className="flex items-center gap-2">
-                    <User className="w-4 h-4 text-emerald-500" />
-                    <span className="font-semibold text-gray-900">{plantData.owner}</span>
+                    <QrCode className="w-4 h-4 text-[#4C3D19]" />
+                    <span className="font-semibold text-[#324D3E]">{plantData.qrCode}</span>
                   </div>
                 </div>
-
-                <div>
-                  <p className="text-sm text-gray-600">Lokasi Tanam</p>
+                <div className="bg-white/60 rounded-2xl p-4 border border-[#324D3E]/10">
+                  <p className="text-sm text-[#889063] mb-1">No. Kontrak</p>
                   <div className="flex items-center gap-2">
-                    <MapPin className="w-4 h-4 text-emerald-500" />
-                    <span className="font-semibold text-gray-900">{plantData.location}</span>
+                    <FileText className="w-4 h-4 text-[#4C3D19]" />
+                    <span className="font-semibold text-[#324D3E]">{plantData.contractNumber}</span>
                   </div>
                 </div>
               </div>
 
-              <div className="flex flex-col items-center gap-2">
-                <div className="bg-white p-1 rounded border border-gray-200">
-                  <Image
-                    unoptimized
-                    src={`https://api.qrserver.com/v1/create-qr-code/?size=80x80&data=${encodeURIComponent(
-                      `${typeof window !== "undefined" ? window.location.origin : ""}/checker/plant/${id}`,
-                    )}`}
-                    alt="QR Code"
-                    className="w-16 h-16"
-                    width={64}
-                    height={64}
-                  />
+              <div className="flex items-center justify-between">
+                <div className="space-y-4">
+                  <div className="bg-white/60 rounded-2xl p-4 border border-[#324D3E]/10">
+                    <p className="text-sm text-[#889063] mb-1">Pemilik</p>
+                    <div className="flex items-center gap-2">
+                      <User className="w-4 h-4 text-[#4C3D19]" />
+                      <span className="font-semibold text-[#324D3E]">{plantData.owner}</span>
+                    </div>
+                  </div>
+
+                  <div className="bg-white/60 rounded-2xl p-4 border border-[#324D3E]/10">
+                    <p className="text-sm text-[#889063] mb-1">Lokasi Tanam</p>
+                    <div className="flex items-center gap-2">
+                      <MapPin className="w-4 h-4 text-[#4C3D19]" />
+                      <span className="font-semibold text-[#324D3E]">{plantData.location}</span>
+                    </div>
+                  </div>
                 </div>
-                <Button
-                  size="sm"
-                  onClick={async () => {
-                    try {
-                      const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(
+
+                <div className="flex flex-col items-center gap-3">
+                  <div className="bg-white/80 p-3 rounded-2xl border border-[#324D3E]/20 shadow-lg">
+                    <Image
+                      unoptimized
+                      src={`https://api.qrserver.com/v1/create-qr-code/?size=80x80&data=${encodeURIComponent(
                         `${typeof window !== "undefined" ? window.location.origin : ""}/checker/plant/${id}`,
-                      )}`
+                      )}`}
+                      alt="QR Code"
+                      className="w-20 h-20"
+                      width={80}
+                      height={80}
+                    />
+                  </div>
+                  <Button
+                    size="sm"
+                    onClick={async () => {
+                      try {
+                        const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(
+                          `${typeof window !== "undefined" ? window.location.origin : ""}/checker/plant/${id}`,
+                        )}`
 
-                      const response = await fetch(qrUrl)
-                      const blob = await response.blob()
-                      const url = window.URL.createObjectURL(blob)
+                        const response = await fetch(qrUrl)
+                        const blob = await response.blob()
+                        const url = window.URL.createObjectURL(blob)
 
-                      const link = document.createElement("a")
-                      link.href = url
-                      link.download = `QR-${plantData.instanceName || plantData.name}-${plantData.qrCode}.png`
-                      document.body.appendChild(link)
-                      link.click()
-                      document.body.removeChild(link)
+                        const link = document.createElement("a")
+                        link.href = url
+                        link.download = `QR-${plantData.instanceName || ""}-${plantData.qrCode}.png`
+                        document.body.appendChild(link)
+                        link.click()
+                        document.body.removeChild(link)
 
-                      window.URL.revokeObjectURL(url)
-                    } catch (error) {
-                      console.error("Error downloading QR code:", error)
-                      alert("Gagal mendownload QR code")
-                    }
-                  }}
-                  className="bg-emerald-500 hover:bg-emerald-600 text-white text-xs px-2 py-1"
-                >
-                  Download
-                </Button>
+                        window.URL.revokeObjectURL(url)
+                      } catch (error) {
+                        console.error("Error downloading QR code:", error)
+                        alert("Gagal mendownload QR code")
+                      }
+                    }}
+                    className="bg-gradient-to-r from-[#324D3E] to-[#4C3D19] hover:shadow-lg text-white text-xs px-4 py-2 rounded-xl transition-all duration-300"
+                  >
+                    <Download className="w-3 h-3 mr-1" />
+                    Download
+                  </Button>
+                </div>
               </div>
             </div>
           </div>
-        </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Form Laporan & Perawatan */}
-          <Card className="bg-white border-gray-200">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-emerald-600">
-                <FileText className="w-5 h-5" />
-                Form Laporan & Perawatan
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Foto Tanaman (Wajib, Max 2MB)</label>
-                <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-emerald-500 transition-colors cursor-pointer">
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleFileChange}
-                    className="hidden"
-                    id="photo-upload"
-                  />
-                  <label htmlFor="photo-upload" className="cursor-pointer">
-                    <Upload className="w-12 h-12 mx-auto mb-4 text-gray-400" />
-                    <p className="text-emerald-600 mb-2">
-                      {selectedFile ? selectedFile.name : "Klik untuk upload atau seret foto"}
-                    </p>
-                    {selectedFile && (
-                      <p className="text-sm text-gray-500">
-                        Ukuran: {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            {/* Form Laporan & Perawatan */}
+            <Card className="bg-white/90 backdrop-blur-xl border-[#324D3E]/10 rounded-3xl shadow-xl">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-[#324D3E] text-xl">
+                  <FileText className="w-6 h-6" />
+                  Form Laporan & Perawatan
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6 p-8">
+                <div>
+                  <label className="block text-sm font-medium text-[#324D3E] mb-3">Foto Tanaman (Wajib, Max 2MB)</label>
+                  <div className="border-2 border-dashed border-[#324D3E]/30 rounded-2xl p-8 text-center hover:border-[#324D3E] hover:bg-[#324D3E]/5 transition-all duration-300 cursor-pointer">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleFileChange}
+                      className="hidden"
+                      id="photo-upload"
+                    />
+                    <label htmlFor="photo-upload" className="cursor-pointer">
+                      <Upload className="w-12 h-12 mx-auto mb-4 text-[#889063]" />
+                      <p className="text-[#324D3E] mb-2 font-medium">
+                        {selectedFile ? selectedFile.name : "Klik untuk upload atau seret foto"}
                       </p>
-                    )}
-                  </label>
+                      {selectedFile && (
+                        <p className="text-sm text-[#889063]">
+                          Ukuran: {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
+                        </p>
+                      )}
+                    </label>
+                  </div>
                 </div>
-              </div>
 
-              {/* Status Dropdown */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Status Laporan</label>
-                <Select value={reportStatus} onValueChange={setReportStatus}>
-                  <SelectTrigger className="bg-white border-gray-300 text-gray-900">
-                    <SelectValue placeholder="Pilih status..." />
-                  </SelectTrigger>
-                  <SelectContent className="bg-white border-gray-300">
-                    {statusOptions.map((option) => (
-                      <SelectItem key={option.value} value={option.value} className="text-gray-900">
-                        {option.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+                {/* Status Dropdown */}
+                <div>
+                  <label className="block text-sm font-medium text-[#324D3E] mb-3">Status Laporan</label>
+                  <Select value={reportStatus} onValueChange={setReportStatus}>
+                    <SelectTrigger className="bg-white border-[#324D3E]/20 text-[#324D3E] rounded-xl h-12 focus:ring-2 focus:ring-[#324D3E]/20">
+                      <SelectValue placeholder="Pilih status..." />
+                    </SelectTrigger>
+                    <SelectContent className="bg-white border-[#324D3E]/20 rounded-xl">
+                      {statusOptions.map((option) => (
+                        <SelectItem key={option.value} value={option.value} className="text-[#324D3E]">
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
 
-              {/* Notes */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Catatan</label>
-                <Textarea
-                  placeholder="Contoh: Pemupukan NPK dosis 10gr atau Laporan tanaman terkena banjir..."
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                  className="bg-white border-gray-300 min-h-[120px] text-gray-900 placeholder:text-gray-500"
-                />
-              </div>
+                {/* Notes */}
+                <div>
+                  <label className="block text-sm font-medium text-[#324D3E] mb-3">Catatan</label>
+                  <Textarea
+                    placeholder="Contoh: Pemupukan NPK dosis 10gr atau Laporan tanaman terkena banjir..."
+                    value={notes}
+                    onChange={(e) => setNotes(e.target.value)}
+                    className="bg-white border-[#324D3E]/20 min-h-[120px] text-[#324D3E] placeholder:text-[#889063] rounded-xl focus:ring-2 focus:ring-[#324D3E]/20"
+                  />
+                </div>
 
-              <Button
-                className="w-full bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 disabled:opacity-50"
-                onClick={handleSubmit}
-                disabled={isSubmitting}
-              >
-                {isSubmitting ? "Menyimpan..." : "Simpan Laporan"}
-              </Button>
+                <Button
+                  className="w-full bg-gradient-to-r from-[#324D3E] to-[#4C3D19] hover:shadow-lg disabled:opacity-50 text-white font-semibold py-3 rounded-2xl transition-all duration-300"
+                  onClick={handleSubmit}
+                  disabled={isSubmitting}
+                >
+                  {isSubmitting ? "Menyimpan..." : "Simpan Laporan"}
+                </Button>
             </CardContent>
           </Card>
 
-          <Card className="bg-white border-gray-200">
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle className="flex items-center gap-2 text-blue-600">
-                  <Clock className="w-5 h-5" />
-                  Riwayat Tanaman
-                </CardTitle>
-                <Button
-                  onClick={handleDownloadHistoryPDF}
-                  className="bg-purple-500 hover:bg-purple-600 text-white"
-                  size="sm"
-                >
-                  <Download className="w-4 h-4 mr-2" />
-                  Download PDF
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {plantData.history.map((item) => (
-                  <div key={item.id} className="flex gap-4 p-4 bg-gray-50 rounded-lg">
-                    <div className="w-20 h-20 bg-gray-200 rounded-lg flex items-center justify-center flex-shrink-0">
-                      {item.imageUrl ? (
-                        <Image
-                          unoptimized
-                          src={item.imageUrl || "/placeholder.svg"}
-                          alt="Plant photo"
-                          className="w-full h-full object-cover rounded-lg"
-                          width={64}
-                          height={64}
-                        />
-                      ) : (
-                        <Camera className="w-6 h-6 text-gray-400" />
-                      )}
-                    </div>
-                    <div className="flex-1">
-                      <div className="flex items-center justify-between mb-2">
-                        <Badge className={`${statusColors[item.type] || "bg-gray-100 text-gray-800"}`}>{item.type}</Badge>
-                        <span className="text-sm text-gray-500">{item.date}</span>
+            <Card className="bg-white/90 backdrop-blur-xl border-[#324D3E]/10 rounded-3xl shadow-xl">
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="flex items-center gap-2 text-[#324D3E] text-xl">
+                    <Clock className="w-6 h-6" />
+                    Riwayat Tanaman
+                  </CardTitle>
+                  <Button
+                    onClick={handleDownloadHistoryPDF}
+                    className="bg-gradient-to-r from-purple-500 to-purple-600 hover:shadow-lg text-white rounded-xl"
+                    size="sm"
+                  >
+                    <Download className="w-4 h-4 mr-2" />
+                    Download PDF
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent className="p-8">
+                <div className="space-y-4">
+                  {plantData.history.map((item) => (
+                    <div key={item.id} className="flex gap-4 p-6 bg-white/60 rounded-2xl border border-[#324D3E]/10 hover:bg-white/80 transition-all duration-300">
+                      <div className="w-20 h-20 bg-[#324D3E]/10 rounded-2xl flex items-center justify-center flex-shrink-0">
+                        {item.imageUrl ? (
+                          <Image
+                            unoptimized
+                            src={item.imageUrl || "/placeholder.svg"}
+                            alt="Plant photo"
+                            className="w-full h-full object-cover rounded-2xl"
+                            width={80}
+                            height={80}
+                          />
+                        ) : (
+                          <Camera className="w-6 h-6 text-[#889063]" />
+                        )}
                       </div>
-                      <p className="text-sm text-gray-700 mb-3">{item.description}</p>
-                      {/* Action buttons for each history item */}
-                      <div className="flex items-center justify-between">
-                        <div className="flex gap-2">
+                      <div className="flex-1">
+                        <div className="flex items-center justify-between mb-2">
+                          <Badge className={`${statusColors[item.type] || "bg-gray-100 text-gray-800"} rounded-xl px-3 py-1`}>{item.type}</Badge>
+                          <span className="text-sm text-[#889063]">{item.date}</span>
+                        </div>
+                        <p className="text-sm text-[#324D3E] mb-3">{item.description}</p>
+                        {/* Action buttons for each history item */}
+                        <div className="flex items-center justify-between">
+                          <div className="flex gap-2">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleViewDetail(item)}
+                              className="bg-blue-500 hover:bg-blue-600 text-white border-blue-500 rounded-xl"
+                            >
+                              <Eye className="w-3 h-3 mr-1" />
+                              Detail
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => {
+                                setSelectedHistory(item)
+                                setEditNotes(item.description)
+                                setIsEditing(true)
+                                setShowModal(true)
+                              }}
+                              className="bg-yellow-500 hover:bg-yellow-600 text-white border-yellow-500 rounded-xl"
+                            >
+                              <Edit className="w-3 h-3 mr-1" />
+                              Update
+                            </Button>
+                          </div>
                           <Button
                             size="sm"
                             variant="outline"
-                            onClick={() => handleViewDetail(item)}
-                            className="bg-blue-500 hover:bg-blue-600 text-white border-blue-500"
+                            onClick={() => handleDeleteHistory(item.id)}
+                            className="bg-red-500 hover:bg-red-600 text-white border-red-500 p-2 min-w-0 rounded-xl"
                           >
-                            <Eye className="w-3 h-3 mr-1" />
-                            Detail
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => {
-                              setSelectedHistory(item)
-                              setEditNotes(item.description)
-                              setIsEditing(true)
-                              setShowModal(true)
-                            }}
-                            className="bg-yellow-500 hover:bg-yellow-600 text-white border-yellow-500"
-                          >
-                            <Edit className="w-3 h-3 mr-1" />
-                            Update
+                            <Trash2 className="w-3 h-3" />
                           </Button>
                         </div>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleDeleteHistory(item.id)}
-                          className="bg-red-500 hover:bg-red-600 text-white border-red-500 p-2 min-w-0"
-                        >
-                          <Trash2 className="w-3 h-3" />
-                        </Button>
                       </div>
-                    </div>
                   </div>
                 ))}
               </div>
-            </CardContent>
-          </Card>
-        </div>
+              </CardContent>
+            </Card>
+          </div>
 
-        {/* Modal for history detail view and editing */}
-        {showModal && selectedHistory && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-              <div className="p-6">
-                <div className="flex justify-between items-center mb-6">
-                  <h2 className="text-xl font-bold text-gray-900">{isEditing ? "Edit Riwayat" : "Detail Riwayat"}</h2>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => {
-                      setShowModal(false)
-                      setIsEditing(false)
-                    }}
-                    className="text-gray-400 hover:text-gray-600"
-                  >
-                    <X className="w-5 h-5" />
-                  </Button>
-                </div>
+          {/* Modal for history detail view and editing */}
+          {showModal && selectedHistory && (
+            <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+              <div className="bg-white/95 backdrop-blur-xl rounded-3xl max-w-4xl w-full max-h-[90vh] overflow-y-auto shadow-2xl border border-[#324D3E]/10">
+                <div className="p-8">
+                  <div className="flex justify-between items-center mb-8">
+                    <h2 className="text-2xl font-bold text-[#324D3E]">{isEditing ? "Edit Riwayat" : "Detail Riwayat"}</h2>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        setShowModal(false)
+                        setIsEditing(false)
+                      }}
+                      className="text-[#889063] hover:text-[#324D3E] hover:bg-[#324D3E]/10 rounded-xl"
+                    >
+                      <X className="w-5 h-5" />
+                    </Button>
+                  </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                   {/* Large Image Display */}
@@ -765,19 +784,21 @@ export default function PlantDetail({ params }: { params: Promise<{ id: string }
                   </div>
                 </div>
 
-                {/* Optional actions */}
-                <div className="flex items-center justify-end gap-2 mt-6">
-                  {selectedHistory?.imageUrl && (
-                    <Button onClick={handleDownloadPhoto} className="bg-emerald-500 hover:bg-emerald-600">
-                      Download Foto
-                    </Button>
-                  )}
-                </div>
+                  {/* Optional actions */}
+                  <div className="flex items-center justify-end gap-2 mt-6">
+                    {selectedHistory?.imageUrl && (
+                      <Button onClick={handleDownloadPhoto} className="bg-gradient-to-r from-[#324D3E] to-[#4C3D19] hover:shadow-lg text-white rounded-xl">
+                        <Download className="w-4 h-4 mr-2" />
+                        Download Foto
+                      </Button>
+                    )}
+                  </div>
               </div>
             </div>
           </div>
-        )}
-      </div>
-    </CheckerLayout>
+          )}
+        </div>
+      </main>
+    </div>
   )
 }

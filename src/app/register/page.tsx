@@ -1,5 +1,6 @@
 'use client';
 
+import { CameraSelfie, CameraSelfieRef } from '@/components/forms/CameraSelfie';
 import { FormActions, FormField, FormRow } from '@/components/forms/FormField';
 import { Select } from '@/components/forms/Select';
 import { ValidationInput } from '@/components/forms/ValidationInput';
@@ -33,7 +34,10 @@ export default function RegisterPage() {
   const [paymentUrl, setPaymentUrl] = useState<string>('');
   const [orderId, setOrderId] = useState<string>('');
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
+  const [isCheckingAvailability, setIsCheckingAvailability] = useState(false);
+  const [hasAttemptedSubmit, setHasAttemptedSubmit] = useState(false);
   const countdownIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const cameraSelfieRef = useRef<CameraSelfieRef>(null);
 
   const router = useRouter();
 
@@ -41,8 +45,9 @@ export default function RegisterPage() {
   const {
     register,
     handleSubmit,
-    formState: {  isValid },
+    formState: { errors, isValid },
     watch,
+    trigger,
   } = useForm<RegistrationFormData>({
     resolver: zodResolver(registrationSchema),
     mode: 'onSubmit',
@@ -104,14 +109,28 @@ export default function RegisterPage() {
     }
   };
 
-  const handleFaceUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
+  // Convert data URL to File object
+  const dataURLtoFile = (dataurl: string, filename: string): File => {
+    const arr = dataurl.split(',');
+    const mime = arr[0].match(/:(.*?);/)?.[1] || 'image/jpeg';
+    const bstr = atob(arr[1]);
+    let n = bstr.length;
+    const u8arr = new Uint8Array(n);
+    while (n--) {
+      u8arr[n] = bstr.charCodeAt(n);
+    }
+    return new File([u8arr], filename, { type: mime });
+  };
 
+  const handleCameraCapture = async (imageDataUrl: string) => {
     setUploadingFace(true);
     setSubmitError('');
 
     try {
+      // Convert data URL to file
+      const file = dataURLtoFile(imageDataUrl, `selfie_${Date.now()}.jpg`);
+
+      // Upload the file
       const imageUrl = await uploadImage(file);
       setFaceImage(file);
       setFaceImageUrl(imageUrl);
@@ -146,6 +165,11 @@ export default function RegisterPage() {
             name: 'Registration Fee',
           },
         ],
+        callbacks: {
+          finish: `${window.location.origin}/payment/success`,
+          error: `${window.location.origin}/payment/error`,
+          pending: `${window.location.origin}/payment/pending`,
+        },
         registrationData: {
           fullName: formData.fullName.trim(),
           email: formData.email.toLowerCase().trim(),
@@ -191,10 +215,72 @@ export default function RegisterPage() {
     }
   };
 
+  const checkAvailability = async (email: string, phoneNumber: string) => {
+    setIsCheckingAvailability(true);
+    setSubmitError('');
+
+    try {
+      const response = await fetch('/api/auth/check-availability', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: email.toLowerCase().trim(),
+          phoneNumber: phoneNumber.trim(),
+        }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        if (result.errors && result.errors.length > 0) {
+          setSubmitError(result.errors.join(' '));
+        } else {
+          setSubmitError(result.error || 'Gagal memeriksa ketersediaan data');
+        }
+        return false;
+      }
+
+      return true;
+    } catch (error) {
+      console.error('Availability check error:', error);
+      setSubmitError('Gagal memeriksa ketersediaan data. Silakan coba lagi.');
+      return false;
+    } finally {
+      setIsCheckingAvailability(false);
+    }
+  };
+
   const handleNextStep = async () => {
     setSubmitError('');
-    if (currentStep === 1 && isValid) {
-      setCurrentStep(2);
+
+    if (currentStep === 1) {
+      // Mark that user has attempted to submit (to show errors)
+      setHasAttemptedSubmit(true);
+
+      // Trigger validation for step 1 fields
+      const fieldsToValidate: any = [
+        'fullName', 'dateOfBirth', 'email', 'phoneNumber',
+        'occupation', 'address', 'village', 'city',
+        'province', 'postalCode', 'password', 'confirmPassword',
+        'agreeToTerms', 'agreeToPrivacy'
+      ];
+
+      const isFormValid = await trigger(fieldsToValidate);
+
+      if (!isFormValid) {
+        return; // Stop here, errors will show above button
+      }
+
+      // Check email and phone availability before proceeding
+      const formValues = watch();
+      const isAvailable = await checkAvailability(formValues.email, formValues.phoneNumber);
+
+      if (isAvailable) {
+        setCurrentStep(2);
+      }
+      // If not available, error message is already set by checkAvailability
     } else if (currentStep === 2 && ktpImageUrl) {
       setCurrentStep(3);
     } else if (currentStep === 3 && faceImageUrl) {
@@ -211,6 +297,7 @@ export default function RegisterPage() {
 
   const handlePrevStep = () => {
     setSubmitError('');
+    setHasAttemptedSubmit(false); // Reset error display when going back
     if (currentStep > 1) {
       setCurrentStep(currentStep - 1);
     }
@@ -284,7 +371,7 @@ export default function RegisterPage() {
   };
 
   return (
-    <div 
+    <div
       className="min-h-screen bg-cover bg-center bg-no-repeat font-[family-name:var(--font-poppins)]"
       style={{
         backgroundImage: 'url(/landing/hero-bg.png)',
@@ -292,7 +379,7 @@ export default function RegisterPage() {
     >
       {/* Background overlay */}
       <div className="absolute inset-0 bg-black/20"></div>
-      
+
       <LandingHeader />
       <div className="container max-w-6xl mx-auto px-4 py-12 relative z-10">
         {/* Header */}
@@ -314,13 +401,12 @@ export default function RegisterPage() {
               { step: 5, label: 'Selesai', active: currentStep >= 5, completed: false }
             ].map((item, index) => (
               <div key={item.step} className="flex items-center">
-                <div className={`relative w-10 h-10 rounded-full flex items-center justify-center text-sm font-medium ${
-                  item.completed
-                    ? 'bg-[#324D3E] text-white'
-                    : item.active
+                <div className={`relative w-10 h-10 rounded-full flex items-center justify-center text-sm font-medium ${item.completed
+                  ? 'bg-[#324D3E] text-white'
+                  : item.active
                     ? 'bg-[#324D3E] text-white'
                     : 'bg-gray-300 text-gray-600'
-                }`}>
+                  }`}>
                   {item.completed ? (
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
@@ -330,9 +416,8 @@ export default function RegisterPage() {
                   )}
                 </div>
                 {index < 4 && (
-                  <div className={`w-16 h-1 mx-2 ${
-                    item.completed || (item.active && currentStep > item.step) ? 'bg-[#324D3E]' : 'bg-gray-300'
-                  }`} />
+                  <div className={`w-16 h-1 mx-2 ${item.completed || (item.active && currentStep > item.step) ? 'bg-[#324D3E]' : 'bg-gray-300'
+                    }`} />
                 )}
               </div>
             ))}
@@ -346,9 +431,8 @@ export default function RegisterPage() {
               { label: 'Selesai', step: 5 }
             ].map((item, index) => (
               <div key={index} className="text-center">
-                <p className={`text-xs font-medium ${
-                  currentStep === item.step ? 'text-white' : currentStep > item.step ? 'text-white/80' : 'text-white/60'
-                }`}>
+                <p className={`text-xs font-medium ${currentStep === item.step ? 'text-white' : currentStep > item.step ? 'text-white/80' : 'text-white/60'
+                  }`}>
                   {item.label}
                 </p>
               </div>
@@ -369,7 +453,7 @@ export default function RegisterPage() {
             <p className="text-gray-600 mt-2">
               {currentStep === 1 && 'Isi data diri Anda dengan lengkap dan benar'}
               {currentStep === 2 && 'Upload foto KTP Anda yang jelas dan terbaca'}
-              {currentStep === 3 && 'Upload foto selfie Anda untuk verifikasi'}
+              {currentStep === 3 && 'Ambil foto selfie Anda menggunakan kamera untuk verifikasi'}
               {currentStep === 4 && 'Lakukan pembayaran untuk menyelesaikan pendaftaran'}
               {currentStep === 5 && 'Periksa kembali data Anda dan selesaikan pendaftaran'}
             </p>
@@ -381,189 +465,219 @@ export default function RegisterPage() {
               {currentStep === 1 && (
                 <>
                   {/* Personal Information */}
-              <div>
-                <h3 className="text-lg font-semibold text-gray-800 mb-4 border-b border-gray-200 pb-2">
-                  Informasi Pribadi
-                </h3>
-                <div className="space-y-6">
-                  <FormRow cols={2}>
-                    <ValidationInput
-                      label="Nama Lengkap"
-                      {...register('fullName')}
-                      placeholder="Masukkan nama lengkap Anda"
-                      required
-                      autoComplete="name"
-                      showValidation={false}
-                    />
-                    <ValidationInput
-                      label="Tanggal Lahir"
-                      type="date"
-                      {...register('dateOfBirth')}
-                      required
-                      showValidation={false}
-                    />
-                  </FormRow>
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-800 mb-4 border-b border-gray-200 pb-2">
+                      Informasi Pribadi
+                    </h3>
+                    <div className="space-y-6">
+                      <FormRow cols={2}>
+                        <ValidationInput
+                          label="Nama Lengkap"
+                          {...register('fullName')}
+                          placeholder="Masukkan nama lengkap Anda"
+                          required
+                          autoComplete="name"
+                          error={errors.fullName?.message}
+                          showValidation={false}
+                        />
+                        <ValidationInput
+                          label="Tanggal Lahir"
+                          type="date"
+                          {...register('dateOfBirth')}
+                          required
+                          error={errors.dateOfBirth?.message}
+                          showValidation={false}
+                        />
+                      </FormRow>
 
-                  <FormRow cols={2}>
-                    <ValidationInput
-                      label="Alamat Email"
-                      type="email"
-                      {...register('email')}
-                      placeholder="nama@email.com"
-                      required
-                      autoComplete="email"
-                      showValidation={false}
-                    />
-                    <ValidationInput
-                      label="Nomor Telepon"
-                      type="tel"
-                      {...register('phoneNumber')}
-                      placeholder="08123456789"
-                      required
-                      autoComplete="tel"
-                      showValidation={false}
-                    />
-                  </FormRow>
+                      <FormRow cols={2}>
+                        <ValidationInput
+                          label="Alamat Email"
+                          type="email"
+                          {...register('email')}
+                          placeholder="nama@email.com"
+                          required
+                          autoComplete="email"
+                          error={errors.email?.message}
+                          showValidation={false}
+                        />
+                        <ValidationInput
+                          label="Nomor Telepon"
+                          type="tel"
+                          {...register('phoneNumber')}
+                          placeholder="08123456789"
+                          required
+                          autoComplete="tel"
+                          error={errors.phoneNumber?.message}
+                          showValidation={false}
+                        />
+                      </FormRow>
 
-                  <FormRow cols={2}>
-                    <Select
-                      label="Pekerjaan"
-                      {...register('occupation')}
-                      options={occupationOptions}
-                      required
-                    />
-                    <div className="form-group">
-                      <label className="form-label text-gray-800 font-medium">
-                        Kode Pekerjaan
-                      </label>
-                      <input
-                        type="text"
-                        value={getOccupationCode(watchedValues.occupation)}
-                        className="form-input bg-gray-100 text-gray-600 cursor-not-allowed"
-                        placeholder="Kode otomatis"
-                        disabled
-                        readOnly
-                      />
-                      <p className="text-xs text-gray-500 mt-1">Kode akan muncul setelah memilih pekerjaan</p>
+                      <FormRow cols={2}>
+                        <div>
+                          <Select
+                            label="Pekerjaan"
+                            {...register('occupation')}
+                            options={occupationOptions}
+                            required
+                          />
+                          {errors.occupation && (
+                            <p className="mt-1 text-sm text-red-600">{errors.occupation.message}</p>
+                          )}
+                        </div>
+                        <div className="form-group">
+                          <label className="form-label text-gray-800 font-medium">
+                            Kode Pekerjaan
+                          </label>
+                          <input
+                            type="text"
+                            value={getOccupationCode(watchedValues.occupation)}
+                            className="form-input bg-gray-100 text-gray-600 cursor-not-allowed"
+                            placeholder="Kode otomatis"
+                            disabled
+                            readOnly
+                          />
+                          <p className="text-xs text-gray-500 mt-1">Kode akan muncul setelah memilih pekerjaan</p>
+                        </div>
+                      </FormRow>
                     </div>
-                  </FormRow>
-                </div>
-              </div>
+                  </div>
 
-              {/* Address Information */}
-              <div>
-                <h3 className="text-lg font-semibold text-gray-800 mb-4 border-b border-gray-200 pb-2">
-                  Informasi Alamat
-                </h3>
-                <div className="space-y-6">
-                  <FormField>
-                    <ValidationInput
-                      label="Alamat Lengkap"
-                      {...register('address')}
-                      placeholder="Jalan, RT/RW, Nomor Rumah"
-                      required
-                      showValidation={false}
-                    />
-                  </FormField>
+                  {/* Address Information */}
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-800 mb-4 border-b border-gray-200 pb-2">
+                      Informasi Alamat
+                    </h3>
+                    <div className="space-y-6">
+                      <FormField>
+                        <ValidationInput
+                          label="Alamat Lengkap"
+                          {...register('address')}
+                          placeholder="Jalan, RT/RW, Nomor Rumah"
+                          required
+                          error={errors.address?.message}
+                          showValidation={false}
+                        />
+                      </FormField>
 
-                  <FormRow cols={2}>
-                    <ValidationInput
-                      label="Desa/Kelurahan"
-                      {...register('village')}
-                      placeholder="Nama desa/kelurahan"
-                      required
-                      showValidation={false}
-                    />
-                    <ValidationInput
-                      label="Kota/Kabupaten"
-                      {...register('city')}
-                      placeholder="Nama kota/kabupaten"
-                      required
-                      showValidation={false}
-                    />
-                  </FormRow>
+                      <FormRow cols={2}>
+                        <ValidationInput
+                          label="Desa/Kelurahan"
+                          {...register('village')}
+                          placeholder="Nama desa/kelurahan"
+                          required
+                          error={errors.village?.message}
+                          showValidation={false}
+                        />
+                        <ValidationInput
+                          label="Kota/Kabupaten"
+                          {...register('city')}
+                          placeholder="Nama kota/kabupaten"
+                          required
+                          error={errors.city?.message}
+                          showValidation={false}
+                        />
+                      </FormRow>
 
-                  <FormRow cols={2}>
-                    <Select
-                      label="Provinsi"
-                      {...register('province')}
-                      options={provinceOptions}
-                      required
-                    />
-                    <ValidationInput
-                      label="Kode Pos"
-                      {...register('postalCode')}
-                      placeholder="12345"
-                      required
-                      showValidation={false}
-                    />
-                  </FormRow>
-                </div>
-              </div>
+                      <FormRow cols={2}>
+                        <div>
+                          <Select
+                            label="Provinsi"
+                            {...register('province')}
+                            options={provinceOptions}
+                            required
+                          />
+                          {errors.province && (
+                            <p className="mt-1 text-sm text-red-600">{errors.province.message}</p>
+                          )}
+                        </div>
+                        <ValidationInput
+                          label="Kode Pos"
+                          {...register('postalCode')}
+                          placeholder="12345"
+                          required
+                          error={errors.postalCode?.message}
+                          showValidation={false}
+                        />
+                      </FormRow>
+                    </div>
+                  </div>
 
-              {/* Account Security */}
-              <div>
-                <h3 className="text-lg font-semibold text-gray-800 mb-4 border-b border-gray-200 pb-2">
-                  Keamanan Akun
-                </h3>
-                <div className="space-y-6">
-                  <FormRow cols={2}>
-                    <ValidationInput
-                      label="Password"
-                      type="password"
-                      {...register('password')}
-                      placeholder="Buat password yang kuat"
-                      required
-                      autoComplete="new-password"
-                      showValidation={true}
-                    />
-                    <ValidationInput
-                      label="Konfirmasi Password"
-                      type="password"
-                      {...register('confirmPassword')}
-                      placeholder="Ulangi password Anda"
-                      required
-                      autoComplete="new-password"
-                      showValidation={true}
-                    />
-                  </FormRow>
-                </div>
-              </div>
+                  {/* Account Security */}
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-800 mb-4 border-b border-gray-200 pb-2">
+                      Keamanan Akun
+                    </h3>
+                    <div className="space-y-6">
+                      <FormRow cols={2}>
+                        <ValidationInput
+                          label="Password"
+                          type="password"
+                          {...register('password')}
+                          placeholder="Buat password yang kuat"
+                          required
+                          autoComplete="new-password"
+                          error={errors.password?.message}
+                          showValidation={false}
+                        />
+                        <ValidationInput
+                          label="Konfirmasi Password"
+                          type="password"
+                          {...register('confirmPassword')}
+                          placeholder="Ulangi password Anda"
+                          required
+                          autoComplete="new-password"
+                          error={errors.confirmPassword?.message}
+                          showValidation={false}
+                        />
+                      </FormRow>
+                    </div>
+                  </div>
 
-              {/* Terms and Conditions */}
-              <div className="space-y-4 pt-6 border-t border-gray-200">
-                <label className="flex items-start gap-3 cursor-pointer group">
-                  <input
-                    type="checkbox"
-                    {...register('agreeToTerms')}
-                    className="w-5 h-5 text-[#324D3E] border-2 border-gray-300 rounded focus:ring-[#324D3E] focus:ring-2 mt-0.5"
-                    required
-                  />
-                  <span className="text-sm text-gray-700 group-hover:text-gray-900">
-                    Saya menyetujui{' '}
-                    <Link href="/terms" className="text-[#324D3E] hover:text-[#4C3D19] hover:underline font-medium">
-                      Syarat dan Ketentuan
-                    </Link>
-                    {' '}yang berlaku
-                  </span>
-                </label>
+                  {/* Terms and Conditions */}
+                  <div className="space-y-4 pt-6 border-t border-gray-200">
+                    <div>
+                      <label className="flex items-start gap-3 cursor-pointer group">
+                        <input
+                          type="checkbox"
+                          {...register('agreeToTerms')}
+                          className="w-5 h-5 text-[#324D3E] border-2 border-gray-300 rounded focus:ring-[#324D3E] focus:ring-2 mt-0.5"
+                          required
+                        />
+                        <span className="text-sm text-gray-700 group-hover:text-gray-900">
+                          Saya menyetujui{' '}
+                          <Link href="/terms" className="text-[#324D3E] hover:text-[#4C3D19] hover:underline font-medium">
+                            Syarat dan Ketentuan
+                          </Link>
+                          {' '}yang berlaku
+                        </span>
+                      </label>
+                      {errors.agreeToTerms && (
+                        <p className="mt-1 text-sm text-red-600">{errors.agreeToTerms.message}</p>
+                      )}
+                    </div>
 
-                <label className="flex items-start gap-3 cursor-pointer group">
-                  <input
-                    type="checkbox"
-                    {...register('agreeToPrivacy')}
-                    className="w-5 h-5 text-[#324D3E] border-2 border-gray-300 rounded focus:ring-[#324D3E] focus:ring-2 mt-0.5"
-                    required
-                  />
-                  <span className="text-sm text-gray-700 group-hover:text-gray-900">
-                    Saya menyetujui{' '}
-                    <Link href="/privacy" className="text-[#324D3E] hover:text-[#4C3D19] hover:underline font-medium">
-                      Kebijakan Privasi
-                    </Link>
-                    {' '}yang berlaku
-                  </span>
-                </label>
-              </div>
+                    <div>
+                      <label className="flex items-start gap-3 cursor-pointer group">
+                        <input
+                          type="checkbox"
+                          {...register('agreeToPrivacy')}
+                          className="w-5 h-5 text-[#324D3E] border-2 border-gray-300 rounded focus:ring-[#324D3E] focus:ring-2 mt-0.5"
+                          required
+                        />
+                        <span className="text-sm text-gray-700 group-hover:text-gray-900">
+                          Saya menyetujui{' '}
+                          <Link href="/privacy" className="text-[#324D3E] hover:text-[#4C3D19] hover:underline font-medium">
+                            Kebijakan Privasi
+                          </Link>
+                          {' '}yang berlaku
+                        </span>
+                      </label>
+                      {errors.agreeToPrivacy && (
+                        <p className="mt-1 text-sm text-red-600">{errors.agreeToPrivacy.message}</p>
+                      )}
+                    </div>
+                  </div>
                 </>
               )}
 
@@ -643,73 +757,11 @@ export default function RegisterPage() {
               {/* Step 3: Face Upload */}
               {currentStep === 3 && (
                 <div className="space-y-6">
-                  {/* <div className="text-center">
-                    <div className="w-24 h-24 mx-auto mb-4 bg-blue-100 rounded-full flex items-center justify-center">
-                      <svg className="w-12 h-12 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                      </svg>
-                    </div>
-                    <h3 className="text-lg font-semibold text-gray-800 mb-2">Verifikasi Wajah</h3>
-                    <p className="text-gray-600 mb-6">Upload foto selfie Anda dengan pencahayaan yang baik dan wajah terlihat jelas</p>
-                  </div> */}
-
-                  <div className="max-w-md mx-auto">
-                    {faceImageUrl ? (
-                      <div className="text-center space-y-4">
-                        <img
-                          src={faceImageUrl}
-                          alt="Face Preview"
-                          className="w-48 h-48 mx-auto rounded-full border border-gray-300 shadow-sm object-cover"
-                        />
-                        <div className="flex items-center justify-center text-green-600 space-x-2">
-                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                          </svg>
-                          <span className="text-sm font-medium">Foto berhasil diupload</span>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setFaceImage(null);
-                            setFaceImageUrl('');
-                          }}
-                          className="px-6 py-2 border-2 border-[#324D3E] text-[#324D3E] rounded-full font-semibold hover:bg-[#324D3E] hover:text-white transition-all duration-300 font-[family-name:var(--font-poppins)]"
-                        >
-                          Ganti Foto
-                        </button>
-                      </div>
-                    ) : (
-                      <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-blue-500 transition-colors">
-                        <input
-                          type="file"
-                          accept="image/*"
-                          onChange={handleFaceUpload}
-                          className="hidden"
-                          id="face-upload"
-                          disabled={uploadingFace}
-                        />
-                        <label htmlFor="face-upload" className="cursor-pointer">
-                          <div className="space-y-4">
-                            <div className="w-16 h-16 mx-auto bg-gray-100 rounded-full flex items-center justify-center">
-                              {uploadingFace ? (
-                                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-                              ) : (
-                                <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                                </svg>
-                              )}
-                            </div>
-                            <div>
-                              <p className="text-gray-600 font-medium">
-                                {uploadingFace ? 'Mengupload...' : 'Klik untuk upload foto wajah'}
-                              </p>
-                              <p className="text-sm text-gray-500">PNG, JPG hingga 5MB</p>
-                            </div>
-                          </div>
-                        </label>
-                      </div>
-                    )}
-                  </div>
+                  <CameraSelfie
+                    ref={cameraSelfieRef}
+                    onCapture={handleCameraCapture}
+                    isLoading={uploadingFace}
+                  />
                 </div>
               )}
 
@@ -751,7 +803,17 @@ export default function RegisterPage() {
 
                           <button
                             type="button"
-                            onClick={() => window.open(paymentUrl, '_blank')}
+                            onClick={() => {
+                              // Stop camera before opening payment
+                              cameraSelfieRef.current?.stopCamera();
+
+                              // Store email for post-payment success page
+                              const formValues = watch();
+                              console.log('Storing email in localStorage before payment:', formValues.email);
+                              localStorage.setItem('registrationEmail', formValues.email);
+
+                              window.open(paymentUrl, '_blank');
+                            }}
                             className="w-full bg-gradient-to-r from-[#364D32] to-[#889063] text-white px-8 py-3 rounded-full font-semibold hover:from-[#889063] hover:to-[#364D32] transition-all duration-300 shadow-lg font-[family-name:var(--font-poppins)]"
                           >
                             Bayar Sekarang
@@ -836,14 +898,38 @@ export default function RegisterPage() {
                 </div>
               )}
 
-              {/* Submit Error */}
-              {submitError && (
+              {/* Submit Error and Validation Errors */}
+              {(submitError || (hasAttemptedSubmit && Object.keys(errors).length > 0)) && (
                 <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
-                  <div className="flex items-center gap-2">
-                    <svg className="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    <p className="text-sm text-red-700 font-medium">{submitError}</p>
+                  <div className="space-y-2">
+                    {/* API/Submit Error */}
+                    {submitError && (
+                      <div className="flex items-center gap-2">
+                        <svg className="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <p className="text-sm text-red-700 font-medium">{submitError}</p>
+                      </div>
+                    )}
+
+                    {/* Validation Errors */}
+                    {hasAttemptedSubmit && Object.keys(errors).length > 0 && (
+                      <div>
+                        <div className="flex items-center gap-2 mb-2">
+                          <svg className="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                          <p className="text-sm text-red-700 font-medium">Mohon perbaiki kesalahan berikut:</p>
+                        </div>
+                        <ul className="list-disc list-inside space-y-1 ml-7">
+                          {Object.entries(errors).map(([field, error]) => (
+                            <li key={field} className="text-sm text-red-700">
+                              {error?.message || String(error)}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
@@ -864,20 +950,24 @@ export default function RegisterPage() {
                   <button
                     type="submit"
                     disabled={
-                      (currentStep === 1 && !isValid) ||
+                      (currentStep === 1 && isCheckingAvailability) ||
                       (currentStep === 2 && !ktpImageUrl) ||
                       (currentStep === 3 && !faceImageUrl) ||
                       (currentStep === 4 && (!paymentUrl || isProcessingPayment)) ||
                       uploadingKtp ||
                       uploadingFace ||
                       isProcessingPayment ||
+                      isCheckingAvailability ||
                       isLoading
                     }
                     className={`${currentStep === 1 ? 'w-full' : 'flex-1'} py-3 text-base font-semibold bg-gradient-to-r from-[#364D32] to-[#889063] text-white rounded-full hover:from-[#889063] hover:to-[#364D32] transition-all duration-300 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed font-[family-name:var(--font-poppins)]`}
                   >
                     {isLoading ? 'Sedang mendaftar...' :
-                     isProcessingPayment ? 'Membuat Pembayaran...' :
-                     currentStep === 5 ? 'Daftar Sekarang' : 'Lanjutkan'}
+                      isProcessingPayment ? 'Membuat Pembayaran...' :
+                        isCheckingAvailability ? 'Memeriksa ketersediaan...' :
+                          uploadingFace ? 'Mengupload foto...' :
+                            uploadingKtp ? 'Mengupload KTP...' :
+                              currentStep === 5 ? 'Daftar Sekarang' : 'Lanjutkan'}
                   </button>
                 </div>
               </FormActions>

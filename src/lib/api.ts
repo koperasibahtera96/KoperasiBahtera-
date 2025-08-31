@@ -5,6 +5,7 @@ export interface PlantInstance {
   plantType: string
   name: string
   baseAnnualROI: number
+  instanceName: string
   investors: Array<{
     memberId: string
     name: string

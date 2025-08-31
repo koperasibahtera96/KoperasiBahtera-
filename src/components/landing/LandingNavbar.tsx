@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-const navVariants = {
+const navVariants: any = {
   hidden: { 
     y: -100,
     opacity: 0
@@ -25,7 +25,7 @@ const navVariants = {
   }
 };
 
-const itemVariants = {
+const itemVariants: any = {
   hidden: { 
     y: -20,
     opacity: 0
@@ -41,7 +41,7 @@ const itemVariants = {
   }
 };
 
-const logoVariants = {
+const logoVariants: any = {
   hidden: { 
     scale: 0,
     rotate: -180
@@ -58,7 +58,11 @@ const logoVariants = {
   }
 };
 
-export default function LandingNavbar() {
+interface LandingNavbarProps {
+  hideNavigation?: boolean;
+}
+
+export default function LandingNavbar({ hideNavigation = false }: LandingNavbarProps) {
   const [isScrolled, setIsScrolled] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const { data: session, status } = useSession();
@@ -121,13 +125,14 @@ export default function LandingNavbar() {
             />
           </motion.div>
 
-          {/* Navigation - Hide when scrolled */}
-          <motion.div 
-            className={`hidden md:flex items-center space-x-8 transition-all duration-300 ${
-              isScrolled ? 'opacity-0 pointer-events-none' : 'opacity-100'
-            }`}
-            variants={navVariants}
-          >
+          {/* Navigation - Hide when scrolled or when hideNavigation prop is true */}
+          {!hideNavigation && (
+            <motion.div 
+              className={`hidden md:flex items-center space-x-8 transition-all duration-300 ${
+                isScrolled ? 'opacity-0 pointer-events-none' : 'opacity-100'
+              }`}
+              variants={navVariants}
+            >
             {['Beranda', 'Investasi', 'Tentang Kami', 'Produk', 'FAQ'].map((item, index) => (
               <motion.a 
                 key={item}
@@ -145,7 +150,8 @@ export default function LandingNavbar() {
                 {item}
               </motion.a>
             ))}
-          </motion.div>
+            </motion.div>
+          )}
 
           {/* Auth Buttons / User Menu */}
           <motion.div 
@@ -170,18 +176,46 @@ export default function LandingNavbar() {
                 className="flex items-center space-x-3"
                 variants={itemVariants}
               >
-                {/* Cicilan Saya Button */}
-                <motion.div
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                >
-                  <Link
-                    href="/cicilan"
-                    className="px-3 lg:px-6 py-1 text-gray-700 transition-all duration-300 font-medium rounded-full border border-[#324D3E] hover:border-[#4C3D19] hover:bg-[#4C3D19] hover:text-white text-sm lg:text-base"
+                {/* Show buttons only if user can purchase and navigation is not hidden */}
+                {!hideNavigation && session.user.canPurchase ? (
+                  <>
+                    {/* Investasi Saya Button */}
+                    <motion.div
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                    >
+                      <Link
+                        href="/investasi"
+                        className="px-3 lg:px-6 py-1 text-gray-700 transition-all duration-300 font-medium rounded-full border border-[#324D3E] hover:border-[#4C3D19] hover:bg-[#4C3D19] hover:text-white text-sm lg:text-base"
+                      >
+                        Investasi Saya
+                      </Link>
+                    </motion.div>
+
+                    {/* Cicilan Saya Button */}
+                    <motion.div
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                    >
+                      <Link
+                        href="/cicilan"
+                        className="px-3 lg:px-6 py-1 text-gray-700 transition-all duration-300 font-medium rounded-full border border-[#324D3E] hover:border-[#4C3D19] hover:bg-[#4C3D19] hover:text-white text-sm lg:text-base"
+                      >
+                        Cicilan Saya
+                      </Link>
+                    </motion.div>
+                  </>
+                ) : !hideNavigation ? (
+                  /* Verification Status Badge */
+                  <motion.div
+                    className="px-3 lg:px-4 py-1 bg-yellow-50 border border-yellow-200 rounded-full text-xs lg:text-sm font-medium text-yellow-700"
+                    whileHover={{ scale: 1.05 }}
                   >
-                    Cicilan Saya
-                  </Link>
-                </motion.div>
+                    {session.user.verificationStatus === 'pending' ? '⏳ Menunggu Verifikasi' : 
+                     session.user.verificationStatus === 'rejected' ? '❌ Verifikasi Ditolak' : 
+                     '⏳ Belum Diverifikasi'}
+                  </motion.div>
+                ) : null}
 
                 {/* User Avatar with Dropdown */}
                 <div className="relative user-menu">
@@ -261,7 +295,7 @@ export default function LandingNavbar() {
                   </AnimatePresence>
                 </div>
               </motion.div>
-            ) : (
+            ) : !hideNavigation ? (
               <motion.div
                 className="flex items-center space-x-2 lg:space-x-4"
                 variants={itemVariants}
@@ -294,7 +328,7 @@ export default function LandingNavbar() {
                   </Link>
                 </motion.div>
               </motion.div>
-            )}
+            ) : null}
           </motion.div>
 
           {/* Mobile menu button */}

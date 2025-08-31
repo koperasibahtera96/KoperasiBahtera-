@@ -68,11 +68,20 @@ export async function POST(request: NextRequest) {
     console.log(body, 'post admin investors');
 
     // Validate required fields
-    const { name, email, totalInvestasi = 0, jumlahPohon = 0, status = 'active' } = body;
+    const { userId, name, email, totalInvestasi = 0, jumlahPohon = 0, status = 'active' } = body;
 
-    if (!name || !email) {
+    if (!name || !email || !userId) {
       return NextResponse.json(
-        { success: false, error: 'Name and email are required' },
+        { success: false, error: 'Name, email, and userId are required' },
+        { status: 400 }
+      );
+    }
+
+    // Validate userId is not already used
+    const existingInvestorWithUserId = await Investor.findOne({ userId });
+    if (existingInvestorWithUserId) {
+      return NextResponse.json(
+        { success: false, error: 'User is already an investor' },
         { status: 400 }
       );
     }
@@ -88,6 +97,7 @@ export async function POST(request: NextRequest) {
 
     // Create new investor
     const newInvestor = new Investor({
+      userId,
       name,
       email,
       totalInvestasi,

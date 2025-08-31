@@ -28,6 +28,21 @@ export default withAuth(
       }
     }
 
+    // === USER VERIFICATION CHECK ===
+    // Routes that require user verification
+    const verificationRequiredRoutes = ["/investasi", "/cicilan", "/semua-investasi", "/tanaman"];
+    
+    if (verificationRequiredRoutes.some(route => pathname.startsWith(route))) {
+      if (!token) {
+        return NextResponse.redirect(new URL("/login", req.url));
+      }
+      
+      // Check if user role is 'user' and not verified
+      if (token.role === 'user' && !token.canPurchase) {
+        return NextResponse.redirect(new URL("/verification-pending", req.url));
+      }
+    }
+
     return NextResponse.next();
   },
   {
@@ -56,5 +71,5 @@ export default withAuth(
 // Middleware cukup dipasang untuk rute yang memang mau diproteksi.
 // (jangan tambahkan /checker ke matcher)
 export const config = {
-  matcher: ["/staff/:path*", "/admin/:path*", "/finance/:path*"],
+  matcher: ["/staff/:path*", "/admin/:path*", "/finance/:path*", "/investasi/:path*", "/cicilan/:path*", "/semua-investasi/:path*", "/tanaman/:path*"],
 };

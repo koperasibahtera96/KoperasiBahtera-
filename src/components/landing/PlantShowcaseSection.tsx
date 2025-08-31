@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { useAlert } from '@/components/ui/Alert';
 import { CicilanModal } from './CicilanModal';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useInView } from 'framer-motion';
 
 const plants = [
@@ -241,7 +241,7 @@ const plants = [
 ];
 
 // Animation variants
-const containerVariants = {
+const containerVariants: any = {
   hidden: { opacity: 0 },
   visible: {
     opacity: 1,
@@ -252,14 +252,14 @@ const containerVariants = {
   }
 };
 
-const slideInFromLeft = {
-  hidden: { 
-    opacity: 0, 
+const slideInFromLeft: any = {
+  hidden: {
+    opacity: 0,
     x: -100,
     scale: 0.8
   },
-  visible: { 
-    opacity: 1, 
+  visible: {
+    opacity: 1,
     x: 0,
     scale: 1,
     transition: {
@@ -271,14 +271,14 @@ const slideInFromLeft = {
   }
 };
 
-const slideInFromRight = {
-  hidden: { 
-    opacity: 0, 
+const slideInFromRight: any = {
+  hidden: {
+    opacity: 0,
     x: 100,
     scale: 0.8
   },
-  visible: { 
-    opacity: 1, 
+  visible: {
+    opacity: 1,
     x: 0,
     scale: 1,
     transition: {
@@ -290,14 +290,14 @@ const slideInFromRight = {
   }
 };
 
-const fadeInUp = {
-  hidden: { 
-    opacity: 0, 
+const fadeInUp: any = {
+  hidden: {
+    opacity: 0,
     y: 60,
     scale: 0.9
   },
-  visible: { 
-    opacity: 1, 
+  visible: {
+    opacity: 1,
     y: 0,
     scale: 1,
     transition: {
@@ -309,14 +309,14 @@ const fadeInUp = {
   }
 };
 
-const scaleIn = {
-  hidden: { 
-    opacity: 0, 
+const scaleIn: any = {
+  hidden: {
+    opacity: 0,
     scale: 0.5,
     rotate: -10
   },
-  visible: { 
-    opacity: 1, 
+  visible: {
+    opacity: 1,
     scale: 1,
     rotate: 0,
     transition: {
@@ -328,7 +328,7 @@ const scaleIn = {
   }
 };
 
-const floatingAnimation = {
+const floatingAnimation: any = {
   animate: {
     y: [-10, 10, -10],
     transition: {
@@ -347,25 +347,62 @@ export default function PlantShowcaseSection() {
     isOpen: false,
     plant: null
   });
+  const [treeSelectionModal, setTreeSelectionModal] = useState<{ isOpen: boolean; plant: any; selectedTreeCount: number | null }>({
+    isOpen: false,
+    plant: null,
+    selectedTreeCount: null
+  });
   const { showSuccess, showError, AlertComponent } = useAlert();
 
-  const handleInvestment = async (plant: any) => {
+  const handleInvestment = (plant: any) => {
     if (!session) {
       router.push('/login');
       return;
     }
 
+    // Open tree selection modal instead of direct payment
+    setTreeSelectionModal({
+      isOpen: true,
+      plant: plant,
+      selectedTreeCount: null
+    });
+  };
+
+  const handleTreeCountSelect = (treeCount: number) => {
+    setTreeSelectionModal(prev => ({
+      ...prev,
+      selectedTreeCount: treeCount
+    }));
+  };
+
+  const handleConfirmTreeSelection = async () => {
+    if (!treeSelectionModal.plant || !treeSelectionModal.selectedTreeCount) return;
+
+    const plant = treeSelectionModal.plant;
+    const treeCount = treeSelectionModal.selectedTreeCount;
+
+    setTreeSelectionModal({ isOpen: false, plant: null, selectedTreeCount: null });
     setIsLoading(plant.name);
 
     try {
+      // Calculate price based on tree count (10 trees = full price, 1 tree = price/10)
+      const adjustedPrice = treeCount === 1 ? Math.round(plant.investmentPlan.price / 10) : plant.investmentPlan.price;
+
+      const adjustedPlan = {
+        ...plant.investmentPlan,
+        name: `${plant.investmentPlan.name} - ${treeCount} Pohon`,
+        price: adjustedPrice,
+        treeCount: treeCount
+      };
+
       const response = await fetch('/api/payment/create-investment', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          plan: plant.investmentPlan,
-          user: session.user,
+          plan: adjustedPlan,
+          user: session!.user,
         }),
       });
 
@@ -400,7 +437,7 @@ export default function PlantShowcaseSection() {
     setCicilanModal({ isOpen: true, plant: plant.investmentPlan });
   };
   return (
-    <motion.section 
+    <motion.section
       className="bg-[#4A5C57]"
       initial="hidden"
       animate="visible"
@@ -422,11 +459,11 @@ export default function PlantShowcaseSection() {
           >
             {/* Inner content container - 75% of width and height */}
             <div className={`min-h-screen flex items-center justify-center px-4 sm:px-6 lg:px-8 ${index === 0 ? 'pt-8 sm:pt-12 lg:pt-16' : 'py-8 sm:py-12 lg:py-16'}`}>
-              <motion.div 
-                className="bg-[#FFFCE3] rounded-3xl p-4 sm:p-6 lg:p-8 relative overflow-hidden shadow-lg w-full max-w-7xl lg:max-w-none xl:max-w-7xl" 
+              <motion.div
+                className="bg-[#FFFCE3] rounded-3xl p-4 sm:p-6 lg:p-8 relative overflow-hidden shadow-lg w-full max-w-7xl lg:max-w-none xl:max-w-7xl"
                 style={{ minHeight: '70vh', width: '95%' }}
                 variants={scaleIn}
-                whileHover={{ 
+                whileHover={{
                   scale: 1.02,
                   boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.25)",
                   transition: { duration: 0.3 }
@@ -434,26 +471,26 @@ export default function PlantShowcaseSection() {
               >
                 <div className="h-full flex flex-col">
                   {/* Main Content Area */}
-                  <motion.div 
+                  <motion.div
                     className="flex-1 w-full grid grid-cols-1 md:grid-cols-2 xl:grid-cols-[500px_1fr_350px] gap-4 sm:gap-6 lg:gap-8 items-center"
                     variants={containerVariants}
                   >
                     {/* Left Section - Plant Info */}
-                    <motion.div 
+                    <motion.div
                       className="space-y-6"
                       variants={slideInFromLeft}
                     >
                       {/* Plant Title */}
-                      <motion.div 
+                      <motion.div
                         className="bg-[#324D3E] rounded-r-2xl w-max px-4 sm:px-6 lg:px-8 py-3 lg:py-4 text-white -ml-4 sm:-ml-6 lg:-ml-8"
-                        whileHover={{ 
+                        whileHover={{
                           scale: 1.05,
                           x: 10,
                           transition: { duration: 0.3 }
                         }}
                         whileTap={{ scale: 0.95 }}
                       >
-                        <motion.h3 
+                        <motion.h3
                           className="text-2xl sm:text-3xl lg:text-4xl xl:text-5xl font-bold font-[family-name:var(--font-poppins)] capitalize"
                           initial={{ opacity: 0, y: 20 }}
                           animate={{ opacity: 1, y: 0 }}
@@ -464,25 +501,25 @@ export default function PlantShowcaseSection() {
                       </motion.div>
 
                       {/* Plant Details - Outside/below the title box */}
-                      <motion.div 
+                      <motion.div
                         className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 lg:gap-4 text-xs sm:text-sm font-medium text-gray-700 pl-2"
                         variants={fadeInUp}
                       >
-                        <motion.span 
+                        <motion.span
                           className="text-gray-700"
                           whileHover={{ scale: 1.1, color: "#324D3E" }}
                         >
                           {plant.nameEn}
                         </motion.span>
                         <div className="hidden sm:block w-px h-3 sm:h-4 bg-gray-400"></div>
-                        <motion.span 
+                        <motion.span
                           className="text-gray-700"
                           whileHover={{ scale: 1.1, color: "#324D3E" }}
                         >
                           {plant.years}
                         </motion.span>
                         <div className="hidden sm:block w-px h-3 sm:h-4 bg-gray-400"></div>
-                        <motion.span 
+                        <motion.span
                           className="text-gray-700"
                           whileHover={{ scale: 1.1, color: "#324D3E" }}
                         >
@@ -491,11 +528,11 @@ export default function PlantShowcaseSection() {
                       </motion.div>
 
                       {/* Description */}
-                      <motion.div 
+                      <motion.div
                         className="hidden lg:block"
                         variants={fadeInUp}
                       >
-                        <motion.p 
+                        <motion.p
                           className="text-sm lg:text-base leading-relaxed text-gray-700 font-medium"
                           initial={{ opacity: 0 }}
                           animate={{ opacity: 1 }}
@@ -506,26 +543,26 @@ export default function PlantShowcaseSection() {
                       </motion.div>
 
                       {/* Product Information */}
-                      <motion.div 
+                      <motion.div
                         className="hidden xl:block"
                         variants={fadeInUp}
                       >
-                        <motion.h4 
+                        <motion.h4
                           className="text-base lg:text-lg font-bold text-[#4A5C57] mb-3 font-[family-name:var(--font-poppins)]"
                           whileHover={{ scale: 1.05 }}
                         >
                           Produk Olahan dari {plant.name}:
                         </motion.h4>
-                        <motion.ul 
+                        <motion.ul
                           className="space-y-2 text-xs lg:text-sm"
                           variants={containerVariants}
                         >
                           {plant.productOlahan.map((product, idx) => (
-                            <motion.li 
-                              key={idx} 
+                            <motion.li
+                              key={idx}
                               className="flex items-start"
                               variants={fadeInUp}
-                              whileHover={{ 
+                              whileHover={{
                                 x: 10,
                                 transition: { duration: 0.2 }
                               }}
@@ -542,13 +579,13 @@ export default function PlantShowcaseSection() {
                     </motion.div>
 
                     {/* Center Section - Plant Image */}
-                    <motion.div 
+                    <motion.div
                       className="flex justify-center items-center md:col-span-2 xl:col-span-1 order-first md:order-none"
                       variants={scaleIn}
                     >
                       <motion.div
                         {...floatingAnimation}
-                        whileHover={{ 
+                        whileHover={{
                           scale: 1.1,
                           rotate: 5,
                           transition: { duration: 0.3 }
@@ -566,14 +603,14 @@ export default function PlantShowcaseSection() {
                     </motion.div>
 
                     {/* Right Section - Investment Info */}
-                    <motion.div 
+                    <motion.div
                       className="space-y-3 sm:space-y-4 flex flex-col justify-start md:col-span-2 xl:col-span-1"
                       variants={slideInFromRight}
                     >
                       {/* Investment Simulation Card */}
-                      <motion.div 
+                      <motion.div
                         className="bg-gradient-to-r from-[#324D3E] via-[#507863] via-[#669D7E] to-[#748390] rounded-2xl p-3 sm:p-4 text-white shadow-md relative z-10"
-                        whileHover={{ 
+                        whileHover={{
                           scale: 1.05,
                           y: -5,
                           boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)",
@@ -581,7 +618,7 @@ export default function PlantShowcaseSection() {
                         }}
                         whileTap={{ scale: 0.98 }}
                       >
-                        <motion.h4 
+                        <motion.h4
                           className="text-base sm:text-lg font-bold mb-2 font-[family-name:var(--font-poppins)]"
                           initial={{ opacity: 0, y: 20 }}
                           animate={{ opacity: 1, y: 0 }}
@@ -589,7 +626,7 @@ export default function PlantShowcaseSection() {
                         >
                           Simulasi Cicilan Per 10 Pohon
                         </motion.h4>
-                        <motion.p 
+                        <motion.p
                           className="text-xs sm:text-sm mb-2"
                           initial={{ opacity: 0 }}
                           animate={{ opacity: 1 }}
@@ -597,7 +634,7 @@ export default function PlantShowcaseSection() {
                         >
                           Mulai Dari
                         </motion.p>
-                        <motion.div 
+                        <motion.div
                           className="text-xl sm:text-2xl font-bold mb-3 sm:mb-4"
                           initial={{ opacity: 0, scale: 0.5 }}
                           animate={{ opacity: 1, scale: 1 }}
@@ -609,7 +646,7 @@ export default function PlantShowcaseSection() {
                           className="w-full bg-white text-[#4A5C57] py-2 px-4 rounded-full font-bold text-xs sm:text-sm hover:bg-gray-100 transition-colors disabled:opacity-50"
                           onClick={() => handleInvestment(plant)}
                           disabled={isLoading === plant.name}
-                          whileHover={{ 
+                          whileHover={{
                             scale: 1.05,
                             boxShadow: "0 4px 15px rgba(0, 0, 0, 0.2)"
                           }}
@@ -623,30 +660,30 @@ export default function PlantShowcaseSection() {
                       </motion.div>
 
                       {/* Investment Details */}
-                      <motion.div 
+                      <motion.div
                         className="relative -mt-8 sm:-mt-12"
                         variants={fadeInUp}
                       >
-                        <motion.div 
+                        <motion.div
                           className="bg-white rounded-2xl p-4 shadow-md border relative z-0 pt-8 sm:pt-12"
-                          whileHover={{ 
+                          whileHover={{
                             scale: 1.03,
                             y: -3,
                             boxShadow: "0 10px 25px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)",
                             transition: { duration: 0.3 }
                           }}
                         >
-                          <motion.h5 
+                          <motion.h5
                             className="text-lg font-bold text-[#4A5C57] mb-3 font-[family-name:var(--font-poppins)]"
                             whileHover={{ scale: 1.05 }}
                           >
                             Lainnya
                           </motion.h5>
-                          <motion.div 
+                          <motion.div
                             className="space-y-2 text-sm"
                             variants={containerVariants}
                           >
-                            <motion.div 
+                            <motion.div
                               className="flex justify-between"
                               variants={fadeInUp}
                               whileHover={{ x: 5, transition: { duration: 0.2 } }}
@@ -654,7 +691,7 @@ export default function PlantShowcaseSection() {
                               <span className="text-gray-700">Per Tahun</span>
                               <span className="font-bold text-gray-900">Rp {plant.pricing.yearly}</span>
                             </motion.div>
-                            <motion.div 
+                            <motion.div
                               className="flex justify-between"
                               variants={fadeInUp}
                               whileHover={{ x: 5, transition: { duration: 0.2 } }}
@@ -662,7 +699,7 @@ export default function PlantShowcaseSection() {
                               <span className="text-gray-700">Per 5 Tahun</span>
                               <span className="font-bold text-gray-900">Rp {plant.pricing.fiveYears}</span>
                             </motion.div>
-                            <motion.div 
+                            <motion.div
                               className="flex justify-between border-t pt-2"
                               variants={fadeInUp}
                               whileHover={{ x: 5, transition: { duration: 0.2 } }}
@@ -675,7 +712,7 @@ export default function PlantShowcaseSection() {
                             className="w-full mt-3 bg-[#324D3E] text-white py-2 px-4 rounded-full font-bold text-xs sm:text-sm hover:bg-[#4C3D19] transition-colors"
                             onClick={() => handleCicilanSelect(plant)}
                             disabled={isLoading === plant.name}
-                            whileHover={{ 
+                            whileHover={{
                               scale: 1.05,
                               boxShadow: "0 4px 15px rgba(50, 77, 62, 0.3)"
                             }}
@@ -688,10 +725,10 @@ export default function PlantShowcaseSection() {
                       </motion.div>
 
                       {/* Profit Projection */}
-                      <motion.div 
+                      <motion.div
                         className="bg-white border-2 border-gray-200 rounded-2xl p-4 shadow-md"
                         variants={fadeInUp}
-                        whileHover={{ 
+                        whileHover={{
                           scale: 1.03,
                           y: -5,
                           borderColor: "#324D3E",
@@ -699,13 +736,13 @@ export default function PlantShowcaseSection() {
                           transition: { duration: 0.3 }
                         }}
                       >
-                        <motion.h5 
+                        <motion.h5
                           className="text-lg font-bold text-[#4A5C57] mb-2 font-[family-name:var(--font-poppins)]"
                           whileHover={{ scale: 1.05 }}
                         >
                           Pendapatan / Keuntungan Bersih
                         </motion.h5>
-                        <motion.div 
+                        <motion.div
                           className="text-2xl font-bold text-[#4A5C57] mb-3"
                           initial={{ opacity: 0, scale: 0.5 }}
                           animate={{ opacity: 1, scale: 1 }}
@@ -713,11 +750,11 @@ export default function PlantShowcaseSection() {
                         >
                           Rp {plant.pricing.profit.yearly} <span className="text-sm font-normal">/tahun</span>
                         </motion.div>
-                        <motion.div 
+                        <motion.div
                           className="space-y-1 text-xs"
                           variants={containerVariants}
                         >
-                          <motion.div 
+                          <motion.div
                             className="flex justify-between"
                             variants={fadeInUp}
                             whileHover={{ x: 5, transition: { duration: 0.2 } }}
@@ -725,7 +762,7 @@ export default function PlantShowcaseSection() {
                             <span className="text-gray-600">Bulanan</span>
                             <span className="font-semibold">Rp {plant.pricing.profit.monthly}</span>
                           </motion.div>
-                          <motion.div 
+                          <motion.div
                             className="flex justify-between"
                             variants={fadeInUp}
                             whileHover={{ x: 5, transition: { duration: 0.2 } }}
@@ -733,7 +770,7 @@ export default function PlantShowcaseSection() {
                             <span className="text-gray-600">Mingguan</span>
                             <span className="font-semibold">Rp {plant.pricing.profit.weekly}</span>
                           </motion.div>
-                          <motion.div 
+                          <motion.div
                             className="flex justify-between"
                             variants={fadeInUp}
                             whileHover={{ x: 5, transition: { duration: 0.2 } }}
@@ -742,7 +779,7 @@ export default function PlantShowcaseSection() {
                             <span className="font-semibold">Rp {plant.pricing.profit.daily}</span>
                           </motion.div>
                         </motion.div>
-                        <motion.p 
+                        <motion.p
                           className="text-xs text-gray-500 mt-3"
                           initial={{ opacity: 0 }}
                           animate={{ opacity: 1 }}
@@ -768,6 +805,139 @@ export default function PlantShowcaseSection() {
         onSuccess={showSuccess}
         onError={showError}
       />
+
+      {/* Tree Selection Modal */}
+      <AnimatePresence>
+        {treeSelectionModal.isOpen && treeSelectionModal.plant && (
+          <motion.div
+            className="fixed inset-0 bg-black/20 backdrop-blur-sm flex items-center justify-center p-4 z-50"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setTreeSelectionModal({ isOpen: false, plant: null, selectedTreeCount: null })}
+          >
+            <motion.div
+              className="bg-[#FFFCE3] rounded-3xl shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto border-2 border-[#324D3E]/20"
+              initial={{ scale: 0.9, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0, y: 20 }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="p-6">
+                <div className="flex justify-between items-center mb-6">
+                  <h3 className="text-2xl font-bold text-[#324D3E] font-[family-name:var(--font-poppins)]">
+                    Pilih Investasi
+                  </h3>
+                  <button
+                    onClick={() => setTreeSelectionModal({ isOpen: false, plant: null, selectedTreeCount: null })}
+                    className="text-[#324D3E]/60 hover:text-[#324D3E] transition-colors p-2 rounded-full hover:bg-[#324D3E]/10"
+                  >
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+
+                <div className="mb-6">
+                  <p className="text-[#324D3E]/70 text-center mb-4 font-medium">
+                    {treeSelectionModal.plant.investmentPlan.name}
+                  </p>
+                  <h4 className="font-bold mb-4 text-[#324D3E] font-[family-name:var(--font-poppins)]">Pilih Jumlah Pohon</h4>
+                  <div className="grid grid-cols-2 gap-3">
+                    {/* 1 Tree Option */}
+                    <motion.button
+                      className={`flex flex-col items-center p-4 border-2 rounded-2xl transition-all duration-300 hover:shadow-lg ${treeSelectionModal.selectedTreeCount === 1
+                        ? 'border-[#324D3E] bg-gradient-to-r from-[#324D3E]/10 to-[#4C3D19]/10 shadow-lg'
+                        : 'border-[#324D3E]/20 hover:border-[#324D3E]/40 bg-white/80'
+                        }`}
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      onClick={() => handleTreeCountSelect(1)}
+                    >
+                      <div className="text-3xl mb-2">🌱</div>
+                      <div className="font-bold text-[#324D3E] font-[family-name:var(--font-poppins)]">1 Pohon</div>
+                      <div className="text-sm text-[#324D3E]/70 font-medium text-center">Investasi Kecil</div>
+                      <div className="font-bold text-[#324D3E] text-lg mt-2">
+                        Rp {Math.round(treeSelectionModal.plant.investmentPlan.price / 10).toLocaleString('id-ID')}
+                      </div>
+                    </motion.button>
+
+                    {/* 10 Trees Option */}
+                    <motion.button
+                      className={`flex flex-col items-center p-4 border-2 rounded-2xl transition-all duration-300 hover:shadow-lg ${treeSelectionModal.selectedTreeCount === 10
+                        ? 'border-[#324D3E] bg-gradient-to-r from-[#324D3E]/10 to-[#4C3D19]/10 shadow-lg'
+                        : 'border-[#324D3E]/20 hover:border-[#324D3E]/40 bg-white/80'
+                        }`}
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      onClick={() => handleTreeCountSelect(10)}
+                    >
+                      <div className="text-3xl mb-2">🌳</div>
+                      <div className="font-bold text-[#324D3E] font-[family-name:var(--font-poppins)]">10 Pohon</div>
+                      <div className="text-sm text-[#324D3E]/70 font-medium text-center">Paket Lengkap</div>
+                      <div className="font-bold text-[#324D3E] text-lg mt-2">
+                        Rp {treeSelectionModal.plant.investmentPlan.price.toLocaleString('id-ID')}
+                      </div>
+                    </motion.button>
+                  </div>
+                </div>
+
+                {/* Investment Details */}
+                <div className="mb-6">
+                  <div className="bg-gradient-to-r from-[#324D3E]/10 to-[#4C3D19]/10 p-6 rounded-2xl border border-[#324D3E]/20">
+                    <h4 className="font-bold mb-4 text-[#324D3E] font-[family-name:var(--font-poppins)]">Detail Investasi</h4>
+                    <div className="space-y-3 text-sm">
+                      <div className="flex justify-between items-center">
+                        <span className="text-[#324D3E]/80 font-medium">Jenis Tanaman:</span>
+                        <span className="font-bold text-[#324D3E]">{treeSelectionModal.plant.investmentPlan.plantType}</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-[#324D3E]/80 font-medium">Durasi:</span>
+                        <span className="font-bold text-[#324D3E]">{treeSelectionModal.plant.investmentPlan.duration}</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-[#324D3E]/80 font-medium">Estimasi Return:</span>
+                        <span className="font-bold text-emerald-600">{treeSelectionModal.plant.investmentPlan.returns}</span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-[#324D3E]/80 font-medium">Risk Level:</span>
+                        <span className="font-bold text-orange-600">{treeSelectionModal.plant.investmentPlan.riskLevel}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="space-y-3">
+
+
+                  <motion.button
+                    className={`w-full px-4 py-3 rounded-2xl font-medium transition-all duration-300 ${treeSelectionModal.selectedTreeCount
+                      ? 'bg-[#324D3E] text-white hover:bg-[#4C3D19] shadow-lg hover:shadow-xl'
+                      : 'bg-[#324D3E]/20 text-[#324D3E]/50 cursor-not-allowed'
+                      }`}
+                    whileHover={treeSelectionModal.selectedTreeCount ? { scale: 1.02 } : {}}
+                    whileTap={treeSelectionModal.selectedTreeCount ? { scale: 0.98 } : {}}
+                    onClick={treeSelectionModal.selectedTreeCount ? handleConfirmTreeSelection : undefined}
+                    disabled={!treeSelectionModal.selectedTreeCount as any || isLoading}
+                  >
+                    {isLoading ? 'Memproses...' : 'Lanjutkan Pembayaran'}
+                  </motion.button>
+
+                  <motion.button
+                    className="w-full px-4 py-3 text-[#324D3E]/60 hover:text-[#324D3E] transition-colors border border-[#324D3E]/20 rounded-2xl hover:bg-[#324D3E]/5 font-medium"
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => setTreeSelectionModal({ isOpen: false, plant: null, selectedTreeCount: null })}
+                  >
+                    Batal
+                  </motion.button>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </motion.section>
   );
 }

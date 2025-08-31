@@ -1,7 +1,8 @@
 // src/app/api/investors/[id]/route.ts
-import { NextResponse } from "next/server"
 import { ensureConnection } from "@/lib/utils/utils/database"
 import { Investor, PlantInstance, Transaction } from "@/models"
+import mongoose from "mongoose"
+import { NextResponse } from "next/server"
 
 function ym(d: string | Date) {
   const dt = new Date(d)
@@ -16,11 +17,17 @@ function endOfYear(y: number) {
 
 export async function GET(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     await ensureConnection()
-    const { id } = params
+    const { id } = await params
+
+    // Validate if id is a valid MongoDB ObjectId
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return NextResponse.json({ error: "Invalid user ID format" }, { status: 400 })
+    }
+
     const url = new URL(req.url)
     const format = url.searchParams.get("format") || "rich"
     const year = Number.parseInt(url.searchParams.get("year") || new Date().getFullYear().toString())
@@ -32,6 +39,8 @@ export async function GET(
     const productIds: string[] = (investor.investments ?? [])
       .map((r: any) => r?.productName)
       .filter(Boolean)
+
+      console.log(productIds, 'productids')
 
     const instances = await PlantInstance.find({ id: { $in: productIds } }).lean()
 

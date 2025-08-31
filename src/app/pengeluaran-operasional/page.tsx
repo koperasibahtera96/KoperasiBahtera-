@@ -1,9 +1,9 @@
 "use client"
-import { useState, useEffect } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { ArrowLeft, TrendingDown, Calendar, DollarSign, ChevronLeft, ChevronRight } from "lucide-react"
+import { Button } from "@/components/ui-finance/button"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui-finance/card"
+import { ArrowLeft, Calendar, ChevronLeft, ChevronRight, DollarSign, TrendingDown } from "lucide-react"
 import Link from "next/link"
+import { useEffect, useState } from "react"
 
 export default function PengeluaranOperasionalPage() {
   const [plantInstances, setPlantInstances] = useState<any[]>([])

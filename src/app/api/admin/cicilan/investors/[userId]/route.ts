@@ -5,6 +5,7 @@ import { authOptions } from '@/lib/auth';
 import Investor from '@/models/Investor';
 import Payment from '@/models/Payment';
 import User from '@/models/User';
+import mongoose from 'mongoose';
 
 export async function GET(
   request: NextRequest,
@@ -17,6 +18,12 @@ export async function GET(
     }
 
     const { userId } = await params;
+    
+    // Validate if userId is a valid MongoDB ObjectId
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      return NextResponse.json({ error: 'Invalid user ID format' }, { status: 400 });
+    }
+    
     await dbConnect();
 
     // Get investor data

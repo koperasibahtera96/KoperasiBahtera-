@@ -1,18 +1,32 @@
 // app/anggota/[id]/page.tsx
 "use client"
 
-import { use, useEffect, useMemo, useState } from "react"
-import Link from "next/link"
-import {
-  ArrowLeft, Download, Mail, Phone, Calendar,
-  DollarSign, TrendingUp, BarChart3,
-} from "lucide-react"
+import { FinanceSidebar } from "@/components/finance/FinanceSidebar"
 import { formatCurrency } from "@/lib/utils"
+import { motion } from "framer-motion"
 import {
-  ResponsiveContainer, PieChart, Pie, Cell, Tooltip as RTooltip,
-  AreaChart, Area, XAxis, YAxis, CartesianGrid, Legend,
-} from "recharts"
+  ArrowLeft,
+  BarChart3,
+  Calendar,
+  DollarSign,
+  Download, Mail, Phone,
+  TrendingUp,
+} from "lucide-react"
 import dynamic from "next/dynamic"
+import Link from "next/link"
+import { use, useEffect, useMemo, useState } from "react"
+import {
+  Area,
+  AreaChart,
+  CartesianGrid,
+  Cell,
+  Legend,
+  Pie,
+  PieChart,
+  ResponsiveContainer,
+  Tooltip as RTooltip,
+  XAxis, YAxis,
+} from "recharts"
 
 // dynamic import components that already contain month filter + pagination
 const IncomeHistory = dynamic(() => import("@/components/finance/IncomeHistory"), { ssr: false })
@@ -86,6 +100,9 @@ export default function MemberDetailPage(props: { params: Promise<{ id: string }
       setYear(data.year)
       setSelectedPlant((p) => p || data.investments?.[0]?.plantId || "")
       setError(null)
+
+
+      console.log(data, 'data fetch detail ivnestor')
     } catch (e) {
       console.error(e)
       setError("Gagal memuat detail anggota")
@@ -250,35 +267,75 @@ export default function MemberDetailPage(props: { params: Promise<{ id: string }
     }
   }
 
-  if (loading) return <div className="max-w-6xl mx-auto p-6 text-muted-foreground">Loading...</div>
+  if (loading) return (
+    <FinanceSidebar>
+      <div className="p-4 sm:p-6 lg:p-8 flex items-center justify-center min-h-[50vh]">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#324D3E] mx-auto mb-4"></div>
+          <p className="text-[#889063] text-lg">Memuat data anggota...</p>
+        </div>
+      </div>
+    </FinanceSidebar>
+  )
+
   if (error || !member) return (
-    <div className="max-w-6xl mx-auto p-6">
-      {error || "Anggota tidak ditemukan."}{" "}
-      <Link href="/manajemen-anggota" className="underline">Kembali</Link>
-    </div>
+    <FinanceSidebar>
+      <div className="p-4 sm:p-6 lg:p-8">
+        <div className="bg-red-50 border border-red-200 rounded-3xl p-6 text-center">
+          <p className="text-red-600 text-lg mb-4">{error || "Anggota tidak ditemukan."}</p>
+          <Link href="/manajemen-anggota" className="inline-flex items-center gap-2 px-4 py-2 bg-[#324D3E] text-white rounded-xl hover:bg-[#4C3D19] transition-colors duration-300">
+            <ArrowLeft className="w-4 h-4" />
+            Kembali
+          </Link>
+        </div>
+      </div>
+    </FinanceSidebar>
   )
 
   return (
-    <div className="max-w-6xl mx-auto p-6 space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <Link href="/manajemen-anggota" className="inline-flex items-center gap-2 text-sm hover:underline">
-          <ArrowLeft className="w-4 h-4" /> Kembali
-        </Link>
-        <button onClick={exportXLSX} className="inline-flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-sm hover:bg-muted">
-          <Download className="w-4 h-4" /> Download
-        </button>
-      </div>
+    <FinanceSidebar>
+      <div className="p-4 sm:p-6 lg:p-8 space-y-6">
+        {/* Header */}
+        <motion.div
+          className="flex items-center justify-between"
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+        >
+          <Link href="/manajemen-anggota">
+            <motion.button
+              className="group flex items-center gap-2 px-3 sm:px-4 py-2 bg-white/90 backdrop-blur-xl rounded-xl sm:rounded-2xl shadow-lg border border-[#324D3E]/10 text-[#324D3E] hover:bg-[#324D3E] hover:text-white transition-all duration-300 self-start"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+            >
+              <ArrowLeft className="h-4 w-4 transition-transform group-hover:-translate-x-1" />
+              <span className="text-sm sm:text-base">Kembali</span>
+            </motion.button>
+          </Link>
+          <motion.button
+            onClick={exportXLSX}
+            className="inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-green-500 to-[#324D3E] hover:from-green-600 hover:to-[#4C3D19] px-4 py-2 text-sm font-medium text-white transition-all duration-300 shadow-lg hover:shadow-xl"
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+          >
+            <Download className="w-4 h-4" /> Download
+          </motion.button>
+        </motion.div>
 
       {/* Card identitas */}
-      <div className="bg-card rounded-2xl p-6 border border-border">
+      <motion.div
+        className="bg-white/90 backdrop-blur-xl rounded-3xl p-6 border border-[#324D3E]/10 shadow-lg"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, delay: 0.1 }}
+      >
         <div className="flex items-start gap-4">
-          <div className="h-12 w-12 rounded-xl bg-muted grid place-items-center text-lg font-semibold">
+          <div className="h-12 w-12 rounded-2xl bg-[#324D3E] grid place-items-center text-lg font-semibold text-white">
             {member.name?.[0]?.toUpperCase() ?? "A"}
           </div>
           <div className="flex-1">
-            <div className="text-xl font-semibold">{member.name}</div>
-            <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground mt-1">
+            <div className="text-xl sm:text-2xl font-semibold text-[#324D3E]">{member.name}</div>
+            <div className="flex flex-wrap items-center gap-4 text-sm text-[#889063] mt-2">
               <span className="inline-flex items-center gap-1"><Mail className="w-4 h-4" />{member.email || "-"}</span>
               <span className="inline-flex items-center gap-1"><Phone className="w-4 h-4" />{member.phone || "-"}</span>
               {member.joinDate && (
@@ -290,37 +347,63 @@ export default function MemberDetailPage(props: { params: Promise<{ id: string }
             </div>
           </div>
         </div>
-      </div>
+      </motion.div>
 
       {/* Summary boxes */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-card rounded-xl p-4 border border-border">
-          <div className="flex items-center justify-between">
-            <div className="text-sm text-muted-foreground">Total Investasi</div>
-            <DollarSign className="w-5 h-5" />
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+        <motion.div
+          className="bg-white/90 backdrop-blur-xl rounded-3xl p-6 border border-[#324D3E]/10 shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.2 }}
+        >
+          <div className="flex items-center justify-between mb-4">
+            <div className="text-sm text-[#889063]">Total Investasi</div>
+            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[#324D3E]/10 text-[#324D3E]">
+              <DollarSign className="w-5 h-5" />
+            </div>
           </div>
-          <div className="mt-2 text-xl font-semibold">{formatCurrency(totals.invest)}</div>
-        </div>
-        <div className="bg-card rounded-xl p-4 border border-border">
-          <div className="flex items-center justify-between">
-            <div className="text-sm text-muted-foreground">Total Keuntungan</div>
-            <TrendingUp className="w-5 h-5" />
+          <div className="text-2xl font-bold text-[#324D3E]">{formatCurrency(totals.invest)}</div>
+        </motion.div>
+        <motion.div
+          className="bg-white/90 backdrop-blur-xl rounded-3xl p-6 border border-[#324D3E]/10 shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.3 }}
+        >
+          <div className="flex items-center justify-between mb-4">
+            <div className="text-sm text-[#889063]">Total Keuntungan</div>
+            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-green-500/10 text-green-600">
+              <TrendingUp className="w-5 h-5" />
+            </div>
           </div>
-          <div className="mt-2 text-xl font-semibold text-emerald-500">{formatCurrency(totals.profit)}</div>
-        </div>
-        <div className="bg-card rounded-xl p-4 border border-border">
-          <div className="flex items-center justify-between">
-            <div className="text-sm text-muted-foreground">ROI</div>
-            <BarChart3 className="w-5 h-5" />
+          <div className="text-2xl font-bold text-green-600">{formatCurrency(totals.profit)}</div>
+        </motion.div>
+        <motion.div
+          className="bg-white/90 backdrop-blur-xl rounded-3xl p-6 border border-[#324D3E]/10 shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.4 }}
+        >
+          <div className="flex items-center justify-between mb-4">
+            <div className="text-sm text-[#889063]">ROI</div>
+            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-blue-500/10 text-blue-600">
+              <BarChart3 className="w-5 h-5" />
+            </div>
           </div>
-          <div className="mt-2 text-xl font-semibold">{totals.roi.toFixed(1)}%</div>
-        </div>
+          <div className="text-2xl font-bold text-blue-600">{totals.roi.toFixed(1)}%</div>
+        </motion.div>
       </div>
 
       {/* Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-card rounded-2xl p-6 border border-border">
-          <div className="text-lg font-semibold mb-4">Distribusi Investasi</div>
+        <motion.div
+          className="bg-white/90 backdrop-blur-xl rounded-3xl p-6 border border-[#324D3E]/10 shadow-lg"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.5 }}
+        >
+          <div className="text-lg font-semibold mb-4 text-[#324D3E]">Distribusi Investasi</div>
           <div className="h-64">
             <ResponsiveContainer>
               <PieChart>
@@ -331,13 +414,18 @@ export default function MemberDetailPage(props: { params: Promise<{ id: string }
               </PieChart>
             </ResponsiveContainer>
           </div>
-        </div>
+        </motion.div>
 
-        <div className="bg-card rounded-2xl p-6 border border-border">
+        <motion.div
+          className="bg-white/90 backdrop-blur-xl rounded-3xl p-6 border border-[#324D3E]/10 shadow-lg"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.6 }}
+        >
           <div className="flex items-center justify-between mb-4">
-            <div className="text-lg font-semibold">Ringkasan Bulanan</div>
+            <div className="text-lg font-semibold text-[#324D3E]">Ringkasan Bulanan</div>
             <select
-              className="border border-border rounded-md px-2 py-1 text-sm bg-background"
+              className="border border-[#324D3E]/20 rounded-xl px-3 py-2 text-sm bg-white/80 backdrop-blur-xl text-[#324D3E] focus:outline-none focus:ring-2 focus:ring-[#324D3E]/20 focus:border-[#324D3E]/40"
               value={year}
               onChange={(e) => fetchDetail(Number(e.target.value))}
             >
@@ -374,15 +462,20 @@ export default function MemberDetailPage(props: { params: Promise<{ id: string }
               </AreaChart>
             </ResponsiveContainer>
           </div>
-        </div>
+        </motion.div>
       </div>
 
       {/* Tabel bulanan dengan filter tahun */}
-      <div className="bg-card rounded-2xl p-6 border border-border">
+      <motion.div
+        className="bg-white/90 backdrop-blur-xl rounded-3xl p-6 border border-[#324D3E]/10 shadow-lg"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, delay: 0.7 }}
+      >
         <div className="flex items-center justify-between mb-4">
-          <div className="text-lg font-semibold">Tabel Bulanan</div>
+          <div className="text-lg font-semibold text-[#324D3E]">Tabel Bulanan</div>
           <select
-            className="border border-border rounded-md px-2 py-1 text-sm bg-background"
+            className="border border-[#324D3E]/20 rounded-xl px-3 py-2 text-sm bg-white/80 backdrop-blur-xl text-[#324D3E] focus:outline-none focus:ring-2 focus:ring-[#324D3E]/20 focus:border-[#324D3E]/40"
             value={year}
             onChange={(e) => fetchDetail(Number(e.target.value))}
           >
@@ -394,41 +487,46 @@ export default function MemberDetailPage(props: { params: Promise<{ id: string }
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-border">
-                <th className="text-left py-2">Bulan</th>
-                <th className="text-right py-2">Pemasukan</th>
-                <th className="text-right py-2">Pengeluaran</th>
-                <th className="text-right py-2">Keuntungan Bersih</th>
-                <th className="text-right py-2">ROI</th>
+              <tr className="border-b-2 border-[#324D3E]/10">
+                <th className="text-left py-3 text-[#324D3E] font-semibold">Bulan</th>
+                <th className="text-right py-3 text-[#324D3E] font-semibold">Pemasukan</th>
+                <th className="text-right py-3 text-[#324D3E] font-semibold">Pengeluaran</th>
+                <th className="text-right py-3 text-[#324D3E] font-semibold">Keuntungan Bersih</th>
+                <th className="text-right py-3 text-[#324D3E] font-semibold">ROI</th>
               </tr>
             </thead>
             <tbody>
-              {monthly.map((r) => {
+              {monthly.map((r, index) => {
                 const roi = r.income > 0 ? (r.profit / r.income) * 100 : 0
                 const label = new Date(r.month + "-01").toLocaleDateString("id-ID", { month: "long", year: "numeric" })
                 return (
-                  <tr key={r.month} className="border-b border-border">
-                    <td className="py-2">{label}</td>
-                    <td className="py-2 text-right">{formatCurrency(r.income)}</td>
-                    <td className="py-2 text-right">{formatCurrency(r.expense)}</td>
-                    <td className="py-2 text-right">{formatCurrency(r.profit)}</td>
-                    <td className="py-2 text-right">{roi.toFixed(2)}%</td>
+                  <tr key={r.month} className={`border-b border-[#324D3E]/5 ${index % 2 === 0 ? 'bg-white/40' : 'bg-[#324D3E]/5'}`}>
+                    <td className="py-3 text-[#324D3E]">{label}</td>
+                    <td className="py-3 text-right text-green-600 font-medium">{formatCurrency(r.income)}</td>
+                    <td className="py-3 text-right text-red-600 font-medium">{formatCurrency(r.expense)}</td>
+                    <td className="py-3 text-right text-blue-600 font-medium">{formatCurrency(r.profit)}</td>
+                    <td className="py-3 text-right text-[#324D3E] font-medium">{roi.toFixed(2)}%</td>
                   </tr>
                 )
               })}
             </tbody>
           </table>
         </div>
-      </div>
+      </motion.div>
 
       {/* Kelola Keuangan */}
-      <div className="bg-card rounded-2xl p-6 border border-border">
-        <div className="text-lg font-semibold mb-4">Kelola Keuangan</div>
+      <motion.div
+        className="bg-white/90 backdrop-blur-xl rounded-3xl p-6 border border-[#324D3E]/10 shadow-lg"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6, delay: 0.8 }}
+      >
+        <div className="text-lg font-semibold mb-4 text-[#324D3E]">Kelola Keuangan</div>
         <div className="flex flex-wrap gap-3 items-center mb-4">
           <select
             value={selectedPlant}
             onChange={(e) => setSelectedPlant(e.target.value)}
-            className="border border-border rounded-md px-2 py-1 text-sm bg-background"
+            className="border border-[#324D3E]/20 rounded-xl px-3 py-2 text-sm bg-white/80 backdrop-blur-xl text-[#324D3E] focus:outline-none focus:ring-2 focus:ring-[#324D3E]/20 focus:border-[#324D3E]/40"
           >
             <option value="">Pilih Tanaman</option>
             {instances.map((p) => <option key={p.id} value={p.id}>{p.instanceName} ({p.id})</option>)}
@@ -436,39 +534,40 @@ export default function MemberDetailPage(props: { params: Promise<{ id: string }
         </div>
 
         {!selectedPlant ? (
-          <div className="text-sm text-muted-foreground">Pilih tanaman terlebih dahulu.</div>
+          <div className="text-sm text-[#889063]">Pilih tanaman terlebih dahulu.</div>
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Pemasukan side */}
-            <div className="rounded-xl border border-border p-4">
-              <div className="font-medium mb-2">Tambah Pemasukan</div>
+            <div className="rounded-2xl border border-[#324D3E]/10 p-4 bg-white/60 backdrop-blur-xl">
+              <div className="font-medium mb-2 text-[#324D3E]">Tambah Pemasukan</div>
               <form onSubmit={submitIncome} className="grid grid-cols-1 md:grid-cols-4 gap-3 mb-4">
-                <input type="date" value={incForm.date} onChange={(e)=>setIncForm(f=>({...f,date:e.target.value}))} className="border border-border rounded-md px-3 py-2 bg-background" />
-                <input value={incForm.description} onChange={(e)=>setIncForm(f=>({...f,description:e.target.value}))} className="border border-border rounded-md px-3 py-2 bg-background" placeholder="Deskripsi" />
-                <input value={incForm.amount} onChange={(e)=>setIncForm(f=>({...f,amount:e.target.value}))} className="border border-border rounded-md px-3 py-2 bg-background" placeholder="Jumlah" inputMode="numeric" />
-                <button className="rounded-md border border-border px-3 py-2 text-sm hover:bg-muted">Simpan</button>
+                <input type="date" value={incForm.date} onChange={(e)=>setIncForm(f=>({...f,date:e.target.value}))} className="border border-[#324D3E]/20 rounded-xl px-3 py-2 bg-white/80 backdrop-blur-xl text-[#324D3E] focus:outline-none focus:ring-2 focus:ring-[#324D3E]/20 focus:border-[#324D3E]/40" />
+                <input value={incForm.description} onChange={(e)=>setIncForm(f=>({...f,description:e.target.value}))} className="border border-[#324D3E]/20 rounded-xl px-3 py-2 bg-white/80 backdrop-blur-xl text-[#324D3E] focus:outline-none focus:ring-2 focus:ring-[#324D3E]/20 focus:border-[#324D3E]/40" placeholder="Deskripsi" />
+                <input value={incForm.amount} onChange={(e)=>setIncForm(f=>({...f,amount:e.target.value}))} className="border border-[#324D3E]/20 rounded-xl px-3 py-2 bg-white/80 backdrop-blur-xl text-[#324D3E] focus:outline-none focus:ring-2 focus:ring-[#324D3E]/20 focus:border-[#324D3E]/40" placeholder="Jumlah" inputMode="numeric" />
+                <button className="rounded-xl border border-[#324D3E]/20 px-3 py-2 text-sm hover:bg-[#324D3E] hover:text-white text-[#324D3E] transition-all duration-300">Simpan</button>
               </form>
 
-              <div className="font-medium mb-2">Riwayat Pemasukan</div>
+              <div className="font-medium mb-2 text-[#324D3E]">Riwayat Pemasukan</div>
               <IncomeHistory plantId={selectedPlant} />
             </div>
 
             {/* Pengeluaran side */}
-            <div className="rounded-xl border border-border p-4">
-              <div className="font-medium mb-2">Tambah Pengeluaran</div>
+            <div className="rounded-2xl border border-[#324D3E]/10 p-4 bg-white/60 backdrop-blur-xl">
+              <div className="font-medium mb-2 text-[#324D3E]">Tambah Pengeluaran</div>
               <form onSubmit={submitExpense} className="grid grid-cols-1 md:grid-cols-4 gap-3 mb-4">
-                <input type="date" value={expForm.date} onChange={(e)=>setExpForm(f=>({...f,date:e.target.value}))} className="border border-border rounded-md px-3 py-2 bg-background" />
-                <input value={expForm.description} onChange={(e)=>setExpForm(f=>({...f,description:e.target.value}))} className="border border-border rounded-md px-3 py-2 bg-background" placeholder="Deskripsi" />
-                <input value={expForm.amount} onChange={(e)=>setExpForm(f=>({...f,amount:e.target.value}))} className="border border-border rounded-md px-3 py-2 bg-background" placeholder="Jumlah" inputMode="numeric" />
-                <button className="rounded-md border border-border px-3 py-2 text-sm hover:bg-muted">Simpan</button>
+                <input type="date" value={expForm.date} onChange={(e)=>setExpForm(f=>({...f,date:e.target.value}))} className="border border-[#324D3E]/20 rounded-xl px-3 py-2 bg-white/80 backdrop-blur-xl text-[#324D3E] focus:outline-none focus:ring-2 focus:ring-[#324D3E]/20 focus:border-[#324D3E]/40" />
+                <input value={expForm.description} onChange={(e)=>setExpForm(f=>({...f,description:e.target.value}))} className="border border-[#324D3E]/20 rounded-xl px-3 py-2 bg-white/80 backdrop-blur-xl text-[#324D3E] focus:outline-none focus:ring-2 focus:ring-[#324D3E]/20 focus:border-[#324D3E]/40" placeholder="Deskripsi" />
+                <input value={expForm.amount} onChange={(e)=>setExpForm(f=>({...f,amount:e.target.value}))} className="border border-[#324D3E]/20 rounded-xl px-3 py-2 bg-white/80 backdrop-blur-xl text-[#324D3E] focus:outline-none focus:ring-2 focus:ring-[#324D3E]/20 focus:border-[#324D3E]/40" placeholder="Jumlah" inputMode="numeric" />
+                <button className="rounded-xl border border-[#324D3E]/20 px-3 py-2 text-sm hover:bg-[#324D3E] hover:text-white text-[#324D3E] transition-all duration-300">Simpan</button>
               </form>
 
-              <div className="font-medium mb-2">Riwayat Pengeluaran</div>
+              <div className="font-medium mb-2 text-[#324D3E]">Riwayat Pengeluaran</div>
               <ExpenseHistory plantId={selectedPlant} />
             </div>
           </div>
         )}
-      </div>
+      </motion.div>
     </div>
+  </FinanceSidebar>
   )
 }

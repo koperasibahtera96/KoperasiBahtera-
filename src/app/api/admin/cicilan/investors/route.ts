@@ -23,7 +23,8 @@ export async function GET(request: NextRequest) {
 
     // Build query
     const query: any = {
-      investments: { $exists: true, $ne: [] } // Only investors with cicilan investments
+      investments: { $exists: true, $ne: [] }, // Only investors with cicilan investments
+      userId: { $ne: null, $exists: true } // Only investors with valid userId
     };
 
     // Add search filter
@@ -37,15 +38,15 @@ export async function GET(request: NextRequest) {
     // Get total count
     const totalCount = await Investor.countDocuments(query);
 
-    // Get investors with pagination
+    // Get investors with pagination (don't populate userId to avoid object issues)
     const investors = await Investor.find(query)
       .sort({ updatedAt: -1 })
       .skip((page - 1) * limit)
-      .limit(limit)
-      .populate('userId');
+      .limit(limit);
 
-    // Get user info for each investor
-    const userIds = investors.map(inv => inv.userId);
+    // Filter out investors with null userId and get user info
+    const validInvestors = investors.filter(inv => inv.userId != null);
+    const userIds = validInvestors.map(inv => inv.userId);
     const users = await User.find({ _id: { $in: userIds } });
     const usersMap = new Map(users.map(user => [user._id.toString(), user]));
 
@@ -65,7 +66,7 @@ export async function GET(request: NextRequest) {
     });
 
     // Process investor data
-    const investorGroups = investors.map(investor => {
+    const investorGroups = validInvestors.map(investor => {
       const user = usersMap.get(investor.userId.toString());
       const userPayments = paymentsMap.get(investor.userId.toString()) || [];
       

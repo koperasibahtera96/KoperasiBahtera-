@@ -49,6 +49,8 @@ export const authOptions: NextAuthOptions = {
             phoneNumber: user.phoneNumber,
             province: user.province,
             city: user.city,
+            verificationStatus: user.verificationStatus,
+            canPurchase: user.canPurchase,
           };
         } catch (error) {
           console.error('Auth error:', error);
@@ -73,6 +75,8 @@ export const authOptions: NextAuthOptions = {
         token.phoneNumber = user.phoneNumber;
         token.province = user.province;
         token.city = user.city;
+        token.verificationStatus = user.verificationStatus;
+        token.canPurchase = user.canPurchase;
       }
       return token;
     },
@@ -86,6 +90,8 @@ export const authOptions: NextAuthOptions = {
         session.user.phoneNumber = token.phoneNumber as string;
         session.user.province = token.province as string;
         session.user.city = token.city as string;
+        session.user.verificationStatus = token.verificationStatus as string;
+        session.user.canPurchase = token.canPurchase as boolean;
       }
       return session;
     },

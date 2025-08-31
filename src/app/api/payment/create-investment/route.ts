@@ -3,6 +3,7 @@ import dbConnect from '@/lib/mongodb';
 import Payment from '@/models/Payment';
 import Investor from '@/models/Investor';
 import User from '@/models/User';
+import PlantInstance from '@/models/PlantInstance';
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(req: NextRequest) {
@@ -40,7 +41,7 @@ export async function POST(req: NextRequest) {
         },
       ],
       callbacks: {
-        finish: `${process.env.NEXT_PUBLIC_BASE_URL}?status=success&orderId=${orderId}`,
+        finish: `${process.env.NEXT_PUBLIC_BASE_URL}/contract/${orderId}`,
         error: `${process.env.NEXT_PUBLIC_BASE_URL}/payment/error`,
         pending: `${process.env.NEXT_PUBLIC_BASE_URL}/payment/pending`,
       },
@@ -76,40 +77,6 @@ export async function POST(req: NextRequest) {
 
     await payment.save();
     console.log('Investment payment record created:', orderId);
-
-    // Add investment record for full payment (will be marked as completed when payment webhook confirms)
-    const investmentRecord = {
-      investmentId: orderId,
-      productName: plan.name,
-      plantInstanceId: null, // Will be assigned when plant is allocated
-      totalAmount: plan.price,
-      amountPaid: 0, // Will be updated when payment webhook confirms
-      paymentType: 'full' as const,
-      status: 'pending' as const, // Will be updated to completed when payment succeeds
-      installments: undefined,
-      fullPaymentProofUrl: null, // Midtrans handles the payment proof
-      investmentDate: new Date()
-    };
-
-    // Use upsert to handle existing investors - don't update email to avoid unique constraint issues
-    await Investor.findOneAndUpdate(
-      { userId: dbUser._id },
-      {
-        $set: {
-          name: dbUser.fullName,
-          phoneNumber: dbUser.phoneNumber,
-          status: 'active'
-        },
-        $setOnInsert: {
-          email: dbUser.email, // Only set email when creating new document
-          totalPaid: 0,
-          jumlahPohon: 0
-        },
-        $push: { investments: investmentRecord },
-        $inc: { totalInvestasi: plan.price }
-      },
-      { upsert: true, new: true }
-    );
 
 
     return NextResponse.json({

@@ -26,15 +26,37 @@ function AuthButtons({ mobile = false }: { mobile?: boolean }) {
           </p>
           <p className="text-xs text-green-600 capitalize">{session.user.role}</p>
         </div>
-        {session.user.role === 'user' && (
-          <Link href="/cicilan">
-            <Button variant="outline" size="sm" className={cn(
-              mobile ? 'w-full' : '',
-              'border-emerald-200 text-emerald-700 hover:bg-emerald-50 hover:border-emerald-300 font-semibold'
-            )}>
-              💳 Cicilan Saya
-            </Button>
-          </Link>
+        {session.user.role === 'user' && session.user.canPurchase && (
+          <>
+            <Link href="/investasi">
+              <Button variant="outline" size="sm" className={cn(
+                mobile ? 'w-full' : '',
+                'border-blue-200 text-blue-700 hover:bg-blue-50 hover:border-blue-300 font-semibold'
+              )}>
+                📈 Investasi Saya
+              </Button>
+            </Link>
+            <Link href="/cicilan">
+              <Button variant="outline" size="sm" className={cn(
+                mobile ? 'w-full' : '',
+                'border-emerald-200 text-emerald-700 hover:bg-emerald-50 hover:border-emerald-300 font-semibold'
+              )}>
+                💳 Cicilan Saya
+              </Button>
+            </Link>
+          </>
+        )}
+        {session.user.role === 'user' && !session.user.canPurchase && (
+          <div className={cn(
+            mobile ? 'w-full' : '',
+            'px-3 py-2 bg-yellow-50 border border-yellow-200 rounded-lg text-center'
+          )}>
+            <p className="text-xs text-yellow-700 font-medium">
+              {session.user.verificationStatus === 'pending' ? '⏳ Menunggu Verifikasi' : 
+               session.user.verificationStatus === 'rejected' ? '❌ Verifikasi Ditolak' : 
+               '⏳ Belum Diverifikasi'}
+            </p>
+          </div>
         )}
         <Link href={`/${session.user.role}`}>
           <Button variant="outline" size="sm" className={cn(

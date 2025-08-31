@@ -28,7 +28,7 @@ export default function InvestorDetailPage({ params }: { params: Promise<{ userI
   const fetchInvestorDetail = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`/api/admin/cicilan/investor/${userId}`);
+      const response = await fetch(`/api/admin/cicilan/investors/${userId}`);
       if (response.ok) {
         const data = await response.json();
         setInvestorDetail(data.investor);
@@ -148,8 +148,8 @@ export default function InvestorDetailPage({ params }: { params: Promise<{ userI
     return (
       <AdminLayout>
         <div className="p-8 text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-500 mx-auto mb-4"></div>
-          <p className="text-gray-600">Memuat data investor...</p>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#324D3E] mx-auto mb-4"></div>
+          <p className="text-[#889063] font-[family-name:var(--font-poppins)]">Memuat data investor...</p>
         </div>
       </AdminLayout>
     );
@@ -159,11 +159,11 @@ export default function InvestorDetailPage({ params }: { params: Promise<{ userI
     return (
       <AdminLayout>
         <div className="p-8 text-center">
-          <div className="text-gray-400 text-4xl mb-4">❌</div>
-          <h3 className="text-lg font-semibold text-gray-600 mb-2">Data investor tidak ditemukan</h3>
+          <div className="text-[#889063] text-4xl mb-4">❌</div>
+          <h3 className="text-lg font-semibold text-[#324D3E] mb-2 font-[family-name:var(--font-poppins)]">Data investor tidak ditemukan</h3>
           <button
             onClick={() => router.push('/admin/cicilan')}
-            className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 transition-colors"
+            className="px-6 py-3 bg-gradient-to-r from-[#324D3E] to-[#4C3D19] text-white rounded-xl hover:shadow-lg hover:scale-105 transition-all duration-300 font-semibold font-[family-name:var(--font-poppins)]"
           >
             Kembali ke Daftar Investor
           </button>
@@ -181,61 +181,61 @@ export default function InvestorDetailPage({ params }: { params: Promise<{ userI
           <div>
             <button
               onClick={() => router.push('/admin/cicilan')}
-              className="flex items-center gap-2 text-gray-600 hover:text-gray-800 mb-2"
+              className="flex items-center gap-2 text-[#889063] hover:text-[#324D3E] mb-2 transition-colors duration-300 font-[family-name:var(--font-poppins)]"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
               </svg>
               Kembali ke Daftar Investor
             </button>
-            <h1 className="text-3xl font-bold text-gray-900">Detail Investor</h1>
-            <p className="text-gray-600 mt-2">Kelola cicilan investasi dari {investorDetail.userInfo.fullName}</p>
+            <h1 className="text-3xl font-bold text-[#324D3E] font-[family-name:var(--font-poppins)]">Detail Investor</h1>
+            <p className="text-[#889063] mt-2">Kelola cicilan investasi dari {investorDetail.userInfo.fullName}</p>
           </div>
         </div>
 
         {/* Investor Info Card */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <div className="bg-white/80 backdrop-blur-lg rounded-2xl shadow-lg border border-[#324D3E]/10 p-6">
           <div className="flex items-center gap-4 mb-6">
-            <div className="w-16 h-16 bg-gradient-to-br from-emerald-100 to-emerald-200 rounded-full flex items-center justify-center">
-              <span className="text-emerald-600 font-semibold text-2xl">
+            <div className="w-16 h-16 bg-gradient-to-br from-[#324D3E]/10 to-[#4C3D19]/10 rounded-full flex items-center justify-center border-2 border-[#324D3E]/20">
+              <span className="text-[#324D3E] font-semibold text-2xl font-[family-name:var(--font-poppins)]">
                 {investorDetail.userInfo.fullName.charAt(0).toUpperCase()}
               </span>
             </div>
             <div>
-              <h2 className="text-2xl font-bold text-gray-900">{investorDetail.userInfo.fullName}</h2>
-              <p className="text-gray-600">{investorDetail.userInfo.email}</p>
-              <p className="text-sm text-gray-500">{investorDetail.userInfo.phoneNumber}</p>
+              <h2 className="text-2xl font-bold text-[#324D3E] font-[family-name:var(--font-poppins)]">{investorDetail.userInfo.fullName}</h2>
+              <p className="text-[#889063]">{investorDetail.userInfo.email}</p>
+              <p className="text-sm text-[#889063]/70">{investorDetail.userInfo.phoneNumber}</p>
             </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div className="bg-blue-50 p-4 rounded-lg">
-              <div className="text-sm text-gray-600">Total Investasi</div>
-              <div className="text-2xl font-bold text-blue-600">{investorDetail.totalInvestments}</div>
+            <div className="bg-gradient-to-r from-[#324D3E]/5 to-[#324D3E]/10 p-4 rounded-xl border border-[#324D3E]/10">
+              <div className="text-sm text-[#889063] font-[family-name:var(--font-poppins)]">Total Investasi</div>
+              <div className="text-2xl font-bold text-[#324D3E]">{investorDetail.totalInvestments}</div>
             </div>
-            <div className="bg-green-50 p-4 rounded-lg">
-              <div className="text-sm text-gray-600">Nilai Investasi</div>
-              <div className="text-xl font-bold text-green-600">
+            <div className="bg-gradient-to-r from-[#4C3D19]/5 to-[#4C3D19]/10 p-4 rounded-xl border border-[#4C3D19]/10">
+              <div className="text-sm text-[#889063] font-[family-name:var(--font-poppins)]">Nilai Investasi</div>
+              <div className="text-xl font-bold text-[#4C3D19]">
                 Rp {investorDetail.totalAmount.toLocaleString('id-ID')}
               </div>
             </div>
-            <div className="bg-emerald-50 p-4 rounded-lg">
-              <div className="text-sm text-gray-600">Sudah Dibayar</div>
-              <div className="text-xl font-bold text-emerald-600">
+            <div className="bg-gradient-to-r from-[#889063]/5 to-[#889063]/10 p-4 rounded-xl border border-[#889063]/10">
+              <div className="text-sm text-[#889063] font-[family-name:var(--font-poppins)]">Sudah Dibayar</div>
+              <div className="text-xl font-bold text-[#889063]">
                 Rp {investorDetail.totalPaid.toLocaleString('id-ID')}
               </div>
-              <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
+              <div className="w-full bg-[#324D3E]/10 rounded-full h-3 mt-2">
                 <div
-                  className="bg-emerald-600 h-2 rounded-full transition-all duration-300"
+                  className="bg-gradient-to-r from-[#889063] to-[#4C3D19] h-3 rounded-full transition-all duration-500"
                   style={{ width: `${Math.min((investorDetail.totalPaid / investorDetail.totalAmount) * 100, 100)}%` }}
                 />
               </div>
             </div>
-            <div className="bg-yellow-50 p-4 rounded-lg">
-              <div className="text-sm text-gray-600">Perlu Review</div>
+            <div className="bg-gradient-to-r from-yellow-50 to-yellow-100 p-4 rounded-xl border border-yellow-200">
+              <div className="text-sm text-yellow-700 font-[family-name:var(--font-poppins)]">Perlu Review</div>
               <div className="text-2xl font-bold text-yellow-600">{investorDetail.pendingReviews}</div>
               {investorDetail.overdueCount > 0 && (
-                <div className="text-sm text-red-600 mt-1">{investorDetail.overdueCount} Terlambat</div>
+                <div className="text-sm text-red-600 mt-1 font-medium">{investorDetail.overdueCount} Terlambat</div>
               )}
             </div>
           </div>
@@ -246,13 +246,13 @@ export default function InvestorDetailPage({ params }: { params: Promise<{ userI
           {investorDetail.cicilanGroups
             .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
             .map((group) => (
-              <div key={group.cicilanOrderId} className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+              <div key={group.cicilanOrderId} className="bg-white/80 backdrop-blur-lg rounded-2xl shadow-lg border border-[#324D3E]/10 p-6">
                 {/* Group Header */}
                 <div className="flex justify-between items-start mb-6">
                   <div>
-                    <h3 className="text-xl font-bold text-gray-900">{group.productName}</h3>
-                    <p className="text-sm text-gray-500">Order ID: {group.cicilanOrderId}</p>
-                    <div className="flex items-center gap-4 mt-2 text-sm text-gray-600">
+                    <h3 className="text-xl font-bold text-[#324D3E] font-[family-name:var(--font-poppins)]">{group.productName}</h3>
+                    <p className="text-sm text-[#889063]">Order ID: {group.cicilanOrderId}</p>
+                    <div className="flex items-center gap-4 mt-2 text-sm text-[#889063]">
                       <span>💰 Rp {group.totalAmount.toLocaleString('id-ID')}</span>
                       <span>📅 {group.paymentTerm === 'monthly' ? 'Bulanan' : group.paymentTerm === 'quarterly' ? 'Triwulan' : 'Tahunan'}</span>
                       <span>🔢 {group.totalInstallments} angsuran</span>
@@ -262,12 +262,12 @@ export default function InvestorDetailPage({ params }: { params: Promise<{ userI
                     <span className={`inline-flex px-3 py-1 text-sm font-semibold rounded-full ${getGroupStatusColor(group.status)}`}>
                       {getGroupStatusText(group.status)}
                     </span>
-                    <div className="text-sm text-gray-600 mt-2">
+                    <div className="text-sm text-[#889063] mt-2 font-[family-name:var(--font-poppins)]">
                       Progress: {group.installments.filter(i => i.status === 'approved').length}/{group.installments.length}
                     </div>
-                    <div className="w-32 bg-gray-200 rounded-full h-2 mt-1">
+                    <div className="w-32 bg-[#324D3E]/10 rounded-full h-3 mt-1">
                       <div
-                        className="bg-emerald-600 h-2 rounded-full"
+                        className="bg-gradient-to-r from-[#4C3D19] to-[#889063] h-3 rounded-full transition-all duration-500"
                         style={{ width: `${(group.installments.filter(i => i.status === 'approved').length / group.installments.length) * 100}%` }}
                       />
                     </div>
@@ -285,19 +285,19 @@ export default function InvestorDetailPage({ params }: { params: Promise<{ userI
                       return (
                         <div
                           key={installment._id}
-                          className={`border-2 rounded-lg p-4 transition-all duration-300 ${effectiveStatus === 'approved' ? 'bg-green-50 border-green-200' :
-                            effectiveStatus === 'submitted' ? 'bg-yellow-50 border-yellow-200' :
-                              effectiveStatus === 'overdue' ? 'bg-red-50 border-red-200' :
-                                effectiveStatus === 'rejected' ? 'bg-red-50 border-red-200' :
-                                  'bg-gray-50 border-gray-200'
+                          className={`border-2 rounded-xl p-4 transition-all duration-300 hover:shadow-md ${effectiveStatus === 'approved' ? 'bg-gradient-to-r from-[#4C3D19]/5 to-[#4C3D19]/10 border-[#4C3D19]/20' :
+                            effectiveStatus === 'submitted' ? 'bg-gradient-to-r from-yellow-50 to-yellow-100 border-yellow-200' :
+                              effectiveStatus === 'overdue' ? 'bg-gradient-to-r from-red-50 to-red-100 border-red-200' :
+                                effectiveStatus === 'rejected' ? 'bg-gradient-to-r from-red-50 to-red-100 border-red-200' :
+                                  'bg-gradient-to-r from-[#324D3E]/5 to-[#889063]/5 border-[#324D3E]/10'
                             }`}
                         >
                           <div className="flex justify-between items-start mb-3">
                             <div>
-                              <div className="font-semibold text-gray-900">
+                              <div className="font-semibold text-[#324D3E] font-[family-name:var(--font-poppins)]">
                                 Angsuran #{installment.installmentNumber}
                               </div>
-                              <div className="text-sm text-gray-600">
+                              <div className="text-sm text-[#889063]">
                                 {formatDate(installment.dueDate)}
                               </div>
                             </div>
@@ -307,7 +307,7 @@ export default function InvestorDetailPage({ params }: { params: Promise<{ userI
                           </div>
 
                           <div className="mb-3">
-                            <div className="text-lg font-bold text-gray-900">
+                            <div className="text-lg font-bold text-[#324D3E]">
                               Rp {installment.amount.toLocaleString('id-ID')}
                             </div>
                           </div>
@@ -318,7 +318,7 @@ export default function InvestorDetailPage({ params }: { params: Promise<{ userI
                               <img
                                 src={installment.proofImageUrl}
                                 alt="Bukti Pembayaran"
-                                className="w-full h-20 object-cover rounded border cursor-pointer"
+                                className="w-full h-20 object-cover rounded-lg border border-[#324D3E]/20 cursor-pointer hover:shadow-md transition-all duration-300"
                                 onClick={() => window.open(installment.proofImageUrl, '_blank')}
                               />
                             </div>
@@ -326,8 +326,8 @@ export default function InvestorDetailPage({ params }: { params: Promise<{ userI
 
                           {/* Admin Notes */}
                           {installment.adminNotes && (
-                            <div className="bg-yellow-50 p-2 rounded text-xs text-yellow-800 mb-3">
-                              <strong>Catatan:</strong> {installment.adminNotes}
+                            <div className="bg-gradient-to-r from-yellow-50 to-yellow-100 p-3 rounded-lg text-xs text-yellow-800 mb-3 border border-yellow-200">
+                              <strong className="font-[family-name:var(--font-poppins)]">Catatan:</strong> {installment.adminNotes}
                             </div>
                           )}
 
@@ -335,7 +335,7 @@ export default function InvestorDetailPage({ params }: { params: Promise<{ userI
                           {installment.adminStatus === 'pending' && installment.proofImageUrl && (
                             <button
                               onClick={() => setReviewModal({ isOpen: true, installment })}
-                              className="w-full px-3 py-2 bg-emerald-600 text-white text-sm rounded hover:bg-emerald-700 transition-colors"
+                              className="w-full px-4 py-3 bg-gradient-to-r from-[#324D3E] to-[#4C3D19] text-white text-sm rounded-xl hover:shadow-lg hover:scale-105 transition-all duration-300 font-semibold font-[family-name:var(--font-poppins)]"
                             >
                               Review
                             </button>

@@ -1,6 +1,7 @@
 'use client';
 
 import { AdminLayout } from '@/components/admin/AdminLayout';
+import { motion } from 'framer-motion';
 import { useEffect, useState } from 'react';
 
 interface DashboardData {
@@ -68,7 +69,7 @@ export default function AdminDashboard() {
             <p className="text-gray-600 mt-2">Memuat data...</p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {[1,2,3,4].map((i) => (
+            {[1, 2, 3, 4].map((i) => (
               <div key={i} className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 animate-pulse">
                 <div className="h-4 bg-gray-200 rounded w-1/2 mb-2"></div>
                 <div className="h-8 bg-gray-200 rounded w-3/4"></div>
@@ -128,47 +129,103 @@ export default function AdminDashboard() {
     }
   ];
 
+  const containerVariants: any = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.2,
+        delayChildren: 0.1
+      }
+    }
+  };
+
+  const itemVariants: any = {
+    hidden: { opacity: 0, y: 20 },
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: {
+        type: "spring",
+        stiffness: 100,
+        damping: 15
+      }
+    }
+  };
+
   return (
     <AdminLayout>
-      <div className="space-y-8">
+      <motion.div
+        className="space-y-8"
+        initial="hidden"
+        animate="visible"
+        variants={containerVariants}
+      >
         {/* Page Header */}
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
-          <p className="text-gray-600 mt-2">Selamat datang di panel admin Investasi Hijau</p>
-        </div>
+        <motion.div variants={itemVariants} className="mb-6 sm:mb-8">
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-[#324D3E] font-[family-name:var(--font-poppins)]">Dashboard</h1>
+          <p className="text-[#889063] mt-1 sm:mt-2 text-sm sm:text-base">Selamat datang di panel admin Koperasi BAHTERA</p>
+        </motion.div>
 
         {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {stats.map((stat) => (
-            <div key={stat.name} className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow flex flex-col h-full">
+        <motion.div
+          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-6 sm:mb-8"
+          variants={containerVariants}
+        >
+          {stats.map((stat, index) => (
+            <motion.div
+              key={stat.name}
+              className="bg-white/80 backdrop-blur-lg rounded-2xl shadow-lg border border-[#324D3E]/10 p-4 sm:p-6 hover:shadow-xl hover:scale-105 transition-all duration-300 flex flex-col h-full"
+              variants={itemVariants}
+              whileHover={{
+                scale: 1.05,
+                boxShadow: "0 20px 25px -5px rgba(50, 77, 62, 0.1), 0 10px 10px -5px rgba(50, 77, 62, 0.04)"
+              }}
+            >
               <div className="flex items-center justify-between flex-1">
-                <div>
-                  <p className="text-sm font-medium text-gray-600">{stat.name}</p>
-                  <p className="text-2xl font-bold text-gray-900 mt-1">{stat.value}</p>
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs sm:text-sm font-medium text-[#889063] truncate">{stat.name}</p>
+                  <p className="text-lg sm:text-xl lg:text-2xl font-bold text-[#324D3E] mt-1 truncate">{stat.value}</p>
                 </div>
-                <div className="text-3xl">
+                <motion.div
+                  className="text-2xl sm:text-3xl ml-2 flex-shrink-0"
+                  animate={{
+                    rotate: [0, 10, -10, 0],
+                    transition: {
+                      duration: 2,
+                      repeat: Infinity,
+                      delay: index * 0.5
+                    }
+                  }}
+                >
                   {stat.icon}
-                </div>
+                </motion.div>
               </div>
-              <div className="mt-4 flex items-center">
-                <span className={`text-sm font-medium ${stat.changeType === 'positive' ? 'text-green-600' : 'text-red-600'}`}>
+              <div className="mt-3 sm:mt-4 flex items-center">
+                <span className={`text-xs sm:text-sm font-medium ${stat.changeType === 'positive' ? 'text-[#4C3D19]' : 'text-red-600'}`}>
                   {stat.change}
                 </span>
-                <span className="text-sm text-gray-500 ml-2">dari bulan lalu</span>
+                <span className="text-xs sm:text-sm text-[#889063] ml-2 truncate">dari bulan lalu</span>
               </div>
-            </div>
+            </motion.div>
           ))}
-        </div>
+        </motion.div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <motion.div
+          className="grid grid-cols-1 xl:grid-cols-2 gap-4 sm:gap-6 lg:gap-8 mb-6 sm:mb-8"
+          variants={containerVariants}
+        >
           {/* Recent Investors */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200">
-            <div className="p-6 border-b border-gray-200">
+          <motion.div
+            className="bg-white/80 backdrop-blur-lg rounded-2xl shadow-lg border border-[#324D3E]/10"
+            variants={itemVariants}
+          >
+            <div className="p-6 border-b border-[#324D3E]/10">
               <div className="flex items-center justify-between">
-                <h2 className="text-xl font-bold text-gray-900">Investor Terbaru</h2>
+                <h2 className="text-xl font-bold text-[#324D3E] font-[family-name:var(--font-poppins)]">Investor Terbaru</h2>
                 <button
                   onClick={() => window.location.href = '/admin/investors'}
-                  className="text-emerald-600 hover:text-emerald-700 font-medium text-sm"
+                  className="text-[#4C3D19] hover:text-[#324D3E] font-medium text-sm transition-colors"
                 >
                   Lihat Semua
                 </button>
@@ -182,23 +239,22 @@ export default function AdminDashboard() {
                   </div>
                 ) : (
                   dashboardData.recentInvestors.map((investor) => (
-                    <div key={investor.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                    <div key={investor.id} className="flex items-center justify-between p-4 bg-gradient-to-r from-[#F8FAF9] to-[#E8F5E8] rounded-xl hover:shadow-md transition-all duration-300">
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-gradient-to-r from-emerald-500 to-green-600 rounded-full flex items-center justify-center">
+                        <div className="w-10 h-10 bg-gradient-to-r from-[#324D3E] to-[#4C3D19] rounded-full flex items-center justify-center">
                           <span className="text-white font-bold">{investor.name.charAt(0)}</span>
                         </div>
                         <div>
-                          <p className="font-medium text-gray-900">{investor.name}</p>
-                          <p className="text-sm text-gray-500">{investor.email}</p>
+                          <p className="font-medium text-[#324D3E]">{investor.name}</p>
+                          <p className="text-sm text-[#889063]">{investor.email}</p>
                         </div>
                       </div>
                       <div className="text-right">
-                        <p className="font-medium text-gray-900">{investor.investment}</p>
-                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                          investor.status === 'active'
-                            ? 'bg-green-100 text-green-800'
-                            : 'bg-red-100 text-red-800'
-                        }`}>
+                        <p className="font-medium text-[#324D3E]">{investor.investment}</p>
+                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${investor.status === 'active'
+                          ? 'bg-[#4C3D19]/10 text-[#4C3D19]'
+                          : 'bg-red-100 text-red-800'
+                          }`}>
                           {investor.status === 'active' ? 'Aktif' : 'Tidak Aktif'}
                         </span>
                       </div>
@@ -207,16 +263,19 @@ export default function AdminDashboard() {
                 )}
               </div>
             </div>
-          </div>
+          </motion.div>
 
           {/* Tree Statistics */}
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200">
-            <div className="p-6 border-b border-gray-200">
+          <motion.div
+            className="bg-white/80 backdrop-blur-lg rounded-2xl shadow-lg border border-[#324D3E]/10"
+            variants={itemVariants}
+          >
+            <div className="p-6 border-b border-[#324D3E]/10">
               <div className="flex items-center justify-between">
-                <h2 className="text-xl font-bold text-gray-900">Statistik Pohon</h2>
+                <h2 className="text-xl font-bold text-[#324D3E] font-[family-name:var(--font-poppins)]">Statistik Pohon</h2>
                 <button
                   onClick={() => window.location.href = '/admin/trees'}
-                  className="text-emerald-600 hover:text-emerald-700 font-medium text-sm"
+                  className="text-[#4C3D19] hover:text-[#324D3E] font-medium text-sm transition-colors"
                 >
                   Lihat Semua
                 </button>
@@ -232,18 +291,17 @@ export default function AdminDashboard() {
                   dashboardData.treeStats.map((tree) => (
                     <div key={tree.name} className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
-                        <div className={`w-3 h-3 rounded-full ${
-                          tree.color === 'amber' ? 'bg-amber-500' :
+                        <div className={`w-3 h-3 rounded-full ${tree.color === 'amber' ? 'bg-amber-500' :
                           tree.color === 'green' ? 'bg-green-500' : 'bg-emerald-500'
-                        }`}></div>
+                          }`}></div>
                         <div>
-                          <p className="font-medium text-gray-900">{tree.name}</p>
-                          <p className="text-sm text-gray-500">{tree.count} pohon</p>
+                          <p className="font-medium text-[#324D3E]">{tree.name}</p>
+                          <p className="text-sm text-[#889063]">{tree.count} pohon</p>
                         </div>
                       </div>
                       <div className="text-right">
-                        <p className="font-medium text-gray-900">{tree.value}</p>
-                        <p className="text-sm text-green-600">{tree.growth}</p>
+                        <p className="font-medium text-[#324D3E]">{tree.value}</p>
+                        <p className="text-sm text-[#4C3D19]">{tree.growth}</p>
                       </div>
                     </div>
                   ))
@@ -251,79 +309,95 @@ export default function AdminDashboard() {
               </div>
 
               {/* Stats Summary */}
-              <div className="mt-6 p-4 bg-gradient-to-r from-emerald-50 to-green-50 rounded-lg">
+              <div className="mt-6 p-4 bg-gradient-to-r from-[#F8FAF9] to-[#E8F5E8] rounded-xl">
                 <div className="grid grid-cols-3 gap-4 text-center">
                   <div>
-                    <p className="text-sm text-gray-600">Aktif</p>
-                    <p className="text-lg font-bold text-emerald-600">{dashboardData.investorStats.active}</p>
+                    <p className="text-sm text-[#889063]">Aktif</p>
+                    <p className="text-lg font-bold text-[#4C3D19]">{dashboardData.investorStats.active}</p>
                   </div>
                   <div>
-                    <p className="text-sm text-gray-600">Tidak Aktif</p>
+                    <p className="text-sm text-[#889063]">Tidak Aktif</p>
                     <p className="text-lg font-bold text-red-600">{dashboardData.investorStats.inactive}</p>
                   </div>
                   <div>
-                    <p className="text-sm text-gray-600">Total</p>
-                    <p className="text-lg font-bold text-gray-900">{dashboardData.investorStats.total}</p>
+                    <p className="text-sm text-[#889063]">Total</p>
+                    <p className="text-lg font-bold text-[#324D3E]">{dashboardData.investorStats.total}</p>
                   </div>
                 </div>
               </div>
             </div>
-          </div>
-        </div>
+          </motion.div>
+        </motion.div>
 
         {/* Quick Actions */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-bold text-gray-900">Aksi Cepat</h2>
+        <motion.div
+          className="bg-white/80 backdrop-blur-lg rounded-2xl shadow-lg border border-[#324D3E]/10 p-6"
+          variants={itemVariants}
+        >
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 sm:mb-6 gap-3">
+            <h2 className="text-lg sm:text-xl font-bold text-[#324D3E] font-[family-name:var(--font-poppins)]">Aksi Cepat</h2>
             <button
               onClick={fetchDashboardData}
-              className="text-emerald-600 hover:text-emerald-700 font-medium text-sm flex items-center gap-2"
+              className="text-[#4C3D19] hover:text-[#324D3E] font-medium text-sm flex items-center gap-2 transition-colors self-start sm:self-auto"
             >
               🔄 Refresh Data
             </button>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
             <button
-              onClick={() => window.location.href = '/admin/investors'}
-              className="flex items-center gap-3 p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-emerald-500 hover:bg-emerald-50 transition-all group"
+              onClick={() => window.location.href = '/admin/verification'}
+              className="flex items-center gap-3 p-4 border-2 border-dashed border-[#324D3E]/20 rounded-xl hover:border-[#324D3E] hover:bg-[#324D3E]/5 transition-all group"
             >
-              <div className="w-10 h-10 bg-emerald-100 group-hover:bg-emerald-200 rounded-lg flex items-center justify-center">
-                <span className="text-emerald-600">👥</span>
+              <div className="w-10 h-10 bg-[#324D3E]/10 group-hover:bg-[#324D3E]/20 rounded-xl flex items-center justify-center transition-colors">
+                <span className="text-[#324D3E]">✅</span>
               </div>
               <div className="text-left">
-                <p className="font-medium text-gray-900">Kelola Investor</p>
-                <p className="text-sm text-gray-500">Lihat dan kelola investor</p>
+                <p className="font-medium text-[#324D3E]">Verifikasi User</p>
+                <p className="text-sm text-[#889063]">Verifikasi KTP dan foto user</p>
+              </div>
+            </button>
+
+            <button
+              onClick={() => window.location.href = '/admin/investors'}
+              className="flex items-center gap-3 p-4 border-2 border-dashed border-[#324D3E]/20 rounded-xl hover:border-[#324D3E] hover:bg-[#324D3E]/5 transition-all group"
+            >
+              <div className="w-10 h-10 bg-[#324D3E]/10 group-hover:bg-[#324D3E]/20 rounded-xl flex items-center justify-center transition-colors">
+                <span className="text-[#324D3E]">👥</span>
+              </div>
+              <div className="text-left">
+                <p className="font-medium text-[#324D3E]">Kelola Investor</p>
+                <p className="text-sm text-[#889063]">Lihat dan kelola investor</p>
               </div>
             </button>
 
             <button
               onClick={() => window.location.href = '/admin/trees'}
-              className="flex items-center gap-3 p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-green-500 hover:bg-green-50 transition-all group"
+              className="flex items-center gap-3 p-4 border-2 border-dashed border-[#4C3D19]/20 rounded-xl hover:border-[#4C3D19] hover:bg-[#4C3D19]/5 transition-all group"
             >
-              <div className="w-10 h-10 bg-green-100 group-hover:bg-green-200 rounded-lg flex items-center justify-center">
-                <span className="text-green-600">🌳</span>
+              <div className="w-10 h-10 bg-[#4C3D19]/10 group-hover:bg-[#4C3D19]/20 rounded-xl flex items-center justify-center transition-colors">
+                <span className="text-[#4C3D19]">🌳</span>
               </div>
               <div className="text-left">
-                <p className="font-medium text-gray-900">Kelola Pohon</p>
-                <p className="text-sm text-gray-500">Lihat dan kelola data pohon</p>
+                <p className="font-medium text-[#324D3E]">Kelola Pohon</p>
+                <p className="text-sm text-[#889063]">Lihat dan kelola data pohon</p>
               </div>
             </button>
 
             <button
               onClick={fetchDashboardData}
-              className="flex items-center gap-3 p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-all group"
+              className="flex items-center gap-3 p-4 border-2 border-dashed border-[#889063]/20 rounded-xl hover:border-[#889063] hover:bg-[#889063]/5 transition-all group"
             >
-              <div className="w-10 h-10 bg-blue-100 group-hover:bg-blue-200 rounded-lg flex items-center justify-center">
-                <span className="text-blue-600">📊</span>
+              <div className="w-10 h-10 bg-[#889063]/10 group-hover:bg-[#889063]/20 rounded-xl flex items-center justify-center transition-colors">
+                <span className="text-[#889063]">📊</span>
               </div>
               <div className="text-left">
-                <p className="font-medium text-gray-900">Refresh Dashboard</p>
-                <p className="text-sm text-gray-500">Perbarui data terbaru</p>
+                <p className="font-medium text-[#324D3E]">Refresh Dashboard</p>
+                <p className="text-sm text-[#889063]">Perbarui data terbaru</p>
               </div>
             </button>
           </div>
-        </div>
-      </div>
+        </motion.div>
+      </motion.div>
     </AdminLayout>
   );
 }

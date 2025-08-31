@@ -6,10 +6,10 @@ export interface IPayment extends Document {
   userId: string;
   amount: number;
   currency: string;
-  
+
   // Payment type: registration, full-investment, cicilan-installment
   paymentType: 'registration' | 'full-investment' | 'cicilan-installment';
-  
+
   // For Midtrans payments (registration & full investment)
   transactionStatus?: 'pending' | 'settlement' | 'capture' | 'deny' | 'cancel' | 'expire' | 'failure';
   fraudStatus?: string;
@@ -25,17 +25,17 @@ export interface IPayment extends Document {
   installmentAmount?: number; // Amount per installment
   paymentTerm?: string; // monthly, quarterly, semiannual, annual
   dueDate?: Date;
-  
+
   // Payment proof (for cicilan installments)
   proofImageUrl?: string;
   proofDescription?: string;
-  
+
   // Admin review (for cicilan installments)
   adminStatus?: 'pending' | 'approved' | 'rejected';
   adminReviewDate?: Date;
   adminReviewBy?: string;
   adminNotes?: string;
-  
+
   // Product info
   productName?: string;
   productId?: string;
@@ -60,7 +60,7 @@ export interface IPayment extends Document {
   // Status tracking
   isProcessed: boolean;
   processingError?: string;
-  
+
   // General status (for all payment types)
   status: 'pending' | 'approved' | 'rejected' | 'completed' | 'cancelled';
 
@@ -97,7 +97,7 @@ const PaymentSchema: Schema = new Schema({
     required: true,
     enum: ['registration', 'full-investment', 'cicilan-installment'],
   },
-  
+
   // For Midtrans payments
   transactionStatus: {
     type: String,
@@ -116,7 +116,7 @@ const PaymentSchema: Schema = new Schema({
   midtransResponse: {
     type: Schema.Types.Mixed,
   },
-  
+
   // For cicilan installments
   cicilanOrderId: {
     type: String,
@@ -141,7 +141,7 @@ const PaymentSchema: Schema = new Schema({
   dueDate: {
     type: Date,
   },
-  
+
   // Payment proof
   proofImageUrl: {
     type: String,
@@ -151,7 +151,7 @@ const PaymentSchema: Schema = new Schema({
     type: String,
     trim: true,
   },
-  
+
   // Admin review
   adminStatus: {
     type: String,
@@ -169,7 +169,7 @@ const PaymentSchema: Schema = new Schema({
     type: String,
     trim: true,
   },
-  
+
   // Product info
   productName: {
     type: String,
@@ -179,7 +179,7 @@ const PaymentSchema: Schema = new Schema({
     type: String,
     trim: true,
   },
-  
+
   // Customer details for registration
   customerData: {
     fullName: String,
@@ -196,7 +196,7 @@ const PaymentSchema: Schema = new Schema({
     ktpImageUrl: String,
     faceImageUrl: String,
   },
-  
+
   // Status tracking
   isProcessed: {
     type: Boolean,

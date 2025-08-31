@@ -27,7 +27,7 @@ export function CicilanModal({ isOpen, onClose, plan, onSuccess, onError }: Cici
   ];
 
   const selectedTermDetails = paymentTerms.find(term => term.value === selectedTerm);
-  
+
   // Calculate price based on quantity selection
   const currentPrice = plan ? (selectedQuantity === 1 ? Math.ceil(plan.price / 10) : plan.price) : 0;
   const installmentAmount = selectedTermDetails && currentPrice ? Math.ceil(currentPrice / selectedTermDetails.installments) : 0;
@@ -121,7 +121,7 @@ export function CicilanModal({ isOpen, onClose, plan, onSuccess, onError }: Cici
                   Rp {plan ? Math.ceil(plan.price / 10).toLocaleString('id-ID') : '0'}
                 </div>
               </label>
-              
+
               <label
                 className={`flex flex-col items-center p-4 border-2 rounded-2xl cursor-pointer transition-all duration-300 hover:shadow-lg ${
                   selectedQuantity === 10

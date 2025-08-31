@@ -1,7 +1,7 @@
 // src/app/api/plants/[id]/income/route.ts
-import { type NextRequest, NextResponse } from "next/server"
-import { PlantInstance } from "@/models"
 import { ensureConnection, generateUniqueId } from "@/lib/utils/utils/database"
+import { PlantInstance } from "@/models"
+import { type NextRequest, NextResponse } from "next/server"
 
 // Helper agar kompatibel Next 14 & 15 (params bisa object atau Promise)
 async function getId(ctx: { params: Promise<{ id: string }> } | { params: { id: string } }) {
@@ -14,6 +14,7 @@ export async function POST(request: NextRequest, ctx: { params: Promise<{ id: st
   try {
     await ensureConnection()
     const id = await getId(ctx)
+    console.log(id, 'id')
 
     const body = await request.json()
     const incomeId = await generateUniqueId("income-")
@@ -37,6 +38,7 @@ export async function POST(request: NextRequest, ctx: { params: Promise<{ id: st
 
     return NextResponse.json(newIncome, { status: 201 })
   } catch (error) {
+    console.error(error)
     return NextResponse.json({ error: "Failed to add income record" }, { status: 500 })
   }
 }
@@ -63,6 +65,7 @@ export async function DELETE(request: NextRequest, ctx: { params: Promise<{ id: 
 
     return NextResponse.json({ message: "Income record deleted successfully" })
   } catch (error) {
+    console.error(error)
     return NextResponse.json({ error: "Failed to delete income record" }, { status: 500 })
   }
 }
@@ -111,6 +114,7 @@ export async function GET(request: NextRequest, ctx: { params: Promise<{ id: str
       },
     })
   } catch (error) {
+    console.error(error)
     return NextResponse.json({ error: "Failed to fetch income records" }, { status: 500 })
   }
 }

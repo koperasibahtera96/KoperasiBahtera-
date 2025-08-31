@@ -2,13 +2,14 @@ import { midtransService } from '@/lib/midtrans';
 import dbConnect from '@/lib/mongodb';
 import Payment from '@/models/Payment';
 import bcrypt from 'bcryptjs';
+import mongoose from 'mongoose';
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     
-    const { amount, customerDetails, orderId, itemDetails, registrationData } = body;
+    const { amount, customerDetails, orderId, itemDetails, registrationData, callbacks } = body;
 
     // Validate required fields
     if (!amount || !customerDetails || !orderId) {
@@ -31,6 +32,7 @@ export async function POST(request: NextRequest) {
       amount,
       customerDetails,
       itemDetails,
+      callbacks,
     };
 
     const transaction = await midtransService.createTransaction(paymentData);
@@ -46,6 +48,8 @@ export async function POST(request: NextRequest) {
       orderId,
       amount,
       currency: 'IDR',
+      paymentType: 'registration', // Set payment type for registration
+      userId: new mongoose.Types.ObjectId(), // Temporary ObjectId, will be updated after user creation
       transactionStatus: 'pending',
       customerData: registrationData ? {
         ...registrationData,
@@ -53,6 +57,7 @@ export async function POST(request: NextRequest) {
       } : null,
       midtransResponse: transaction,
       isProcessed: false,
+      status: 'pending', // Set default status
     });
 
     await payment.save();
