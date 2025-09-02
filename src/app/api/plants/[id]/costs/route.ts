@@ -1,7 +1,7 @@
 // src/app/api/plants/[id]/costs/route.ts
-import { type NextRequest, NextResponse } from "next/server"
-import { PlantInstance } from "@/models"
 import { ensureConnection, generateUniqueId } from "@/lib/utils/utils/database"
+import { PlantInstance } from "@/models"
+import { type NextRequest, NextResponse } from "next/server"
 
 // ---------- HELPERS ----------
 async function getId(ctx: { params: Promise<{ id: string }> } | { params: { id: string } }) {
@@ -38,6 +38,7 @@ export async function POST(request: NextRequest, ctx: { params: Promise<{ id: st
 
     return NextResponse.json(newCost, { status: 201 })
   } catch (error) {
+    console.error('Error adding operational cost:', error);
     return NextResponse.json({ error: "Failed to add operational cost" }, { status: 500 })
   }
 }
@@ -67,6 +68,7 @@ export async function DELETE(request: NextRequest, ctx: { params: Promise<{ id: 
 
     return NextResponse.json({ message: "Operational cost deleted successfully" })
   } catch (error) {
+    console.error('Error deleting operational cost:', error);
     return NextResponse.json({ error: "Failed to delete operational cost" }, { status: 500 })
   }
 }
@@ -83,7 +85,7 @@ export async function GET(request: NextRequest, ctx: { params: Promise<{ id: str
     const monthFilter = searchParams.get("month")
     const skip = (page - 1) * limit
 
-    const plant = await PlantInstance.findOne({ id }).lean()
+    const plant = await PlantInstance.findOne({ id })
     if (!plant) {
       return NextResponse.json({ error: "Plant not found" }, { status: 404 })
     }
@@ -117,6 +119,7 @@ export async function GET(request: NextRequest, ctx: { params: Promise<{ id: str
       },
     })
   } catch (error) {
+    console.error('Error fetching operational costs:', error);
     return NextResponse.json({ error: "Failed to fetch operational costs" }, { status: 500 })
   }
 }

@@ -39,9 +39,13 @@ export interface Investor {
 }
 
 export interface CicilanPayment {
-    _id: string;
+    _id: {
+        $oid: string;
+    };
     orderId: string;
-    userId: string;
+    userId: {
+        $oid: string;
+    };
     amount: number;
     currency: 'IDR';
     paymentType: 'cicilan-installment';
@@ -50,7 +54,9 @@ export interface CicilanPayment {
     totalInstallments: number;
     installmentAmount: number;
     paymentTerm: 'monthly' | 'quarterly' | 'annual';
-    dueDate: Date;
+    dueDate: {
+        $date: string;
+    };
     adminStatus: 'pending' | 'approved' | 'rejected';
     productName: string;
     productId: string;
@@ -59,10 +65,18 @@ export interface CicilanPayment {
     proofImageUrl?: string;
     proofDescription?: string;
     adminNotes?: string;
-    adminReviewBy?: string;
-    adminReviewDate?: Date;
-    createdAt: Date;
-    updatedAt: Date;
+    adminReviewBy?: {
+        $oid: string;
+    };
+    adminReviewDate?: {
+        $date: string;
+    };
+    createdAt: {
+        $date: string;
+    };
+    updatedAt: {
+        $date: string;
+    };
     __v: number;
 }
 
@@ -75,8 +89,12 @@ export interface CicilanInstallmentWithPayment extends CicilanInstallment {
     proofDescription?: string;
     adminStatus: 'pending' | 'approved' | 'rejected';
     adminNotes?: string;
-    adminReviewBy?: string;
-    adminReviewDate?: Date;
+    adminReviewBy?: {
+        $oid: string;
+    };
+    adminReviewDate?: {
+        $date: string;
+    };
     submissionDate?: Date;
     status: 'pending' | 'submitted' | 'approved' | 'rejected' | 'overdue';
 }

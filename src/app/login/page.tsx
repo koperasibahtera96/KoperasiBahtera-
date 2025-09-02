@@ -3,6 +3,7 @@
 import { FormField } from '@/components/forms/FormField';
 import { Input } from '@/components/forms/Input';
 import { useSession } from 'next-auth/react';
+import Image from 'next/image';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 
@@ -150,10 +151,12 @@ export default function LoginPage() {
         {/* Header */}
         <div className="text-center mb-8">
           <Link href="/" className="inline-flex items-center justify-center gap-3 mb-6">
-            <img
+            <Image
               src="/images/koperasi-logo.jpg"
               alt="Koperasi Logo"
               className="w-16 h-16 rounded-full"
+              width={64}
+              height={64}
             />
             <div className="text-left">
               <h1 className="text-2xl sm:text-3xl font-bold text-white font-[family-name:var(--font-poppins)]">Investasi Hijau</h1>

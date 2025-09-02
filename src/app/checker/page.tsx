@@ -1,15 +1,15 @@
 "use client"
 
+import LandingNavbar from '@/components/landing/LandingNavbar'
 import { Badge } from "@/components/ui-staff/badge"
 import { Button } from "@/components/ui-staff/button"
 import { Input } from "@/components/ui-staff/input"
-import type { Plant } from "@/types/checker"
+import type { PlantInstance } from "@/types/checker"
+import { Calendar, ChevronLeft, ChevronRight, Leaf, MapPin, Search, User } from 'lucide-react'
 import Image from "next/image"
 import Link from "next/link"
 import type React from "react"
 import { useEffect, useState } from "react"
-import LandingNavbar from '@/components/landing/LandingNavbar'
-import { User, MapPin, Calendar, Leaf, Search, ChevronLeft, ChevronRight } from 'lucide-react'
 
 
 const statusColors: Record<string, string> = {
@@ -22,7 +22,7 @@ const statusColors: Record<string, string> = {
 const PLANTS_PER_PAGE = 9
 
 export default function StaffDashboard() {
-  const [plants, setPlants] = useState<Plant[]>([])
+  const [plants, setPlants] = useState<PlantInstance[]>([])
   const [loading, setLoading] = useState(true)
   const [activeFilter, setActiveFilter] = useState("Semua Tanaman")
   const [searchQuery, setSearchQuery] = useState("")
@@ -74,20 +74,20 @@ const fetchPlants = async () => {
   }
 
   const getUniquePlantNames = (): string[] => {
-    const uniqueNames = [...new Set(plants.map((plant) => plant.name))].sort()
+    const uniqueNames = [...new Set(plants.map((plant) => plant.instanceName))].sort()
     return uniqueNames
   }
 
   const filteredPlants = plants.filter((plant) => {
     const matchesSearch =
-      plant.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      plant.instanceName.toLowerCase().includes(searchQuery.toLowerCase()) ||
       plant.owner.toLowerCase().includes(searchQuery.toLowerCase()) ||
       plant.memberId.toLowerCase().includes(searchQuery.toLowerCase())
 
     if (activeFilter === "Semua Tanaman") return matchesSearch
     if (activeFilter === "Berdasarkan Tanaman") {
       if (selectedPlantName) {
-        return matchesSearch && plant.name === selectedPlantName
+        return matchesSearch && plant.instanceName === selectedPlantName
       }
       return matchesSearch
     }
@@ -135,7 +135,7 @@ const fetchPlants = async () => {
         <header className="w-full fixed top-0 z-50">
           <LandingNavbar hideNavigation={true} />
         </header>
-        
+
         <main className="pt-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
           <div className="space-y-8 py-8">
             <div className="text-center">
@@ -161,7 +161,7 @@ const fetchPlants = async () => {
       <header className="w-full fixed top-0 z-50">
         <LandingNavbar hideNavigation={true} />
       </header>
-      
+
       <main className="pt-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
         <div className="space-y-8 py-8">
           {/* Page Header */}
@@ -342,7 +342,7 @@ const fetchPlants = async () => {
                             {plant.fotoGambar ? (
                               <Image
                                 src={plant.fotoGambar || "/placeholder.svg"}
-                                alt={plant.name}
+                                alt={plant.instanceName}
                                 fill
                                 sizes="48px"
                                 className="object-cover"
@@ -358,11 +358,11 @@ const fetchPlants = async () => {
                           </div>
 
                           <div>
-                            <h3 className="font-bold text-lg text-[#324D3E] group-hover:text-[#4C3D19] transition-colors mb-1">{plant.name}</h3>
+                            <h3 className="font-bold text-lg text-[#324D3E] group-hover:text-[#4C3D19] transition-colors mb-1">{plant.instanceName}</h3>
                             <p className="text-xs text-[#889063]">QR: {plant.qrCode}</p>
                           </div>
                         </div>
-                        
+
                         <Badge className={`${statusColors[plant.status] || "bg-gray-100 text-gray-800"} shadow-sm px-2 py-1 text-xs font-medium rounded-lg`}>
                           {plant.status}
                         </Badge>

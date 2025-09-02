@@ -1,14 +1,41 @@
-import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import dbConnect from '@/lib/mongodb';
 import { Investor } from '@/models';
+import User from '@/models/User';
 import mongoose from 'mongoose';
+import { getServerSession } from 'next-auth';
+import { NextResponse } from 'next/server';
+
+async function getUserName(userId: string): Promise<string> {
+  try {
+    if (!mongoose.Types.ObjectId.isValid(userId)) {
+      return userId; // Return original if not a valid ObjectId
+    }
+    const user = await User.findById(userId).select('fullName');
+    return user ? user.fullName : userId;
+  } catch (error) {
+    console.error('Error getting user name:', error);
+    return userId; // Return original ID if lookup fails
+  }
+}
+
+async function populateHistoryUserNames(history: any[]): Promise<any[]> {
+  if (!history || history.length === 0) return history;
+
+  const populatedHistory = await Promise.all(
+    history.map(async (item) => ({
+      ...item,
+      addedBy: item.addedBy ? await getUserName(item.addedBy) : item.addedBy
+    }))
+  );
+
+  return populatedHistory;
+}
 
 export async function GET() {
   try {
     const session = await getServerSession(authOptions);
-    
+
     if (!session?.user) {
       return NextResponse.json(
         { error: 'Unauthorized' },
@@ -27,8 +54,10 @@ export async function GET() {
     await dbConnect();
 
     // Find investor record for the current user
-    const investor = await Investor.findOne({ userId: session.user.id }).lean();
-    
+    const investor = await Investor.findOne({ userId: session.user.id }).populate('investments.plantInstanceId');
+
+    console.log(investor, 'investor')
+
     if (!investor) {
       // Return empty data instead of error for users with no investments yet
       return NextResponse.json({
@@ -44,25 +73,82 @@ export async function GET() {
 
     // Calculate investment summary
     const investments = investor.investments || [];
-    const totalInvestment = investments.reduce((sum, inv) => sum + (Number(inv.totalAmount) || 0), 0);
-    
+    const totalAmount = investments.reduce((sum: number, inv: any) => sum + (Number(inv.totalAmount) || 0), 0);
+    const totalPaid = investments.reduce((sum: number, inv: any) => sum + (Number(inv.amountPaid) || 0), 0);
+    const jumlahPohon = investments.length;
+
     // For now, return basic data - you can enhance this later with profit calculations
-    const investmentData = investments.map((inv) => ({
-      id: inv.investmentId || inv._id,
-      productName: inv.productName,
-      amount: Number(inv.totalAmount) || 0,
-      investmentDate: inv.investmentDate,
-      status: inv.status || 'active',
-      // Add more fields as needed
+    const investmentData = await Promise.all(investments.map(async (inv: any) => {
+      const totalAmount = Number(inv.totalAmount) || 0;
+      const amountPaid = Number(inv.amountPaid) || 0;
+      const progress = totalAmount > 0 ? Math.round((amountPaid / totalAmount) * 100) : 0;
+
+      // Populate user names in recent costs
+      const recentCosts = await Promise.all((inv.plantInstanceId?.operationalCosts?.slice(-3) || []).map(async (cost: any) => ({
+        id: cost.id,
+        date: cost.date,
+        description: cost.description,
+        amount: cost.amount,
+        addedBy: cost.addedBy ? await getUserName(cost.addedBy) : cost.addedBy
+      })));
+
+      // Populate user names in recent income
+      const recentIncome = await Promise.all((inv.plantInstanceId?.incomeRecords?.slice(-3) || []).map(async (income: any) => ({
+        id: income.id,
+        date: income.date,
+        description: income.description,
+        amount: income.amount,
+        addedBy: income.addedBy ? await getUserName(income.addedBy) : income.addedBy
+      })));
+
+      // Populate user names in history
+      const populatedHistory = inv.plantInstanceId?.history ? await populateHistoryUserNames(inv.plantInstanceId.history) : [];
+
+      return {
+        investmentId: inv.investmentId || inv._id.toString(),
+        productName: inv.productName,
+        paymentType: inv.paymentType,
+        status: inv.status || 'active',
+        totalAmount,
+        amountPaid,
+        progress,
+        investmentDate: inv.investmentDate,
+        completionDate: inv.completionDate,
+        nextPaymentInfo: inv.nextPaymentInfo,
+        plantInstance: inv.plantInstanceId ? {
+          id: inv.plantInstanceId._id.toString(),
+          plantType: inv.plantInstanceId.plantType,
+          instanceName: inv.plantInstanceId.instanceName,
+          baseAnnualROI: inv.plantInstanceId.baseAnnualROI,
+          location: inv.plantInstanceId.location,
+          status: inv.plantInstanceId.status,
+          qrCode: inv.plantInstanceId.qrCode,
+          fotoGambar: inv.plantInstanceId.fotoGambar,
+          owner: inv.plantInstanceId.owner,
+          contractNumber: inv.plantInstanceId.contractNumber,
+          totalOperationalCosts: inv.plantInstanceId.operationalCosts?.reduce((sum: number, cost: any) => sum + cost.amount, 0) || 0,
+          totalIncome: inv.plantInstanceId.incomeRecords?.reduce((sum: number, income: any) => sum + income.amount, 0) || 0,
+          recentCosts,
+          recentIncome,
+          history: populatedHistory,
+          lastUpdate: inv.plantInstanceId.lastUpdate,
+        } : null,
+      };
     }));
 
     return NextResponse.json({
       success: true,
       data: {
+        userInfo: {
+          name: session?.user?.name || '',
+          email: session?.user?.email || '',
+          phoneNumber: '', // You might want to add this to your user model
+        },
+        totalInvestments: investments.length,
+        totalAmount,
+        totalPaid,
+        jumlahPohon,
         investments: investmentData,
-        totalInvestment,
-        totalProfit: 0, // Calculate this based on your business logic
-        overallROI: 0   // Calculate this based on your business logic
       }
     });
 

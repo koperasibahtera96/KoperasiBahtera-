@@ -17,3 +17,11 @@ export function formatCurrency(amount: number): string {
 export function formatPercentage(value: number): string {
   return `${value.toFixed(1)}%`
 }
+
+
+export function formatNumber(value: string) {
+  const num = value.replace(/\D/g, "") // remove non-digits
+  if (!num) return ""
+  return parseInt(num, 10).toLocaleString("id-ID")
+
+}

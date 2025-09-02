@@ -2,7 +2,6 @@
 
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import { useAlert } from '@/components/ui/Alert';
-import { useConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { Select } from '@/components/ui/Select';
 import { useEffect, useState } from 'react';
 
@@ -82,15 +81,10 @@ export default function TreesPage() {
   const [expandedTypes, setExpandedTypes] = useState<Set<string>>(new Set());
   const [expandedOwners, setExpandedOwners] = useState<Set<string>>(new Set());
 
-  const { showSuccess, showError, AlertComponent } = useAlert();
-  const { showDeleteConfirm, ConfirmComponent } = useConfirmDialog();
+  const { showError, AlertComponent } = useAlert();
 
 
   // Format number helper functions
-  const formatNumber = (num: number | null | undefined) => {
-    if (num == null || num === undefined) return '0';
-    return num.toLocaleString('id-ID');
-  };
 
   const formatCurrency = (num: number) => {
     return new Intl.NumberFormat('id-ID', {
@@ -156,7 +150,7 @@ export default function TreesPage() {
     setExpandedOwners(newExpanded);
   };
 
-  const filteredData = treesData?.groupedData.filter(group => 
+  const filteredData = treesData?.groupedData.filter(group =>
     selectedType === 'all' || group.plantType === selectedType
   ) || [];
 
@@ -246,7 +240,7 @@ export default function TreesPage() {
             filteredData.map((group) => (
               <div key={group.plantType} className="bg-white/80 backdrop-blur-lg rounded-2xl shadow-lg border border-[#324D3E]/10 overflow-hidden">
                 {/* Group Header */}
-                <div 
+                <div
                   className="bg-[#324D3E]/5 p-4 lg:p-6 cursor-pointer hover:bg-[#324D3E]/10 transition-colors"
                   onClick={() => toggleExpanded(group.plantType)}
                 >
@@ -303,7 +297,7 @@ export default function TreesPage() {
                       return (
                         <div key={ownerKey} className="bg-white/30">
                           {/* Owner Header */}
-                          <div 
+                          <div
                             className="p-4 lg:p-6 cursor-pointer hover:bg-[#324D3E]/5 transition-colors border-l-4 border-[#4C3D19]"
                             onClick={() => toggleOwnerExpanded(ownerKey)}
                           >
@@ -412,7 +406,7 @@ export default function TreesPage() {
                                         </div>
                                         <div className="mt-2">
                                           <div className="bg-gray-200 rounded-full h-2">
-                                            <div 
+                                            <div
                                               className="bg-green-500 h-2 rounded-full"
                                               style={{ width: `${ownerGroup.relatedInvestor.totalInvestasi > 0 ? (ownerGroup.relatedInvestor.totalPaid / ownerGroup.relatedInvestor.totalInvestasi) * 100 : 0}%` }}
                                             ></div>

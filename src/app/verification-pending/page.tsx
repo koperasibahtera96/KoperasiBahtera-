@@ -1,17 +1,37 @@
 'use client';
 
 import { useSession } from 'next-auth/react';
-import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
+import { useVerificationStatus } from '@/hooks/useVerificationStatus';
 
 export default function VerificationPendingPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
+  const { refreshVerificationStatus } = useVerificationStatus();
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  const handleManualRefresh = async () => {
+    setIsRefreshing(true);
+    try {
+      console.log('Current session before refresh:', session?.user);
+      const updatedUser = await refreshVerificationStatus();
+      console.log('Updated user data:', updatedUser);
+      // Force a re-render by waiting a bit for the session to update
+      setTimeout(() => {
+        console.log('Session after refresh:', session?.user);
+      }, 1000);
+    } catch (error) {
+      console.error('Error refreshing status:', error);
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
 
   useEffect(() => {
     if (status === 'loading') return;
-    
+
     if (!session) {
       router.push('/login');
       return;
@@ -19,7 +39,7 @@ export default function VerificationPendingPage() {
 
     // If user is already verified, redirect to dashboard
     if (session.user.canPurchase) {
-      router.push('/landing');
+      router.push('/');
       return;
     }
   }, [session, status, router]);
@@ -95,6 +115,26 @@ export default function VerificationPendingPage() {
           {statusInfo.description}
         </p>
 
+        {/* Manual Refresh Button */}
+        <div className="mb-6">
+          <button
+            onClick={handleManualRefresh}
+            disabled={isRefreshing}
+            className="w-full bg-gray-100 text-gray-700 py-2 px-4 rounded-lg font-medium hover:bg-gray-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+          >
+            {isRefreshing ? (
+              <span className="flex items-center justify-center gap-2">
+                <div className="w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full animate-spin"></div>
+                Memeriksa Status...
+              </span>
+            ) : (
+              <span className="flex items-center justify-center gap-2">
+                🔄 Periksa Status Terbaru
+              </span>
+            )}
+          </button>
+        </div>
+
         {session.user.verificationStatus === 'rejected' && (
           <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
             <p className="text-sm text-red-700 font-medium mb-2">
@@ -108,12 +148,12 @@ export default function VerificationPendingPage() {
 
         <div className="space-y-3">
           <Link
-            href="/landing"
+            href="/"
             className="w-full bg-blue-600 text-white py-3 px-6 rounded-lg font-semibold hover:bg-blue-700 transition-colors block"
           >
             Kembali ke Beranda
           </Link>
-          
+
           {session.user.verificationStatus === 'rejected' && (
             <a
               href="mailto:support@bahtera.com"

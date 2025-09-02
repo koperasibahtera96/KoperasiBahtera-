@@ -1,4 +1,4 @@
-declare module 'midtrans-client' {
+declare module "midtrans-client" {
   export interface MidtransConfig {
     isProduction: boolean;
     serverKey: string;
@@ -89,7 +89,9 @@ declare module 'midtrans-client' {
 
   export class Snap {
     constructor(config: MidtransConfig);
-    createTransaction(parameter: TransactionParameter): Promise<TransactionResponse>;
+    createTransaction(
+      parameter: TransactionParameter
+    ): Promise<TransactionResponse>;
   }
 
   export class CoreApi {
@@ -97,8 +99,10 @@ declare module 'midtrans-client' {
     transaction: {
       status(orderId: string): Promise<TransactionStatus>;
       cancel(orderId: string): Promise<TransactionStatus>;
-      capture(orderId: string, parameter: CaptureParameter): Promise<TransactionStatus>;
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      capture(
+        orderId: string,
+        parameter: CaptureParameter
+      ): Promise<TransactionStatus>;
       notification(notification: any): Promise<TransactionStatus>;
     };
   }

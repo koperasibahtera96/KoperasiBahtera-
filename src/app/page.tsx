@@ -8,6 +8,7 @@ import LandingHero from '@/components/landing/LandingHero';
 import WhyInvestAndRulesSection from '@/components/landing/WhyInvestAndRulesSection';
 import CTASection from '@/components/landing/CTASection';
 import AboutSection from '@/components/landing/AboutSection';
+import ReviewSection from '@/components/landing/ReviewSection';
 import PlantShowcaseSection from '@/components/landing/PlantShowcaseSection';
 import FAQSection from '@/components/landing/FAQSection';
 import LandingFooter from '@/components/landing/LandingFooter';
@@ -48,12 +49,25 @@ function LandingPageContent() {
     <div className="min-h-screen bg-white font-[family-name:var(--font-poppins)]">
       <AlertComponent />
       <LandingHeader />
-      <LandingHero />
-      <WhyInvestAndRulesSection />
+      <section id="beranda">
+        <LandingHero />
+      </section>
+      <section id="produk">
+        <WhyInvestAndRulesSection />
+      </section>
       <CTASection />
-      <AboutSection />
-      <PlantShowcaseSection />
-      <FAQSection />
+      <section id="tentang-kami">
+        <AboutSection />
+      </section>
+      <section id="review">
+        <ReviewSection />
+      </section>
+      <section id="investasi">
+        <PlantShowcaseSection />
+      </section>
+      <section id="faq">
+        <FAQSection />
+      </section>
       <LandingFooter />
     </div>
   );

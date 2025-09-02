@@ -3,6 +3,7 @@
 import { FinanceSidebar } from "@/components/finance/FinanceSidebar"
 import { Button } from "@/components/ui-finance/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui-finance/card"
+import { useAlert } from "@/components/ui/Alert"
 import type { PlantInstance } from "@/lib/api"
 import { motion } from "framer-motion"
 import { ArrowLeft, BarChart3, Calendar, ChevronDown, DollarSign, Download, Filter, TrendingDown } from "lucide-react"
@@ -37,6 +38,7 @@ export default function LaporanPengeluaranPage() {
   const [selectedPlant, setSelectedPlant] = useState<string>("all")
   const [loading, setLoading] = useState(true)
   const filename = "laporan-pengeluaran.xls" // Declare the filename variable
+  const { showError, AlertComponent } = useAlert()
 
   useEffect(() => {
     loadData()
@@ -61,7 +63,7 @@ export default function LaporanPengeluaranPage() {
         } else {
           // Fallback: extract unique plant types from instances
           const uniqueTypes = Array.from(new Set(instances.map((plant: PlantInstance) => plant.plantType))).map(
-            (type) => ({
+            (type: any) => ({
               id: type,
               name: type,
               displayName: type.charAt(0).toUpperCase() + type.slice(1),
@@ -73,7 +75,7 @@ export default function LaporanPengeluaranPage() {
         console.error("Failed to fetch plant types, using fallback:", error)
         // Fallback: extract unique plant types from instances
         const uniqueTypes = Array.from(new Set(instances.map((plant: PlantInstance) => plant.plantType))).map(
-          (type) => ({
+          (type: any) => ({
             id: type,
             name: type,
             displayName: type.charAt(0).toUpperCase() + type.slice(1),
@@ -119,13 +121,6 @@ export default function LaporanPengeluaranPage() {
     )
 
   const totalExpenses = filteredExpenses.reduce((sum, expense) => sum + expense.amount, 0)
-  const expensesByCategory = filteredExpenses.reduce(
-    (acc, expense) => {
-      acc[expense.category] = (acc[expense.category] || 0) + expense.amount
-      return acc
-    },
-    {} as Record<string, number>,
-  )
 
   const expensesByPlant = plantTypes.map((plantType) => {
     const typeExpenses = plantInstances
@@ -252,7 +247,7 @@ export default function LaporanPengeluaranPage() {
               plantType: plant.plantType,
             })),
         )
-        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+        .sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime())
 
       let html = `
         <html>
@@ -302,7 +297,7 @@ export default function LaporanPengeluaranPage() {
       html += `<div class="header">DETAIL TRANSAKSI PENGELUARAN</div>`
       html += `<table>`
       html += `<tr><th>Tanggal</th><th>Deskripsi</th><th>Jumlah</th><th>Input Oleh</th></tr>`
-      allExpenseTransactions.forEach((expense) => {
+      allExpenseTransactions.forEach((expense: any) => {
         html += `<tr><td>${new Date(expense.date).toLocaleDateString("id-ID")}</td><td>${expense.description}</td><td>Rp ${expense.amount.toLocaleString("id-ID")}</td><td>${expense.addedBy}</td></tr>`
       })
       html += `</table>`
@@ -327,7 +322,7 @@ export default function LaporanPengeluaranPage() {
       URL.revokeObjectURL(url)
     } catch (error) {
       console.error("Failed to export data:", error)
-      alert("Gagal mengekspor data. Silakan coba lagi.")
+      showError("Error", "Gagal mengekspor data. Silakan coba lagi.")
     }
   }
 
@@ -346,6 +341,7 @@ export default function LaporanPengeluaranPage() {
 
   return (
     <FinanceSidebar>
+      <AlertComponent />
       <div className="p-4 sm:p-6 lg:p-8">
         <motion.div
           className="flex items-center justify-between mb-8"

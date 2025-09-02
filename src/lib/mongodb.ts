@@ -1,5 +1,8 @@
+import FilteredWord from '@/models/FilteredWord';
 import Payment from '@/models/Payment'; // adjust path
 import Plant from '@/models/Plant'; // adjust path
+import PlantInstance from '@/models/PlantInstance';
+import Review from '@/models/Review';
 import User from '@/models/User'; // adjust path
 import mongoose from 'mongoose';
 
@@ -29,6 +32,9 @@ async function dbConnect() {
       await User.syncIndexes();
       await Plant.syncIndexes();
       await Payment.syncIndexes();
+      await PlantInstance.syncIndexes();
+      await Review.syncIndexes();
+      await FilteredWord.syncIndexes();
       return mongoose;
     });
   }

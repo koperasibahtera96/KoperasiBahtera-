@@ -109,7 +109,7 @@ export async function POST(request: NextRequest) {
           }
 
           // Find the investment in the investor record and update it
-          const investment = existingInvestor.investments.find(inv => inv.investmentId === payment.cicilanOrderId);
+          const investment = existingInvestor.investments.find((inv: any) => inv.investmentId === payment.cicilanOrderId);
           if (!investment) {
             throw new Error('Investment not found in investor record');
           }
@@ -120,7 +120,7 @@ export async function POST(request: NextRequest) {
           investment.amountPaid += payment.amount;
 
           // Find the specific installment and mark as paid
-          const installment = investment.installments?.find(inst => inst.installmentNumber === payment.installmentNumber);
+          const installment = investment.installments?.find((inst: any) => inst.installmentNumber === payment.installmentNumber);
           if (installment) {
             installment.isPaid = true;
             installment.paidDate = new Date();
@@ -153,9 +153,9 @@ export async function POST(request: NextRequest) {
         const investor = await Investor.findOne({ userId: payment.userId });
         if (investor) {
           // Find the investment and installment
-          const investment = investor.investments.find(inv => inv.investmentId === payment.cicilanOrderId);
+          const investment = investor.investments.find((inv: any) => inv.investmentId === payment.cicilanOrderId);
           if (investment) {
-            const installment = investment.installments?.find(inst => inst.installmentNumber === payment.installmentNumber);
+            const installment = investment.installments?.find((inst: any) => inst.installmentNumber === payment.installmentNumber);
             if (installment) {
               installment.isPaid = true;
               installment.paidDate = new Date();
@@ -217,10 +217,10 @@ export async function POST(request: NextRequest) {
           // Also add the next installment to the investor record
           const investorForNextInstallment = await Investor.findOne({ userId: payment.userId });
           if (investorForNextInstallment) {
-            const investmentForNextInstallment = investorForNextInstallment.investments.find(inv => inv.investmentId === payment.cicilanOrderId);
+            const investmentForNextInstallment = investorForNextInstallment.investments.find((inv: any) => inv.investmentId === payment.cicilanOrderId);
             if (investmentForNextInstallment && investmentForNextInstallment.installments) {
               // Check if this installment already exists in investor record
-              const existingInstallmentInInvestor = investmentForNextInstallment.installments.find(inst => inst.installmentNumber === nextInstallmentNumber);
+              const existingInstallmentInInvestor = investmentForNextInstallment.installments.find((inst: any)  => inst.installmentNumber === nextInstallmentNumber);
 
               if (!existingInstallmentInInvestor) {
                 investmentForNextInstallment.installments.push({

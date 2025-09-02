@@ -2,7 +2,8 @@
 "use client"
 
 import { FinanceSidebar } from "@/components/finance/FinanceSidebar"
-import { formatCurrency } from "@/lib/utils"
+import { useAlert } from "@/components/ui/Alert"
+import { formatCurrency, formatNumber } from "@/lib/utils"
 import { motion } from "framer-motion"
 import {
   ArrowLeft,
@@ -83,6 +84,7 @@ export default function MemberDetailPage(props: { params: Promise<{ id: string }
   const [monthly, setMonthly] = useState<MonthlyRow[]>([])
   const [instances, setInstances] = useState<InstanceDetail[]>([])
   const [error, setError] = useState<string | null>(null)
+  const { showError, AlertComponent } = useAlert()
 
   const [selectedPlant, setSelectedPlant] = useState<string>("")
 
@@ -111,6 +113,7 @@ export default function MemberDetailPage(props: { params: Promise<{ id: string }
     }
   }
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { fetchDetail() }, [id])
 
   const totals = useMemo(() => {
@@ -227,7 +230,7 @@ export default function MemberDetailPage(props: { params: Promise<{ id: string }
       id: crypto.randomUUID(),
       date: incForm.date || new Date().toISOString().split("T")[0],
       description: incForm.description || "Pemasukan",
-      amount: Number(incForm.amount) || 0,
+      amount: Number(incForm.amount.replace(/\./g, "")) || 0,
       addedBy: member?.name || "system",
       addedAt: new Date().toISOString(),
     }
@@ -240,7 +243,7 @@ export default function MemberDetailPage(props: { params: Promise<{ id: string }
       setIncForm({ date: "", description: "", amount: "" })
       await fetchDetail(year)
     } else {
-      alert("Gagal menyimpan pemasukan")
+      showError("Error", "Gagal menyimpan pemasukan")
     }
   }
   async function submitExpense(e: React.FormEvent) {
@@ -250,7 +253,7 @@ export default function MemberDetailPage(props: { params: Promise<{ id: string }
       id: crypto.randomUUID(),
       date: expForm.date || new Date().toISOString().split("T")[0],
       description: expForm.description || "Pengeluaran",
-      amount: Number(expForm.amount) || 0,
+      amount: Number(expForm.amount.replace(/\./g, "")) || 0,
       addedBy: member?.name || "system",
       addedAt: new Date().toISOString(),
     }
@@ -263,7 +266,7 @@ export default function MemberDetailPage(props: { params: Promise<{ id: string }
       setExpForm({ date: "", description: "", amount: "" })
       await fetchDetail(year)
     } else {
-      alert("Gagal menyimpan pengeluaran")
+      showError("Error", "Gagal menyimpan pengeluaran")
     }
   }
 
@@ -294,6 +297,7 @@ export default function MemberDetailPage(props: { params: Promise<{ id: string }
 
   return (
     <FinanceSidebar>
+      <AlertComponent />
       <div className="p-4 sm:p-6 lg:p-8 space-y-6">
         {/* Header */}
         <motion.div
@@ -543,7 +547,19 @@ export default function MemberDetailPage(props: { params: Promise<{ id: string }
               <form onSubmit={submitIncome} className="grid grid-cols-1 md:grid-cols-4 gap-3 mb-4">
                 <input type="date" value={incForm.date} onChange={(e)=>setIncForm(f=>({...f,date:e.target.value}))} className="border border-[#324D3E]/20 rounded-xl px-3 py-2 bg-white/80 backdrop-blur-xl text-[#324D3E] focus:outline-none focus:ring-2 focus:ring-[#324D3E]/20 focus:border-[#324D3E]/40" />
                 <input value={incForm.description} onChange={(e)=>setIncForm(f=>({...f,description:e.target.value}))} className="border border-[#324D3E]/20 rounded-xl px-3 py-2 bg-white/80 backdrop-blur-xl text-[#324D3E] focus:outline-none focus:ring-2 focus:ring-[#324D3E]/20 focus:border-[#324D3E]/40" placeholder="Deskripsi" />
-                <input value={incForm.amount} onChange={(e)=>setIncForm(f=>({...f,amount:e.target.value}))} className="border border-[#324D3E]/20 rounded-xl px-3 py-2 bg-white/80 backdrop-blur-xl text-[#324D3E] focus:outline-none focus:ring-2 focus:ring-[#324D3E]/20 focus:border-[#324D3E]/40" placeholder="Jumlah" inputMode="numeric" />
+                <input
+                  value={incForm.amount}
+                  onChange={(e) => {
+                    const formatted = formatNumber(e.target.value)
+                    setIncForm(f => ({ ...f, amount: formatted }))
+                  }}
+                  className="border border-[#324D3E]/20 rounded-xl px-3 py-2
+                            bg-white/80 backdrop-blur-xl text-[#324D3E]
+                            focus:outline-none focus:ring-2 focus:ring-[#324D3E]/20
+                            focus:border-[#324D3E]/40"
+                  placeholder="Jumlah"
+                  inputMode="numeric"
+                />
                 <button className="rounded-xl border border-[#324D3E]/20 px-3 py-2 text-sm hover:bg-[#324D3E] hover:text-white text-[#324D3E] transition-all duration-300">Simpan</button>
               </form>
 
@@ -557,7 +573,19 @@ export default function MemberDetailPage(props: { params: Promise<{ id: string }
               <form onSubmit={submitExpense} className="grid grid-cols-1 md:grid-cols-4 gap-3 mb-4">
                 <input type="date" value={expForm.date} onChange={(e)=>setExpForm(f=>({...f,date:e.target.value}))} className="border border-[#324D3E]/20 rounded-xl px-3 py-2 bg-white/80 backdrop-blur-xl text-[#324D3E] focus:outline-none focus:ring-2 focus:ring-[#324D3E]/20 focus:border-[#324D3E]/40" />
                 <input value={expForm.description} onChange={(e)=>setExpForm(f=>({...f,description:e.target.value}))} className="border border-[#324D3E]/20 rounded-xl px-3 py-2 bg-white/80 backdrop-blur-xl text-[#324D3E] focus:outline-none focus:ring-2 focus:ring-[#324D3E]/20 focus:border-[#324D3E]/40" placeholder="Deskripsi" />
-                <input value={expForm.amount} onChange={(e)=>setExpForm(f=>({...f,amount:e.target.value}))} className="border border-[#324D3E]/20 rounded-xl px-3 py-2 bg-white/80 backdrop-blur-xl text-[#324D3E] focus:outline-none focus:ring-2 focus:ring-[#324D3E]/20 focus:border-[#324D3E]/40" placeholder="Jumlah" inputMode="numeric" />
+                <input
+                  value={expForm.amount}
+                  onChange={(e) => {
+                    const formatted = formatNumber(e.target.value)
+                    setExpForm(f => ({ ...f, amount: formatted }))
+                  }}
+                  className="border border-[#324D3E]/20 rounded-xl px-3 py-2
+                            bg-white/80 backdrop-blur-xl text-[#324D3E]
+                            focus:outline-none focus:ring-2 focus:ring-[#324D3E]/20
+                            focus:border-[#324D3E]/40"
+                  placeholder="Jumlah"
+                  inputMode="numeric"
+                />
                 <button className="rounded-xl border border-[#324D3E]/20 px-3 py-2 text-sm hover:bg-[#324D3E] hover:text-white text-[#324D3E] transition-all duration-300">Simpan</button>
               </form>
 

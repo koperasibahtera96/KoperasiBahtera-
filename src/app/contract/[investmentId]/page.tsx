@@ -1,9 +1,11 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
-import { useParams } from 'next/navigation';
-import dynamic from 'next/dynamic';
+import { useAlert } from '@/components/ui/Alert';
 import jsPDF from 'jspdf';
+import dynamic from 'next/dynamic';
+import Image from 'next/image';
+import { useParams } from 'next/navigation';
+import { useEffect, useRef, useState } from 'react';
 
 // Dynamically import SignatureCanvas to avoid SSR issues
 const SignatureCanvas = dynamic(() => import('react-signature-canvas'), { ssr: false });
@@ -42,18 +44,20 @@ export default function ContractPage() {
   const [signing, setSigning] = useState(false);
   const [signed, setSigned] = useState(false);
   const sigCanvas = useRef<any>(null);
+  const { showError, AlertComponent } = useAlert();
 
   useEffect(() => {
     if (investmentId) {
       fetchContractData();
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [investmentId]);
 
   const fetchContractData = async () => {
     try {
       setLoading(true);
       const response = await fetch(`/api/contract/${investmentId}`);
-      
+
       if (response.ok) {
         const result = await response.json();
         setContractData(result.data);
@@ -79,16 +83,16 @@ export default function ContractPage() {
     try {
       // Get signature as image data
       const signatureDataURL = sigCanvas.current.toDataURL();
-      
+
       // Create PDF
       const pdf = new jsPDF();
-      
+
       // Set font
       pdf.setFont('helvetica');
-      
+
       // Add logo header - positioned first
       let headerYPosition = 15;
-      
+
       try {
         // Load logo image
         const logoResponse = await fetch('/images/koperasi-logo.jpg');
@@ -98,7 +102,7 @@ export default function ContractPage() {
           reader.onload = () => resolve(reader.result as string);
           reader.readAsDataURL(logoBlob);
         });
-        
+
         // Add logo centered at top (40x40 for better visibility)
         pdf.addImage(logoDataURL, 'JPEG', 85, headerYPosition, 40, 40);
         headerYPosition += 45; // Move down after logo
@@ -106,52 +110,51 @@ export default function ContractPage() {
         console.warn('Could not load logo:', logoError);
         headerYPosition += 10; // Small space if no logo
       }
-      
+
       // Header text positioned below logo
       pdf.setFontSize(18);
       pdf.setTextColor(50, 77, 62); // #324D3E
       pdf.text('SURAT PERJANJIAN HAK KEPEMILIKAN POHON', 105, headerYPosition, { align: 'center' });
-      
+
       pdf.setFontSize(14);
       pdf.text('KOPERASI BINTANG MERAH SEJAHTERA', 105, headerYPosition + 10, { align: 'center' });
-      
+
       // Start content below header
       let yPosition = headerYPosition + 20;
       const leftMargin = 20;
       const rightMargin = 190;
-      const pageWidth = 210;
-      
+
       // Header separator line
       pdf.setLineWidth(0.5);
       pdf.setDrawColor(50, 77, 62);
       pdf.line(leftMargin, yPosition, rightMargin, yPosition);
       yPosition += 15;
-      
+
       // Contract Information Box
       pdf.setFillColor(50, 77, 62);
       pdf.rect(leftMargin, yPosition, 170, 25, 'F');
-      
+
       pdf.setTextColor(255, 255, 255);
       pdf.setFontSize(14);
       pdf.setFont('helvetica', 'bold');
       pdf.text('INFORMASI KONTRAK', leftMargin + 5, yPosition + 8);
-      
+
       pdf.setFontSize(10);
       pdf.setFont('helvetica', 'normal');
       pdf.text(`Nomor: ${contractData.contractNumber}`, leftMargin + 5, yPosition + 16);
       pdf.text(`Tanggal: ${new Date(contractData.contractDate).toLocaleDateString('id-ID')}`, leftMargin + 90, yPosition + 16);
-      
+
       yPosition += 35;
-      
+
       // Investor Information Section
       pdf.setTextColor(0, 0, 0);
       pdf.setFillColor(245, 245, 245);
       pdf.rect(leftMargin, yPosition, 170, 35, 'F');
-      
+
       pdf.setFontSize(12);
       pdf.setFont('helvetica', 'bold');
       pdf.text('DATA INVESTOR', leftMargin + 5, yPosition + 8);
-      
+
       pdf.setFontSize(10);
       pdf.setFont('helvetica', 'normal');
       pdf.text(`Nama: ${contractData.investor.name}`, leftMargin + 5, yPosition + 18);
@@ -159,45 +162,45 @@ export default function ContractPage() {
       if (contractData.investor.phoneNumber) {
         pdf.text(`Telepon: ${contractData.investor.phoneNumber}`, leftMargin + 90, yPosition + 18);
       }
-      
+
       yPosition += 45;
-      
+
       // Investment Details Section
       pdf.setFillColor(240, 248, 255);
       pdf.rect(leftMargin, yPosition, 170, 45, 'F');
-      
+
       pdf.setFontSize(12);
       pdf.setFont('helvetica', 'bold');
       pdf.text('DETAIL INVESTASI', leftMargin + 5, yPosition + 8);
-      
+
       pdf.setFontSize(10);
       pdf.setFont('helvetica', 'normal');
       pdf.text(`ID Investasi: ${contractData.investment.investmentId}`, leftMargin + 5, yPosition + 18);
       pdf.text(`Produk: ${contractData.investment.productName}`, leftMargin + 5, yPosition + 26);
       pdf.text(`Jenis Pohon: ${contractData.plantInstance.plantType.toUpperCase()}`, leftMargin + 5, yPosition + 34);
-      
+
       pdf.text(`Total Investasi: Rp ${contractData.investment.totalAmount.toLocaleString('id-ID')}`, leftMargin + 90, yPosition + 18);
       pdf.text(`ROI Tahunan: ${contractData.plantInstance.baseAnnualROI}%`, leftMargin + 90, yPosition + 26);
       pdf.text(`Status: ${contractData.investment.paymentType === 'full' ? 'LUNAS' : 'CICILAN'}`, leftMargin + 90, yPosition + 34);
-      
+
       yPosition += 55;
-      
+
       // Terms and Conditions Section
       // Check if we have enough space for header + at least 10 lines of content (about 70 units)
       if (yPosition > 200) {
         pdf.addPage();
         yPosition = 20;
       }
-      
+
       pdf.setFillColor(255, 248, 240);
       pdf.rect(leftMargin, yPosition, 170, 8, 'F');
-      
+
       pdf.setFontSize(12);
       pdf.setFont('helvetica', 'bold');
       pdf.text('KETENTUAN DAN SYARAT', leftMargin + 5, yPosition + 6);
-      
+
       yPosition += 15;
-      
+
       // Terms content with proper formatting
       const termsContent = [
         'HAK KEPEMILIKAN INVESTOR:',
@@ -217,7 +220,7 @@ export default function ContractPage() {
         '• Perselisihan diselesaikan secara musyawarah mufakat',
         '• Kedua pihak terikat pada ketentuan yang telah disepakati'
       ];
-      
+
       pdf.setFontSize(9);
       termsContent.forEach((line) => {
         // Only add new page if we're really running out of space (leave room for signatures)
@@ -225,7 +228,7 @@ export default function ContractPage() {
           pdf.addPage();
           yPosition = 20;
         }
-        
+
         if (line.includes(':') && !line.startsWith('•')) {
           pdf.setFont('helvetica', 'bold');
           pdf.setTextColor(50, 77, 62);
@@ -233,81 +236,81 @@ export default function ContractPage() {
           pdf.setFont('helvetica', 'normal');
           pdf.setTextColor(0, 0, 0);
         }
-        
+
         pdf.text(line, leftMargin + (line.startsWith('•') ? 5 : 0), yPosition);
         yPosition += 6;
       });
-      
+
       yPosition += 10;
-      
+
       // Signature Section
       if (yPosition > 220) {
         pdf.addPage();
         yPosition = 20;
       }
-      
+
       // Signature header
       pdf.setFillColor(50, 77, 62);
       pdf.rect(leftMargin, yPosition, 170, 8, 'F');
-      
+
       pdf.setTextColor(255, 255, 255);
       pdf.setFontSize(12);
       pdf.setFont('helvetica', 'bold');
       pdf.text('PENANDATANGANAN', leftMargin + 5, yPosition + 6);
-      
+
       yPosition += 20;
-      
+
       // Signature boxes
       pdf.setTextColor(0, 0, 0);
       pdf.setLineWidth(0.3);
       pdf.setDrawColor(200, 200, 200);
-      
+
       // Left signature box - Koperasi
       pdf.rect(leftMargin, yPosition, 80, 40);
       pdf.setFontSize(9);
       pdf.setFont('helvetica', 'bold');
       pdf.text('KOPERASI BINTANG MERAH', leftMargin + 5, yPosition + 6);
       pdf.text('SEJAHTERA', leftMargin + 5, yPosition + 11);
-      
+
       pdf.setFont('helvetica', 'normal');
       pdf.text('Ketua Koperasi', leftMargin + 5, yPosition + 32);
       pdf.text('H. Budi Santoso, S.E.', leftMargin + 5, yPosition + 37);
-      
+
       // Right signature box - Investor
       pdf.rect(leftMargin + 90, yPosition, 80, 40);
       pdf.setFontSize(9);
       pdf.setFont('helvetica', 'bold');
       pdf.text('PIHAK INVESTOR', leftMargin + 95, yPosition + 8);
-      
+
       pdf.setFont('helvetica', 'normal');
       pdf.text('Investor', leftMargin + 95, yPosition + 32);
       pdf.text(`${contractData.investor.name}`, leftMargin + 95, yPosition + 37);
-      
+
       // Add investor signature
       if (signatureDataURL) {
         pdf.addImage(signatureDataURL, 'PNG', leftMargin + 95, yPosition + 12, 70, 15);
       }
-      
+
       yPosition += 50;
-      
+
       // Footer with validation info
       pdf.setFillColor(250, 250, 250);
       pdf.rect(leftMargin, yPosition, 170, 15, 'F');
-      
+
       pdf.setFontSize(8);
       pdf.setTextColor(100, 100, 100);
       pdf.text(`Ditandatangani secara digital pada: ${new Date().toLocaleString('id-ID')}`, leftMargin + 5, yPosition + 5);
       pdf.text(`Lokasi: Jakarta, Indonesia`, leftMargin + 5, yPosition + 10);
       pdf.text(`Dokumen ini sah dan mengikat kedua belah pihak`, leftMargin + 90, yPosition + 8);
-      
+
       // Save PDF
       pdf.save(`Kontrak_${contractData.contractNumber}_${contractData.investor.name}.pdf`);
-      
+
       setSigned(true);
-      
+
     } catch (error) {
       console.error('Error generating PDF:', error);
-      alert('Terjadi kesalahan saat membuat PDF. Silakan coba lagi.');
+      showError('Error', 'Terjadi kesalahan saat membuat PDF. Silakan coba lagi.');
     } finally {
       setSigning(false);
     }
@@ -344,8 +347,8 @@ export default function ContractPage() {
           </div>
           <h1 className="text-2xl font-bold text-[#324D3E] mb-4">Kontrak Berhasil Ditandatangani!</h1>
           <p className="text-gray-600 mb-6">
-            Kontrak kepemilikan pohon Anda telah berhasil dibuat dan diunduh. 
-            Terima kasih atas kepercayaan Anda kepada Koperasi Investasi Hijau.
+            Kontrak kepemilikan pohon Anda telah berhasil dibuat dan diunduh.
+            Terima kasih atas kepercayaan Anda kepada Koperasi Bintang Merah Sejahtera.
           </p>
           <button
             onClick={() => window.location.href = '/'}
@@ -360,12 +363,15 @@ export default function ContractPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#324D3E]/10 via-white to-[#4C3D19]/10 py-12">
+      <AlertComponent />
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="text-center mb-8">
           <div className="w-24 h-24 mx-auto mb-4">
-            <img 
-              src="/images/koperasi-logo.jpg" 
+            <Image
+              width={96}
+              height={96}
+              src="/images/koperasi-logo.jpg"
               alt="Koperasi Bintang Merah Sejahtera"
               className="w-24 h-24 rounded-full object-cover shadow-lg"
             />
@@ -403,7 +409,7 @@ export default function ContractPage() {
                   )}
                 </div>
               </div>
-              
+
               <div>
                 <h3 className="text-lg font-semibold text-[#324D3E] mb-4">Detail Investasi</h3>
                 <div className="space-y-2">
@@ -434,12 +440,12 @@ export default function ContractPage() {
         <div className="bg-white rounded-2xl shadow-xl border border-[#324D3E]/10">
           <div className="p-8">
             <h3 className="text-xl font-semibold text-[#324D3E] mb-6 text-center">Tanda Tangan Digital</h3>
-            
+
             <div className="max-w-md mx-auto">
               <p className="text-[#889063] text-center mb-4">
                 Silakan tanda tangan pada area di bawah ini untuk menyetujui kontrak
               </p>
-              
+
               <div className="border-2 border-[#324D3E]/20 rounded-xl p-4 mb-4">
                 <SignatureCanvas
                   ref={sigCanvas}
@@ -452,7 +458,7 @@ export default function ContractPage() {
                   backgroundColor="rgb(255, 255, 255)"
                 />
               </div>
-              
+
               <div className="flex gap-4">
                 <button
                   onClick={clearSignature}
@@ -460,7 +466,7 @@ export default function ContractPage() {
                 >
                   Hapus Tanda Tangan
                 </button>
-                
+
                 <button
                   onClick={generatePDF}
                   disabled={signing}
@@ -477,7 +483,7 @@ export default function ContractPage() {
                 </button>
               </div>
             </div>
-            
+
             <div className="text-center mt-6">
               <p className="text-sm text-[#889063]">
                 Dengan menandatangani kontrak ini, Anda menyetujui semua ketentuan yang berlaku

@@ -130,6 +130,12 @@ export default function CTASection() {
           >
             <motion.button 
               className="w-full lg:w-auto bg-[#4C3D19] text-white px-8 sm:px-10 lg:px-12 py-4 sm:py-5 lg:py-6 rounded-full text-base sm:text-lg lg:text-xl font-semibold hover:bg-[#344C3D] transition-colors shadow-lg font-[family-name:var(--font-poppins)] lg:min-w-[240px]"
+              onClick={() => {
+                const investasiSection = document.getElementById('investasi');
+                if (investasiSection) {
+                  investasiSection.scrollIntoView({ behavior: 'smooth' });
+                }
+              }}
               whileHover={{ 
                 scale: 1.05,
                 boxShadow: "0 10px 25px rgba(76, 61, 25, 0.3)",

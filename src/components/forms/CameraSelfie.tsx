@@ -1,6 +1,7 @@
 'use client';
 
-import { useRef, useState, useCallback, useEffect, useImperativeHandle, forwardRef } from 'react';
+import Image from 'next/image';
+import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react';
 
 interface CameraSelfieProps {
   onCapture: (imageDataUrl: string) => void;
@@ -121,7 +122,9 @@ export const CameraSelfie = forwardRef<CameraSelfieRef, CameraSelfieProps>(({ on
     return (
       <div className="max-w-md mx-auto">
         <div className="text-center space-y-4">
-          <img
+          <Image
+            width={96}
+            height={96}
             src={capturedImage}
             alt="Captured Selfie"
             className="w-48 h-48 mx-auto rounded-full border border-gray-300 shadow-sm object-cover"

@@ -3,6 +3,7 @@
 
 import { FinanceSidebar } from "@/components/finance/FinanceSidebar"
 import { Button } from "@/components/ui-finance/button"
+import { useAlert } from "@/components/ui/Alert"
 import { formatCurrency, formatPercentage } from "@/lib/utils"
 import { BarChart3, DollarSign, Download, TrendingUp, Users } from "lucide-react"
 import Link from "next/link"
@@ -45,6 +46,7 @@ export default function FinancePage() {
 
   const [loading, setLoading] = React.useState(true)
   const [error, setError] = React.useState<string | null>(null)
+  const { showError, AlertComponent } = useAlert()
 
   // state untuk ringkasan & distribusi
   const [totals, setTotals] = React.useState({ invest: 0, profit: 0, roi: 0, investors: 0 })
@@ -151,7 +153,7 @@ export default function FinancePage() {
       XLSX.writeFile(wb, `Ringkasan_Investasi_${new Date().toISOString().slice(0, 10)}.xlsx`)
     } catch (error) {
       console.error("[finance] export error:", error)
-      alert("Terjadi kesalahan saat membuat file Excel.")
+      showError("Error", "Terjadi kesalahan saat membuat file Excel.")
     }
   }
 
@@ -174,6 +176,7 @@ export default function FinancePage() {
 
   return (
     <FinanceSidebar>
+      <AlertComponent />
       <div className="p-6 space-y-8 font-[family-name:var(--font-poppins)]">
         <header>
           <div className="mb-8">

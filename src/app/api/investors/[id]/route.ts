@@ -11,9 +11,6 @@ function ym(d: string | Date) {
 function startOfYear(y: number) {
   return new Date(y, 0, 1)
 }
-function endOfYear(y: number) {
-  return new Date(y, 11, 31, 23, 59, 59, 999)
-}
 
 export async function GET(
   req: Request,
@@ -32,7 +29,7 @@ export async function GET(
     const format = url.searchParams.get("format") || "rich"
     const year = Number.parseInt(url.searchParams.get("year") || new Date().getFullYear().toString())
 
-    const investor = await Investor.findOne({ userId: id }).lean()
+    const investor = await Investor.findOne({ userId: id })
     if (!investor) return NextResponse.json({ error: "Not found" }, { status: 404 })
 
     // Kumpulkan semua instance yang diinvest oleh investor
@@ -104,8 +101,8 @@ export async function GET(
       }
     })
 
-    const totalInvestment = investments.reduce((s, it) => s + it.amount, 0)
-    const totalProfit = investments.reduce((s, it) => s + it.profit, 0)
+    const totalInvestment = investments.reduce((s: number, it: any) => s + it.amount, 0)
+    const totalProfit = investments.reduce((s: number, it: any) => s + it.profit, 0)
     const overallROI = totalInvestment > 0 ? (totalProfit / totalInvestment) * 100 : 0
 
     const joinDate =
@@ -133,7 +130,7 @@ export async function GET(
     }
 
     // ---------- Pie data ----------
-    const pie = investments.map((it) => ({ name: it.plantName, value: it.amount }))
+    const pie = investments.map((it: any) => ({ name: it.plantName, value: it.amount }))
 
     // ---------- Time-series bulanan (income/expense/profit), proporsional ----------
     const months: string[] = Array.from({ length: 12 }, (_, i) => `${year}-${String(i + 1).padStart(2, "0")}`)

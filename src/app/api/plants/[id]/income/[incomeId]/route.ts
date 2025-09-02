@@ -1,46 +1,57 @@
-import { type NextRequest, NextResponse } from "next/server"
-import { PlantInstance } from "@/models"
 import { ensureConnection } from "@/lib/utils/utils/database";
+import { PlantInstance } from "@/models";
+import { type NextRequest, NextResponse } from "next/server";
 
-export async function DELETE(request: NextRequest, { params }: { params: { id: string; incomeId: string } }) {
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string; incomeId: string }> }
+) {
   try {
-    console.log("[v0] DELETE income API called with params:", params)
-    console.log("[v0] Plant ID:", params.id, "Income ID:", params.incomeId)
+    const { id, incomeId } = await params;
+    console.log("[v0] DELETE income API called with params:", params);
+    console.log("[v0] Plant ID:", id, "Income ID:", incomeId);
 
-    await ensureConnection()
+    await ensureConnection();
 
     const plant = await PlantInstance.findOneAndUpdate(
-      { id: params.id },
-      { $pull: { incomeRecords: { id: params.incomeId } } },
-      { new: true },
-    )
+      { id: id },
+      { $pull: { incomeRecords: { id: incomeId } } },
+      { new: true }
+    );
 
-    console.log("[v0] Plant found:", !!plant)
+    console.log("[v0] Plant found:", !!plant);
 
     if (!plant) {
-      console.log("[v0] Plant not found for ID:", params.id)
-      return NextResponse.json({ error: "Plant not found" }, { status: 404 })
+      console.log("[v0] Plant not found for ID:", id);
+      return NextResponse.json({ error: "Plant not found" }, { status: 404 });
     }
 
-    console.log("[v0] Income record deleted successfully")
-    return NextResponse.json({ message: "Income record deleted successfully" })
+    console.log("[v0] Income record deleted successfully");
+    return NextResponse.json({ message: "Income record deleted successfully" });
   } catch (error) {
-    console.error("[v0] Delete income error:", error)
-    return NextResponse.json({ error: "Failed to delete income record" }, { status: 500 })
+    console.error("[v0] Delete income error:", error);
+    return NextResponse.json(
+      { error: "Failed to delete income record" },
+      { status: 500 }
+    );
   }
 }
 
-export async function PUT(request: NextRequest, { params }: { params: { id: string; incomeId: string } }) {
+export async function PUT(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string; incomeId: string }> }
+) {
   try {
-    console.log("[v0] PUT income API called with params:", params)
+    const { id, incomeId } = await params;
+    console.log("[v0] PUT income API called with params:", params);
 
-    await ensureConnection()
-    const body = await request.json()
+    await ensureConnection();
+    const body = await request.json();
 
     const plant = await PlantInstance.findOneAndUpdate(
       {
-        id: params.id,
-        "incomeRecords.id": params.incomeId,
+        id: id,
+        "incomeRecords.id": incomeId,
       },
       {
         $set: {
@@ -51,19 +62,31 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
           "incomeRecords.$.updatedAt": new Date().toISOString(),
         },
       },
-      { new: true },
-    )
+      { new: true }
+    );
 
     if (!plant) {
-      console.log("[v0] Plant or income record not found for ID:", params.id, params.incomeId)
-      return NextResponse.json({ error: "Plant or income record not found" }, { status: 404 })
+      console.log(
+        "[v0] Plant or income record not found for ID:",
+        id,
+        incomeId
+      );
+      return NextResponse.json(
+        { error: "Plant or income record not found" },
+        { status: 404 }
+      );
     }
 
-    const updatedRecord = plant.incomeRecords.find((record) => record.id === params.incomeId)
-    console.log("[v0] Income record updated successfully")
-    return NextResponse.json(updatedRecord)
+    const updatedRecord = plant.incomeRecords.find(
+      (record: any) => record.id === incomeId
+    );
+    console.log("[v0] Income record updated successfully");
+    return NextResponse.json(updatedRecord);
   } catch (error) {
-    console.error("[v0] Update income error:", error)
-    return NextResponse.json({ error: "Failed to update income record" }, { status: 500 })
+    console.error("[v0] Update income error:", error);
+    return NextResponse.json(
+      { error: "Failed to update income record" },
+      { status: 500 }
+    );
   }
 }

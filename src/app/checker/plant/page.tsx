@@ -1,23 +1,15 @@
 "use client"
 
-import type React from "react"
-import { useState, useEffect } from "react"
-import { Card, CardContent, CardHeader } from "@/components/ui-staff/card"
-import Link from "next/link"
-import Image from "next/image"
 import { Badge } from "@/components/ui-staff/badge"
-import { Input } from "@/components/ui-staff/input"
 import { Button } from "@/components/ui-staff/button"
-
-const QrCode = ({ className }: { className?: string }) => (
-  <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <rect width="5" height="5" x="3" y="3" rx="1" />
-    <rect width="5" height="5" x="16" y="3" rx="1" />
-    <rect width="5" height="5" x="3" y="16" rx="1" />
-    <path d="m21 16-3.5-3.5-3.5 3.5" />
-    <path d="m21 21-3.5-3.5-3.5 3.5" />
-  </svg>
-)
+import { Card, CardContent, CardHeader } from "@/components/ui-staff/card"
+import { Input } from "@/components/ui-staff/input"
+import { useAlert } from "@/components/ui/Alert"
+import { Calendar } from "lucide-react"
+import Image from "next/image"
+import Link from "next/link"
+import type React from "react"
+import { useEffect, useState } from "react"
 
 const User = ({ className }: { className?: string }) => (
   <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -33,14 +25,14 @@ const MapPin = ({ className }: { className?: string }) => (
   </svg>
 )
 
-const Calendar = ({ className }: { className?: string }) => (
-  <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <rect width="18" height="18" x="3" y="4" rx="2" ry="2" />
-    <line x1="16" x2="16" y1="2" y2="6" />
-    <line x1="8" x2="8" y1="2" y2="6" />
-    <line x1="3" x2="21" y1="10" y2="10" />
-  </svg>
-)
+// const Calendar = ({ className }: { className?: string }) => (
+//   <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+//     <rect width="18" height="18" x="3" y="4" rx="2" ry="2" />
+//     <line x1="16" x2="16" y1="2" y2="6" />
+//     <line x1="8" x2="8" y1="2" y2="6" />
+//     <line x1="3" x2="21" y1="10" y2="10" />
+//   </svg>
+// )
 
 const LogOut = ({ className }: { className?: string }) => (
   <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -64,22 +56,7 @@ const Search = ({ className }: { className?: string }) => (
   </svg>
 )
 
-const Users = ({ className }: { className?: string }) => (
-  <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
-    <circle cx="9" cy="7" r="4" />
-    <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
-    <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-  </svg>
-)
 
-const Map = ({ className }: { className?: string }) => (
-  <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21" />
-    <line x1="9" x2="9" y1="3" y2="18" />
-    <line x1="15" x2="15" y1="6" y2="21" />
-  </svg>
-)
 
 const ChevronLeft = ({ className }: { className?: string }) => (
   <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -93,13 +70,7 @@ const ChevronRight = ({ className }: { className?: string }) => (
   </svg>
 )
 
-const Download = ({ className }: { className?: string }) => (
-  <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-    <polyline points="7,10 12,15 17,10" />
-    <line x1="12" x2="12" y1="15" y2="3" />
-  </svg>
-)
+
 
 const statusColors = {
   "Tanam Bibit": "bg-primary text-primary-foreground",
@@ -116,10 +87,11 @@ export default function StaffDashboard() {
   const [activeFilter, setActiveFilter] = useState("Semua Tanaman")
   const [searchQuery, setSearchQuery] = useState("")
   const [currentPage, setCurrentPage] = useState(1)
-  const [migrating, setMigrating] = useState(false)
-  const [seeding, setSeeding] = useState(false)
+  const [_migrating, _setMigrating] = useState(false)
+  const [_seeding, _setSeeding] = useState(false)
   const [selectedPlantName, setSelectedPlantName] = useState("")
   const [plantFilterScrollPosition, setPlantFilterScrollPosition] = useState(0)
+  const { showSuccess, showError, AlertComponent } = useAlert()
 
   useEffect(() => {
     fetchPlants()
@@ -139,45 +111,45 @@ export default function StaffDashboard() {
     }
   }
 
-  const handleMigrate = async () => {
-    setMigrating(true)
-    try {
-      const response = await fetch("/api/migrate", { method: "POST" })
-      const result = await response.json()
+  // const handleMigrate = async () => {
+  //   setMigrating(true)
+  //   try {
+  //     const response = await fetch("/api/migrate", { method: "POST" })
+  //     const result = await response.json()
 
-      if (response.ok) {
-        alert(`Migration successful! ${result.count} plants migrated to MongoDB.`)
-        await fetchPlants()
-      } else {
-        alert(`Migration failed: ${result.error}`)
-      }
-    } catch (error) {
-      console.error("Migration error:", error)
-      alert("Migration failed: Network error")
-    } finally {
-      setMigrating(false)
-    }
-  }
+  //     if (response.ok) {
+  //       alert(`Migration successful! ${result.count} plants migrated to MongoDB.`)
+  //       await fetchPlants()
+  //     } else {
+  //       alert(`Migration failed: ${result.error}`)
+  //     }
+  //   } catch (error) {
+  //     console.error("Migration error:", error)
+  //     alert("Migration failed: Network error")
+  //   } finally {
+  //     setMigrating(false)
+  //   }
+  // }
 
-  const handleSeedGaharu = async () => {
-    setSeeding(true)
-    try {
-      const response = await fetch("/api/plants/seed-gaharu", { method: "POST" })
-      const result = await response.json()
+  // const handleSeedGaharu = async () => {
+  //   setSeeding(true)
+  //   try {
+  //     const response = await fetch("/api/plants/seed-gaharu", { method: "POST" })
+  //     const result = await response.json()
 
-      if (response.ok) {
-        alert(`Success! ${result.plants.length} new Gaharu plants added to database.`)
-        await fetchPlants()
-      } else {
-        alert(`Failed to add Gaharu plants: ${result.error}`)
-      }
-    } catch (error) {
-      console.error("Seeding error:", error)
-      alert("Failed to add Gaharu plants: Network error")
-    } finally {
-      setSeeding(false)
-    }
-  }
+  //     if (response.ok) {
+  //       alert(`Success! ${result.plants.length} new Gaharu plants added to database.`)
+  //       await fetchPlants()
+  //     } else {
+  //       alert(`Failed to add Gaharu plants: ${result.error}`)
+  //     }
+  //   } catch (error) {
+  //     console.error("Seeding error:", error)
+  //     alert("Failed to add Gaharu plants: Network error")
+  //   } finally {
+  //     setSeeding(false)
+  //   }
+  // }
 
   const handleAddFotoGambar = async () => {
     try {
@@ -185,14 +157,14 @@ export default function StaffDashboard() {
       const result = await response.json()
 
       if (response.ok) {
-        alert(`Success! Added fotoGambar field to ${result.modifiedCount} plants.`)
+        showSuccess('Success!', `Added fotoGambar field to ${result.modifiedCount} plants.`)
         await fetchPlants()
       } else {
-        alert(`Failed to add fotoGambar field: ${result.error}`)
+        showError('Failed', `Failed to add fotoGambar field: ${result.error}`)
       }
     } catch (error) {
       console.error("Add fotoGambar error:", error)
-      alert("Failed to add fotoGambar field: Network error")
+      showError('Network Error', 'Failed to add fotoGambar field: Network error')
     }
   }
 
@@ -269,6 +241,7 @@ export default function StaffDashboard() {
 
   return (
     <div className="min-h-screen bg-background text-foreground dark">
+      <AlertComponent />
       <header className="border-b border-border bg-card shadow-sm">
         <div className="container mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
@@ -354,11 +327,10 @@ export default function StaffDashboard() {
                       key={plantName}
                       variant={selectedPlantName === plantName ? "default" : "outline"}
                       onClick={() => handlePlantNameFilter(plantName)}
-                      className={`whitespace-nowrap flex-shrink-0 px-4 py-2 w-32 ${
-                        selectedPlantName === plantName
+                      className={`whitespace-nowrap flex-shrink-0 px-4 py-2 w-32 ${selectedPlantName === plantName
                           ? "bg-primary text-primary-foreground shadow-md"
                           : "border-border text-muted-foreground hover:bg-muted"
-                      }`}
+                        }`}
                     >
                       <MapPin className="w-4 h-4 mr-2" />
                       <span className="truncate">{plantName}</span>
@@ -436,7 +408,7 @@ export default function StaffDashboard() {
                           <p className="text-sm text-muted-foreground">QR: {plant.qrCode}</p>
                         </div>
                       </div>
-                      <Badge className={`${statusColors[plant.status]} shadow-sm`}>{plant.status}</Badge>
+                      <Badge className={`${statusColors[plant.status as keyof typeof statusColors]} shadow-sm`}>{plant.status}</Badge>
                     </div>
                   </CardHeader>
 

@@ -16,6 +16,7 @@ export interface IUser extends Document {
   userCode?: string; // Auto-generated user code
   ktpImageUrl?: string; // KTP image URL from ImageKit
   faceImageUrl?: string; // Face verification image URL from ImageKit
+  profileImageUrl?: string; // Profile image URL from ImageKit
   role: 'user' | 'staff' | 'admin' | 'finance';
   isEmailVerified: boolean;
   isPhoneVerified: boolean;
@@ -110,6 +111,10 @@ const UserSchema: Schema = new Schema({
     trim: true,
   },
   faceImageUrl: {
+    type: String,
+    trim: true,
+  },
+  profileImageUrl: {
     type: String,
     trim: true,
   },

@@ -3,7 +3,6 @@
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import { Badge } from '@/components/ui-staff/badge';
 import { Button } from '@/components/ui-staff/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui-staff/card';
 import { Input } from '@/components/ui-staff/input';
 import { useAlert } from '@/components/ui/Alert';
 import { useConfirmDialog } from '@/components/ui/ConfirmDialog';

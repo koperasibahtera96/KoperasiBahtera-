@@ -1,12 +1,12 @@
-import { NextRequest, NextResponse } from 'next/server';
-import dbConnect from '@/lib/mongodb';
-import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
+import dbConnect from '@/lib/mongodb';
 import Investor from '@/models/Investor';
 import PlantInstance from '@/models/PlantInstance';
 import User from '@/models/User';
+import { getServerSession } from 'next-auth';
+import { NextRequest, NextResponse } from 'next/server';
 
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.email) {
@@ -37,21 +37,21 @@ export async function GET(request: NextRequest) {
 
     // Get PlantInstance data for each investment
     const investmentsWithPlantData = await Promise.all(
-      investor.investments.map(async (investment) => {
+      investor.investments.map(async (investment: any) => {
         let plantInstance = null;
-        
+
         if (investment.plantInstanceId) {
           plantInstance = await PlantInstance.findById(investment.plantInstanceId);
         }
 
         // Calculate investment progress
-        const progress = investment.totalAmount > 0 ? 
+        const progress = investment.totalAmount > 0 ?
           Math.round((investment.amountPaid / investment.totalAmount) * 100) : 0;
 
         // Calculate next payment info for cicilan
         let nextPaymentInfo = null;
         if (investment.paymentType === 'cicilan' && investment.installments) {
-          const nextUnpaidInstallment = investment.installments.find(inst => !inst.isPaid);
+          const nextUnpaidInstallment = investment.installments.find((inst: any) => !inst.isPaid);
           if (nextUnpaidInstallment) {
             nextPaymentInfo = {
               installmentNumber: nextUnpaidInstallment.installmentNumber,
@@ -72,7 +72,7 @@ export async function GET(request: NextRequest) {
           investmentDate: investment.investmentDate,
           completionDate: investment.completionDate,
           nextPaymentInfo,
-          
+
           // Plant instance data
           plantInstance: plantInstance ? {
             id: plantInstance.id,
@@ -85,15 +85,15 @@ export async function GET(request: NextRequest) {
             fotoGambar: plantInstance.fotoGambar,
             owner: plantInstance.owner,
             contractNumber: plantInstance.contractNumber,
-            
+
             // Financial summary
-            totalOperationalCosts: plantInstance.operationalCosts?.reduce((sum, cost) => sum + cost.amount, 0) || 0,
-            totalIncome: plantInstance.incomeRecords?.reduce((sum, income) => sum + income.amount, 0) || 0,
-            
+            totalOperationalCosts: plantInstance.operationalCosts?.reduce((sum: number, cost: any) => sum + cost.amount, 0) || 0,
+            totalIncome: plantInstance.incomeRecords?.reduce((sum: number, income: any) => sum + income.amount, 0) || 0,
+
             // Recent activity
             recentCosts: plantInstance.operationalCosts?.slice(-3) || [],
             recentIncome: plantInstance.incomeRecords?.slice(-3) || [],
-            
+
             lastUpdate: plantInstance.lastUpdate,
             history: plantInstance.history?.slice(-5) || []
           } : null

@@ -143,6 +143,12 @@ export default function LandingHero() {
           <motion.button 
             className="bg-gradient-to-r from-[#364D32] to-[#889063] text-white px-6 sm:px-8 py-3 sm:py-4 rounded-full text-base sm:text-lg font-semibold hover:from-[#889063] hover:to-[#364D32] transition-all duration-300 shadow-lg"
             variants={scaleIn}
+            onClick={() => {
+              const investasiSection = document.getElementById('investasi');
+              if (investasiSection) {
+                investasiSection.scrollIntoView({ behavior: 'smooth' });
+              }
+            }}
             whileHover={{ 
               scale: 1.05,
               boxShadow: "0 10px 25px rgba(54, 77, 50, 0.3)",
@@ -157,10 +163,16 @@ export default function LandingHero() {
 
       {/* Scroll indicator */}
       <motion.div 
-        className="absolute bottom-8 left-1/2 transform -translate-x-1/2 text-gray-700"
+        className="absolute bottom-8 left-1/2 transform -translate-x-1/2 text-gray-700 cursor-pointer"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 2, duration: 0.8 }}
+        onClick={() => {
+          const investasiSection = document.getElementById('investasi');
+          if (investasiSection) {
+            investasiSection.scrollIntoView({ behavior: 'smooth' });
+          }
+        }}
       >
         <motion.div 
           className="flex flex-col items-center"

@@ -1,7 +1,7 @@
-import dbConnect from '@/lib/mongodb';
-import Investor from '@/models/Investor';
-import PlantInstance from '@/models/PlantInstance';
-import { NextResponse } from 'next/server';
+import dbConnect from "@/lib/mongodb";
+import Investor from "@/models/Investor";
+import PlantInstance from "@/models/PlantInstance";
+import { NextResponse } from "next/server";
 
 // GET /api/admin/laporan - Get report data for all investors
 export async function GET() {
@@ -13,11 +13,12 @@ export async function GET() {
     const plantInstances = await PlantInstance.find({});
 
     // Group plant instances by investor
-    const investorReports = investors.map(investor => {
+    const investorReports = investors.map((investor) => {
       // Find plant instances related to this investor through their investments
-      const investorPlantInstances = plantInstances.filter(plantInstance => {
-        return investor.investments.some(investment => 
-          investment.plantInstanceId?.toString() === plantInstance._id.toString()
+      const investorPlantInstances = plantInstances.filter((plantInstance) => {
+        return investor.investments.some(
+          (a: any) =>
+            a.plantInstanceId?.toString() === plantInstance._id.toString()
         );
       });
 
@@ -25,15 +26,22 @@ export async function GET() {
       const plantStats = {
         total: investorPlantInstances.length,
         byCondition: {
-          sehat: investorPlantInstances.filter(p => 
-            p.status === 'Tanam Bibit' || p.status === 'Tumbuh Sehat' || p.status === 'sehat'
+          sehat: investorPlantInstances.filter(
+            (p: any) =>
+              p.status === "Tanam Bibit" ||
+              p.status === "Tumbuh Sehat" ||
+              p.status === "sehat"
           ).length,
-          perlu_perawatan: investorPlantInstances.filter(p => 
-            p.status === 'Perlu Perawatan' || p.status === 'perlu_perawatan'
+          perlu_perawatan: investorPlantInstances.filter(
+            (p: any) =>
+              p.status === "Perlu Perawatan" || p.status === "perlu_perawatan"
           ).length,
-          sakit: investorPlantInstances.filter(p => 
-            p.status === 'Bermasalah' || p.status === 'Sakit' || p.status === 'sakit'
-          ).length
+          sakit: investorPlantInstances.filter(
+            (p) =>
+              p.status === "Bermasalah" ||
+              p.status === "Sakit" ||
+              p.status === "sakit"
+          ).length,
         },
         bySpecies: investorPlantInstances.reduce((acc, plantInstance) => {
           const type = plantInstance.plantType;
@@ -44,18 +52,26 @@ export async function GET() {
           return acc;
         }, {} as Record<string, number>),
         avgAge: 0, // PlantInstance doesn't have age field, will calculate from createdAt
-        avgHeight: 0 // PlantInstance doesn't have height field
+        avgHeight: 0, // PlantInstance doesn't have height field
       };
 
       // Calculate average age based on creation date (in months)
       if (investorPlantInstances.length > 0) {
         const now = new Date();
-        const totalAgeInMonths = investorPlantInstances.reduce((sum, plantInstance) => {
-          const createdDate = new Date(plantInstance.createdAt);
-          const ageInMonths = Math.floor((now.getTime() - createdDate.getTime()) / (1000 * 60 * 60 * 24 * 30));
-          return sum + Math.max(0, ageInMonths);
-        }, 0);
-        plantStats.avgAge = Math.round(totalAgeInMonths / investorPlantInstances.length);
+        const totalAgeInMonths = investorPlantInstances.reduce(
+          (sum, plantInstance) => {
+            const createdDate = new Date(plantInstance.createdAt);
+            const ageInMonths = Math.floor(
+              (now.getTime() - createdDate.getTime()) /
+                (1000 * 60 * 60 * 24 * 30)
+            );
+            return sum + Math.max(0, ageInMonths);
+          },
+          0
+        );
+        plantStats.avgAge = Math.round(
+          totalAgeInMonths / investorPlantInstances.length
+        );
       }
 
       return {
@@ -66,27 +82,36 @@ export async function GET() {
           totalInvestasi: investor.totalInvestasi,
           jumlahPohon: investor.jumlahPohon,
           status: investor.status,
-          createdAt: investor.createdAt
+          createdAt: investor.createdAt,
         },
-        trees: investorPlantInstances.map(plantInstance => {
+        trees: investorPlantInstances.map((plantInstance) => {
           // Calculate age in months from creation date
           const now = new Date();
           const createdDate = new Date(plantInstance.createdAt);
-          const ageInMonths = Math.floor((now.getTime() - createdDate.getTime()) / (1000 * 60 * 60 * 24 * 30));
+          const ageInMonths = Math.floor(
+            (now.getTime() - createdDate.getTime()) / (1000 * 60 * 60 * 24 * 30)
+          );
 
           return {
             _id: plantInstance._id,
             spesiesPohon: `${plantInstance.instanceName}`,
-            lokasi: plantInstance.location || 'Lokasi tidak tersedia',
+            lokasi: plantInstance.location || "Lokasi tidak tersedia",
             umur: Math.max(0, ageInMonths),
             tinggi: 0, // PlantInstance doesn't have height field
             tanggalTanam: plantInstance.createdAt,
-            kondisi: plantInstance.status === 'Tanam Bibit' || plantInstance.status === 'Tumbuh Sehat' || plantInstance.status === 'sehat' ? 'sehat' :
-                     plantInstance.status === 'Perlu Perawatan' || plantInstance.status === 'perlu_perawatan' ? 'perlu_perawatan' : 'sakit',
-            createdAt: plantInstance.createdAt
+            kondisi:
+              plantInstance.status === "Tanam Bibit" ||
+              plantInstance.status === "Tumbuh Sehat" ||
+              plantInstance.status === "sehat"
+                ? "sehat"
+                : plantInstance.status === "Perlu Perawatan" ||
+                  plantInstance.status === "perlu_perawatan"
+                ? "perlu_perawatan"
+                : "sakit",
+            createdAt: plantInstance.createdAt,
           };
         }),
-        statistics: plantStats
+        statistics: plantStats,
       };
     });
 
@@ -94,22 +119,23 @@ export async function GET() {
     const overallStats = {
       totalInvestors: investors.length,
       totalTrees: plantInstances.length,
-      totalInvestment: investors.reduce((sum, inv) => sum + inv.totalInvestasi, 0),
-      activeInvestors: investors.filter(inv => inv.status === 'active').length,
-      inactiveInvestors: investors.filter(inv => inv.status === 'inactive').length
+      activeInvestors: investors.filter((inv) => inv.status === "active")
+        .length,
+      inactiveInvestors: investors.filter((inv) => inv.status === "inactive")
+        .length,
     };
 
     return NextResponse.json({
       success: true,
       data: {
         reports: investorReports,
-        summary: overallStats
-      }
+        summary: overallStats,
+      },
     });
   } catch (error) {
-    console.error('GET /api/admin/laporan error:', error);
+    console.error("GET /api/admin/laporan error:", error);
     return NextResponse.json(
-      { success: false, error: 'Failed to fetch report data' },
+      { success: false, error: "Failed to fetch report data" },
       { status: 500 }
     );
   }

@@ -1,7 +1,9 @@
 'use client';
 
-import { useState, useEffect } from 'react';
 import { AdminLayout } from '@/components/admin/AdminLayout';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
+import { useEffect, useState } from 'react';
 
 interface Tree {
   _id: string;
@@ -60,23 +62,270 @@ export default function LaporanPage() {
     return num.toLocaleString('id-ID');
   };
 
-  // Format currency helper
-  const formatCurrency = (amount: number) => {
-    if (amount >= 1000000000) {
-      return `Rp ${(amount / 1000000000).toFixed(1)}B`;
-    } else if (amount >= 1000000) {
-      return `Rp ${(amount / 1000000).toFixed(1)}M`;
-    } else {
-      return `Rp ${amount.toLocaleString('id-ID')}`;
+  // PDF Generation Functions
+  const addPDFHeader = async (doc: jsPDF, title: string) => {
+    // Add logo
+    try {
+      const logoImg = new Image();
+      logoImg.onload = () => {
+        doc.addImage(logoImg, 'PNG', 20, 15, 25, 25);
+      };
+      logoImg.src = '/images/koperasi-logo.jpg';
+
+      // Wait a bit for image to load
+      await new Promise(resolve => setTimeout(resolve, 100));
+    } catch (error) {
+      console.warn('Logo not loaded:', error);
     }
+
+    // Company header
+    doc.setFontSize(18);
+    doc.setFont('helvetica', 'bold');
+    doc.text('KOPERASI INVESTASI HIJAU', 55, 25);
+
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'normal');
+    doc.text('Jl. Green Investment No. 123, Jakarta', 55, 32);
+    doc.text('Tel: (021) 1234-5678 | Email: info@investasihijau.com', 55, 38);
+
+    // Report title
+    doc.setFontSize(16);
+    doc.setFont('helvetica', 'bold');
+    doc.text(title, 20, 55);
+
+    // Date
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    const currentDate = new Date().toLocaleDateString('id-ID', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+    doc.text(`Dibuat pada: ${currentDate}`, 20, 62);
+
+    // Line separator
+    doc.setLineWidth(0.5);
+    doc.line(20, 70, 190, 70);
+
+    return 80; // Return Y position for content start
   };
+
+  const downloadAllInvestorsReport = async () => {
+    if (!reportData) return;
+
+    const doc = new jsPDF();
+    const startY = await addPDFHeader(doc, 'LAPORAN ADMIN - SEMUA INVESTOR');
+
+    // Summary section
+    doc.setFontSize(14);
+    doc.setFont('helvetica', 'bold');
+    doc.text('RINGKASAN UMUM', 20, startY);
+
+    const summaryData = [
+      ['Total Investor', reportData.summary.totalInvestors.toString()],
+      ['Total Instansi Tanaman', reportData.summary.totalTrees.toString()],
+      ['Investor Aktif', reportData.summary.activeInvestors.toString()],
+      ['Investor Tidak Aktif', reportData.summary.inactiveInvestors.toString()]
+    ];
+
+    autoTable(doc, {
+      startY: startY + 8,
+      head: [['Metrik', 'Jumlah']],
+      body: summaryData,
+      theme: 'striped',
+      headStyles: { fillColor: [50, 77, 62] },
+      margin: { left: 20, right: 20 },
+      styles: { fontSize: 10 }
+    });
+
+    // Investors table
+    const finalY = (doc as any).lastAutoTable.finalY + 15;
+    doc.setFontSize(14);
+    doc.setFont('helvetica', 'bold');
+    doc.text('DETAIL INVESTOR', 20, finalY);
+
+    const investorTableData = filteredReports.map(report => [
+      report.investor.name,
+      report.investor.email,
+      report.investor.status === 'active' ? 'Aktif' : 'Tidak Aktif',
+      report.investor.jumlahPohon.toString(),
+      report.statistics.total.toString(),
+      report.statistics.byCondition.sehat.toString(),
+      new Date(report.investor.createdAt).toLocaleDateString('id-ID')
+    ]);
+
+    autoTable(doc, {
+      startY: finalY + 8,
+      head: [['Nama', 'Email', 'Status', 'Tanaman Terdaftar', 'Instansi Tanaman', 'Tanaman Sehat', 'Tanggal Bergabung']],
+      body: investorTableData,
+      theme: 'striped',
+      headStyles: { fillColor: [50, 77, 62] },
+      margin: { left: 20, right: 20 },
+      styles: { fontSize: 8 },
+      columnStyles: {
+        0: { cellWidth: 25 },
+        1: { cellWidth: 35 },
+        2: { cellWidth: 15 },
+        3: { cellWidth: 20 },
+        4: { cellWidth: 20 },
+        5: { cellWidth: 20 },
+        6: { cellWidth: 25 }
+      }
+    });
+
+    // Footer
+    const pageCount = doc.getNumberOfPages();
+    for (let i = 1; i <= pageCount; i++) {
+      doc.setPage(i);
+      doc.setFontSize(8);
+      doc.setFont('helvetica', 'normal');
+      doc.text(`Halaman ${i} dari ${pageCount}`, 20, 285);
+      doc.text('Rahasia - Hanya untuk Penggunaan Internal', 150, 285);
+    }
+
+    doc.save(`Laporan-Admin-Semua-Investor-${new Date().toISOString().split('T')[0]}.pdf`);
+  };
+
+  const downloadIndividualInvestorReport = async (report: InvestorReport) => {
+    const doc = new jsPDF();
+    const startY = await addPDFHeader(doc, `LAPORAN INVESTOR - ${report.investor.name.toUpperCase()}`);
+
+    // Investor info
+    doc.setFontSize(14);
+    doc.setFont('helvetica', 'bold');
+    doc.text('INFORMASI INVESTOR', 20, startY);
+
+    const investorInfo = [
+      ['Nama', report.investor.name],
+      ['Email', report.investor.email],
+      ['Status', report.investor.status === 'active' ? 'Aktif' : 'Tidak Aktif'],
+      ['Tanggal Bergabung', new Date(report.investor.createdAt).toLocaleDateString('id-ID')],
+      ['Tanaman Terdaftar', report.investor.jumlahPohon.toString()],
+      ['Instansi Tanaman', report.statistics.total.toString()]
+    ];
+
+    autoTable(doc, {
+      startY: startY + 8,
+      head: [['Bidang', 'Nilai']],
+      body: investorInfo,
+      theme: 'striped',
+      headStyles: { fillColor: [50, 77, 62] },
+      margin: { left: 20, right: 20 },
+      styles: { fontSize: 10 }
+    });
+
+    // Plant statistics
+    const afterInfo = (doc as any).lastAutoTable.finalY + 15;
+    doc.setFontSize(14);
+    doc.setFont('helvetica', 'bold');
+    doc.text('STATISTIK TANAMAN', 20, afterInfo);
+
+    const plantStats = [
+      ['Total Tanaman', report.statistics.total.toString()],
+      ['Tanaman Sehat', report.statistics.byCondition.sehat.toString()],
+      ['Tanaman Perlu Perawatan', report.statistics.byCondition.perlu_perawatan.toString()],
+      ['Tanaman Sakit', report.statistics.byCondition.sakit.toString()],
+      ['Rata-rata Umur', `${report.statistics.avgAge} bulan`]
+    ];
+
+    autoTable(doc, {
+      startY: afterInfo + 8,
+      head: [['Metrik', 'Jumlah']],
+      body: plantStats,
+      theme: 'striped',
+      headStyles: { fillColor: [50, 77, 62] },
+      margin: { left: 20, right: 20 },
+      styles: { fontSize: 10 }
+    });
+
+    // Plant types
+    const afterStats = (doc as any).lastAutoTable.finalY + 15;
+    doc.setFontSize(14);
+    doc.setFont('helvetica', 'bold');
+    doc.text('RINCIAN JENIS TANAMAN', 20, afterStats);
+
+    const plantTypes = Object.entries(report.statistics.bySpecies).map(([type, count]) => [
+      type.charAt(0).toUpperCase() + type.slice(1),
+      count.toString()
+    ]);
+
+    autoTable(doc, {
+      startY: afterStats + 8,
+      head: [['Jenis Tanaman', 'Jumlah']],
+      body: plantTypes,
+      theme: 'striped',
+      headStyles: { fillColor: [50, 77, 62] },
+      margin: { left: 20, right: 20 },
+      styles: { fontSize: 10 }
+    });
+
+    // Individual plants table
+    if (report.trees.length > 0) {
+      const afterTypes = (doc as any).lastAutoTable.finalY + 15;
+
+      // Check if we need a new page
+      let tableStartY = 0;
+      if (afterTypes > 220) {
+        doc.addPage();
+        doc.setFontSize(14);
+        doc.setFont('helvetica', 'bold');
+        doc.text('INSTANSI TANAMAN INDIVIDUAL', 20, 30);
+        tableStartY = 38;
+      } else {
+        doc.setFontSize(14);
+        doc.setFont('helvetica', 'bold');
+        doc.text('INSTANSI TANAMAN INDIVIDUAL', 20, afterTypes);
+        tableStartY = (afterTypes as number) + 8;
+      }
+
+      const plantsData = report.trees.map(tree => [
+        tree.spesiesPohon,
+        tree.lokasi,
+        `${tree.umur} bulan`,
+        new Date(tree.tanggalTanam).toLocaleDateString('id-ID'),
+        tree.kondisi === 'sehat' ? 'Sehat' :
+        tree.kondisi === 'perlu_perawatan' ? 'Perlu Perawatan' : 'Sakit'
+      ]);
+
+      autoTable(doc, {
+        startY: tableStartY,
+        head: [['Nama Instansi', 'Lokasi', 'Umur', 'Ditanam', 'Status']],
+        body: plantsData,
+        theme: 'striped',
+        headStyles: { fillColor: [50, 77, 62] },
+        margin: { left: 20, right: 20 },
+        styles: { fontSize: 8 },
+        columnStyles: {
+          0: { cellWidth: 40 },
+          1: { cellWidth: 35 },
+          2: { cellWidth: 25 },
+          3: { cellWidth: 30 },
+          4: { cellWidth: 25 }
+        }
+      });
+    }
+
+    // Footer
+    const pageCount = doc.getNumberOfPages();
+    for (let i = 1; i <= pageCount; i++) {
+      doc.setPage(i);
+      doc.setFontSize(8);
+      doc.setFont('helvetica', 'normal');
+      doc.text(`Halaman ${i} dari ${pageCount}`, 20, 285);
+      doc.text('Rahasia - Hanya untuk Penggunaan Internal', 150, 285);
+    }
+
+    doc.save(`Laporan-Investor-${report.investor.name.replace(/\s+/g, '-')}-${new Date().toISOString().split('T')[0]}.pdf`);
+  };
+
 
   // Fetch report data
   const fetchReportData = async () => {
     try {
       setLoading(true);
       const response = await fetch('/api/admin/laporan');
-      
+
       if (response.ok) {
         const result = await response.json();
         setReportData(result.data);
@@ -120,7 +369,7 @@ export default function LaporanPage() {
     setExpandedInvestor(expandedInvestor === investorId ? null : investorId);
   };
 
-  const filteredReports = reportData?.reports.filter(report => 
+  const filteredReports = reportData?.reports.filter(report =>
     report.investor.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     report.investor.email.toLowerCase().includes(searchTerm.toLowerCase())
   ) || [];
@@ -165,8 +414,8 @@ export default function LaporanPage() {
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
           <div className="min-w-0 flex-1">
-            <h1 className="text-2xl sm:text-3xl font-bold text-[#324D3E] font-[family-name:var(--font-poppins)] truncate">Laporan Investasi</h1>
-            <p className="text-[#889063] mt-1 sm:mt-2 text-sm sm:text-base">Ringkasan investasi dan kepemilikan pohon per investor</p>
+            <h1 className="text-2xl sm:text-3xl font-bold text-[#324D3E] font-[family-name:var(--font-poppins)] truncate">Laporan Admin</h1>
+            <p className="text-[#889063] mt-1 sm:mt-2 text-sm sm:text-base">Ringkasan manajemen investor dan pelacakan instansi tanaman</p>
           </div>
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3">
             <button
@@ -178,11 +427,12 @@ export default function LaporanPage() {
               <span className="hidden sm:inline">{loading ? 'Memuat...' : 'Refresh'}</span>
             </button>
             <button
-              className="bg-gradient-to-r from-[#324D3E] to-[#4C3D19] text-white px-3 sm:px-4 py-2 rounded-xl font-medium transition-all duration-200 flex items-center justify-center gap-2 text-sm sm:text-base whitespace-nowrap"
+              onClick={downloadAllInvestorsReport}
+              className="bg-gradient-to-r from-[#324D3E] to-[#4C3D19] text-white px-3 sm:px-4 py-2 rounded-xl font-medium transition-all duration-200 flex items-center justify-center gap-2 text-sm sm:text-base whitespace-nowrap hover:shadow-lg"
             >
               <span>📥</span>
-              <span className="sm:hidden">Download</span>
-              <span className="hidden sm:inline">Download Semua</span>
+              <span className="sm:hidden">Unduh</span>
+              <span className="hidden sm:inline">Unduh Semua PDF</span>
             </button>
           </div>
         </div>
@@ -198,15 +448,15 @@ export default function LaporanPage() {
 
           <div className="bg-white/80 backdrop-blur-lg rounded-2xl shadow-lg border border-[#324D3E]/10 p-6 hover:shadow-xl hover:scale-105 transition-all duration-300">
             <div>
-              <p className="text-sm font-medium text-[#889063]">🌳 Total Pohon</p>
+              <p className="text-sm font-medium text-[#889063]">🌳 Total Instansi Tanaman</p>
               <p className="text-2xl font-bold text-[#4C3D19]">{reportData.summary.totalTrees}</p>
             </div>
           </div>
 
           <div className="bg-white/80 backdrop-blur-lg rounded-2xl shadow-lg border border-[#324D3E]/10 p-6 hover:shadow-xl hover:scale-105 transition-all duration-300">
             <div>
-              <p className="text-sm font-medium text-[#889063]">💰 Total Investasi</p>
-              <p className="text-xl font-bold text-[#889063]">{formatCurrency(reportData.summary.totalInvestment)}</p>
+              <p className="text-sm font-medium text-[#889063]">🚨 Investor Tidak Aktif</p>
+              <p className="text-2xl font-bold text-[#889063]">{reportData.summary.inactiveInvestors || 0}</p>
             </div>
           </div>
 
@@ -256,35 +506,36 @@ export default function LaporanPage() {
                     </div>
                     <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
                       <span className={`inline-flex px-3 py-1 text-sm font-semibold rounded-full ${
-                        report.investor.status === 'active' 
-                          ? 'bg-[#4C3D19]/10 text-[#4C3D19] border border-[#4C3D19]/20' 
+                        report.investor.status === 'active'
+                          ? 'bg-[#4C3D19]/10 text-[#4C3D19] border border-[#4C3D19]/20'
                           : 'bg-red-100 text-red-800'
                       }`}>
                         {report.investor.status === 'active' ? 'Aktif' : 'Tidak Aktif'}
                       </span>
                       <button
-                        className="bg-[#324D3E]/10 hover:bg-[#324D3E]/20 text-[#324D3E] px-3 py-1 rounded-xl text-sm font-medium transition-colors"
+                        onClick={() => downloadIndividualInvestorReport(report)}
+                        className="bg-[#324D3E]/10 hover:bg-[#324D3E]/20 text-[#324D3E] px-3 py-1 rounded-xl text-sm font-medium transition-colors hover:shadow-sm"
                       >
-                        📥 Download
+                        📥 Unduh PDF
                       </button>
                     </div>
                   </div>
                 </div>
 
-                {/* Investment Summary */}
+                {/* Administrative Summary */}
                 <div className="p-4 lg:p-6 bg-gradient-to-r from-[#324D3E]/5 to-[#4C3D19]/5 border-b border-[#324D3E]/10">
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                     <div className="text-center">
-                      <p className="text-2xl font-bold text-[#324D3E]">{formatCurrency(report.investor.totalInvestasi)}</p>
-                      <p className="text-sm text-[#889063]">Total Investasi</p>
+                      <p className="text-2xl font-bold text-[#324D3E]">{report.investor.jumlahPohon || 0}</p>
+                      <p className="text-sm text-[#889063]">Tanaman Terdaftar</p>
                     </div>
                     <div className="text-center">
                       <p className="text-2xl font-bold text-[#4C3D19]">{report.statistics.total}</p>
-                      <p className="text-sm text-[#889063]">Total Pohon</p>
+                      <p className="text-sm text-[#889063]">Instansi Tanaman</p>
                     </div>
                     <div className="text-center">
                       <p className="text-2xl font-bold text-[#889063]">{report.statistics.byCondition.sehat}</p>
-                      <p className="text-sm text-[#889063]">Pohon Sehat</p>
+                      <p className="text-sm text-[#889063]">Tanaman Sehat</p>
                     </div>
                     <div className="text-center">
                       <p className="text-2xl font-bold text-[#324D3E]">{report.statistics.avgAge}</p>
@@ -300,7 +551,7 @@ export default function LaporanPage() {
                     className="flex items-center justify-between w-full text-left hover:bg-[#324D3E]/5 p-2 rounded-xl transition-colors"
                   >
                     <span className="text-lg font-medium text-[#324D3E] font-[family-name:var(--font-poppins)]">
-                      Detail Pohon ({report.statistics.total})
+                      Detail Instansi Tanaman ({report.statistics.total})
                     </span>
                     <span className={`transform transition-transform duration-200 text-[#324D3E] ${
                       expandedInvestor === report.investor._id ? 'rotate-180' : ''
@@ -313,30 +564,30 @@ export default function LaporanPage() {
                   {expandedInvestor === report.investor._id && (
                     <div className="mt-4 space-y-4">
                       {report.trees.length === 0 ? (
-                        <p className="text-center py-4 text-gray-500">Investor ini belum memiliki pohon</p>
+                        <p className="text-center py-4 text-gray-500">Tidak ada instansi tanaman yang ditugaskan untuk investor ini</p>
                       ) : (
                         <>
-                          {/* Tree Species Summary */}
+                          {/* Plant Type Summary */}
                           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-4">
-                            {Object.entries(report.statistics.bySpecies).map(([species, count]) => (
-                              <div key={species} className="bg-gradient-to-r from-[#324D3E]/10 to-[#4C3D19]/10 p-3 rounded-xl border border-[#324D3E]/20">
-                                <p className="font-medium text-[#324D3E]">{species}</p>
-                                <p className="text-sm text-[#889063]">{count} pohon</p>
+                            {Object.entries(report.statistics.bySpecies).map(([plantType, count]) => (
+                              <div key={plantType} className="bg-gradient-to-r from-[#324D3E]/10 to-[#4C3D19]/10 p-3 rounded-xl border border-[#324D3E]/20">
+                                <p className="font-medium text-[#324D3E] capitalize">{plantType}</p>
+                                <p className="text-sm text-[#889063]">{count} instansi</p>
                               </div>
                             ))}
                           </div>
 
-                          {/* Tree List */}
+                          {/* Plant Instance List */}
                           <div className="overflow-x-auto">
                             <table className="w-full text-sm">
                               <thead className="bg-[#324D3E]/5">
                                 <tr>
-                                  <th className="px-3 py-2 text-left font-medium text-[#324D3E]">Spesies</th>
+                                  <th className="px-3 py-2 text-left font-medium text-[#324D3E]">Nama Instansi</th>
                                   <th className="px-3 py-2 text-left font-medium text-[#324D3E] hidden sm:table-cell">Lokasi</th>
                                   <th className="px-3 py-2 text-left font-medium text-[#324D3E]">Umur</th>
-                                  <th className="px-3 py-2 text-left font-medium text-[#324D3E] hidden lg:table-cell">Tinggi</th>
-                                  <th className="px-3 py-2 text-left font-medium text-[#324D3E] hidden sm:table-cell">Tanggal Tanam</th>
-                                  <th className="px-3 py-2 text-left font-medium text-[#324D3E]">Kondisi</th>
+                                  <th className="px-3 py-2 text-left font-medium text-[#324D3E] hidden lg:table-cell">Jenis</th>
+                                  <th className="px-3 py-2 text-left font-medium text-[#324D3E] hidden sm:table-cell">Dibuat</th>
+                                  <th className="px-3 py-2 text-left font-medium text-[#324D3E]">Status</th>
                                 </tr>
                               </thead>
                               <tbody className="divide-y divide-[#324D3E]/10">
@@ -350,10 +601,9 @@ export default function LaporanPage() {
                                     </td>
                                     <td className="px-3 py-2 text-[#889063] hidden sm:table-cell">{tree.lokasi}</td>
                                     <td className="px-3 py-2">
-                                      <span className="text-[#324D3E]">{formatNumber(tree.umur)} bln</span>
-                                      <span className="text-xs text-[#889063] block lg:hidden">{tree.tinggi > 0 ? `${formatNumber(tree.tinggi)} cm` : '-'}</span>
+                                      <span className="text-[#324D3E]">{formatNumber(tree.umur)} bulan</span>
                                     </td>
-                                    <td className="px-3 py-2 text-[#889063] hidden lg:table-cell">{tree.tinggi > 0 ? `${formatNumber(tree.tinggi)} cm` : '-'}</td>
+                                    <td className="px-3 py-2 text-[#889063] hidden lg:table-cell capitalize">{tree.spesiesPohon.split(' ')[0] || 'Tidak Diketahui'}</td>
                                     <td className="px-3 py-2 text-[#889063] hidden sm:table-cell">
                                       {new Date(tree.tanggalTanam).toLocaleDateString('id-ID')}
                                     </td>

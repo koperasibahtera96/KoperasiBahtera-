@@ -1,6 +1,6 @@
-import { type NextRequest, NextResponse } from "next/server"
-import { Transaction } from "@/models"
 import { ensureConnection } from "@/lib/utils/utils/database"
+import { Transaction } from "@/models"
+import { type NextRequest, NextResponse } from "next/server"
 
 export async function GET(request: NextRequest) {
   try {
@@ -26,6 +26,7 @@ export async function GET(request: NextRequest) {
       transactionCount: transactions.length,
     })
   } catch (error) {
+    console.error('Error generating daily report:', error);
     return NextResponse.json({ error: "Failed to generate daily report" }, { status: 500 })
   }
 }

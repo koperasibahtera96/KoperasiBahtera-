@@ -205,9 +205,9 @@ export default function UserVerificationPage() {
             </div>
           </div>
 
-          <div className="p-6">
+          <div className="p-4 sm:p-6">
             {pendingUsers.length === 0 ? (
-              <div className="text-center py-8 text-gray-500">
+              <div className="text-center py-8 text-gray-500 text-sm sm:text-base">
                 Tidak ada user yang perlu diverifikasi
               </div>
             ) : (
@@ -218,17 +218,19 @@ export default function UserVerificationPage() {
                     className="border border-gray-200 rounded-xl p-4 hover:shadow-md transition-all"
                     variants={itemVariants}
                   >
-                    <div className="flex items-start justify-between">
+                    <div className="flex flex-col sm:flex-row sm:items-start gap-4">
                       <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-3">
-                          <div className="w-10 h-10 bg-gradient-to-r from-[#324D3E] to-[#4C3D19] rounded-full flex items-center justify-center">
-                            <span className="text-white font-bold">{user.fullName.charAt(0)}</span>
+                        <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-3">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-r from-[#324D3E] to-[#4C3D19] rounded-full flex items-center justify-center flex-shrink-0">
+                              <span className="text-white font-bold text-sm sm:text-base">{user.fullName.charAt(0)}</span>
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <h3 className="font-semibold text-[#324D3E] text-sm sm:text-base truncate">{user.fullName}</h3>
+                              <p className="text-xs sm:text-sm text-[#889063] truncate">{user.email}</p>
+                            </div>
                           </div>
-                          <div>
-                            <h3 className="font-semibold text-[#324D3E]">{user.fullName}</h3>
-                            <p className="text-sm text-[#889063]">{user.email}</p>
-                          </div>
-                          <span className={`px-3 py-1 text-xs font-semibold rounded-full ${
+                          <span className={`px-2 sm:px-3 py-1 text-xs font-semibold rounded-full self-start ${
                             user.verificationStatus === 'pending' ? 'bg-yellow-100 text-yellow-800' :
                             user.verificationStatus === 'approved' ? 'bg-green-100 text-green-800' :
                             'bg-red-100 text-red-800'
@@ -238,11 +240,11 @@ export default function UserVerificationPage() {
                           </span>
                         </div>
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                          <div>
-                            <p className="text-[#889063]">Telepon: {user.phoneNumber}</p>
-                            <p className="text-[#889063]">Alamat: {user.address}</p>
-                            <p className="text-[#889063]">Kota: {user.city}, {user.province}</p>
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4 text-xs sm:text-sm">
+                          <div className="space-y-1">
+                            <p className="text-[#889063] truncate">Telepon: {user.phoneNumber}</p>
+                            <p className="text-[#889063] truncate">Alamat: {user.address}</p>
+                            <p className="text-[#889063] truncate">Kota: {user.city}, {user.province}</p>
                           </div>
                           <div>
                             <p className="text-[#889063]">
@@ -252,10 +254,10 @@ export default function UserVerificationPage() {
                         </div>
                       </div>
 
-                      <div className="flex gap-2 ml-4">
+                      <div className="flex gap-2 sm:ml-4">
                         <button
                           onClick={() => setSelectedUser(user)}
-                          className="px-4 py-2 bg-[#324D3E] text-white rounded-lg hover:bg-[#4C3D19] transition-colors text-sm"
+                          className="px-3 sm:px-4 py-2 bg-[#324D3E] text-white rounded-lg hover:bg-[#4C3D19] transition-colors text-xs sm:text-sm whitespace-nowrap"
                         >
                           Lihat Detail
                         </button>
@@ -271,78 +273,99 @@ export default function UserVerificationPage() {
         {/* Detail Modal */}
         {selectedUser && (
           <motion.div
-            className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+            className="fixed inset-0 bg-black/50 flex items-start sm:items-center justify-center z-50 p-2 sm:p-4"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
           >
             <motion.div
-              className="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto"
+              className="bg-white rounded-2xl max-w-4xl w-full max-h-[95vh] sm:max-h-[90vh] overflow-y-auto mt-2 sm:mt-0"
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
             >
-              <div className="p-6 border-b border-gray-200">
+              <div className="p-4 sm:p-6 border-b border-gray-200 sticky top-0 bg-white rounded-t-2xl">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-xl font-bold text-[#324D3E]">Detail Verifikasi - {selectedUser.fullName}</h3>
+                  <h3 className="text-base sm:text-xl font-bold text-[#324D3E] truncate pr-4">
+                    Detail Verifikasi - {selectedUser.fullName}
+                  </h3>
                   <button
                     onClick={() => setSelectedUser(null)}
-                    className="text-gray-500 hover:text-gray-700"
+                    className="text-gray-500 hover:text-gray-700 p-1 flex-shrink-0"
                   >
                     ✕
                   </button>
                 </div>
               </div>
 
-              <div className="p-6 space-y-6">
+              <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
                 {/* Images */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
                   <div>
-                    <h4 className="font-semibold text-[#324D3E] mb-3">Foto KTP</h4>
+                    <h4 className="font-semibold text-[#324D3E] mb-3 text-sm sm:text-base">Foto KTP</h4>
                     {selectedUser.ktpImageUrl ? (
                       <div className="relative aspect-[3/2] bg-gray-100 rounded-lg overflow-hidden">
                         <Image
                           src={selectedUser.ktpImageUrl}
                           alt="KTP"
                           fill
-                          className="object-cover"
+                          className="object-contain sm:object-cover"
+                          sizes="(max-width: 768px) 100vw, 50vw"
                         />
                       </div>
                     ) : (
                       <div className="aspect-[3/2] bg-gray-100 rounded-lg flex items-center justify-center">
-                        <p className="text-gray-500">Tidak ada foto KTP</p>
+                        <p className="text-gray-500 text-sm">Tidak ada foto KTP</p>
                       </div>
                     )}
                   </div>
 
                   <div>
-                    <h4 className="font-semibold text-[#324D3E] mb-3">Foto Selfie</h4>
+                    <h4 className="font-semibold text-[#324D3E] mb-3 text-sm sm:text-base">Foto Selfie</h4>
                     {selectedUser.faceImageUrl ? (
                       <div className="relative aspect-[3/4] bg-gray-100 rounded-lg overflow-hidden">
                         <Image
                           src={selectedUser.faceImageUrl}
                           alt="Selfie"
                           fill
-                          className="object-cover"
+                          className="object-contain sm:object-cover"
+                          sizes="(max-width: 768px) 100vw, 50vw"
                         />
                       </div>
                     ) : (
                       <div className="aspect-[3/4] bg-gray-100 rounded-lg flex items-center justify-center">
-                        <p className="text-gray-500">Tidak ada foto selfie</p>
+                        <p className="text-gray-500 text-sm">Tidak ada foto selfie</p>
                       </div>
                     )}
                   </div>
                 </div>
 
+                {/* User Details */}
+                <div className="bg-gray-50 p-4 rounded-lg">
+                  <h4 className="font-semibold text-[#324D3E] mb-3 text-sm sm:text-base">Informasi User</h4>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs sm:text-sm">
+                    <div>
+                      <p className="text-gray-600">Nama: <span className="font-medium">{selectedUser.fullName}</span></p>
+                      <p className="text-gray-600">Email: <span className="font-medium">{selectedUser.email}</span></p>
+                      <p className="text-gray-600">Telepon: <span className="font-medium">{selectedUser.phoneNumber}</span></p>
+                    </div>
+                    <div>
+                      <p className="text-gray-600">Alamat: <span className="font-medium">{selectedUser.address}</span></p>
+                      <p className="text-gray-600">Kota: <span className="font-medium">{selectedUser.city}</span></p>
+                      <p className="text-gray-600">Provinsi: <span className="font-medium">{selectedUser.province}</span></p>
+                    </div>
+                  </div>
+                </div>
+
                 {/* Notes */}
                 <div>
-                  <label className="block text-sm font-medium text-[#324D3E] mb-2">
+                  <label className="block text-xs sm:text-sm font-medium text-[#324D3E] mb-2">
                     Catatan Verifikasi (Opsional)
                   </label>
                   <textarea
                     value={verificationNotes}
                     onChange={(e) => setVerificationNotes(e.target.value)}
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#324D3E] focus:border-transparent"
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#324D3E] focus:border-transparent text-sm"
                     rows={3}
                     placeholder="Tambahkan catatan jika diperlukan..."
                   />
@@ -350,18 +373,18 @@ export default function UserVerificationPage() {
 
                 {/* Actions */}
                 {selectedUser.verificationStatus === 'pending' && (
-                  <div className="flex gap-4 pt-4">
+                  <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 pt-4 sticky bottom-0 bg-white">
                     <button
                       onClick={() => handleVerification(selectedUser._id, 'approved')}
                       disabled={processingId === selectedUser._id}
-                      className="flex-1 bg-green-600 text-white py-3 px-6 rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50"
+                      className="flex-1 bg-green-600 text-white py-3 px-4 sm:px-6 rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 text-sm sm:text-base font-medium"
                     >
                       {processingId === selectedUser._id ? 'Memproses...' : '✅ Setujui'}
                     </button>
                     <button
                       onClick={() => handleVerification(selectedUser._id, 'rejected')}
                       disabled={processingId === selectedUser._id}
-                      className="flex-1 bg-red-600 text-white py-3 px-6 rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50"
+                      className="flex-1 bg-red-600 text-white py-3 px-4 sm:px-6 rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 text-sm sm:text-base font-medium"
                     >
                       {processingId === selectedUser._id ? 'Memproses...' : '❌ Tolak'}
                     </button>

@@ -2,18 +2,28 @@
 
 import LandingHeader from '@/components/landing/LandingHeader';
 import { useAlert } from '@/components/ui/Alert';
+import { CicilanGroup, CicilanInstallmentWithPayment } from '@/types/cicilan';
+import {
+  Calendar,
+  CheckCircle,
+  Clock,
+  CreditCard,
+  DollarSign,
+  Search,
+  TrendingUp,
+  Upload,
+} from 'lucide-react';
 import { useSession } from 'next-auth/react';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { CicilanGroup, CicilanInstallmentWithPayment } from '@/types/cicilan';
 
-import { CicilanGroup, CicilanInstallmentWithPayment } from '@/types/cicilan';
 
 // Type alias for backward compatibility
 type Installment = CicilanInstallmentWithPayment;
 
 export default function CicilanPage() {
-  const { data: session, status } = useSession();
+  const { data: _, status } = useSession();
   const router = useRouter();
   const [groupedInstallments, setGroupedInstallments] = useState<CicilanGroup[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -243,7 +253,9 @@ export default function CicilanPage() {
 
           {groupedInstallments.length === 0 ? (
             <div className="text-center py-12 bg-white/95 backdrop-blur-sm rounded-3xl shadow-xl">
-              <div className="text-[#324D3E] text-6xl mb-4">💳</div>
+              <div className="text-[#324D3E] mb-4">
+                <CreditCard size={64} />
+              </div>
               <h3 className="text-xl font-semibold text-[#324D3E] mb-2 font-poppins">Belum ada cicilan investasi</h3>
               <p className="text-gray-600 mb-6 font-poppins">Mulai investasi dengan cicilan sekarang!</p>
               <button
@@ -269,8 +281,14 @@ export default function CicilanPage() {
                             Total Investasi: Rp {group.totalAmount.toLocaleString('id-ID')}
                           </p>
                           <div className="flex flex-wrap gap-4 mt-2 text-sm text-gray-600 font-poppins">
-                            <span>📅 {group.paymentTerm === 'monthly' ? 'Bulanan' : group.paymentTerm === 'quarterly' ? 'Triwulan' : 'Tahunan'}</span>
-                            <span>💰 Rp {group.installmentAmount.toLocaleString('id-ID')}/cicilan</span>
+                            <span className="flex items-center gap-2">
+                              <Calendar size={16} />
+                              {group.paymentTerm === 'monthly' ? 'Bulanan' : group.paymentTerm === 'quarterly' ? 'Triwulan' : 'Tahunan'}
+                            </span>
+                            <span className="flex items-center gap-2">
+                              <DollarSign size={16} />
+                              Rp {group.installmentAmount.toLocaleString('id-ID')}/cicilan
+                            </span>
                           </div>
                         </div>
                         <div className="lg:text-right">
@@ -365,7 +383,10 @@ export default function CicilanPage() {
                                 {/* Status Details */}
                                 {installment.paidDate && (
                                   <div className="text-sm text-green-600 mb-2 font-poppins">
-                                    ✅ Dibayar: {formatDate(installment.paidDate)}
+                                    <span className="flex items-center gap-1">
+                                      <CheckCircle size={14} />
+                                      Dibayar: {formatDate(installment.paidDate)}
+                                    </span>
                                   </div>
                                 )}
 
@@ -394,7 +415,10 @@ export default function CicilanPage() {
                                     className="w-full px-3 py-2 bg-gradient-to-r from-[#324D3E] to-[#4C3D19] text-white text-sm rounded-full hover:shadow-lg transition-all duration-300 font-poppins font-medium"
                                     disabled={uploadingProof === installment._id}
                                   >
-                                    {uploadingProof === installment._id ? 'Mengunggah...' : 'Upload Bukti Bayar'}
+                                    <span className="flex items-center justify-center gap-2">
+                                      <Upload size={16} />
+                                      {uploadingProof === installment._id ? 'Mengunggah...' : 'Upload Bukti Bayar'}
+                                    </span>
                                   </button>
                                 )}
 
@@ -402,9 +426,11 @@ export default function CicilanPage() {
                                 {installment.proofImageUrl && (
                                   <div className="mt-3">
                                     <div className="text-xs text-gray-600 mb-1 font-poppins">Bukti Pembayaran:</div>
-                                    <img
+                                    <Image
                                       src={installment.proofImageUrl}
                                       alt="Bukti Pembayaran"
+                                      width={100}
+                                      height={100}
                                       className="w-full h-20 object-cover rounded-xl border cursor-pointer hover:shadow-lg transition-all duration-300"
                                       onClick={() => window.open(installment.proofImageUrl, '_blank')}
                                     />
@@ -521,7 +547,10 @@ function InstallmentProofUploadModal({ isOpen, installment, onClose, onUpload, i
                 disabled={!file || isUploading}
                 className="flex-1 px-4 py-2 bg-gradient-to-r from-[#324D3E] to-[#4C3D19] text-white rounded-full hover:shadow-lg disabled:opacity-50 font-poppins font-medium transition-all duration-300"
               >
-                {isUploading ? 'Mengunggah...' : 'Upload'}
+                <span className="flex items-center justify-center gap-2">
+                  <Upload size={16} />
+                  {isUploading ? 'Mengunggah...' : 'Upload'}
+                </span>
               </button>
             </div>
           </form>
@@ -530,7 +559,7 @@ function InstallmentProofUploadModal({ isOpen, installment, onClose, onUpload, i
     </div>
   );
 
-  function formatDate(dateString: string) {
+  function formatDate(dateString: Date) {
     return new Date(dateString).toLocaleDateString('id-ID', {
       year: 'numeric',
       month: 'long',
@@ -560,14 +589,18 @@ function PortfolioOverview({ stats }: PortfolioOverviewProps) {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {/* Total Investments */}
         <div className="bg-gradient-to-br from-[#324D3E]/10 to-[#4C3D19]/10 rounded-2xl p-4">
-          <div className="text-3xl mb-2">📈</div>
+          <div className="text-[#324D3E] mb-2">
+            <TrendingUp size={32} />
+          </div>
           <div className="text-2xl font-bold text-[#324D3E] font-poppins">{stats.totalInvestments}</div>
           <div className="text-sm text-gray-600 font-poppins">Total Investasi</div>
         </div>
 
         {/* Total Amount */}
         <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-2xl p-4">
-          <div className="text-3xl mb-2">💰</div>
+          <div className="text-[#324D3E] mb-2">
+            <DollarSign size={32} />
+          </div>
           <div className="text-2xl font-bold text-[#324D3E] font-poppins">
             Rp {stats.totalAmount.toLocaleString('id-ID')}
           </div>
@@ -576,7 +609,9 @@ function PortfolioOverview({ stats }: PortfolioOverviewProps) {
 
         {/* Total Paid */}
         <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-2xl p-4">
-          <div className="text-3xl mb-2">✅</div>
+          <div className="text-[#324D3E] mb-2">
+            <CheckCircle size={32} />
+          </div>
           <div className="text-2xl font-bold text-green-600 font-poppins">
             Rp {stats.totalPaid.toLocaleString('id-ID')}
           </div>
@@ -591,7 +626,9 @@ function PortfolioOverview({ stats }: PortfolioOverviewProps) {
 
         {/* Payment Status */}
         <div className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-2xl p-4">
-          <div className="text-3xl mb-2">⏰</div>
+          <div className="text-[#324D3E] mb-2">
+            <Clock size={32} />
+          </div>
           <div className="flex justify-between items-center">
             <div>
               <div className="text-lg font-bold text-red-600 font-poppins">{stats.overdueCount}</div>
@@ -638,9 +675,7 @@ function SearchAndFilter({ searchTerm, setSearchTerm, filter, setFilter, stats }
         <div className="flex-1 max-w-md">
           <div className="relative">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
+              <Search className="h-5 w-5 text-gray-400" />
             </div>
             <input
               type="text"

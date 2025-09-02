@@ -3,27 +3,29 @@ import midtransClient, {
   ItemDetails,
   TransactionParameter,
   TransactionResponse,
-  TransactionStatus
-} from 'midtrans-client';
+  TransactionStatus,
+} from "midtrans-client";
 
 // Check for required environment variables
 if (!process.env.MIDTRANS_SERVER_KEY) {
-  console.error('❌ MIDTRANS_SERVER_KEY is not set in environment variables');
+  console.error("❌ MIDTRANS_SERVER_KEY is not set in environment variables");
 }
 if (!process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY) {
-  console.error('❌ NEXT_PUBLIC_MIDTRANS_CLIENT_KEY is not set in environment variables');
+  console.error(
+    "❌ NEXT_PUBLIC_MIDTRANS_CLIENT_KEY is not set in environment variables"
+  );
 }
 
 // Initialize Midtrans Snap
 const snap = new midtransClient.Snap({
-  isProduction: process.env.NODE_ENV === 'production',
+  isProduction: process.env.NODE_ENV === "production",
   serverKey: process.env.MIDTRANS_SERVER_KEY!,
   clientKey: process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY!,
 });
 
 // Initialize Midtrans Core API
 const coreApi = new midtransClient.CoreApi({
-  isProduction: process.env.NODE_ENV === 'production',
+  isProduction: process.env.NODE_ENV === "production",
   serverKey: process.env.MIDTRANS_SERVER_KEY!,
   clientKey: process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY!,
 });
@@ -43,7 +45,9 @@ export interface PaymentRequest {
 export type PaymentResponse = TransactionResponse;
 
 class MidtransService {
-  async createTransaction(paymentData: PaymentRequest): Promise<PaymentResponse> {
+  async createTransaction(
+    paymentData: PaymentRequest
+  ): Promise<PaymentResponse> {
     try {
       const parameter: TransactionParameter = {
         transaction_details: {
@@ -56,7 +60,7 @@ class MidtransService {
             id: paymentData.orderId,
             price: paymentData.amount,
             quantity: 1,
-            name: 'Registration Fee',
+            name: "Registration Fee",
           },
         ],
         callbacks: paymentData.callbacks || {
@@ -68,19 +72,30 @@ class MidtransService {
 
       const transaction = await snap.createTransaction(parameter);
       return transaction;
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
-      console.error('Midtrans transaction creation error:', error);
+      console.error("Midtrans transaction creation error:", error);
 
       // Provide more specific error messages based on the error type
       if (error.httpStatusCode === 401) {
-        throw new Error('❌ Invalid Midtrans API keys. Please check your MIDTRANS_SERVER_KEY and MIDTRANS_CLIENT_KEY in .env.local');
+        throw new Error(
+          "❌ Invalid Midtrans API keys. Please check your MIDTRANS_SERVER_KEY and MIDTRANS_CLIENT_KEY in .env.local"
+        );
       } else if (error.httpStatusCode === 400) {
-        throw new Error('❌ Invalid payment parameters. Please check the transaction details.');
+        throw new Error(
+          "❌ Invalid payment parameters. Please check the transaction details."
+        );
       } else if (error.ApiResponse?.error_messages) {
-        throw new Error(`❌ Midtrans API Error: ${error.ApiResponse.error_messages.join(', ')}`);
+        throw new Error(
+          `❌ Midtrans API Error: ${error.ApiResponse.error_messages.join(
+            ", "
+          )}`
+        );
       } else {
-        throw new Error(`❌ Failed to create payment transaction: ${error.message || 'Unknown error'}`);
+        throw new Error(
+          `❌ Failed to create payment transaction: ${
+            error.message || "Unknown error"
+          }`
+        );
       }
     }
   }
@@ -90,8 +105,8 @@ class MidtransService {
       const response = await coreApi.transaction.status(orderId);
       return response;
     } catch (error) {
-      console.error('Error getting transaction status:', error);
-      throw new Error('Failed to get transaction status');
+      console.error("Error getting transaction status:", error);
+      throw new Error("Failed to get transaction status");
     }
   }
 
@@ -100,30 +115,32 @@ class MidtransService {
       const response = await coreApi.transaction.cancel(orderId);
       return response;
     } catch (error) {
-      console.error('Error cancelling transaction:', error);
-      throw new Error('Failed to cancel transaction');
+      console.error("Error cancelling transaction:", error);
+      throw new Error("Failed to cancel transaction");
     }
   }
 
-  async captureTransaction(orderId: string, amount: number): Promise<TransactionStatus> {
+  async captureTransaction(
+    orderId: string,
+    amount: number
+  ): Promise<TransactionStatus> {
     try {
       const response = await coreApi.transaction.capture(orderId, {
         gross_amount: amount,
       });
       return response;
     } catch (error) {
-      console.error('Error capturing transaction:', error);
-      throw new Error('Failed to capture transaction');
+      console.error("Error capturing transaction:", error);
+      throw new Error("Failed to capture transaction");
     }
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   verifyNotification(notification: any): Promise<TransactionStatus> {
     try {
       return coreApi.transaction.notification(notification);
     } catch (error) {
-      console.error('Error verifying notification:', error);
-      throw new Error('Failed to verify notification');
+      console.error("Error verifying notification:", error);
+      throw new Error("Failed to verify notification");
     }
   }
 }

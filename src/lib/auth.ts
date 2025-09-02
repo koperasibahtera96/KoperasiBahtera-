@@ -51,6 +51,7 @@ export const authOptions: NextAuthOptions = {
             city: user.city,
             verificationStatus: user.verificationStatus,
             canPurchase: user.canPurchase,
+            profileImageUrl: user.profileImageUrl,
           };
         } catch (error) {
           console.error('Auth error:', error);
@@ -66,7 +67,7 @@ export const authOptions: NextAuthOptions = {
     signIn: '/login',
   },
   callbacks: {
-    async jwt({ token, user }) {
+    async jwt({ token, user, trigger }) {
       if (user) {
         token.role = user.role;
         token.isVerified = user.isVerified;
@@ -77,7 +78,31 @@ export const authOptions: NextAuthOptions = {
         token.city = user.city;
         token.verificationStatus = user.verificationStatus;
         token.canPurchase = user.canPurchase;
+        token.profileImageUrl = user.profileImageUrl;
       }
+      
+      // Handle session updates by fetching fresh data from database
+      if (trigger === 'update' && token.sub) {
+        try {
+          await dbConnect();
+          const dbUser = await User.findById(token.sub).select('-password');
+          if (dbUser) {
+            token.role = dbUser.role;
+            token.isVerified = dbUser.isEmailVerified;
+            token.userCode = dbUser.userCode;
+            token.occupationCode = dbUser.occupationCode;
+            token.phoneNumber = dbUser.phoneNumber;
+            token.province = dbUser.province;
+            token.city = dbUser.city;
+            token.verificationStatus = dbUser.verificationStatus;
+            token.canPurchase = dbUser.canPurchase;
+            token.profileImageUrl = dbUser.profileImageUrl;
+          }
+        } catch (error) {
+          console.error('Error updating token from database:', error);
+        }
+      }
+      
       return token;
     },
     async session({ session, token }) {
@@ -92,6 +117,7 @@ export const authOptions: NextAuthOptions = {
         session.user.city = token.city as string;
         session.user.verificationStatus = token.verificationStatus as string;
         session.user.canPurchase = token.canPurchase as boolean;
+        session.user.profileImageUrl = token.profileImageUrl as string;
       }
       return session;
     },

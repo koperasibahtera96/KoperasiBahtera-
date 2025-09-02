@@ -5,12 +5,11 @@ import { FormActions, FormField, FormRow } from '@/components/forms/FormField';
 import { Select } from '@/components/forms/Select';
 import { ValidationInput } from '@/components/forms/ValidationInput';
 import LandingHeader from '@/components/landing/LandingHeader';
-import { Button } from '@/components/ui/Button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { occupationOptions } from '@/constant/OCCUPATION';
 import { provinceOptions } from '@/constant/PROVINCE';
 import { RegistrationFormData, registrationSchema } from '@/schemas/User';
 import { zodResolver } from '@hookform/resolvers/zod';
+import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -45,7 +44,7 @@ export default function RegisterPage() {
   const {
     register,
     handleSubmit,
-    formState: { errors, isValid },
+    formState: { errors },
     watch,
     trigger,
   } = useForm<RegistrationFormData>({
@@ -697,7 +696,9 @@ export default function RegisterPage() {
                   <div className="max-w-md mx-auto">
                     {ktpImageUrl ? (
                       <div className="text-center space-y-4">
-                        <img
+                        <Image
+                          width={100}
+                          height={100}
                           src={ktpImageUrl}
                           alt="KTP Preview"
                           className="w-full max-w-sm mx-auto rounded-lg border border-gray-300 shadow-sm"
@@ -875,7 +876,9 @@ export default function RegisterPage() {
                         <div>
                           <p className="text-sm text-gray-600 mb-2">KTP</p>
                           {ktpImageUrl && (
-                            <img
+                            <Image
+                              width={100}
+                              height={100}
                               src={ktpImageUrl}
                               alt="KTP"
                               className="w-32 h-20 object-cover rounded border border-gray-300"
@@ -885,7 +888,9 @@ export default function RegisterPage() {
                         <div>
                           <p className="text-sm text-gray-600 mb-2">Foto Wajah</p>
                           {faceImageUrl && (
-                            <img
+                            <Image
+                              width={100}
+                              height={100}
                               src={faceImageUrl}
                               alt="Face"
                               className="w-20 h-20 object-cover rounded-full border border-gray-300"

@@ -1,4 +1,4 @@
-import mongoose, { Document, Schema } from 'mongoose';
+import mongoose, { Document, Schema } from "mongoose";
 
 export interface IPayment extends Document {
   orderId: string;
@@ -8,14 +8,20 @@ export interface IPayment extends Document {
   currency: string;
 
   // Payment type: registration, full-investment, cicilan-installment
-  paymentType: 'registration' | 'full-investment' | 'cicilan-installment';
+  paymentType: "registration" | "full-investment" | "cicilan-installment";
 
   // For Midtrans payments (registration & full investment)
-  transactionStatus?: 'pending' | 'settlement' | 'capture' | 'deny' | 'cancel' | 'expire' | 'failure';
+  transactionStatus?:
+    | "pending"
+    | "settlement"
+    | "capture"
+    | "deny"
+    | "cancel"
+    | "expire"
+    | "failure";
   fraudStatus?: string;
   transactionTime?: Date;
   settlementTime?: Date;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   midtransResponse?: any;
 
   // For cicilan installments
@@ -31,7 +37,7 @@ export interface IPayment extends Document {
   proofDescription?: string;
 
   // Admin review (for cicilan installments)
-  adminStatus?: 'pending' | 'approved' | 'rejected';
+  adminStatus?: "pending" | "approved" | "rejected";
   adminReviewDate?: Date;
   adminReviewBy?: string;
   adminNotes?: string;
@@ -62,162 +68,174 @@ export interface IPayment extends Document {
   processingError?: string;
 
   // General status (for all payment types)
-  status: 'pending' | 'approved' | 'rejected' | 'completed' | 'cancelled';
+  status: "pending" | "approved" | "rejected" | "completed" | "cancelled";
 
   createdAt: Date;
   updatedAt: Date;
 }
 
-const PaymentSchema: Schema = new Schema({
-  orderId: {
-    type: String,
-    required: true,
-    unique: true,
-    trim: true,
-  },
-  transactionId: {
-    type: String,
-    trim: true,
-  },
-  userId: {
-    type: Schema.Types.ObjectId,
-    ref: 'User',
-    required: true,
-  },
-  amount: {
-    type: Number,
-    required: true,
-  },
-  currency: {
-    type: String,
-    default: 'IDR',
-  },
-  paymentType: {
-    type: String,
-    required: true,
-    enum: ['registration', 'full-investment', 'cicilan-installment'],
-  },
+const PaymentSchema: Schema = new Schema(
+  {
+    orderId: {
+      type: String,
+      required: true,
+      unique: true,
+      trim: true,
+    },
+    transactionId: {
+      type: String,
+      trim: true,
+    },
+    userId: {
+      type: Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+    },
+    amount: {
+      type: Number,
+      required: true,
+    },
+    currency: {
+      type: String,
+      default: "IDR",
+    },
+    paymentType: {
+      type: String,
+      required: true,
+      enum: ["registration", "full-investment", "cicilan-installment"],
+    },
 
-  // For Midtrans payments
-  transactionStatus: {
-    type: String,
-    enum: ['pending', 'settlement', 'capture', 'deny', 'cancel', 'expire', 'failure'],
-  },
-  fraudStatus: {
-    type: String,
-    enum: ['accept', 'deny', 'challenge'],
-  },
-  transactionTime: {
-    type: Date,
-  },
-  settlementTime: {
-    type: Date,
-  },
-  midtransResponse: {
-    type: Schema.Types.Mixed,
-  },
+    // For Midtrans payments
+    transactionStatus: {
+      type: String,
+      enum: [
+        "pending",
+        "settlement",
+        "capture",
+        "deny",
+        "cancel",
+        "expire",
+        "failure",
+      ],
+    },
+    fraudStatus: {
+      type: String,
+      enum: ["accept", "deny", "challenge"],
+    },
+    transactionTime: {
+      type: Date,
+    },
+    settlementTime: {
+      type: Date,
+    },
+    midtransResponse: {
+      type: Schema.Types.Mixed,
+    },
 
-  // For cicilan installments
-  cicilanOrderId: {
-    type: String,
-    trim: true,
-  },
-  installmentNumber: {
-    type: Number,
-    min: 1,
-  },
-  totalInstallments: {
-    type: Number,
-    min: 1,
-  },
-  installmentAmount: {
-    type: Number,
-    min: 0,
-  },
-  paymentTerm: {
-    type: String,
-    enum: ['monthly', 'quarterly', 'semiannual', 'annual'],
-  },
-  dueDate: {
-    type: Date,
-  },
+    // For cicilan installments
+    cicilanOrderId: {
+      type: String,
+      trim: true,
+    },
+    installmentNumber: {
+      type: Number,
+      min: 1,
+    },
+    totalInstallments: {
+      type: Number,
+      min: 1,
+    },
+    installmentAmount: {
+      type: Number,
+      min: 0,
+    },
+    paymentTerm: {
+      type: String,
+      enum: ["monthly", "quarterly", "semiannual", "annual"],
+    },
+    dueDate: {
+      type: Date,
+    },
 
-  // Payment proof
-  proofImageUrl: {
-    type: String,
-    trim: true,
-  },
-  proofDescription: {
-    type: String,
-    trim: true,
-  },
+    // Payment proof
+    proofImageUrl: {
+      type: String,
+      trim: true,
+    },
+    proofDescription: {
+      type: String,
+      trim: true,
+    },
 
-  // Admin review
-  adminStatus: {
-    type: String,
-    enum: ['pending', 'approved', 'rejected'],
-    default: 'pending',
-  },
-  adminReviewDate: {
-    type: Date,
-  },
-  adminReviewBy: {
-    type: Schema.Types.ObjectId,
-    ref: 'User',
-  },
-  adminNotes: {
-    type: String,
-    trim: true,
-  },
+    // Admin review
+    adminStatus: {
+      type: String,
+      enum: ["pending", "approved", "rejected"],
+      default: "pending",
+    },
+    adminReviewDate: {
+      type: Date,
+    },
+    adminReviewBy: {
+      type: Schema.Types.ObjectId,
+      ref: "User",
+    },
+    adminNotes: {
+      type: String,
+      trim: true,
+    },
 
-  // Product info
-  productName: {
-    type: String,
-    trim: true,
-  },
-  productId: {
-    type: String,
-    trim: true,
-  },
+    // Product info
+    productName: {
+      type: String,
+      trim: true,
+    },
+    productId: {
+      type: String,
+      trim: true,
+    },
 
-  // Customer details for registration
-  customerData: {
-    fullName: String,
-    email: String,
-    phoneNumber: String,
-    dateOfBirth: Date,
-    address: String,
-    village: String,
-    city: String,
-    province: String,
-    postalCode: String,
-    occupation: String,
-    password: String,
-    ktpImageUrl: String,
-    faceImageUrl: String,
-  },
+    // Customer details for registration
+    customerData: {
+      fullName: String,
+      email: String,
+      phoneNumber: String,
+      dateOfBirth: Date,
+      address: String,
+      village: String,
+      city: String,
+      province: String,
+      postalCode: String,
+      occupation: String,
+      password: String,
+      ktpImageUrl: String,
+      faceImageUrl: String,
+    },
 
-  // Status tracking
-  isProcessed: {
-    type: Boolean,
-    default: false,
+    // Status tracking
+    isProcessed: {
+      type: Boolean,
+      default: false,
+    },
+    processingError: {
+      type: String,
+    },
+    status: {
+      type: String,
+      required: true,
+      enum: ["pending", "approved", "rejected", "completed", "cancelled"],
+      default: "pending",
+    },
   },
-  processingError: {
-    type: String,
-  },
-  status: {
-    type: String,
-    required: true,
-    enum: ['pending', 'approved', 'rejected', 'completed', 'cancelled'],
-    default: 'pending',
-  },
-}, {
-  timestamps: true,
-});
+  {
+    timestamps: true,
+  }
+);
 
 // Indexes for better query performance
 PaymentSchema.index({ transactionStatus: 1 });
 PaymentSchema.index({ transactionTime: 1 });
 PaymentSchema.index({ isProcessed: 1 });
 
-export default mongoose.models.Payment || mongoose.model<IPayment>('Payment', PaymentSchema);
+export default mongoose.models.Payment ||
+  mongoose.model<IPayment>("Payment", PaymentSchema);

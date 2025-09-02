@@ -1,6 +1,6 @@
-import { type NextRequest, NextResponse } from "next/server"
-import { PlantInstance } from "@/models"
 import { ensureConnection } from "@/lib/utils/utils/database"
+import { PlantInstance } from "@/models"
+import { type NextRequest, NextResponse } from "next/server"
 
 export async function GET(request: NextRequest) {
   try {
@@ -28,7 +28,7 @@ export async function GET(request: NextRequest) {
         }
 
         // Calculate income for this month
-        plant.incomeRecords?.forEach((income) => {
+        plant.incomeRecords?.forEach((income: any) => {
           const incomeDate = new Date(income.date)
           if (incomeDate.getFullYear() === year && incomeDate.getMonth() + 1 === month) {
             totalIncome += income.amount
@@ -36,7 +36,7 @@ export async function GET(request: NextRequest) {
         })
 
         // Calculate expenses for this month
-        plant.operationalCosts?.forEach((cost) => {
+        plant.operationalCosts?.forEach((cost: any) => {
           const costDate = new Date(cost.date)
           if (costDate.getFullYear() === year && costDate.getMonth() + 1 === month) {
             totalExpenses += cost.amount
@@ -70,6 +70,7 @@ export async function GET(request: NextRequest) {
       },
     })
   } catch (error) {
+    console.error('Error generating monthly report:', error);
     return NextResponse.json({ error: "Failed to generate monthly report" }, { status: 500 })
   }
 }

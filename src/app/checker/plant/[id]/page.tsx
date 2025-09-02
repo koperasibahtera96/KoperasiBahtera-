@@ -6,7 +6,8 @@ import { Button } from "@/components/ui-staff/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui-staff/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui-staff/select"
 import { Textarea } from "@/components/ui-staff/textarea"
-import type { PlantInstance, PlantHistory, StatusOption } from "@/types/checker"
+import { useAlert } from "@/components/ui/Alert"
+import type { PlantHistory, PlantInstance, StatusOption } from "@/types/checker"
 import jsPDF from "jspdf"
 import {
   ArrowLeft,
@@ -24,6 +25,7 @@ import {
   User,
   X,
 } from "lucide-react"
+import { useSession } from "next-auth/react"
 import Image from "next/image"
 import Link from "next/link"
 import { use, useEffect, useState } from "react"
@@ -48,6 +50,7 @@ const statusOptions: StatusOption[] = [
 ]
 
 export default function PlantDetail({ params }: { params: Promise<{ id: string }> }) {
+  const { data: session } = useSession()
   const { id } = use(params)
   const [plantData, setPlantData] = useState<PlantInstance | null>(null)
   const [reportStatus, setReportStatus] = useState("")
@@ -59,6 +62,7 @@ export default function PlantDetail({ params }: { params: Promise<{ id: string }
   const [showModal, setShowModal] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
   const [editNotes, setEditNotes] = useState("")
+  const { showError, showSuccess, showConfirmation, AlertComponent } = useAlert()
 
   useEffect(() => {
     fetchPlantData()
@@ -84,13 +88,13 @@ export default function PlantDetail({ params }: { params: Promise<{ id: string }
     if (file && file.size <= 2 * 1024 * 1024) {
       setSelectedFile(file)
     } else {
-      alert("File terlalu besar. Maksimal 2MB.")
+      showError("File terlalu besar", "Maksimal ukuran file adalah 2MB.")
     }
   }
 
   const handleSubmit = async () => {
     if (!reportStatus || !notes) {
-      alert("Mohon lengkapi status dan catatan laporan.")
+      showError("Mohon lengkapi data", "Status dan catatan laporan harus diisi.")
       return
     }
 
@@ -145,7 +149,7 @@ export default function PlantDetail({ params }: { params: Promise<{ id: string }
           setReportStatus("")
           setNotes("")
           setSelectedFile(null)
-          alert("Laporan berhasil disimpan!")
+          showSuccess("Berhasil!", "Laporan berhasil disimpan!")
         } else {
           throw new Error("Failed to save report")
         }
@@ -153,7 +157,7 @@ export default function PlantDetail({ params }: { params: Promise<{ id: string }
     } catch (error: unknown) {
       console.error("Error saving report:", error)
       const errorMessage = error instanceof Error ? error.message : "Unknown error occurred"
-      alert(`Gagal menyimpan laporan: ${errorMessage}`)
+      showError("Gagal menyimpan", `Gagal menyimpan laporan: ${errorMessage}`)
     } finally {
       setIsSubmitting(false)
     }
@@ -167,7 +171,7 @@ export default function PlantDetail({ params }: { params: Promise<{ id: string }
 
   const handleUpdateHistory = async () => {
     if (!editNotes.trim() || !selectedHistory || !plantData) {
-      alert("Catatan tidak boleh kosong.")
+      showError("Catatan kosong", "Catatan tidak boleh kosong.")
       return
     }
 
@@ -188,16 +192,27 @@ export default function PlantDetail({ params }: { params: Promise<{ id: string }
         setPlantData(updatedPlant)
         setSelectedHistory({ ...selectedHistory, description: editNotes })
         setIsEditing(false)
-        alert("Catatan berhasil diperbarui!")
+        showSuccess("Berhasil!", "Catatan berhasil diperbarui!")
       }
     } catch {
       console.error("Error updating history")
-      alert("Gagal memperbarui catatan.")
+      showError("Gagal memperbarui", "Gagal memperbarui catatan.")
     }
   }
 
-  const handleDeleteHistory = async (historyId: number) => {
-    if (!confirm("Apakah Anda yakin ingin menghapus riwayat ini?") || !plantData) return
+  const handleDeleteHistoryItem = async (historyId: number) => {
+    if (!plantData) return
+
+    const confirmed = await showConfirmation(
+      "Hapus Riwayat",
+      "Apakah Anda yakin ingin menghapus riwayat ini?",
+      {
+        confirmText: "Hapus",
+        cancelText: "Batal",
+        type: "danger"
+      }
+    )
+    if (!confirmed) return
 
     try {
       const updatedHistory = plantData.history.filter((item) => item.id !== historyId)
@@ -212,11 +227,43 @@ export default function PlantDetail({ params }: { params: Promise<{ id: string }
       if (response.ok) {
         setPlantData(updatedPlant)
         setShowModal(false)
-        alert("Riwayat berhasil dihapus!")
+        showSuccess("Berhasil!", "Riwayat berhasil dihapus!")
       }
     } catch {
       console.error("Error deleting history")
-      alert("Gagal menghapus riwayat.")
+      showError("Gagal menghapus", "Gagal menghapus riwayat.")
+    }
+  }
+
+  const handleDeletePlant = async () => {
+    const confirmed = await showConfirmation(
+      "Hapus Tanaman",
+      "Apakah Anda yakin ingin menghapus tanaman ini? Aksi ini tidak dapat dibatalkan.",
+      {
+        confirmText: "Hapus",
+        cancelText: "Batal",
+        type: "danger"
+      }
+    )
+    if (!confirmed) return
+
+    try {
+      const response = await fetch(`/api/plants/${id}`, {
+        method: "DELETE",
+      })
+
+      if (response.ok) {
+        showSuccess("Berhasil!", "Tanaman berhasil dihapus!")
+        // Redirect to checker page
+        window.location.href = "/checker"
+      } else {
+        const errorData = await response.json()
+        throw new Error(errorData.details || "Failed to delete plant")
+      }
+    } catch (error: unknown) {
+      console.error("Error deleting plant:", error)
+      const errorMessage = error instanceof Error ? error.message : "Unknown error occurred"
+      showError("Gagal menghapus", `Gagal menghapus tanaman: ${errorMessage}`)
     }
   }
 
@@ -353,17 +400,18 @@ export default function PlantDetail({ params }: { params: Promise<{ id: string }
       pdf.save(`Riwayat-${plantData.instanceName || ""}-${plantData.qrCode}.pdf`)
     } catch {
       console.error("Error generating PDF")
-      alert("Gagal membuat PDF. Silakan coba lagi.")
+      showError("Gagal membuat PDF", "Gagal membuat PDF. Silakan coba lagi.")
     }
   }
 
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-emerald-50 font-[family-name:var(--font-poppins)]">
+        <AlertComponent />
         <header className="w-full fixed top-0 z-50">
           <LandingNavbar hideNavigation={true} />
         </header>
-        
+
         <main className="pt-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
           <div className="space-y-8 py-8">
             <div className="text-center">
@@ -386,7 +434,7 @@ export default function PlantDetail({ params }: { params: Promise<{ id: string }
         <header className="w-full fixed top-0 z-50">
           <LandingNavbar hideNavigation={true} />
         </header>
-        
+
         <main className="pt-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
           <div className="space-y-8 py-8">
             <div className="text-center">
@@ -408,10 +456,11 @@ export default function PlantDetail({ params }: { params: Promise<{ id: string }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-emerald-50 font-[family-name:var(--font-poppins)]">
+      <AlertComponent />
       <header className="w-full fixed top-0 z-50">
         <LandingNavbar hideNavigation={true} />
       </header>
-      
+
       <main className="pt-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
         <div className="space-y-8 py-8">
           {/* Page Header */}
@@ -524,7 +573,7 @@ export default function PlantDetail({ params }: { params: Promise<{ id: string }
                         window.URL.revokeObjectURL(url)
                       } catch (error) {
                         console.error("Error downloading QR code:", error)
-                        alert("Gagal mendownload QR code")
+                        showError("Download gagal", "Gagal mendownload QR code")
                       }
                     }}
                     className="bg-gradient-to-r from-[#324D3E] to-[#4C3D19] hover:shadow-lg text-white text-xs px-4 py-2 rounded-xl transition-all duration-300"
@@ -624,12 +673,22 @@ export default function PlantDetail({ params }: { params: Promise<{ id: string }
                     <Download className="w-4 h-4 mr-2" />
                     Download PDF
                   </Button>
+                  {session?.user.role === "admin" && (
+                    <Button
+                      onClick={() => handleDeletePlant()}
+                      className="bg-gradient-to-r from-red-500 to-red-600 hover:shadow-lg text-white rounded-xl"
+                      size="sm"
+                    >
+                      <Trash2 className="w-4 h-4 mr-2" />
+                      Delete Plant
+                    </Button>
+                  )}
                 </div>
               </CardHeader>
               <CardContent className="p-8">
                 <div className="space-y-4">
-                  {plantData.history.map((item) => (
-                    <div key={item.id} className="flex gap-4 p-6 bg-white/60 rounded-2xl border border-[#324D3E]/10 hover:bg-white/80 transition-all duration-300">
+                  {plantData.history.map((item, index) => (
+                    <div key={index} className="flex gap-4 p-6 bg-white/60 rounded-2xl border border-[#324D3E]/10 hover:bg-white/80 transition-all duration-300">
                       <div className="w-20 h-20 bg-[#324D3E]/10 rounded-2xl flex items-center justify-center flex-shrink-0">
                         {item.imageUrl ? (
                           <Image
@@ -662,29 +721,33 @@ export default function PlantDetail({ params }: { params: Promise<{ id: string }
                               <Eye className="w-3 h-3 mr-1" />
                               Detail
                             </Button>
+                            {session?.user.role === "admin" && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => {
+                                  setSelectedHistory(item)
+                                  setEditNotes(item.description)
+                                  setIsEditing(true)
+                                  setShowModal(true)
+                                }}
+                                className="bg-yellow-500 hover:bg-yellow-600 text-white border-yellow-500 rounded-xl"
+                              >
+                                <Edit className="w-3 h-3 mr-1" />
+                                Update
+                              </Button>
+                            )}
+                          </div>
+                          {session?.user.role === "admin" && (
                             <Button
                               size="sm"
                               variant="outline"
-                              onClick={() => {
-                                setSelectedHistory(item)
-                                setEditNotes(item.description)
-                                setIsEditing(true)
-                                setShowModal(true)
-                              }}
-                              className="bg-yellow-500 hover:bg-yellow-600 text-white border-yellow-500 rounded-xl"
+                              onClick={() => handleDeleteHistoryItem(item.id)}
+                              className="bg-red-500 hover:bg-red-600 text-white border-red-500 p-2 min-w-0 rounded-xl"
                             >
-                              <Edit className="w-3 h-3 mr-1" />
-                              Update
+                              <Trash2 className="w-3 h-3" />
                             </Button>
-                          </div>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => handleDeleteHistory(item.id)}
-                            className="bg-red-500 hover:bg-red-600 text-white border-red-500 p-2 min-w-0 rounded-xl"
-                          >
-                            <Trash2 className="w-3 h-3" />
-                          </Button>
+                          )}
                         </div>
                       </div>
                   </div>
@@ -777,6 +840,15 @@ export default function PlantDetail({ params }: { params: Promise<{ id: string }
                         ) : (
                           <div className="space-y-4">
                             <p className="text-gray-700 leading-relaxed">{selectedHistory.description}</p>
+                            {session?.user.role === "admin" && (
+                              <Button
+                                onClick={() => setIsEditing(true)}
+                                className="bg-yellow-500 hover:bg-yellow-600 text-white"
+                              >
+                                <Edit className="w-4 h-4 mr-2" />
+                                Ubah Catatan
+                              </Button>
+                            )}
                           </div>
                         )}
                       </CardContent>

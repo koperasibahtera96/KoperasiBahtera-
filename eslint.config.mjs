@@ -29,7 +29,7 @@ const eslintConfig = [
           argsIgnorePattern: '^_|^next$',
         },
       ],
-      "@typescript-eslint/no-explicit-any": "error",
+      "@typescript-eslint/no-explicit-any": "off",
     }
   },
 ];

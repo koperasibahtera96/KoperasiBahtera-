@@ -4,7 +4,6 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { useSession } from 'next-auth/react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 
 interface PlantInstance {
@@ -116,18 +115,11 @@ export default function InvestasiPage() {
   const [loading, setLoading] = useState(true);
   const [selectedInvestment, setSelectedInvestment] = useState<Investment | null>(null);
   const {  status } = useSession();
-  const router = useRouter();
+  // const router = useRouter();
 
   useEffect(() => {
-    if (status === 'unauthenticated') {
-      router.push('/login');
-      return;
-    }
-
-    if (status === 'authenticated') {
       fetchInvestments();
-    }
-  }, [status, router]);
+  }, []);
 
   const fetchInvestments = async () => {
     try {
@@ -135,7 +127,9 @@ export default function InvestasiPage() {
       const response = await fetch('/api/investors/investments');
       if (response.ok) {
         const result = await response.json();
-        setData(result.data || []);
+
+        console.log(result, 'result')
+        setData(result.data || null);
       } else {
         console.error('Failed to fetch investments');
       }
@@ -237,9 +231,9 @@ export default function InvestasiPage() {
         transition={{ duration: 0.6, ease: "easeOut" }}
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <Link href="/landing">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between">
+            <div className="flex items-center space-x-4 mb-4 sm:mb-0">
+              <Link href="/">
                 <motion.div
                   className="flex items-center space-x-2 cursor-pointer"
                   whileHover={{ scale: 1.05 }}
@@ -253,25 +247,25 @@ export default function InvestasiPage() {
                     className="rounded-full"
                   />
                   <div>
-                    <h1 className="text-xl font-bold text-[#324D3E]">Investasi Saya</h1>
+                    <h1 className="text-lg sm:text-xl font-bold text-[#324D3E]">Investasi Saya</h1>
                     <p className="text-sm text-gray-600">Kelola dan pantau investasi Anda</p>
                   </div>
                 </motion.div>
               </Link>
             </div>
-            <div className="flex items-center space-x-3">
+            <div className="w-full sm:w-auto flex justify-end sm:justify-start items-center space-x-3">
               <Link href="/cicilan">
                 <motion.button
-                  className="px-4 py-2 text-[#324D3E] border border-[#324D3E] rounded-full hover:bg-[#324D3E] hover:text-white transition-colors"
+                  className="px-3 py-1.5 text-sm sm:px-4 sm:py-2 sm:text-base text-[#324D3E] border border-[#324D3E] rounded-full hover:bg-[#324D3E] hover:text-white transition-colors"
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                 >
                   Cicilan Saya
                 </motion.button>
               </Link>
-              <Link href="/landing">
+              <Link href="/">
                 <motion.button
-                  className="px-4 py-2 bg-[#324D3E] text-white rounded-full hover:bg-[#4C3D19] transition-colors"
+                  className="px-3 py-1.5 text-sm sm:px-4 sm:py-2 sm:text-base bg-[#324D3E] text-white rounded-full hover:bg-[#4C3D19] transition-colors"
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                 >
@@ -324,7 +318,7 @@ export default function InvestasiPage() {
                 icon: '🌳',
                 bgColor: 'from-teal-500 to-teal-600'
               }
-            ].map((stat, index) => (
+            ].map((stat) => (
               <motion.div
                 key={stat.title}
                 variants={cardVariants}
@@ -454,6 +448,39 @@ export default function InvestasiPage() {
                         </div>
                       </div>
 
+                      {/* Recent History Preview */}
+                      {investment.plantInstance?.history && investment.plantInstance.history.length > 0 && (
+                        <div className="mt-4">
+                          <h5 className="text-sm font-medium text-gray-700 mb-2">Riwayat Terbaru</h5>
+                          <div className="space-y-2 max-h-24 overflow-hidden">
+                            {investment.plantInstance.history.slice(-2).map((historyItem, index) => (
+                              <div key={index} className="text-xs p-2 bg-gray-50 rounded border-l-2 border-blue-200">
+                                <div className="flex justify-between items-start">
+                                  <span className="font-medium text-gray-700">{historyItem.action}</span>
+                                  <span className="text-gray-500 ml-2">
+                                    {new Date(historyItem.date).toLocaleDateString('id-ID', { 
+                                      day: '2-digit', 
+                                      month: 'short' 
+                                    })}
+                                  </span>
+                                </div>
+                                {historyItem.description && (
+                                  <p className="text-gray-600 mt-1 line-clamp-1">{historyItem.description}</p>
+                                )}
+                                {historyItem.addedBy && (
+                                  <p className="text-gray-500 mt-1">oleh: {historyItem.addedBy}</p>
+                                )}
+                              </div>
+                            ))}
+                            {investment.plantInstance.history.length > 2 && (
+                              <p className="text-xs text-blue-600 font-medium">
+                                +{investment.plantInstance.history.length - 2} riwayat lainnya
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      )}
+
                       {investment.nextPaymentInfo && (
                         <div className="mt-4 p-3 bg-amber-50 rounded-lg border border-amber-200">
                           <p className="text-sm text-amber-800">
@@ -504,7 +531,7 @@ export default function InvestasiPage() {
               <p className="text-gray-600 mb-6 max-w-md mx-auto">
                 Mulai investasi hijau Anda hari ini dan berkontribusi untuk masa depan yang lebih berkelanjutan.
               </p>
-              <Link href="/landing#produk">
+              <Link href="/#produk">
                 <motion.button
                   className="px-6 py-3 bg-[#324D3E] text-white rounded-full hover:bg-[#4C3D19] transition-colors font-medium"
                   whileHover={{ scale: 1.05 }}
@@ -631,15 +658,44 @@ export default function InvestasiPage() {
                         </div>
                       </div>
 
-                      {/* Recent Activity */}
-                      {(selectedInvestment.plantInstance.recentIncome.length > 0 || selectedInvestment.plantInstance.recentCosts.length > 0) && (
+                      {/* Complete History */}
+                      {selectedInvestment.plantInstance.history && selectedInvestment.plantInstance.history.length > 0 && (
                         <div>
-                          <h4 className="font-medium mb-3">Aktivitas Terbaru</h4>
+                          <h4 className="font-medium mb-3">Riwayat Lengkap</h4>
+                          <div className="space-y-3 max-h-60 overflow-y-auto">
+                            {selectedInvestment.plantInstance.history
+                              .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+                              .map((historyItem, index) => (
+                              <div key={index} className="p-3 border border-gray-200 rounded-lg bg-gray-50">
+                                <div className="flex justify-between items-start mb-2">
+                                  <span className="font-medium text-gray-900">{historyItem.action}</span>
+                                  <span className="text-sm text-gray-500">
+                                    {formatDate(historyItem.date)}
+                                  </span>
+                                </div>
+                                {historyItem.description && (
+                                  <p className="text-sm text-gray-700 mb-2">{historyItem.description}</p>
+                                )}
+                                {historyItem.addedBy && (
+                                  <p className="text-xs text-gray-500">
+                                    Ditambahkan oleh: {historyItem.addedBy}
+                                  </p>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Recent Activity */}
+                      {((selectedInvestment.plantInstance.recentIncome && selectedInvestment.plantInstance.recentIncome.length > 0) || (selectedInvestment.plantInstance.recentCosts && selectedInvestment.plantInstance.recentCosts.length > 0)) && (
+                        <div>
+                          <h4 className="font-medium mb-3">Aktivitas Keuangan Terbaru</h4>
                           <div className="space-y-2 max-h-40 overflow-y-auto">
-                            {[...selectedInvestment.plantInstance.recentIncome.map(income => ({
+                            {[...(selectedInvestment.plantInstance.recentIncome || []).map(income => ({
                               ...income,
                               type: 'income'
-                            })), ...selectedInvestment.plantInstance.recentCosts.map(cost => ({
+                            })), ...(selectedInvestment.plantInstance.recentCosts || []).map(cost => ({
                               ...cost,
                               type: 'cost'
                             }))].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).map((activity, index) => (

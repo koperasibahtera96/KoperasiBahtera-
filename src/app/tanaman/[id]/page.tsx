@@ -16,7 +16,7 @@ import {
 } from "lucide-react"
 import Link from "next/link"
 import * as React from "react"
-import { useEffect, useMemo, useState } from "react"
+import { use, useEffect, useMemo, useState } from "react"
 import {
   CartesianGrid,
   Cell,
@@ -42,25 +42,6 @@ interface PlantInstance {
   operationalCosts?: Array<{ amount: number; date: string }>
 }
 
-interface IncomeRecord {
-  amount: number
-  date: string
-}
-
-interface CostRecord {
-  amount: number
-  date: string
-}
-
-interface Investment {
-  plantName: string
-  amount: number
-}
-
-interface Member {
-  name: string
-  investments: Investment[]
-}
 
 // ================== helpers ==================
 const fmtIDR = (n: number) =>
@@ -70,14 +51,6 @@ const fmtIDR = (n: number) =>
 
 const BRUTALIST_COLORS = ["#FF6B35", "#F7931E", "#FFD23F", "#06FFA5", "#118AB2", "#073B4C"]
 
-// Unwrap params untuk Next 15 (params bisa Promise)
-function useParamId(params: { id: string } | Promise<{ id: string }>) {
-  const p = params
-  if (p && typeof p.then === "function") {
-    return (React as any).use(p).id as string
-  }
-  return p.id as string
-}
 
 /* ======== SATU TOMBOL EXPORT: gabung semua section jadi satu .xls ======== */
 function exportAllAsXls(args: {
@@ -189,8 +162,8 @@ function exportAllAsXls(args: {
 }
 
 // ================== page ==================
-export default function Page({ params }: { params: { id: string } | Promise<{ id: string }> }) {
-  const plantTypeId = useParamId(params) // "gaharu", "jengkol", dll
+export default function Page({ params }: {params: Promise<{ id: string }> }) {
+  const { id: plantTypeId } = use(params) // "gaharu", "jengkol", dll
   const plantTypeMeta = PLANT_TYPES.find((p) => p.id === plantTypeId) ?? {
     id: plantTypeId,
     name: plantTypeId,

@@ -1,9 +1,7 @@
 import { midtransService } from '@/lib/midtrans';
 import dbConnect from '@/lib/mongodb';
 import Payment from '@/models/Payment';
-import Investor from '@/models/Investor';
 import User from '@/models/User';
-import PlantInstance from '@/models/PlantInstance';
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(req: NextRequest) {

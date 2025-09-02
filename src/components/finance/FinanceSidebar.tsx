@@ -1,22 +1,22 @@
 'use client'
 
-import type React from "react"
-import Link from "next/link"
-import { usePathname } from "next/navigation"
-import { BarChart3, Users, LogOut, Menu, Receipt, Calendar, X } from "lucide-react"
-import { useState } from "react"
+import { AnimatePresence, motion } from "framer-motion"
+import { BarChart3, Calendar, LogOut, Menu, Receipt, Users, X } from "lucide-react"
 import { signOut, useSession } from "next-auth/react"
 import Image from "next/image"
-import { motion, AnimatePresence } from "framer-motion"
+import Link from "next/link"
+import { usePathname } from "next/navigation"
+import type React from "react"
+import { useState } from "react"
 
 interface FinanceSidebarProps {
   children: React.ReactNode
 }
 
-const sidebarVariants = {
+const sidebarVariants: any = {
   hidden: { x: -300, opacity: 0 },
-  visible: { 
-    x: 0, 
+  visible: {
+    x: 0,
     opacity: 1,
     transition: {
       type: "spring",
@@ -28,10 +28,10 @@ const sidebarVariants = {
   }
 }
 
-const itemVariants = {
+const itemVariants: any = {
   hidden: { x: -20, opacity: 0 },
-  visible: { 
-    x: 0, 
+  visible: {
+    x: 0,
     opacity: 1,
     transition: {
       type: "spring",
@@ -79,7 +79,7 @@ export function FinanceSidebar({ children }: FinanceSidebarProps) {
         <div className="flex grow flex-col bg-white/90 backdrop-blur-xl border-r border-[#324D3E]/10 shadow-xl">
           <div className="flex flex-col h-full p-6">
             {/* Logo */}
-            <motion.div 
+            <motion.div
               className="flex h-16 shrink-0 items-center gap-3 mb-8"
               variants={itemVariants}
             >
@@ -93,30 +93,14 @@ export function FinanceSidebar({ children }: FinanceSidebarProps) {
                 />
               </div>
               <div>
-                <h1 className="text-xl font-bold text-[#324D3E]">InvestTani</h1>
+                <h1 className="text-xl font-bold text-[#324D3E]">Koperasi BAHTERA</h1>
                 <p className="text-xs text-[#889063]">Finance Portal</p>
-              </div>
-            </motion.div>
-
-            {/* User Profile */}
-            <motion.div 
-              className="mb-8 p-4 bg-gradient-to-r from-[#324D3E]/5 to-[#4C3D19]/5 rounded-2xl border border-[#324D3E]/10"
-              variants={itemVariants}
-            >
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 bg-gradient-to-r from-[#324D3E] to-[#4C3D19] rounded-2xl flex items-center justify-center text-white font-semibold shadow-lg">
-                  {session?.user?.name?.charAt(0).toUpperCase() || 'A'}
-                </div>
-                <div>
-                  <div className="text-[#324D3E] font-semibold">{session?.user?.name || 'Administrator'}</div>
-                  <div className="text-[#889063] text-sm">Finance Admin</div>
-                </div>
               </div>
             </motion.div>
 
             {/* Navigation */}
             <nav className="flex-1 space-y-2">
-              {navigation.map((item, index) => {
+              {navigation.map((item) => {
                 const isActive = pathname === item.href
                 return (
                   <motion.div key={item.name} variants={itemVariants}>
@@ -129,8 +113,8 @@ export function FinanceSidebar({ children }: FinanceSidebarProps) {
                       }`}
                     >
                       <div className={`p-2 rounded-xl transition-all duration-300 ${
-                        isActive 
-                          ? "bg-white/20" 
+                        isActive
+                          ? "bg-white/20"
                           : `bg-gradient-to-r ${item.gradient} bg-clip-padding text-white group-hover:scale-110`
                       }`}>
                         <item.icon className="h-4 w-4" />
@@ -147,17 +131,43 @@ export function FinanceSidebar({ children }: FinanceSidebarProps) {
               })}
             </nav>
 
-            {/* Logout */}
-            <motion.div className="mt-6" variants={itemVariants}>
-              <button 
-                onClick={handleLogout}
-                className="group flex items-center gap-3 rounded-2xl px-4 py-3 text-[#324D3E] hover:bg-red-50 hover:text-red-600 transition-all duration-300 w-full hover:scale-105"
+            {/* User info at bottom */}
+            <motion.div
+              className="absolute bottom-0 left-0 right-0 p-2 sm:p-4 border-t border-[#324D3E]/10"
+              variants={itemVariants}
+            >
+              <motion.div
+                className="flex items-center gap-2 sm:gap-3 p-2 sm:p-3 rounded-xl hover:bg-[#324D3E]/5 transition-colors mb-1 sm:mb-2"
               >
-                <div className="p-2 rounded-xl bg-red-100 text-red-600 group-hover:bg-red-200 transition-all duration-300 group-hover:scale-110">
-                  <LogOut className="h-4 w-4" />
+                <motion.div
+                  className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-r from-[#324D3E] to-[#4C3D19] rounded-full flex items-center justify-center flex-shrink-0"
+                  whileHover={{
+                    rotate: 360,
+                    transition: { duration: 0.6 }
+                  }}
+                >
+                  <span className="text-white font-bold text-sm sm:text-base">{session?.user?.name?.charAt(0).toUpperCase() || 'A'}</span>
+                </motion.div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-semibold text-[#324D3E] text-sm sm:text-base truncate">{session?.user?.name || 'Admin'}</p>
+                  <p className="text-xs sm:text-sm text-[#889063] truncate">Finance Admin</p>
                 </div>
-                <span className="font-medium">Keluar</span>
-              </button>
+              </motion.div>
+
+              {/* Logout button */}
+              <motion.button
+                onClick={handleLogout}
+                className="w-full flex items-center gap-2 sm:gap-3 p-2 sm:p-3 rounded-xl text-red-600 hover:bg-red-50 transition-colors group"
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+              >
+                <div className="w-8 h-8 sm:w-10 sm:h-10 bg-red-100 rounded-full flex items-center justify-center group-hover:bg-red-200 transition-colors flex-shrink-0">
+                  <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                  </svg>
+                </div>
+                <span className="font-medium text-sm sm:text-base">Keluar</span>
+              </motion.button>
             </motion.div>
           </div>
         </div>
@@ -190,7 +200,7 @@ export function FinanceSidebar({ children }: FinanceSidebarProps) {
                       height={40}
                       className="rounded-xl"
                     />
-                    <span className="text-lg font-bold text-[#324D3E]">InvestTani</span>
+                    <span className="text-lg font-bold text-[#324D3E]">Koperasi BAHTERA</span>
                   </div>
                   <button
                     type="button"
@@ -200,7 +210,7 @@ export function FinanceSidebar({ children }: FinanceSidebarProps) {
                     <X className="h-6 w-6" />
                   </button>
                 </div>
-                
+
                 <div className="mt-6 flow-root">
                   <div className="-my-6 divide-y divide-[#324D3E]/10">
                     <div className="space-y-2 py-6">
@@ -218,8 +228,8 @@ export function FinanceSidebar({ children }: FinanceSidebarProps) {
                             onClick={() => setSidebarOpen(false)}
                           >
                             <div className={`p-2 rounded-xl ${
-                              isActive 
-                                ? "bg-white/20" 
+                              isActive
+                                ? "bg-white/20"
                                 : `bg-gradient-to-r ${item.gradient} text-white`
                             }`}>
                               <item.icon className="h-4 w-4" />
@@ -235,7 +245,7 @@ export function FinanceSidebar({ children }: FinanceSidebarProps) {
                       })}
                     </div>
                     <div className="py-6">
-                      <button 
+                      <button
                         onClick={handleLogout}
                         className="flex items-center gap-3 rounded-2xl px-4 py-3 text-red-600 hover:bg-red-50 transition-all duration-300 w-full"
                       >
@@ -264,7 +274,7 @@ export function FinanceSidebar({ children }: FinanceSidebarProps) {
           >
             <Menu className="h-6 w-6" />
           </button>
-          
+
           <div className="flex flex-1 gap-x-4 self-stretch lg:gap-x-6">
             <div className="flex items-center gap-3">
               <Image
@@ -274,7 +284,7 @@ export function FinanceSidebar({ children }: FinanceSidebarProps) {
                 height={32}
                 className="rounded-lg"
               />
-              <span className="text-lg font-bold text-[#324D3E]">InvestTani</span>
+              <span className="text-lg font-bold text-[#324D3E]">Koperasi BAHTERA</span>
             </div>
           </div>
         </div>

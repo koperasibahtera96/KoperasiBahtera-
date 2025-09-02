@@ -3,21 +3,21 @@ import { midtransService } from '@/lib/midtrans';
 import dbConnect from '@/lib/mongodb';
 import Investor from '@/models/Investor';
 import Payment from '@/models/Payment';
-import User from '@/models/User';
 import PlantInstance from '@/models/PlantInstance';
+import User from '@/models/User';
 import { NextRequest, NextResponse } from 'next/server';
 
 // Helper function to extract tree count from product name
 function extractTreeCount(productName: string): number {
   if (!productName) return 1; // Default fallback
-  
+
   // Look for "1 Pohon" or "10 Pohon" in the product name
   if (productName.includes('1 Pohon')) {
     return 1;
   } else if (productName.includes('10 Pohon')) {
     return 10;
   }
-  
+
   // Default to 10 if pattern not found (backward compatibility)
   return 10;
 }
@@ -45,8 +45,6 @@ export async function POST(request: NextRequest) {
     const transactionId = body.transaction_id;
     const transactionStatus = body.transaction_status;
     const fraudStatus = body.fraud_status;
-    const paymentType = body.payment_type;
-    const _grossAmount = body.gross_amount;
 
     console.log(`🔍 RAW BODY order_id: "${body.order_id}"`);
     console.log(`🔍 RAW BODY transaction_id: "${body.transaction_id}"`);
@@ -206,7 +204,7 @@ export async function POST(request: NextRequest) {
 
         // Create PlantInstance for this investment
         const plantInstanceId = `PLANT-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-        
+
         // Map product name to plant type
         const getPlantType = (productName: string): "gaharu" | "alpukat" | "jengkol" | "aren" => {
           const name = productName.toLowerCase();
@@ -269,7 +267,7 @@ export async function POST(request: NextRequest) {
 
         // Check if investor already exists to avoid conflicts
         let existingInvestor = await Investor.findOne({ userId: user._id });
-        
+
         if (existingInvestor) {
           // Update existing investor
           existingInvestor.name = user.fullName;

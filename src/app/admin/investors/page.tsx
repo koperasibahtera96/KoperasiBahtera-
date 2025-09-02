@@ -151,7 +151,7 @@ export default function InvestorsPage() {
       } else {
         // Add new investor - userId is required
         const requestData = { ...formData, userId: selectedUserId };
-        
+
         const response = await fetch('/api/admin/investors', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -222,16 +222,6 @@ export default function InvestorsPage() {
     });
   };
 
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'active':
-        return 'bg-green-100 text-green-800';
-      case 'inactive':
-        return 'bg-red-100 text-red-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
-    }
-  };
 
   const getStatusText = (status: string) => {
     switch (status) {
@@ -392,8 +382,8 @@ export default function InvestorsPage() {
                     </td>
                     <td className="px-3 lg:px-6 py-4">
                       <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                        investor.status === 'active' 
-                          ? 'bg-[#4C3D19]/10 text-[#4C3D19] border border-[#4C3D19]/20' 
+                        investor.status === 'active'
+                          ? 'bg-[#4C3D19]/10 text-[#4C3D19] border border-[#4C3D19]/20'
                           : 'bg-red-100 text-red-800'
                       }`}>
                         {getStatusText(investor.status)}
