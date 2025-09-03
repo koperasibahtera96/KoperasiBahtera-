@@ -253,6 +253,11 @@ export async function POST(request: NextRequest) {
           return roiMap[plantType] || 0.12;
         };
 
+        // Create PlantInstance for this cicilan investment
+        const plantInstanceId = `PLANT-${Date.now()}-${Math.random()
+          .toString(36)
+          .substring(2, 9)}`;
+
         const productName = payment.productName || "gaharu";
         const plantType = getPlantType(productName);
         const instanceName = `${
@@ -260,7 +265,7 @@ export async function POST(request: NextRequest) {
         } - ${user.fullName} - ${orderId}`;
 
         const plantInstance = new PlantInstance({
-          id: productName,
+          id: plantInstanceId,
           plantType,
           instanceName,
           baseAnnualROI: getBaseROI(plantType),
@@ -273,11 +278,20 @@ export async function POST(request: NextRequest) {
           contractNumber: `CONTRACT-${orderId}`,
           location: "TBD",
           status: "active", // Payment succeeded, plant is now active
-          lastUpdate: new Date().toISOString(),
+          lastUpdate: new Date().toLocaleDateString("id-ID", {
+            day: "2-digit",
+            month: "2-digit",
+            year: "numeric",
+          }),
           history: [
             {
-              action: "created",
-              date: new Date().toISOString(),
+              action: "Kontrak Baru",
+              type: "Kontrak Baru",
+              date: new Date().toLocaleDateString("id-ID", {
+                day: "2-digit",
+                month: "2-digit",
+                year: "numeric",
+              }),
               description: `Plant instance created for successful full payment ${orderId}`,
               addedBy: "system",
             },

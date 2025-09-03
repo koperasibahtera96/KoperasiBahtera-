@@ -66,7 +66,6 @@ interface LandingNavbarProps {
 export default function LandingNavbar({
   hideNavigation = false,
 }: LandingNavbarProps) {
-  const [isScrolled, setIsScrolled] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -74,10 +73,6 @@ export default function LandingNavbar({
   const router = useRouter();
 
   useEffect(() => {
-    const handleScroll = () => {
-      setIsScrolled(window.scrollY > 100);
-    };
-
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as Element;
       if (!target.closest(".user-menu")) {
@@ -88,11 +83,9 @@ export default function LandingNavbar({
       }
     };
 
-    window.addEventListener("scroll", handleScroll);
     document.addEventListener("mousedown", handleClickOutside);
 
     return () => {
-      window.removeEventListener("scroll", handleScroll);
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, []);
@@ -179,9 +172,7 @@ export default function LandingNavbar({
 
   return (
     <motion.nav
-      className={`w-full bg-white/75 px-4 sm:px-6 lg:px-10 transition-all duration-300 ${
-        isScrolled ? "py-2" : "py-1"
-      }`}
+      className="fixed top-0 left-0 right-0 w-full bg-white/95 backdrop-blur-sm px-4 sm:px-6 lg:px-10 py-3 shadow-sm z-50 transition-all duration-300"
       initial="hidden"
       animate="visible"
       variants={navVariants}
@@ -204,14 +195,14 @@ export default function LandingNavbar({
             <Image
               src="/images/koperasi-logo.jpg"
               alt="Logo"
-              width={isScrolled ? 40 : 60}
-              height={isScrolled ? 40 : 60}
+              width={50}
+              height={50}
               className="rounded-full transition-all duration-300"
             />
           </motion.div>
 
-          {/* Navigation - Hide when scrolled or when hideNavigation prop is true */}
-          {!hideNavigation && !isScrolled && (
+          {/* Navigation - Always visible when hideNavigation is false */}
+          {!hideNavigation && (
             <motion.div
               className="hidden md:flex items-center space-x-8 transition-all duration-300"
               variants={navVariants}
@@ -267,7 +258,7 @@ export default function LandingNavbar({
                 variants={itemVariants}
               >
                 {/* Show buttons only if user can purchase and navigation is not hidden */}
-                {!hideNavigation && session.user.canPurchase && !isScrolled ? (
+                {!hideNavigation && session.user.canPurchase ? (
                   <>
                     {/* Investasi Saya Button */}
                     <motion.div
@@ -276,7 +267,7 @@ export default function LandingNavbar({
                     >
                       <Link
                         href="/investasi"
-                        className="px-2 md:px-3 lg:px-6 py-1 text-gray-700 transition-all duration-300 font-medium rounded-full border border-[#324D3E] hover:border-[#4C3D19] hover:bg-[#4C3D19] hover:text-white text-xs md:text-sm lg:text-base whitespace-nowrap"
+                        className="px-3 py-1 text-gray-700 transition-all duration-300 font-medium rounded-full border border-[#324D3E] hover:border-[#4C3D19] hover:bg-[#4C3D19] hover:text-white whitespace-nowrap"
                       >
                         Investasi Saya
                       </Link>
@@ -289,13 +280,13 @@ export default function LandingNavbar({
                     >
                       <Link
                         href="/cicilan"
-                        className="px-2 md:px-3 lg:px-6 py-1 text-gray-700 transition-all duration-300 font-medium rounded-full border border-[#324D3E] hover:border-[#4C3D19] hover:bg-[#4C3D19] hover:text-white text-xs md:text-sm lg:text-base whitespace-nowrap"
+                        className="px-3 py-1 text-gray-700 transition-all duration-300 font-medium rounded-full border border-[#324D3E] hover:border-[#4C3D19] hover:bg-[#4C3D19] hover:text-white whitespace-nowrap"
                       >
                         Cicilan Saya
                       </Link>
                     </motion.div>
                   </>
-                ) : !hideNavigation && !isScrolled ? (
+                ) : !hideNavigation ? (
                   /* Verification Status Badge with Refresh */
                   <motion.div
                     className="flex items-center gap-1 md:gap-2 px-2 md:px-3 lg:px-4 py-1 bg-yellow-50 border border-yellow-200 rounded-full text-xs md:text-sm font-medium text-yellow-700"
@@ -422,17 +413,20 @@ export default function LandingNavbar({
                         }}
                         transition={{ duration: 0.2 }}
                       >
+                        {/* Profile */}
                         <Link href="/profile">
                           <motion.div
-                            className="w-full px-4 py-2 text-left text-gray-700 hover:bg-gray-50 transition-colors font-medium cursor-pointer"
+                            className="w-full px-4 py-2 text-left text-gray-700 font-medium cursor-pointer"
                             whileHover={{
-                              backgroundColor: "rgba(249, 250, 251, 1)",
-                              x: 5,
+                              backgroundColor: "rgba(249, 250, 251, 1)", // highlight
                             }}
                             whileTap={{ scale: 0.98 }}
                             onClick={() => setShowUserMenu(false)}
                           >
-                            <div className="flex items-center space-x-2">
+                            <motion.div
+                              className="flex items-center space-x-2"
+                              whileHover={{ x: 5 }} // nudge effect
+                            >
                               <svg
                                 className="w-4 h-4"
                                 fill="none"
@@ -447,19 +441,23 @@ export default function LandingNavbar({
                                 />
                               </svg>
                               <span>Profile</span>
-                            </div>
+                            </motion.div>
                           </motion.div>
                         </Link>
+
+                        {/* Logout */}
                         <motion.button
                           onClick={handleLogout}
-                          className="w-full px-4 py-2 text-left text-red-600 hover:bg-red-50 transition-colors font-medium"
+                          className="w-full px-4 py-2 text-left text-red-600 font-medium"
                           whileHover={{
-                            backgroundColor: "rgba(254, 242, 242, 1)",
-                            x: 5,
+                            backgroundColor: "rgba(254, 242, 242, 1)", // highlight
                           }}
                           whileTap={{ scale: 0.98 }}
                         >
-                          <div className="flex items-center space-x-2">
+                          <motion.div
+                            className="flex items-center space-x-2"
+                            whileHover={{ x: 5 }} // nudge effect
+                          >
                             <svg
                               className="w-4 h-4"
                               fill="none"
@@ -474,7 +472,7 @@ export default function LandingNavbar({
                               />
                             </svg>
                             <span>Logout</span>
-                          </div>
+                          </motion.div>
                         </motion.button>
                       </motion.div>
                     )}
@@ -486,19 +484,17 @@ export default function LandingNavbar({
                 className="flex items-center space-x-1 md:space-x-2 lg:space-x-4"
                 variants={itemVariants}
               >
-                {!isScrolled && (
-                  <motion.div
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
+                <motion.div
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  <Link
+                    href="/login"
+                    className="px-3 py-1 text-gray-700 transition-all duration-300 font-medium rounded-full border border-[#324D3E] hover:border-[#4C3D19] hover:bg-[#4C3D19] hover:text-white whitespace-nowrap"
                   >
-                    <Link
-                      href="/login"
-                      className="px-2 md:px-3 lg:px-6 py-1 text-gray-700 transition-all duration-300 font-medium rounded-full border border-[#324D3E] hover:border-[#4C3D19] hover:bg-[#4C3D19] hover:text-white text-xs md:text-sm lg:text-base whitespace-nowrap"
-                    >
-                      Masuk
-                    </Link>
-                  </motion.div>
-                )}
+                    Masuk
+                  </Link>
+                </motion.div>
                 <motion.div
                   whileHover={{
                     scale: 1.05,
@@ -508,7 +504,7 @@ export default function LandingNavbar({
                 >
                   <Link
                     href="/register"
-                    className="px-2 md:px-3 lg:px-6 py-1 bg-[#324D3E] text-white font-medium rounded-full transition-colors hover:bg-[#4C3D19] text-xs md:text-sm lg:text-base whitespace-nowrap"
+                    className="px-3 py-1 bg-[#324D3E] text-white font-medium rounded-full transition-colors hover:bg-[#4C3D19] whitespace-nowrap"
                   >
                     Daftar Sekarang
                   </Link>

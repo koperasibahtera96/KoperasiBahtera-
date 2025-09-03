@@ -39,55 +39,57 @@ export async function GET(
       return NextResponse.json({ error: "Not found" }, { status: 404 });
 
     // Kumpulkan semua instance yang diinvest oleh investor
-    const productIds: string[] = (investor.investments ?? [])
-      .map((r: any) => r?.productName)
+    // Use plantInstanceId (ObjectId) instead of productName for matching
+    const plantInstanceIds: string[] = (investor.investments ?? [])
+      .map((r: any) => r?.plantInstanceId)
       .filter(Boolean);
 
     const instances = await PlantInstance.find({
-      id: { $in: productIds },
+      _id: { $in: plantInstanceIds },
     }).lean();
 
     // Fallback income/expense bila embedded kosong → pakai Transaction
     const tx = await Transaction.find({
-      plantInstanceId: { $in: productIds },
+      plantInstanceId: { $in: plantInstanceIds.map(id => new mongoose.Types.ObjectId(id)) },
     }).lean();
     const txIncomeByInst: Record<string, number> = {};
     const txExpenseByInst: Record<string, number> = {};
     tx.forEach((t) => {
       const amt = Number(t.amount) || 0;
+      const plantId = String(t.plantInstanceId);
       if (t.type === "income")
-        txIncomeByInst[t.plantInstanceId] =
-          (txIncomeByInst[t.plantInstanceId] || 0) + amt;
+        txIncomeByInst[plantId] = (txIncomeByInst[plantId] || 0) + amt;
       else
-        txExpenseByInst[t.plantInstanceId] =
-          (txExpenseByInst[t.plantInstanceId] || 0) + amt;
+        txExpenseByInst[plantId] = (txExpenseByInst[plantId] || 0) + amt;
     });
 
-    // Total investasi per instance (untuk proporsi)
+    // Total investasi per instance (untuk proporsi) - use plantInstanceId instead of productName
     const totalInvestByInst: Record<string, number> = {};
     (
       await Investor.find(
-        { "investments.productName": { $in: productIds } },
+        { "investments.plantInstanceId": { $in: plantInstanceIds } },
         { investments: 1 }
       ).lean()
     ).forEach((iv) => {
       (iv.investments ?? []).forEach((r: any) => {
-        if (!r?.productName) return;
-        totalInvestByInst[r.productName] =
-          (totalInvestByInst[r.productName] || 0) +
-          (Number(r.totalAmount) || 0);
+        if (!r?.plantInstanceId) return;
+        const plantId = String(r.plantInstanceId);
+        totalInvestByInst[plantId] =
+          (totalInvestByInst[plantId] || 0) + (Number(r.totalAmount) || 0);
       });
     });
 
-    // Map id -> instance
+    // Map _id -> instance (use ObjectId instead of custom id)
     const instById = new Map<string, any>();
-    instances.forEach((p) => instById.set(p.id, p));
+    instances.forEach((p) => instById.set(String(p._id), p));
 
     // ---------- Hitung investasi per item (profit/roi) dgn rumus lama ----------
-    const investments = (investor.investments ?? []).map((r: any) => {
-      const plantId = r.productName;
-      const inst = instById.get(plantId);
-      const plantName = inst?.instanceName || plantId;
+    const investments = (investor.investments ?? [])
+      .filter((r: any) => r.plantInstanceId) // Only include investments with plantInstanceId
+      .map((r: any) => {
+        const plantId = String(r.plantInstanceId);
+        const inst = instById.get(plantId);
+        const plantName = inst?.instanceName || r.productName || plantId;
 
       const incEmbedded = Array.isArray(inst?.incomeRecords)
         ? inst.incomeRecords.reduce(
@@ -120,7 +122,7 @@ export async function GET(
         : "";
 
       return {
-        plantId,
+        plantId, // This is now the ObjectId string
         plantName,
         amount,
         profit,
@@ -187,7 +189,8 @@ export async function GET(
     }));
 
     for (const r of investor.investments ?? []) {
-      const plantId = r.productName;
+      if (!r.plantInstanceId) continue; // Skip investments without plantInstanceId
+      const plantId = String(r.plantInstanceId);
       const inst = instById.get(plantId);
       const amount = Number(r.totalAmount) || 0;
       const totalPlantInvest = totalInvestByInst[plantId] || 0;
@@ -233,7 +236,7 @@ export async function GET(
 
     // ---------- Kirim juga detail instance untuk panel kelola ----------
     const instanceDetail = instances.map((inst) => ({
-      id: inst.id,
+      id: String(inst._id), // Use ObjectId for frontend plant selection
       instanceName: inst.instanceName,
       incomeRecords: inst.incomeRecords || [],
       operationalCosts: inst.operationalCosts || [],

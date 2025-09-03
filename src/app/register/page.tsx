@@ -8,6 +8,9 @@ import LandingHeader from '@/components/landing/LandingHeader';
 import { occupationOptions } from '@/constant/OCCUPATION';
 import { provinceOptions } from '@/constant/PROVINCE';
 import { RegistrationFormData, registrationSchema } from '@/schemas/User';
+import { KebijakanPrivasiContent } from '@/components/legal/kebijakan-privasi';
+import { SyaratDanKetentuanContent } from '@/components/legal/syarat-dan-ketentuan';
+import { LegalModal } from '@/components/ui/legal-modal';
 import { zodResolver } from '@hookform/resolvers/zod';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -645,9 +648,12 @@ export default function RegisterPage() {
                         />
                         <span className="text-sm text-gray-700 group-hover:text-gray-900">
                           Saya menyetujui{' '}
-                          <Link href="/terms" className="text-[#324D3E] hover:text-[#4C3D19] hover:underline font-medium">
-                            Syarat dan Ketentuan
-                          </Link>
+                          <LegalModal
+                            triggerText="Syarat dan Ketentuan"
+                            title="Syarat dan Ketentuan"
+                          >
+                            <SyaratDanKetentuanContent />
+                          </LegalModal>
                           {' '}yang berlaku
                         </span>
                       </label>
@@ -666,9 +672,12 @@ export default function RegisterPage() {
                         />
                         <span className="text-sm text-gray-700 group-hover:text-gray-900">
                           Saya menyetujui{' '}
-                          <Link href="/privacy" className="text-[#324D3E] hover:text-[#4C3D19] hover:underline font-medium">
-                            Kebijakan Privasi
-                          </Link>
+                          <LegalModal
+                            triggerText="Kebijakan Privasi"
+                            title="Kebijakan Privasi"
+                          >
+                            <KebijakanPrivasiContent />
+                          </LegalModal>
                           {' '}yang berlaku
                         </span>
                       </label>

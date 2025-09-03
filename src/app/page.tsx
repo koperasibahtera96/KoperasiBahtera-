@@ -9,6 +9,7 @@ import LandingHero from "@/components/landing/LandingHero";
 import PlantShowcaseSection from "@/components/landing/PlantShowcaseSection";
 import ReviewSection from "@/components/landing/ReviewSection";
 import WhyInvestAndRulesSection from "@/components/landing/WhyInvestAndRulesSection";
+import WhatsAppIcon from "@/components/landing/WhatsAppIcon";
 import { useAlert } from "@/components/ui/Alert";
 import { useSearchParams } from "next/navigation";
 import { useEffect } from "react";
@@ -49,6 +50,8 @@ function LandingPageContent() {
     <div className="min-h-screen bg-white font-[family-name:var(--font-poppins)]">
       <AlertComponent />
       <LandingHeader />
+      {/* Spacer for fixed navbar */}
+      <div className="h-20"></div>
       <section id="beranda">
         <LandingHero />
       </section>
@@ -75,6 +78,7 @@ function LandingPageContent() {
         <FAQSection />
       </section>
       <LandingFooter />
+      <WhatsAppIcon />
     </div>
   );
 }

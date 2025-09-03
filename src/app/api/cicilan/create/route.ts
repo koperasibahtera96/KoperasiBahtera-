@@ -2,11 +2,15 @@ import dbConnect from '@/lib/mongodb';
 import Investor from '@/models/Investor';
 import Payment from '@/models/Payment';
 import User from '@/models/User';
+import mongoose from 'mongoose';
 import { getServerSession } from 'next-auth/next';
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(req: NextRequest) {
   await dbConnect();
+
+  // Start a MongoDB transaction
+  const mongoSession = await mongoose.startSession();
 
   try {
     const session = await getServerSession();
@@ -30,124 +34,134 @@ export async function POST(req: NextRequest) {
       }, { status: 400 });
     }
 
-    // Find user
-    const user = await User.findOne({ email: session.user.email });
-    if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
-    }
+    let result;
+    await mongoSession.withTransaction(async () => {
+      // Find user
+      const user = await User.findOne({ email: session.user.email }).session(mongoSession);
+      if (!user) {
+        throw new Error('User not found');
+      }
 
-    // Calculate payment terms
-    const termToMonths = {
-      monthly: 1,
-      quarterly: 3,
-      semiannual: 6,
-      annual: 12
-    };
+      // Calculate payment terms
+      const termToMonths = {
+        monthly: 1,
+        quarterly: 3,
+        semiannual: 6,
+        annual: 12
+      };
 
-    const paymentTermMonths = termToMonths[paymentTerm as keyof typeof termToMonths];
-    const totalInstallments = Math.ceil(24 / paymentTermMonths); // Default 2 years
-    const installmentAmount = Math.ceil(totalAmount / totalInstallments);
+      const paymentTermMonths = termToMonths[paymentTerm as keyof typeof termToMonths];
+      const totalInstallments = Math.ceil(24 / paymentTermMonths); // Default 2 years
+      const installmentAmount = Math.ceil(totalAmount / totalInstallments);
 
-    // First payment is due 24 hours from creation
-    const nextPaymentDue = new Date();
-    nextPaymentDue.setHours(nextPaymentDue.getHours() + 24);
+      // First payment is due 24 hours from creation
+      const nextPaymentDue = new Date();
+      nextPaymentDue.setHours(nextPaymentDue.getHours() + 24);
 
-    const cicilanOrderId = `CICILAN-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+      const cicilanOrderId = `CICILAN-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
-    // Create only the first installment Payment record (due 24 hours from now)
-    const firstInstallmentOrderId = `${cicilanOrderId}-INST-1`;
-    const firstDueDate = new Date();
-    firstDueDate.setHours(firstDueDate.getHours() + 24); // Due 24 hours from now
+      // Create only the first installment Payment record (due 24 hours from now)
+      const firstInstallmentOrderId = `${cicilanOrderId}-INST-1`;
+      const firstDueDate = new Date();
+      firstDueDate.setHours(firstDueDate.getHours() + 24); // Due 24 hours from now
 
-    const firstInstallment = new Payment({
-      orderId: firstInstallmentOrderId,
-      userId: user._id,
-      amount: installmentAmount,
-      currency: 'IDR',
-      paymentType: 'cicilan-installment',
-      cicilanOrderId,
-      installmentNumber: 1,
-      totalInstallments,
-      installmentAmount,
-      paymentTerm,
-      dueDate: firstDueDate,
-      productName,
-      productId,
-      adminStatus: 'pending',
-      status: 'pending',
-      isProcessed: false,
-    });
-
-    await firstInstallment.save();
-
-    // Create first installment summary for Investor tracking
-    const firstInstallmentSummary = {
-      installmentNumber: 1,
-      amount: installmentAmount,
-      dueDate: firstDueDate,
-      isPaid: false,
-      paidDate: null,
-    };
-
-    const investmentRecord = {
-      investmentId: cicilanOrderId,
-      productName,
-      plantInstanceId: null, // Will be assigned when plant is allocated
-      totalAmount,
-      amountPaid: 0,
-      paymentType: 'cicilan' as const,
-      status: 'active' as const,
-      totalInstallments, // Store total for tracking
-      currentInstallment: 1, // Track current installment number
-      installments: [firstInstallmentSummary], // Start with first installment
-      investmentDate: new Date()
-    };
-
-    // Create or update investor record safely
-    let investor = await Investor.findOne({ userId: user._id });
-    
-    if (investor) {
-      // Update existing investor
-      investor.name = user.fullName;
-      investor.email = user.email;
-      investor.phoneNumber = user.phoneNumber;
-      investor.status = 'active';
-      investor.investments.push(investmentRecord);
-      investor.totalInvestasi += totalAmount;
-      await investor.save();
-    } else {
-      // Create new investor
-      investor = new Investor({
+      const firstInstallment = new Payment({
+        orderId: firstInstallmentOrderId,
         userId: user._id,
-        name: user.fullName,
-        email: user.email,
-        phoneNumber: user.phoneNumber,
-        totalInvestasi: totalAmount,
-        totalPaid: 0,
-        jumlahPohon: 0,
-        investments: [investmentRecord],
-        status: 'active'
-      });
-      await investor.save();
-    }
-
-    return NextResponse.json({
-      success: true,
-      orderId: cicilanOrderId,
-      cicilanPayment: {
-        orderId: cicilanOrderId,
-        productName,
-        totalAmount,
+        amount: installmentAmount,
+        currency: 'IDR',
+        paymentType: 'cicilan-installment',
+        cicilanOrderId,
+        installmentNumber: 1,
+        totalInstallments,
         installmentAmount,
         paymentTerm,
-        totalInstallments,
-        nextPaymentDue,
-        status: 'active',
+        dueDate: firstDueDate,
+        productName,
+        productId,
+        adminStatus: 'pending',
+        status: 'pending',
+        isProcessed: false,
+      });
+
+      await firstInstallment.save({ session: mongoSession });
+
+      // Create first installment summary for Investor tracking
+      const firstInstallmentSummary = {
+        installmentNumber: 1,
+        amount: installmentAmount,
+        dueDate: firstDueDate,
+        isPaid: false,
+        paidDate: null,
+      };
+
+      const investmentRecord = {
+        investmentId: cicilanOrderId,
+        productName,
+        plantInstanceId: null, // Will be assigned when plant is allocated
+        totalAmount,
+        amountPaid: 0,
+        paymentType: 'cicilan' as const,
+        status: 'active' as const,
+        totalInstallments, // Store total for tracking
+        currentInstallment: 1, // Track current installment number
+        installments: [firstInstallmentSummary], // Start with first installment
+        investmentDate: new Date()
+      };
+
+      // Create or update investor record safely
+      let investor = await Investor.findOne({ userId: user._id }).session(mongoSession);
+      
+      if (investor) {
+        // Update existing investor
+        investor.name = user.fullName;
+        investor.email = user.email;
+        investor.phoneNumber = user.phoneNumber;
+        investor.status = 'active';
+        investor.investments.push(investmentRecord);
+        investor.totalInvestasi += totalAmount;
+        await investor.save({ session: mongoSession });
+      } else {
+        // Create new investor
+        investor = new Investor({
+          userId: user._id,
+          name: user.fullName,
+          email: user.email,
+          phoneNumber: user.phoneNumber,
+          totalInvestasi: totalAmount,
+          totalPaid: 0,
+          jumlahPohon: 0,
+          investments: [investmentRecord],
+          status: 'active'
+        });
+        await investor.save({ session: mongoSession });
       }
+
+      // Prepare result data
+      result = {
+        success: true,
+        orderId: cicilanOrderId,
+        cicilanPayment: {
+          orderId: cicilanOrderId,
+          productName,
+          totalAmount,
+          installmentAmount,
+          paymentTerm,
+          totalInstallments,
+          nextPaymentDue,
+          status: 'active',
+        }
+      };
     });
+
+    return NextResponse.json(result);
 
   } catch (error) {
     console.error('Error creating cicilan payment:', error);
-    return NextResponse.json({ error: 'Failed to create cicilan payment' }, { status: 500 });
+    return NextResponse.json({ 
+      error: error.message || 'Failed to create cicilan payment' 
+    }, { status: 500 });
+  } finally {
+    await mongoSession.endSession();
   }
 }

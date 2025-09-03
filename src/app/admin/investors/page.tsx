@@ -1,10 +1,10 @@
-'use client';
+"use client";
 
-import { AdminLayout } from '@/components/admin/AdminLayout';
-import { useAlert } from '@/components/ui/Alert';
-import { useConfirmDialog } from '@/components/ui/ConfirmDialog';
-import { Select } from '@/components/ui/Select';
-import { useEffect, useState } from 'react';
+import { AdminLayout } from "@/components/admin/AdminLayout";
+import { useAlert } from "@/components/ui/Alert";
+import { useConfirmDialog } from "@/components/ui/ConfirmDialog";
+import { Select } from "@/components/ui/Select";
+import { useEffect, useState } from "react";
 
 interface Investor {
   _id: string;
@@ -12,7 +12,7 @@ interface Investor {
   email: string;
   totalInvestasi: number;
   jumlahPohon: number;
-  status: 'active' | 'inactive';
+  status: "active" | "inactive";
   createdAt: string;
   updatedAt: string;
 }
@@ -26,55 +26,63 @@ interface User {
 export default function InvestorsPage() {
   const [showModal, setShowModal] = useState(false);
   const [editingInvestor, setEditingInvestor] = useState<Investor | null>(null);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
 
   const { showSuccess, showError, AlertComponent } = useAlert();
   const { showDeleteConfirm, ConfirmComponent } = useConfirmDialog();
 
   const [investors, setInvestors] = useState<Investor[]>([]);
   const [users, setUsers] = useState<User[]>([]);
-  const [selectedUserId, setSelectedUserId] = useState('');
+  const [selectedUserId, setSelectedUserId] = useState("");
   const [loading, setLoading] = useState(false);
+  const [profileChangeRequests, setProfileChangeRequests] = useState<any[]>([]);
+  const [_loadingRequests, setLoadingRequests] = useState(false);
+  const [selectedInvestorRequests, setSelectedInvestorRequests] = useState<
+    any[]
+  >([]);
+  const [showInvestorRequestsModal, setShowInvestorRequestsModal] =
+    useState(false);
 
   const [formData, setFormData] = useState({
-    name: '',
-    email: '',
+    name: "",
+    email: "",
     totalInvestasi: 0,
     jumlahPohon: 0,
-    status: 'active' as 'active' | 'inactive'
+    status: "active" as "active" | "inactive",
   });
-  const [displayTotalInvestasi, setDisplayTotalInvestasi] = useState('');
-  const [displayJumlahPohon, setDisplayJumlahPohon] = useState('');
+  const [displayTotalInvestasi, setDisplayTotalInvestasi] = useState("");
+  const [displayJumlahPohon, setDisplayJumlahPohon] = useState("");
 
   // Helper functions for number formatting
   const formatNumber = (num: number) => {
-    return num.toLocaleString('id-ID');
+    return num.toLocaleString("id-ID");
   };
 
   const parseNumber = (str: string) => {
     // Remove all non-digit characters except decimal point
-    const cleaned = str.replace(/[^\d]/g, '');
-    return cleaned === '' ? 0 : parseInt(cleaned);
+    const cleaned = str.replace(/[^\d]/g, "");
+    return cleaned === "" ? 0 : parseInt(cleaned);
   };
 
-  // Fetch investors on component mount
+  // Fetch investors and requests on component mount
   useEffect(() => {
     fetchInvestors();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    fetchProfileChangeRequests();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Fetch users for dropdown
   useEffect(() => {
     const fetchUsers = async () => {
       try {
-        const response = await fetch('/api/admin/users/list');
+        const response = await fetch("/api/admin/users/list");
         if (response.ok) {
           const result = await response.json();
           setUsers(result.data);
         }
       } catch (error) {
-        console.error('Error fetching users:', error);
+        console.error("Error fetching users:", error);
       }
     };
 
@@ -87,38 +95,71 @@ export default function InvestorsPage() {
   const fetchInvestors = async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/admin/investors');
+      const response = await fetch("/api/admin/investors");
       if (response.ok) {
         const result = await response.json();
         setInvestors(result.data);
       } else {
-        showError('Gagal memuat data', 'Tidak dapat mengambil data investor dari server');
+        showError(
+          "Gagal memuat data",
+          "Tidak dapat mengambil data investor dari server"
+        );
       }
     } catch (error) {
-      console.error('Error fetching investors:', error);
-      showError('Kesalahan Jaringan', 'Gagal terhubung ke server. Periksa koneksi internet Anda.');
+      console.error("Error fetching investors:", error);
+      showError(
+        "Kesalahan Jaringan",
+        "Gagal terhubung ke server. Periksa koneksi internet Anda."
+      );
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Fetch profile change requests
+  const fetchProfileChangeRequests = async () => {
+    try {
+      setLoadingRequests(true);
+      const response = await fetch("/api/admin/profile-change-requests");
+      if (response.ok) {
+        const result = await response.json();
+        setProfileChangeRequests(result.requests);
+      } else {
+        showError(
+          "Gagal memuat data",
+          "Tidak dapat mengambil data permintaan perubahan profil"
+        );
+      }
+    } catch (error) {
+      console.error("Error fetching profile change requests:", error);
+      showError(
+        "Kesalahan Jaringan",
+        "Gagal terhubung ke server. Periksa koneksi internet Anda."
+      );
+    } finally {
+      setLoadingRequests(false);
     }
   };
 
   // Handle user selection from dropdown
   const handleUserSelect = (userId: string) => {
     setSelectedUserId(userId);
-    const selectedUser = users.find(user => user._id === userId);
+    const selectedUser = users.find((user) => user._id === userId);
     if (selectedUser) {
       setFormData({
         ...formData,
         name: selectedUser.fullName,
-        email: selectedUser.email
+        email: selectedUser.email,
       });
     }
   };
 
-  const filteredInvestors = investors.filter(investor => {
-    const matchesSearch = investor.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         investor.email.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = statusFilter === 'all' || investor.status === statusFilter;
+  const filteredInvestors = investors.filter((investor) => {
+    const matchesSearch =
+      investor.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      investor.email.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesStatus =
+      statusFilter === "all" || investor.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
 
@@ -127,61 +168,73 @@ export default function InvestorsPage() {
 
     // Validate userId is selected for new investors
     if (!editingInvestor && !selectedUserId) {
-      showError('User Required', 'Please select a user to create an investor account');
+      showError(
+        "User Required",
+        "Please select a user to create an investor account"
+      );
       return;
     }
 
     try {
       if (editingInvestor) {
         // Update existing investor
-        const response = await fetch('/api/admin/investors', {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ id: editingInvestor._id, ...formData })
+        const response = await fetch("/api/admin/investors", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ id: editingInvestor._id, ...formData }),
         });
 
         if (response.ok) {
           // Refresh the investors list
           fetchInvestors();
-          showSuccess('Berhasil!', 'Data investor berhasil diperbarui');
+          showSuccess("Berhasil!", "Data investor berhasil diperbarui");
         } else {
           const errorData = await response.json();
-          showError('Gagal memperbarui', errorData.error || 'Terjadi kesalahan saat memperbarui investor');
+          showError(
+            "Gagal memperbarui",
+            errorData.error || "Terjadi kesalahan saat memperbarui investor"
+          );
         }
       } else {
         // Add new investor - userId is required
         const requestData = { ...formData, userId: selectedUserId };
 
-        const response = await fetch('/api/admin/investors', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(requestData)
+        const response = await fetch("/api/admin/investors", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(requestData),
         });
 
         if (response.ok) {
           // Refresh the investors list
           fetchInvestors();
-          showSuccess('Berhasil!', 'Investor baru berhasil ditambahkan');
+          showSuccess("Berhasil!", "Investor baru berhasil ditambahkan");
         } else {
           const errorData = await response.json();
-          showError('Gagal menambahkan', errorData.error || 'Terjadi kesalahan saat menambahkan investor');
+          showError(
+            "Gagal menambahkan",
+            errorData.error || "Terjadi kesalahan saat menambahkan investor"
+          );
         }
       }
 
       // Reset form
       setFormData({
-        name: '',
-        email: '',
+        name: "",
+        email: "",
         totalInvestasi: 0,
         jumlahPohon: 0,
-        status: 'active'
+        status: "active",
       });
-      setSelectedUserId('');
+      setSelectedUserId("");
       setEditingInvestor(null);
       setShowModal(false);
     } catch (error) {
-      console.error('Error saving investor:', error);
-      showError('Kesalahan Jaringan', 'Gagal terhubung ke server. Periksa koneksi internet Anda.');
+      console.error("Error saving investor:", error);
+      showError(
+        "Kesalahan Jaringan",
+        "Gagal terhubung ke server. Periksa koneksi internet Anda."
+      );
     }
   };
 
@@ -192,11 +245,15 @@ export default function InvestorsPage() {
       email: investor.email,
       totalInvestasi: investor.totalInvestasi,
       jumlahPohon: investor.jumlahPohon,
-      status: investor.status
+      status: investor.status,
     });
-    setDisplayTotalInvestasi(investor.totalInvestasi > 0 ? formatNumber(investor.totalInvestasi) : '');
-    setDisplayJumlahPohon(investor.jumlahPohon > 0 ? formatNumber(investor.jumlahPohon) : '');
-    setSelectedUserId(''); // Don't pre-select user when editing
+    setDisplayTotalInvestasi(
+      investor.totalInvestasi > 0 ? formatNumber(investor.totalInvestasi) : ""
+    );
+    setDisplayJumlahPohon(
+      investor.jumlahPohon > 0 ? formatNumber(investor.jumlahPohon) : ""
+    );
+    setSelectedUserId(""); // Don't pre-select user when editing
     setShowModal(true);
   };
 
@@ -204,34 +261,110 @@ export default function InvestorsPage() {
     showDeleteConfirm(name, async () => {
       try {
         const response = await fetch(`/api/admin/investors?id=${id}`, {
-          method: 'DELETE'
+          method: "DELETE",
         });
 
         if (response.ok) {
           // Refresh the investors list
           fetchInvestors();
-          showSuccess('Berhasil!', `Investor "${name}" berhasil dihapus`);
+          showSuccess("Berhasil!", `Investor "${name}" berhasil dihapus`);
         } else {
           const errorData = await response.json();
-          showError('Gagal menghapus', errorData.error || 'Terjadi kesalahan saat menghapus investor');
+          showError(
+            "Gagal menghapus",
+            errorData.error || "Terjadi kesalahan saat menghapus investor"
+          );
         }
       } catch (error) {
-        console.error('Error deleting investor:', error);
-        showError('Kesalahan Jaringan', 'Gagal terhubung ke server. Periksa koneksi internet Anda.');
+        console.error("Error deleting investor:", error);
+        showError(
+          "Kesalahan Jaringan",
+          "Gagal terhubung ke server. Periksa koneksi internet Anda."
+        );
       }
     });
   };
 
+  const handleApproveRequest = async (requestId: string) => {
+    try {
+      const response = await fetch("/api/admin/profile-change-requests", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ requestId, action: "approve" }),
+      });
+
+      if (response.ok) {
+        showSuccess("Berhasil!", "Permohonan perubahan profil telah disetujui");
+        fetchProfileChangeRequests();
+        setShowInvestorRequestsModal(false);
+      } else {
+        const errorData = await response.json();
+        showError(
+          "Gagal menyetujui",
+          errorData.error || "Gagal menyetujui permohonan"
+        );
+      }
+    } catch (error) {
+      console.error("Error approving request:", error);
+      showError("Kesalahan Jaringan", "Gagal terhubung ke server");
+    }
+  };
+
+  const handleRejectRequest = async (requestId: string) => {
+    try {
+      const response = await fetch("/api/admin/profile-change-requests", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ requestId, action: "reject" }),
+      });
+
+      if (response.ok) {
+        showSuccess("Berhasil!", "Permohonan perubahan profil telah ditolak");
+        fetchProfileChangeRequests();
+        setShowInvestorRequestsModal(false);
+      } else {
+        const errorData = await response.json();
+        showError(
+          "Gagal menolak",
+          errorData.error || "Gagal menolak permohonan"
+        );
+      }
+    } catch (error) {
+      console.error("Error rejecting request:", error);
+      showError("Kesalahan Jaringan", "Gagal terhubung ke server");
+    }
+  };
 
   const getStatusText = (status: string) => {
     switch (status) {
-      case 'active':
-        return 'Aktif';
-      case 'inactive':
-        return 'Tidak Aktif';
+      case "active":
+        return "Aktif";
+      case "inactive":
+        return "Tidak Aktif";
       default:
         return status;
     }
+  };
+
+  // Get pending request count for a specific user email
+  const getPendingRequestCount = (email: string) => {
+    return profileChangeRequests.filter(
+      (request) => request.user?.email === email && request.status === "pending"
+    ).length;
+  };
+
+  // Get all requests for a specific user email
+  const getUserRequests = (email: string) => {
+    return profileChangeRequests.filter(
+      (request) => request.user?.email === email
+    );
+  };
+
+  // Handle viewing investor requests
+  const handleViewInvestorRequests = (email: string) => {
+    const investorRequests = getUserRequests(email);
+    setSelectedInvestorRequests(investorRequests);
+    setShowInvestorRequestsModal(true);
   };
 
   return (
@@ -240,8 +373,12 @@ export default function InvestorsPage() {
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
           <div className="min-w-0 flex-1">
-            <h1 className="text-2xl sm:text-3xl font-bold text-[#324D3E] font-[family-name:var(--font-poppins)] truncate">Manajemen Investor</h1>
-            <p className="text-[#889063] mt-1 sm:mt-2 text-sm sm:text-base">Kelola data investor dan portfolio mereka</p>
+            <h1 className="text-2xl sm:text-3xl font-bold text-[#324D3E] font-[family-name:var(--font-poppins)] truncate">
+              Manajemen Investor
+            </h1>
+            <p className="text-[#889063] mt-1 sm:mt-2 text-sm sm:text-base">
+              Kelola data investor dan portfolio mereka
+            </p>
           </div>
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3">
             <button
@@ -249,7 +386,7 @@ export default function InvestorsPage() {
               disabled={loading}
               className="bg-[#324D3E]/10 hover:bg-[#324D3E]/20 text-[#324D3E] px-3 sm:px-4 py-2 rounded-xl font-medium transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 text-sm sm:text-base whitespace-nowrap"
             >
-              <span className={loading ? 'animate-spin' : ''}>🔄</span>
+              <span className={loading ? "animate-spin" : ""}>🔄</span>
               <span className="hidden sm:inline">Refresh</span>
             </button>
             <button
@@ -267,31 +404,48 @@ export default function InvestorsPage() {
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6 mb-6">
           <div className="bg-white/80 backdrop-blur-lg rounded-2xl shadow-lg border border-[#324D3E]/10 p-4 sm:p-6 hover:shadow-xl hover:scale-105 transition-all duration-300">
             <div>
-              <p className="text-xs sm:text-sm font-medium text-[#889063] truncate">👥 Total Investor</p>
-              <p className="text-lg sm:text-xl lg:text-2xl font-bold text-[#324D3E]">{investors.length}</p>
+              <p className="text-xs sm:text-sm font-medium text-[#889063] truncate">
+                👥 Total Investor
+              </p>
+              <p className="text-lg sm:text-xl lg:text-2xl font-bold text-[#324D3E]">
+                {investors.length}
+              </p>
             </div>
           </div>
 
           <div className="bg-white/80 backdrop-blur-lg rounded-2xl shadow-lg border border-[#324D3E]/10 p-4 sm:p-6 hover:shadow-xl hover:scale-105 transition-all duration-300">
             <div>
-              <p className="text-xs sm:text-sm font-medium text-[#889063] truncate">✅ Investor Aktif</p>
-              <p className="text-lg sm:text-xl lg:text-2xl font-bold text-[#4C3D19]">{investors.filter(i => i.status === 'active').length}</p>
+              <p className="text-xs sm:text-sm font-medium text-[#889063] truncate">
+                ✅ Investor Aktif
+              </p>
+              <p className="text-lg sm:text-xl lg:text-2xl font-bold text-[#4C3D19]">
+                {investors.filter((i) => i.status === "active").length}
+              </p>
             </div>
           </div>
 
           <div className="bg-white/80 backdrop-blur-lg rounded-2xl shadow-lg border border-[#324D3E]/10 p-4 sm:p-6 hover:shadow-xl hover:scale-105 transition-all duration-300">
             <div>
-              <p className="text-xs sm:text-sm font-medium text-[#889063] truncate">❌ Tidak Aktif</p>
-              <p className="text-lg sm:text-xl lg:text-2xl font-bold text-red-600">{investors.filter(i => i.status === 'inactive').length}</p>
+              <p className="text-xs sm:text-sm font-medium text-[#889063] truncate">
+                ❌ Tidak Aktif
+              </p>
+              <p className="text-lg sm:text-xl lg:text-2xl font-bold text-red-600">
+                {investors.filter((i) => i.status === "inactive").length}
+              </p>
             </div>
           </div>
 
           <div className="bg-white/80 backdrop-blur-lg rounded-2xl shadow-lg border border-[#324D3E]/10 p-4 sm:p-6 hover:shadow-xl hover:scale-105 transition-all duration-300">
             <div className="min-w-0">
-              <p className="text-xs sm:text-sm font-medium text-[#889063] truncate">💰 Total Investasi</p>
+              <p className="text-xs sm:text-sm font-medium text-[#889063] truncate">
+                💰 Total Investasi
+              </p>
               <div className="flex flex-col">
                 <p className="text-sm sm:text-base lg:text-lg font-bold text-[#324D3E] leading-tight break-all">
-                 Rp. {investors.reduce((sum, inv) => sum + inv.totalInvestasi, 0).toLocaleString('id-ID')}
+                  Rp.{" "}
+                  {investors
+                    .reduce((sum, inv) => sum + inv.totalInvestasi, 0)
+                    .toLocaleString("id-ID")}
                 </p>
               </div>
             </div>
@@ -314,9 +468,9 @@ export default function InvestorsPage() {
               value={statusFilter}
               onValueChange={setStatusFilter}
               options={[
-                { value: 'all', label: 'Semua Status' },
-                { value: 'active', label: 'Aktif' },
-                { value: 'inactive', label: 'Tidak Aktif' }
+                { value: "all", label: "Semua Status" },
+                { value: "active", label: "Aktif" },
+                { value: "inactive", label: "Tidak Aktif" },
               ]}
               className="w-full lg:w-auto lg:min-w-[150px]"
             />
@@ -329,83 +483,156 @@ export default function InvestorsPage() {
             <table className="w-full">
               <thead className="bg-[#324D3E]/5">
                 <tr>
-                  <th className="px-3 lg:px-6 py-4 text-left text-xs font-medium text-[#324D3E] uppercase tracking-wider">Investor</th>
-                  <th className="hidden md:table-cell px-3 lg:px-6 py-4 text-left text-xs font-medium text-[#324D3E] uppercase tracking-wider">Email</th>
-                  <th className="px-3 lg:px-6 py-4 text-left text-xs font-medium text-[#324D3E] uppercase tracking-wider">Investasi</th>
-                  <th className="hidden lg:table-cell px-3 lg:px-6 py-4 text-left text-xs font-medium text-[#324D3E] uppercase tracking-wider">Pohon</th>
-                  <th className="px-3 lg:px-6 py-4 text-left text-xs font-medium text-[#324D3E] uppercase tracking-wider">Status</th>
-                  <th className="px-3 lg:px-6 py-4 text-left text-xs font-medium text-[#324D3E] uppercase tracking-wider">Aksi</th>
+                  <th className="px-3 lg:px-6 py-4 text-left text-xs font-medium text-[#324D3E] uppercase tracking-wider">
+                    Investor
+                  </th>
+                  <th className="hidden md:table-cell px-3 lg:px-6 py-4 text-left text-xs font-medium text-[#324D3E] uppercase tracking-wider">
+                    Email
+                  </th>
+                  <th className="px-3 lg:px-6 py-4 text-left text-xs font-medium text-[#324D3E] uppercase tracking-wider">
+                    Investasi
+                  </th>
+                  <th className="hidden lg:table-cell px-3 lg:px-6 py-4 text-left text-xs font-medium text-[#324D3E] uppercase tracking-wider">
+                    Pohon
+                  </th>
+                  <th className="px-3 lg:px-6 py-4 text-left text-xs font-medium text-[#324D3E] uppercase tracking-wider">
+                    Status
+                  </th>
+                  <th className="px-3 lg:px-6 py-4 text-left text-xs font-medium text-[#324D3E] uppercase tracking-wider">
+                    Permohonan
+                  </th>
+                  <th className="px-3 lg:px-6 py-4 text-left text-xs font-medium text-[#324D3E] uppercase tracking-wider">
+                    Aksi
+                  </th>
                 </tr>
               </thead>
               <tbody className="bg-white/50 divide-y divide-[#324D3E]/10">
                 {loading ? (
                   <tr>
-                    <td colSpan={6} className="px-6 py-12 text-center">
+                    <td colSpan={7} className="px-6 py-12 text-center">
                       <div className="flex items-center justify-center">
                         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-500"></div>
-                        <span className="ml-2 text-gray-600">Memuat data investor...</span>
+                        <span className="ml-2 text-gray-600">
+                          Memuat data investor...
+                        </span>
                       </div>
                     </td>
                   </tr>
                 ) : filteredInvestors.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="px-6 py-12 text-center text-gray-500">
+                    <td
+                      colSpan={7}
+                      className="px-6 py-12 text-center text-gray-500"
+                    >
                       Belum ada data investor
                     </td>
                   </tr>
                 ) : (
                   filteredInvestors.map((investor) => (
-                  <tr key={investor._id} className="hover:bg-[#324D3E]/5 transition-colors">
-                    <td className="px-3 lg:px-6 py-4">
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 lg:w-10 lg:h-10 bg-gradient-to-r from-[#324D3E] to-[#4C3D19] rounded-full flex items-center justify-center">
-                          <span className="text-white font-bold text-sm lg:text-base">{investor.name.charAt(0)}</span>
+                    <tr
+                      key={investor._id}
+                      className="hover:bg-[#324D3E]/5 transition-colors"
+                    >
+                      <td className="px-3 lg:px-6 py-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 lg:w-10 lg:h-10 bg-gradient-to-r from-[#324D3E] to-[#4C3D19] rounded-full flex items-center justify-center">
+                            <span className="text-white font-bold text-sm lg:text-base">
+                              {investor.name.charAt(0)}
+                            </span>
+                          </div>
+                          <div className="min-w-0">
+                            <p className="font-medium text-[#324D3E] text-sm lg:text-base truncate">
+                              {investor.name}
+                            </p>
+                            <p className="text-xs lg:text-sm text-[#889063] md:hidden">
+                              {investor.email}
+                            </p>
+                            <p className="text-xs text-[#889063]">
+                              ID: {investor._id.slice(-6)}
+                            </p>
+                          </div>
                         </div>
-                        <div className="min-w-0">
-                          <p className="font-medium text-[#324D3E] text-sm lg:text-base truncate">{investor.name}</p>
-                          <p className="text-xs lg:text-sm text-[#889063] md:hidden">{investor.email}</p>
-                          <p className="text-xs text-[#889063]">ID: {investor._id.slice(-6)}</p>
+                      </td>
+                      <td className="hidden md:table-cell px-3 lg:px-6 py-4">
+                        <p className="text-sm text-[#324D3E] truncate">
+                          {investor.email}
+                        </p>
+                      </td>
+                      <td className="px-3 lg:px-6 py-4">
+                        <p className="font-medium text-[#324D3E] text-sm lg:text-base">
+                          Rp {investor.totalInvestasi.toLocaleString("id-ID")}
+                        </p>
+                        <p className="text-xs text-[#889063] lg:hidden">
+                          {investor.jumlahPohon} pohon
+                        </p>
+                      </td>
+                      <td className="hidden lg:table-cell px-3 lg:px-6 py-4">
+                        <p className="font-medium text-[#324D3E]">
+                          {investor.jumlahPohon}
+                        </p>
+                      </td>
+                      <td className="px-3 lg:px-6 py-4">
+                        <span
+                          className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                            investor.status === "active"
+                              ? "bg-[#4C3D19]/10 text-[#4C3D19] border border-[#4C3D19]/20"
+                              : "bg-red-100 text-red-800"
+                          }`}
+                        >
+                          {getStatusText(investor.status)}
+                        </span>
+                      </td>
+                      <td className="px-3 lg:px-6 py-4">
+                        {(() => {
+                          const pendingCount = getPendingRequestCount(
+                            investor.email
+                          );
+                          const totalRequests = getUserRequests(
+                            investor.email
+                          ).length;
+                          return (
+                            <div className="flex items-center gap-2">
+                              {totalRequests > 0 ? (
+                                <button
+                                  onClick={() =>
+                                    handleViewInvestorRequests(investor.email)
+                                  }
+                                  className={`px-2 py-1 text-xs font-semibold rounded-full transition-colors ${
+                                    pendingCount > 0
+                                      ? "bg-orange-100 text-orange-800 hover:bg-orange-200"
+                                      : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                                  }`}
+                                >
+                                  {totalRequests} permohonan
+                                </button>
+                              ) : (
+                                <span className="text-xs text-gray-400">
+                                  Tidak ada permohonan
+                                </span>
+                              )}
+                            </div>
+                          );
+                        })()}
+                      </td>
+                      <td className="px-3 lg:px-6 py-4">
+                        <div className="flex flex-col lg:flex-row items-start lg:items-center gap-1 lg:gap-2">
+                          <button
+                            onClick={() => handleEdit(investor)}
+                            className="text-[#324D3E] hover:text-[#4C3D19] font-medium text-xs lg:text-sm transition-colors"
+                          >
+                            Edit
+                          </button>
+                          <button
+                            onClick={() =>
+                              handleDelete(investor._id, investor.name)
+                            }
+                            className="text-red-600 hover:text-red-800 font-medium text-xs lg:text-sm transition-colors"
+                          >
+                            Hapus
+                          </button>
                         </div>
-                      </div>
-                    </td>
-                    <td className="hidden md:table-cell px-3 lg:px-6 py-4">
-                      <p className="text-sm text-[#324D3E] truncate">{investor.email}</p>
-                    </td>
-                    <td className="px-3 lg:px-6 py-4">
-                      <p className="font-medium text-[#324D3E] text-sm lg:text-base">
-                        Rp {investor.totalInvestasi.toLocaleString('id-ID')}
-                      </p>
-                      <p className="text-xs text-[#889063] lg:hidden">{investor.jumlahPohon} pohon</p>
-                    </td>
-                    <td className="hidden lg:table-cell px-3 lg:px-6 py-4">
-                      <p className="font-medium text-[#324D3E]">{investor.jumlahPohon}</p>
-                    </td>
-                    <td className="px-3 lg:px-6 py-4">
-                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                        investor.status === 'active'
-                          ? 'bg-[#4C3D19]/10 text-[#4C3D19] border border-[#4C3D19]/20'
-                          : 'bg-red-100 text-red-800'
-                      }`}>
-                        {getStatusText(investor.status)}
-                      </span>
-                    </td>
-                    <td className="px-3 lg:px-6 py-4">
-                      <div className="flex flex-col lg:flex-row items-start lg:items-center gap-1 lg:gap-2">
-                        <button
-                          onClick={() => handleEdit(investor)}
-                          className="text-[#324D3E] hover:text-[#4C3D19] font-medium text-xs lg:text-sm transition-colors"
-                        >
-                          Edit
-                        </button>
-                        <button
-                          onClick={() => handleDelete(investor._id, investor.name)}
-                          className="text-red-600 hover:text-red-800 font-medium text-xs lg:text-sm transition-colors"
-                        >
-                          Hapus
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
+                      </td>
+                    </tr>
                   ))
                 )}
               </tbody>
@@ -420,7 +647,7 @@ export default function InvestorsPage() {
           <div className="bg-white/95 backdrop-blur-lg rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl border border-[#324D3E]/10">
             <div className="p-6 border-b border-[#324D3E]/10">
               <h2 className="text-xl font-bold text-[#324D3E] font-[family-name:var(--font-poppins)]">
-                {editingInvestor ? 'Edit Investor' : 'Tambah Investor Baru'}
+                {editingInvestor ? "Edit Investor" : "Tambah Investor Baru"}
               </h2>
             </div>
 
@@ -434,11 +661,14 @@ export default function InvestorsPage() {
                     value={selectedUserId}
                     onValueChange={handleUserSelect}
                     options={[
-                      { value: '', label: 'Pilih user untuk dijadikan investor...' },
-                      ...users.map(user => ({
+                      {
+                        value: "",
+                        label: "Pilih user untuk dijadikan investor...",
+                      },
+                      ...users.map((user) => ({
                         value: user._id,
-                        label: `${user.fullName} (${user.email})`
-                      }))
+                        label: `${user.fullName} (${user.email})`,
+                      })),
                     ]}
                     placeholder="Pilih user untuk dijadikan investor..."
                   />
@@ -457,10 +687,12 @@ export default function InvestorsPage() {
                     type="text"
                     required
                     value={formData.name}
-                    onChange={(e) => setFormData({...formData, name: e.target.value})}
+                    onChange={(e) =>
+                      setFormData({ ...formData, name: e.target.value })
+                    }
                     className="w-full px-3 py-2 border border-[#324D3E]/20 rounded-xl focus:ring-2 focus:ring-[#324D3E]/20 focus:border-[#324D3E] text-[#324D3E] placeholder-[#889063]"
                     placeholder="Masukkan nama lengkap"
-                    readOnly={!editingInvestor && selectedUserId !== ''}
+                    readOnly={!editingInvestor && selectedUserId !== ""}
                   />
                 </div>
 
@@ -472,10 +704,12 @@ export default function InvestorsPage() {
                     type="email"
                     required
                     value={formData.email}
-                    onChange={(e) => setFormData({...formData, email: e.target.value})}
+                    onChange={(e) =>
+                      setFormData({ ...formData, email: e.target.value })
+                    }
                     className="w-full px-3 py-2 border border-[#324D3E]/20 rounded-xl focus:ring-2 focus:ring-[#324D3E]/20 focus:border-[#324D3E] text-[#324D3E] placeholder-[#889063]"
                     placeholder="investor@email.com"
-                    readOnly={!editingInvestor && selectedUserId !== ''}
+                    readOnly={!editingInvestor && selectedUserId !== ""}
                   />
                 </div>
 
@@ -488,8 +722,10 @@ export default function InvestorsPage() {
                     value={displayTotalInvestasi}
                     onChange={(e) => {
                       const parsed = parseNumber(e.target.value);
-                      setFormData({...formData, totalInvestasi: parsed});
-                      setDisplayTotalInvestasi(parsed > 0 ? formatNumber(parsed) : e.target.value);
+                      setFormData({ ...formData, totalInvestasi: parsed });
+                      setDisplayTotalInvestasi(
+                        parsed > 0 ? formatNumber(parsed) : e.target.value
+                      );
                     }}
                     className="w-full px-3 py-2 border border-[#324D3E]/20 rounded-xl focus:ring-2 focus:ring-[#324D3E]/20 focus:border-[#324D3E] text-[#324D3E] placeholder-[#889063]"
                     placeholder="0"
@@ -505,8 +741,10 @@ export default function InvestorsPage() {
                     value={displayJumlahPohon}
                     onChange={(e) => {
                       const parsed = parseNumber(e.target.value);
-                      setFormData({...formData, jumlahPohon: parsed});
-                      setDisplayJumlahPohon(parsed > 0 ? formatNumber(parsed) : e.target.value);
+                      setFormData({ ...formData, jumlahPohon: parsed });
+                      setDisplayJumlahPohon(
+                        parsed > 0 ? formatNumber(parsed) : e.target.value
+                      );
                     }}
                     className="w-full px-3 py-2 border border-[#324D3E]/20 rounded-xl focus:ring-2 focus:ring-[#324D3E]/20 focus:border-[#324D3E] text-[#324D3E] placeholder-[#889063]"
                     placeholder="0"
@@ -520,10 +758,15 @@ export default function InvestorsPage() {
                 </label>
                 <Select
                   value={formData.status}
-                  onValueChange={(value) => setFormData({...formData, status: value as 'active' | 'inactive'})}
+                  onValueChange={(value) =>
+                    setFormData({
+                      ...formData,
+                      status: value as "active" | "inactive",
+                    })
+                  }
                   options={[
-                    { value: 'active', label: 'Aktif' },
-                    { value: 'inactive', label: 'Tidak Aktif' }
+                    { value: "active", label: "Aktif" },
+                    { value: "inactive", label: "Tidak Aktif" },
                   ]}
                 />
               </div>
@@ -533,20 +776,20 @@ export default function InvestorsPage() {
                   type="submit"
                   className="bg-gradient-to-r from-[#324D3E] to-[#4C3D19] text-white px-6 py-2 rounded-xl font-semibold hover:shadow-lg transition-all duration-200"
                 >
-                  {editingInvestor ? 'Update Investor' : 'Tambah Investor'}
+                  {editingInvestor ? "Update Investor" : "Tambah Investor"}
                 </button>
                 <button
                   type="button"
                   onClick={() => {
                     setShowModal(false);
                     setEditingInvestor(null);
-                    setSelectedUserId('');
+                    setSelectedUserId("");
                     setFormData({
-                      name: '',
-                      email: '',
+                      name: "",
+                      email: "",
                       totalInvestasi: 0,
                       jumlahPohon: 0,
-                      status: 'active'
+                      status: "active",
                     });
                   }}
                   className="px-6 py-2 border border-[#324D3E]/20 text-[#324D3E] rounded-xl hover:bg-[#324D3E]/5 transition-colors"
@@ -555,6 +798,151 @@ export default function InvestorsPage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Investor Profile Change Requests Modal */}
+      {showInvestorRequestsModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white/95 backdrop-blur-lg rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto shadow-2xl border border-[#324D3E]/10">
+            <div className="p-6 border-b border-[#324D3E]/10">
+              <h2 className="text-xl font-bold text-[#324D3E] font-[family-name:var(--font-poppins)]">
+                Permohonan Perubahan Profil
+              </h2>
+              <p className="text-sm text-[#889063] mt-1">
+                {selectedInvestorRequests.length > 0 &&
+                  `Permohonan untuk ${selectedInvestorRequests[0].user?.fullName} (${selectedInvestorRequests[0].user?.email})`}
+              </p>
+            </div>
+
+            <div className="p-6">
+              {selectedInvestorRequests.length === 0 ? (
+                <div className="text-center py-12">
+                  <div className="text-6xl mb-4">📝</div>
+                  <p className="text-gray-500">
+                    Tidak ada permohonan perubahan profil
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {selectedInvestorRequests.map((request) => (
+                    <div
+                      key={request._id}
+                      className="bg-white rounded-xl border border-[#324D3E]/10 p-4 hover:shadow-md transition-all duration-200"
+                    >
+                      <div className="flex justify-between items-start">
+                        <div className="flex-1">
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-3">
+                            <div>
+                              <p className="text-sm font-medium text-gray-700">
+                                Jenis Perubahan
+                              </p>
+                              <p className="text-sm text-[#324D3E] font-semibold capitalize">
+                                {request.changeType === "fullName"
+                                  ? "Nama Lengkap"
+                                  : "Email"}
+                              </p>
+                            </div>
+                            <div>
+                              <p className="text-sm font-medium text-gray-700">
+                                Status
+                              </p>
+                              <span
+                                className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                                  request.status === "pending"
+                                    ? "bg-yellow-100 text-yellow-800"
+                                    : request.status === "approved"
+                                    ? "bg-green-100 text-green-800"
+                                    : "bg-red-100 text-red-800"
+                                }`}
+                              >
+                                {request.status === "pending"
+                                  ? "Menunggu"
+                                  : request.status === "approved"
+                                  ? "Disetujui"
+                                  : "Ditolak"}
+                              </span>
+                            </div>
+                            <div>
+                              <p className="text-sm font-medium text-gray-700">
+                                Nilai Saat Ini
+                              </p>
+                              <p className="text-sm text-gray-900 break-all">
+                                {request.currentValue}
+                              </p>
+                            </div>
+                            <div>
+                              <p className="text-sm font-medium text-gray-700">
+                                Permintaan Nilai Baru
+                              </p>
+                              <p className="text-sm text-[#324D3E] font-semibold break-all">
+                                {request.requestedValue}
+                              </p>
+                            </div>
+                          </div>
+
+                          {request.reason && (
+                            <div className="mb-3">
+                              <p className="text-sm font-medium text-gray-700">
+                                Alasan
+                              </p>
+                              <p className="text-sm text-gray-900">
+                                {request.reason}
+                              </p>
+                            </div>
+                          )}
+
+                          <div className="flex flex-col sm:flex-row sm:items-center justify-between text-xs text-[#889063]">
+                            <p>
+                              Diminta:{" "}
+                              {new Date(request.requestedAt).toLocaleString(
+                                "id-ID"
+                              )}
+                            </p>
+                            {request.reviewedAt && (
+                              <p>
+                                Direview:{" "}
+                                {new Date(request.reviewedAt).toLocaleString(
+                                  "id-ID"
+                                )}{" "}
+                                oleh {request.reviewedBy}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+
+                        {request.status === "pending" && (
+                          <div className="flex flex-col gap-2 ml-4">
+                            <button
+                              onClick={() => handleApproveRequest(request._id)}
+                              className="px-4 py-2 bg-green-500 text-white rounded-lg font-medium hover:bg-green-600 transition-colors text-sm"
+                            >
+                              Setujui
+                            </button>
+                            <button
+                              onClick={() => handleRejectRequest(request._id)}
+                              className="px-4 py-2 bg-red-500 text-white rounded-lg font-medium hover:bg-red-600 transition-colors text-sm"
+                            >
+                              Tolak
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <div className="p-6 border-t border-[#324D3E]/10">
+              <button
+                onClick={() => setShowInvestorRequestsModal(false)}
+                className="px-6 py-2 border border-[#324D3E]/20 text-[#324D3E] rounded-xl hover:bg-[#324D3E]/5 transition-colors"
+              >
+                Tutup
+              </button>
+            </div>
           </div>
         </div>
       )}

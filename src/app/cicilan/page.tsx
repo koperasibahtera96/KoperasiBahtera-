@@ -309,7 +309,7 @@ export default function CicilanPage() {
 
           {groupedInstallments.length === 0 ? (
             <div className="text-center py-12 bg-white/95 backdrop-blur-sm rounded-3xl shadow-xl">
-              <div className="text-[#324D3E] mb-4">
+              <div className="flex justify-center text-[#324D3E] mb-4">
                 <CreditCard size={64} />
               </div>
               <h3 className="text-xl font-semibold text-[#324D3E] mb-2 font-poppins">
