@@ -1,5 +1,6 @@
 import { ensureConnection } from "@/lib/utils/utils/database";
 import { PlantInstance } from "@/models";
+import { Types } from "mongoose";
 import { type NextRequest, NextResponse } from "next/server";
 
 export async function DELETE(
@@ -14,7 +15,7 @@ export async function DELETE(
     await ensureConnection();
 
     const plant = await PlantInstance.findOneAndUpdate(
-      { id: id },
+      { _id: new Types.ObjectId(id) },
       { $pull: { incomeRecords: { id: incomeId } } },
       { new: true }
     );
@@ -50,7 +51,7 @@ export async function PUT(
 
     const plant = await PlantInstance.findOneAndUpdate(
       {
-        id: id,
+        _id: new Types.ObjectId(id),
         "incomeRecords.id": incomeId,
       },
       {
