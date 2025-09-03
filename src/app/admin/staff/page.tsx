@@ -869,12 +869,14 @@ export default function StaffPage() {
       {/* Review Modal */}
       {showReviewModal && selectedRequest && (
         <div className="fixed inset-0 bg-black/20 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white/95 backdrop-blur-lg rounded-2xl p-6 w-full max-w-lg mx-4 shadow-2xl border border-[#324D3E]/10">
-            <h2 className="text-xl font-bold mb-4 text-[#324D3E] font-[family-name:var(--font-poppins)]">
-              Review Permintaan
-            </h2>
+          <div className="bg-white/95 backdrop-blur-lg rounded-2xl shadow-2xl border border-[#324D3E]/10 w-[600px] max-w-[90vw] h-[80vh] max-h-[600px] flex flex-col">
+            <div className="p-6 border-b border-[#324D3E]/10 flex-shrink-0">
+              <h2 className="text-xl font-bold text-[#324D3E] font-[family-name:var(--font-poppins)]">
+                Review Permintaan
+              </h2>
+            </div>
 
-            <div className="space-y-4 mb-6">
+            <div className="flex-1 overflow-y-auto p-6 space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-[#324D3E] mb-1">Staff</label>
@@ -939,29 +941,31 @@ export default function StaffPage() {
               </div>
             </div>
 
-            <div className="flex flex-col sm:flex-row gap-3">
-              <Button
-                variant="outline"
-                onClick={() => setShowReviewModal(false)}
-                className="flex-1 border-[#324D3E]/20 text-[#324D3E] hover:bg-[#324D3E]/10 hover:border-[#324D3E] rounded-xl"
-                disabled={reviewingRequest}
-              >
-                Batal
-              </Button>
-              <Button
-                onClick={() => handleSubmitReview('rejected')}
-                disabled={reviewingRequest}
-                className="flex-1 bg-gradient-to-r from-red-500 to-red-600 hover:shadow-lg text-white font-semibold rounded-xl transition-all duration-300"
-              >
-                {reviewingRequest ? 'Processing...' : 'Tolak'}
-              </Button>
-              <Button
-                onClick={() => handleSubmitReview('approved')}
-                disabled={reviewingRequest}
-                className="flex-1 bg-gradient-to-r from-green-500 to-green-600 hover:shadow-lg text-white font-semibold rounded-xl transition-all duration-300"
-              >
-                {reviewingRequest ? 'Processing...' : 'Setujui'}
-              </Button>
+            <div className="p-6 border-t border-[#324D3E]/10 flex-shrink-0">
+              <div className="flex flex-col sm:flex-row gap-3">
+                <Button
+                  variant="outline"
+                  onClick={() => setShowReviewModal(false)}
+                  className="flex-1 border-[#324D3E]/20 text-[#324D3E] hover:bg-[#324D3E]/10 hover:border-[#324D3E] rounded-xl"
+                  disabled={reviewingRequest}
+                >
+                  Batal
+                </Button>
+                <Button
+                  onClick={() => handleSubmitReview('rejected')}
+                  disabled={reviewingRequest}
+                  className="flex-1 bg-gradient-to-r from-red-500 to-red-600 hover:shadow-lg text-white font-semibold rounded-xl transition-all duration-300"
+                >
+                  {reviewingRequest ? 'Processing...' : 'Tolak'}
+                </Button>
+                <Button
+                  onClick={() => handleSubmitReview('approved')}
+                  disabled={reviewingRequest}
+                  className="flex-1 bg-gradient-to-r from-green-500 to-green-600 hover:shadow-lg text-white font-semibold rounded-xl transition-all duration-300"
+                >
+                  {reviewingRequest ? 'Processing...' : 'Setujui'}
+                </Button>
+              </div>
             </div>
           </div>
         </div>

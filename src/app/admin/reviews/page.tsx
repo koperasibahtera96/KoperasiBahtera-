@@ -511,19 +511,19 @@ export default function ReviewManagementPage() {
               {/* Add New Word */}
               <div className="bg-gray-50 rounded-xl p-4">
                 <h3 className="font-semibold text-[#324D3E] mb-3">Tambah Kata Terfilter</h3>
-                <div className="flex gap-2">
+                <div className="flex flex-col sm:flex-row gap-2">
                   <input
                     type="text"
                     value={newWord}
                     onChange={(e) => setNewWord(e.target.value)}
                     placeholder="Masukkan kata yang ingin difilter..."
-                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#324D3E] focus:border-transparent"
+                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#324D3E] focus:border-transparent text-sm sm:text-base"
                     onKeyPress={(e) => e.key === 'Enter' && handleAddFilteredWord()}
                   />
                   <button
                     onClick={handleAddFilteredWord}
                     disabled={addingWord || !newWord.trim()}
-                    className="px-4 py-2 bg-[#324D3E] text-white rounded-lg hover:bg-[#4C3D19] disabled:opacity-50"
+                    className="px-4 py-2 bg-[#324D3E] text-white rounded-lg hover:bg-[#4A6741] active:bg-[#2C3E2B] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 font-medium focus:ring-2 focus:ring-[#324D3E] focus:ring-offset-2 whitespace-nowrap min-w-[100px] text-sm sm:text-base"
                   >
                     {addingWord ? 'Menambah...' : 'Tambah'}
                   </button>
