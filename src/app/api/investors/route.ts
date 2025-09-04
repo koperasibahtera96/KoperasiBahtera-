@@ -1,112 +1,62 @@
-import { ensureConnection } from "@/lib/utils/utils/database";
-import { Investor, PlantInstance, Transaction } from "@/models";
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server"
+import { ensureConnection } from "@/lib/utils/utils/database"
+import { Investor } from "@/models"
 
-export async function GET(req: Request) {
+// ambil nominal investasi dari berbagai kemungkinan field
+const amt = (iv: any) =>
+  Number(iv?.totalAmount ?? iv?.amountPaid ?? iv?.amount ?? 0)
+
+export async function GET(req: NextRequest) {
   try {
-    await ensureConnection();
-    const { searchParams } = new URL(req.url);
-    const format = searchParams.get("format");
+    await ensureConnection()
 
-    const investors = await Investor.find({}).lean();
-    if (format !== "membersLike") {
-      return NextResponse.json(investors);
-      // raw investors
-    }
+    const { searchParams } = new URL(req.url)
+    const format = searchParams.get("format")
 
-    // Siapkan mapping untuk plantName + profit per instance
-    const allProducts = new Set<string>();
-    investors.forEach((inv) =>
-      (inv.investments ?? []).forEach(
-        (r: any) => r?.productName && allProducts.add(r.productName)
-      )
-    );
-    const productArr = Array.from(allProducts);
+    const investors = await Investor.find({}).lean()
 
-    const [instances, txs] = await Promise.all([
-      PlantInstance.find({ id: { $in: productArr } }).lean(),
-      Transaction.find({ plantInstanceId: { $in: productArr } }).lean(),
-    ]);
+    if (format === "membersLike") {
+      // Bentuk yang dipakai UI manajemen-anggota
+      const mapped = investors.map((m: any) => {
+        const invs = Array.isArray(m?.investments) ? m.investments : []
+        const investments = invs.map((iv: any) => ({
+          plantId: String(iv?.plantInstanceId ?? iv?.instanceId ?? ""),
+          plantName: String(
+            iv?.productName ?? iv?.plantName ?? iv?.name ?? "—"
+          ),
+          amount: amt(iv),
+          profit: 0,
+          roi: 0,
+          investDate: String(
+            iv?.investmentDate ?? iv?.createdAt ?? m?.createdAt ?? new Date()
+          ),
+        }))
 
-    const idToInstanceName: Record<string, string> = {};
-    instances.forEach(
-      (inst) => (idToInstanceName[inst.id] = inst.instanceName)
-    );
-
-    const profitByInstance: Record<string, number> = {};
-    txs.forEach((t) => {
-      const k = t.plantInstanceId;
-      const amt = Number(t.amount) || 0;
-      profitByInstance[k] =
-        (profitByInstance[k] || 0) + (t.type === "income" ? amt : -amt);
-    });
-
-    // Bentuk seperti type Member (lama) untuk kompatibilitas Excel
-    const membersLike = investors.map((inv) => {
-      const joinDate = inv.investments?.length
-        ? new Date(
-            Math.min(
-              ...inv.investments.map((r: any) =>
-                new Date(r.investmentDate || Date.now()).getTime()
-              )
-            )
-          )
-            .toISOString()
-            .split("T")[0]
-        : "";
-
-      const investments = (inv.investments ?? []).map((r: any) => {
-        const plantId = r.productName;
-        const plantName = idToInstanceName[plantId] || plantId;
-        const amount = Number(r.totalAmount) || 0;
-        const profit = profitByInstance[plantId] || 0;
-        const roi = amount > 0 ? (profit / amount) * 100 : 0;
-        const investDate = r.investmentDate
-          ? new Date(r.investmentDate).toISOString().split("T")[0]
-          : "";
+        const totalInvestment =
+          Number(m?.totalInvestasi ?? 0) ||
+          investments.reduce((s: number, x: any) => s + (x.amount || 0), 0)
 
         return {
-          plantId,
-          plantName,
-          amount,
-          profit,
-          roi,
-          investDate,
-          totalUang: amount, // menjaga kompatibilitas lama
-        };
-      });
+          id: String(m?._id ?? m?.id),
+          name: m?.name ?? m?.fullName ?? "Tanpa Nama",
+          email: m?.email ?? "",
+          phone: m?.phoneNumber ?? m?.phone ?? "",
+          location: m?.location ?? "",
+          joinDate: String(m?.createdAt ?? new Date()),
+          investments,
+          totalInvestment,
+          totalProfit: 0,
+          overallROI: 0,
+        }
+      })
 
-      const totalInvestment = investments.reduce(
-        (x: any, it: any) => x + it.amount,
-        0
-      );
-      const totalProfit = investments.reduce(
-        (x: any, it: any) => x + it.profit,
-        0
-      );
-      const overallROI =
-        totalInvestment > 0 ? (totalProfit / totalInvestment) * 100 : 0;
+      return NextResponse.json(mapped)
+    }
 
-      return {
-        id: String(inv.userId || inv._id),
-        name: inv.name,
-        email: inv.email,
-        phone: inv.phoneNumber || "",
-        location: "", // tidak ada di schema investor → kosongkan
-        joinDate,
-        investments,
-        totalInvestment,
-        totalProfit,
-        overallROI,
-      };
-    });
-
-    return NextResponse.json(membersLike);
-  } catch (err) {
-    console.error("Investors API error:", err);
-    return NextResponse.json(
-      { error: "Failed to fetch investors" },
-      { status: 500 }
-    );
+    // default: raw investors
+    return NextResponse.json(investors)
+  } catch (e) {
+    console.error(e)
+    return NextResponse.json({ error: "Failed to fetch investors" }, { status: 500 })
   }
 }

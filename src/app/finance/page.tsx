@@ -21,21 +21,45 @@ async function getXLSX() {
 const BRUTALIST_COLORS = ["#FF6B35", "#F7931E", "#FFD23F", "#06FFA5", "#118AB2", "#073B4C"]
 
 // ==== Response type dari /api/finance/summary ====
+// (longgar + alias supaya cocok dengan API baru)
 type Summary = {
-  totalInvestment: number
-  totalProfit: number
-  roi: number
-  investorsCount: number
-  distribution: { name: string; value: number }[]
-  topPlantTypes: {
-    plantTypeId: string
-    plantTypeName: string
-    totalInvestment: number
-    paidProfit: number
-    roi: number
-    treeCount: number
-    activeInvestors: number
+  totals?: {
+    investment?: number | string
+    totalInvestment?: number | string
+    profit?: number | string
+    totalProfit?: number | string
+    roi?: number | string
+    roiPercent?: number | string
+    members?: number | string
+    totalMembers?: number | string
+    membersCount?: number | string
+  }
+  totalInvestment?: number | string
+  totalProfit?: number | string
+  roi?: number | string
+  members?: number | string
+  investorsCount?: number | string
+  distribution?: { name: string; value: number | string }[]
+  topPlantTypes?: {
+    // API baru
+    type?: string
+    totalInvestment?: number | string
+    paidProfit?: number | string
+    roi?: number | string
+    treeCount?: number | string
+    activeInvestors?: number | string
+    // kemungkinan lama
+    plantTypeId?: string
+    plantTypeName?: string
   }[]
+}
+
+// helper angka aman
+const toNum = (v: any): number => {
+  if (v === null || v === undefined) return 0
+  if (typeof v === "number" && isFinite(v)) return v
+  const n = Number(String(v).replace(/[^0-9.-]/g, ""))
+  return isFinite(n) ? n : 0
 }
 
 export default function FinancePage() {
@@ -60,33 +84,51 @@ export default function FinancePage() {
         if (!res.ok) throw new Error("Failed to fetch summary")
         const data: Summary = await res.json()
 
-        // set ringkasan
-        setTotals({
-          invest: data.totalInvestment || 0,
-          profit: data.totalProfit || 0,
-          roi: data.roi || 0,
-          investors: data.investorsCount || 0,
-        })
+        // ===== normalisasi nilai dari totals (dengan berbagai alias) =====
+        const t = data?.totals ?? {}
+        const invest =
+          toNum(t.investment) ||
+          toNum(t.totalInvestment) ||
+          toNum((data as any).totalInvestment)
 
-        // set distribusi (pie)
-        const dist = (data.distribution || []).map((d, i) => ({
-          name: d.name,
-          value: d.value,
+        const profit =
+          toNum(t.profit) ||
+          toNum(t.totalProfit) ||
+          toNum((data as any).totalProfit)
+
+        const roiVal =
+          toNum(t.roi) ||
+          toNum(t.roiPercent) ||
+          toNum((data as any).roi)
+
+        const investors =
+          toNum(t.members) ||
+          toNum(t.totalMembers) ||
+          toNum(t.membersCount) ||
+          toNum((data as any).members) ||
+          toNum(data.investorsCount)
+
+        setTotals({ invest, profit, roi: roiVal, investors })
+
+        // ===== distribusi pie =====
+        const distSrc = Array.isArray(data.distribution) ? data.distribution : []
+        const dist = distSrc.map((d, i) => ({
+          name: String(d.name),
+          value: toNum(d.value),
           color: BRUTALIST_COLORS[i % BRUTALIST_COLORS.length],
         }))
         setDistribution(dist)
 
-        // set top tanaman (mapping ke bentuk lama kartu) -> TAMPILKAN 1 TANAMAN DENGAN INVESTOR TERBANYAK
+        // ===== top tanaman (map dari struktur API baru ke bentuk kartu lama) =====
         const mapped = (data.topPlantTypes || []).map((t) => ({
-          id: t.plantTypeId,
-          name: t.plantTypeName,
-          totalInvestment: t.totalInvestment || 0,
-          totalProfit: t.paidProfit || 0,
-          roi: t.roi || 0,
-          instanceCount: t.treeCount || 0, // jumlah pohon
-          investorCount: t.activeInvestors || 0,
+          id: String(t.plantTypeId ?? t.type ?? ""),
+          name: String(t.plantTypeName ?? t.type ?? "—"),
+          totalInvestment: toNum(t.totalInvestment),
+          totalProfit: toNum(t.paidProfit),
+          roi: toNum(t.roi),
+          instanceCount: toNum(t.treeCount),      // jumlah pohon (tetap ditaruh di instanceCount)
+          investorCount: toNum(t.activeInvestors),
         }))
-        // pilih satu dengan investorCount terbanyak (kalau seri, ambil yang pertama)
         const picked = mapped.sort((a, b) => b.investorCount - a.investorCount)[0]
         setTopPlants(picked ? [picked] : [])
 
@@ -165,7 +207,6 @@ export default function FinancePage() {
   function PieTooltip({ active, payload }: any) {
     if (!active || !payload || !payload.length) return null
     const p = payload[0]
-    // name ada di payload.name, value ada di payload.value
     return (
       <div style={{ background: "#fff", border: "1px solid #000", padding: "8px 10px", borderRadius: 6, fontWeight: 600 }}>
         <div style={{ marginBottom: 4 }}>{p?.name}</div>

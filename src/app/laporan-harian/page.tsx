@@ -1,6 +1,5 @@
 "use client"
 
-
 import { FinanceSidebar } from "@/components/finance/FinanceSidebar"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui-finance/card"
 import type { PlantInstance } from "@/lib/api"
@@ -36,9 +35,21 @@ const fmtIDR = (n: number) =>
     .format(Math.round(n))
     .replace("IDR", "Rp")
 
+// 🔧 Perbaikan: helper tanggal yang robust untuk string "YYYY-MM-DD" maupun Date
 const ymd = (d: Date | string) => {
-  const dd = typeof d === "string" ? new Date(d) : d
-  return dd.toISOString().slice(0, 10)
+  if (typeof d === "string") {
+    if (/^\d{4}-\d{2}-\d{2}$/.test(d)) return d // sudah format Y-M-D
+    const dt = new Date(d)
+    if (!isNaN(dt.getTime())) {
+      const offset = dt.getTimezoneOffset() * 60000
+      return new Date(dt.getTime() - offset).toISOString().slice(0, 10)
+    }
+    return ""
+  }
+  const dt = d as Date
+  if (isNaN(dt.getTime())) return ""
+  const offset = dt.getTimezoneOffset() * 60000
+  return new Date(dt.getTime() - offset).toISOString().slice(0, 10)
 }
 
 export default function LaporanHarianPage() {
@@ -76,7 +87,7 @@ export default function LaporanHarianPage() {
           tx.push({
             type: "income",
             description: r.description,
-            plantName: p.instanceName || p.name || p.id,
+            plantName: (p as any).instanceName || (p as any).name || (p as any).id,
             amount: r.amount,
             date: r.date,
             addedBy: r.addedBy,
@@ -89,7 +100,7 @@ export default function LaporanHarianPage() {
           tx.push({
             type: "expense",
             description: c.description,
-            plantName: p.instanceName || p.name || p.id,
+            plantName: (p as any).instanceName || (p as any).name || (p as any).id,
             amount: c.amount,
             date: c.date,
             addedBy: c.addedBy,
@@ -181,13 +192,15 @@ ${daily.transactions
             <div className="flex flex-col sm:flex-row sm:items-center gap-4">
               <div>
                 <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-[#324D3E] mb-1 sm:mb-2">Laporan Harian</h1>
-                <p className="text-[#889063] text-sm sm:text-base lg:text-lg">Ringkasan aktivitas keuangan harian (langsung dari database)</p>
+                <p className="text-[#889063] text-sm sm:text-base lg:text-lg">
+                  Ringkasan aktivitas keuangan harian (langsung dari database)
+                </p>
               </div>
             </div>
           </div>
         </motion.header>
 
-                                {/* date picker with download button */}
+        {/* date picker with download button */}
         <motion.div
           className="mb-8"
           initial={{ opacity: 0, y: 20 }}
@@ -216,14 +229,19 @@ ${daily.transactions
               <input
                 type="date"
                 value={ymd(selectedDate)}
-                onChange={(e) => setSelectedDate(new Date(e.target.value))}
+                onChange={(e) => {
+                  const v = e.target.value
+                  if (!v) return
+                  // 🔧 Perbaikan: tambahkan waktu agar tidak "Invalid Date"
+                  setSelectedDate(new Date(`${v}T00:00:00`))
+                }}
                 className="w-full sm:w-auto min-w-[200px] bg-white/80 backdrop-blur-xl border border-[#324D3E]/20 text-[#324D3E] px-3 sm:px-4 py-2 sm:py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#324D3E]/20 focus:border-[#324D3E]/40 font-medium text-sm sm:text-base"
               />
             </CardContent>
           </Card>
         </motion.div>
 
-                {/* summary cards */}
+        {/* summary cards */}
         <motion.div
           className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-8"
           initial={{ opacity: 0, y: 20 }}
@@ -235,7 +253,9 @@ ${daily.transactions
               <div className="flex flex-col h-full justify-between">
                 <div className="flex-1 min-h-0">
                   <p className="text-[#889063] text-xs sm:text-sm font-medium mb-2">Total Pemasukan</p>
-                  <p className="text-base sm:text-lg lg:text-xl xl:text-2xl font-bold text-green-600 break-all leading-tight">{fmtIDR(daily.income)}</p>
+                  <p className="text-base sm:text-lg lg:text-xl xl:text-2xl font-bold text-green-600 break-all leading-tight">
+                    {fmtIDR(daily.income)}
+                  </p>
                 </div>
                 <div className="flex justify-end mt-3 sm:mt-4">
                   <div className="bg-green-500/10 p-2 sm:p-3 rounded-xl sm:rounded-2xl flex-shrink-0">
@@ -251,7 +271,9 @@ ${daily.transactions
               <div className="flex flex-col h-full justify-between">
                 <div className="flex-1 min-h-0">
                   <p className="text-[#889063] text-xs sm:text-sm font-medium mb-2">Total Pengeluaran</p>
-                  <p className="text-base sm:text-lg lg:text-xl xl:text-2xl font-bold text-red-600 break-all leading-tight">{fmtIDR(daily.expenses)}</p>
+                  <p className="text-base sm:text-lg lg:text-xl xl:text-2xl font-bold text-red-600 break-all leading-tight">
+                    {fmtIDR(daily.expenses)}
+                  </p>
                 </div>
                 <div className="flex justify-end mt-3 sm:mt-4">
                   <div className="bg-red-500/10 p-2 sm:p-3 rounded-xl sm:rounded-2xl flex-shrink-0">
@@ -267,13 +289,25 @@ ${daily.transactions
               <div className="flex flex-col h-full justify-between">
                 <div className="flex-1 min-h-0">
                   <p className="text-[#889063] text-xs sm:text-sm font-medium mb-2">Keuntungan Bersih</p>
-                  <p className={`text-base sm:text-lg lg:text-xl xl:text-2xl font-bold ${daily.net >= 0 ? "text-green-600" : "text-red-600"} break-all leading-tight`}>
+                  <p
+                    className={`text-base sm:text-lg lg:text-xl xl:text-2xl font-bold ${
+                      daily.net >= 0 ? "text-green-600" : "text-red-600"
+                    } break-all leading-tight`}
+                  >
                     {fmtIDR(daily.net)}
                   </p>
                 </div>
                 <div className="flex justify-end mt-3 sm:mt-4">
-                  <div className={`p-2 sm:p-3 rounded-xl sm:rounded-2xl ${daily.net >= 0 ? "bg-green-500/10" : "bg-red-500/10"} flex-shrink-0`}>
-                    <DollarSign className={`h-4 w-4 sm:h-5 sm:w-5 lg:h-6 lg:w-6 ${daily.net >= 0 ? "text-green-600" : "text-red-600"}`} />
+                  <div
+                    className={`p-2 sm:p-3 rounded-xl sm:rounded-2xl ${
+                      daily.net >= 0 ? "bg-green-500/10" : "bg-red-500/10"
+                    } flex-shrink-0`}
+                  >
+                    <DollarSign
+                      className={`h-4 w-4 sm:h-5 sm:w-5 lg:h-6 lg:w-6 ${
+                        daily.net >= 0 ? "text-green-600" : "text-red-600"
+                      }`}
+                    />
                   </div>
                 </div>
               </div>
@@ -285,7 +319,9 @@ ${daily.transactions
               <div className="flex flex-col h-full justify-between">
                 <div className="flex-1 min-h-0">
                   <p className="text-[#889063] text-xs sm:text-sm font-medium mb-2">Total Transaksi</p>
-                  <p className="text-base sm:text-lg lg:text-xl xl:text-2xl font-bold text-blue-600 break-all leading-tight">{daily.transactions.length}</p>
+                  <p className="text-base sm:text-lg lg:text-xl xl:text-2xl font-bold text-blue-600 break-all leading-tight">
+                    {daily.transactions.length}
+                  </p>
                 </div>
                 <div className="flex justify-end mt-3 sm:mt-4">
                   <div className="bg-blue-500/10 p-2 sm:p-3 rounded-xl sm:rounded-2xl flex-shrink-0">
@@ -298,14 +334,12 @@ ${daily.transactions
         </motion.div>
 
         {/* table */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.6 }}
-        >
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.6 }}>
           <Card className="bg-white/90 backdrop-blur-xl border-[#324D3E]/10 shadow-xl">
             <CardHeader>
-              <CardTitle className="text-[#324D3E]">Detail Transaksi - {new Date(daily.date).toLocaleDateString("id-ID")}</CardTitle>
+              <CardTitle className="text-[#324D3E]">
+                Detail Transaksi - {new Date(daily.date).toLocaleDateString("id-ID")}
+              </CardTitle>
             </CardHeader>
             <CardContent>
               {daily.transactions.length ? (
@@ -331,9 +365,15 @@ ${daily.transactions
                               {t.type === "income" ? "Pemasukan" : "Pengeluaran"}
                             </span>
                           </td>
-                          <td className="py-2 sm:py-3 px-2 sm:px-4 text-[#324D3E] font-medium text-xs sm:text-sm break-words">{t.description}</td>
+                          <td className="py-2 sm:py-3 px-2 sm:px-4 text-[#324D3E] font-medium text-xs sm:text-sm break-words">
+                            {t.description}
+                          </td>
                           <td className="py-2 sm:py-3 px-2 sm:px-4 text-[#889063] text-xs sm:text-sm break-words">{t.plantName}</td>
-                          <td className={`py-2 sm:py-3 px-2 sm:px-4 text-right font-semibold text-xs sm:text-sm ${t.type === "income" ? "text-green-600" : "text-red-600"}`}>
+                          <td
+                            className={`py-2 sm:py-3 px-2 sm:px-4 text-right font-semibold text-xs sm:text-sm ${
+                              t.type === "income" ? "text-green-600" : "text-red-600"
+                            }`}
+                          >
                             {fmtIDR(t.amount)}
                           </td>
                         </tr>

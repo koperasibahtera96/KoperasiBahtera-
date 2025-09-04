@@ -31,17 +31,8 @@ import {
   YAxis,
 } from "recharts"
 
-// util lama (dipakai untuk INVESTASI per investor)
-import { PLANT_TYPES, generateEnhancedMemberData } from "@/lib/finance"
-
-// ================== types ==================
-interface PlantInstance {
-  plantType: string
-  instanceName: string
-  incomeRecords?: Array<{ amount: number; date: string }>
-  operationalCosts?: Array<{ amount: number; date: string }>
-}
-
+// util lama (tetap dipakai untuk metadata tanaman)
+import { PLANT_TYPES } from "@/lib/finance"
 
 // ================== helpers ==================
 const fmtIDR = (n: number) =>
@@ -50,7 +41,6 @@ const fmtIDR = (n: number) =>
   )
 
 const BRUTALIST_COLORS = ["#FF6B35", "#F7931E", "#FFD23F", "#06FFA5", "#118AB2", "#073B4C"]
-
 
 /* ======== SATU TOMBOL EXPORT: gabung semua section jadi satu .xls ======== */
 function exportAllAsXls(args: {
@@ -162,7 +152,7 @@ function exportAllAsXls(args: {
 }
 
 // ================== page ==================
-export default function Page({ params }: {params: Promise<{ id: string }> }) {
+export default function Page({ params }: { params: Promise<{ id: string }> }) {
   const { id: plantTypeId } = use(params) // "gaharu", "jengkol", dll
   const plantTypeMeta = PLANT_TYPES.find((p) => p.id === plantTypeId) ?? {
     id: plantTypeId,
@@ -171,25 +161,80 @@ export default function Page({ params }: {params: Promise<{ id: string }> }) {
     baseAnnualROI: 0,
   }
 
-  // ---------- PREFETCH CACHE untuk members (penting agar generateEnhancedMemberData tidak error) ----------
+  // ---------- PREFETCH CACHE (dibiarkan agar kompatibel, meskipun data investor sudah dari API) ----------
   const [ready, setReady] = useState(false)
   useEffect(() => {
     prefetchFinanceCaches().finally(() => setReady(true))
   }, [])
 
-  // ---------- fetch DB: semua plant instances ----------
-  const [instances, setInstances] = useState<PlantInstance[]>([])
+  // ========= STATE DATA DARI API BARU =========
+  const currentYear = new Date().getFullYear()
+  const [selectedYear, setSelectedYear] = useState(currentYear)
+  const [availableYears, setAvailableYears] = useState<number[]>([])
+
   const [loading, setLoading] = useState(true)
+  const [totalNet, setTotalNet] = useState(0)
+
+  // series bulanan untuk tahun yang dipilih
+  const [monthlySeries, setMonthlySeries] = useState<Array<{ month: string; net: number }>>([])
+  // ringkasan tahunan
+  const [yearlyRows, setYearlyRows] = useState<Array<{ year: number; totalProfit: number }>>([])
+  // per investor
+  const [perInvestor, setPerInvestor] = useState<{ rows: Array<{ name: string; invest: number; profit: number }>; totalInvestAll: number }>({
+    rows: [],
+    totalInvestAll: 0,
+  })
+
+  // ---------- FETCH DARI /api/plants?type=...&year=... ----------
   useEffect(() => {
     let mounted = true
     ;(async () => {
       try {
         setLoading(true)
-        const res = await fetch("/api/plants")
-        const data = res.ok ? await res.json() : []
-        if (mounted) setInstances(data || [])
-      } catch {
-        if (mounted) setInstances([])
+        const url = `/api/plants/summary?type=${encodeURIComponent(plantTypeId)}&year=${selectedYear}`
+        const res = await fetch(url, { cache: "no-store" })
+        if (!res.ok) throw new Error(`Failed to fetch plants: ${res.status}`)
+        const data = await res.json()
+
+        // total net profit
+        const net = Number(data?.totals?.netProfit ?? 0)
+
+        // monthly series (sudah untuk tahun yang diminta)
+        const monthly = (data?.charts?.monthlyNetProfit ?? []).map((d: any) => ({
+          month: String(d.monthLabel ?? d.month ?? d.ym ?? ""),
+          net: Number(d.netProfit ?? d.value ?? d.net ?? 0),
+        }))
+
+        // yearly rows
+        const yearly = (data?.tables?.yearly ?? []).map((y: any) => ({
+          year: Number(y.year),
+          totalProfit: Number(y.netProfit ?? y.totalProfit ?? 0),
+        }))
+
+        // per investor
+        const rows = (data?.tables?.investors ?? []).map((r: any) => ({
+          name: String(r.name ?? r.investorName ?? r.email ?? r.investorId ?? "-"),
+          invest: Number(r.totalInvestment ?? r.invest ?? 0),
+          profit: Number(r.totalProfit ?? r.profit ?? 0),
+        }))
+        const totalInvestAll = rows.reduce((s: number, r) => s + (r.invest || 0), 0)
+
+        if (!mounted) return
+        setTotalNet(net)
+        setMonthlySeries(monthly)
+        setYearlyRows(yearly)
+        setPerInvestor({ rows, totalInvestAll })
+
+        const years = yearly.map((y) => y.year)
+        setAvailableYears(years.length ? [...new Set(years)].sort((a, b) => b - a) : [selectedYear])
+      } catch (e) {
+        console.error("[tanaman] fetch error:", e)
+        if (!mounted) return
+        setTotalNet(0)
+        setMonthlySeries([])
+        setYearlyRows([])
+        setPerInvestor({ rows: [], totalInvestAll: 0 })
+        setAvailableYears([selectedYear])
       } finally {
         if (mounted) setLoading(false)
       }
@@ -197,137 +242,7 @@ export default function Page({ params }: {params: Promise<{ id: string }> }) {
     return () => {
       mounted = false
     }
-  }, [])
-
-  // ---------- AGREGASI dari DB untuk plantType yang dipilih ----------
-  const dbAgg = useMemo(() => {
-    // filter hanya instance dengan plantType == halaman ini
-    const list = instances.filter((x) => x.plantType === plantTypeId)
-
-    // map nama instance => net profit (income - cost)
-    const netPerInstance = new Map<string, number>()
-    // monthly net "YYYY-MM" => number
-    const monthly = new Map<string, number>()
-    // yearly net  YYYY => number
-    const yearly = new Map<string, number>()
-
-    let totalNet = 0
-
-    list.forEach((inst: PlantInstance) => {
-      const incomes = inst?.incomeRecords || []
-      const costs = inst?.operationalCosts || []
-
-      const sumIncome = incomes.reduce((s: number, r: any) => s + (r.amount || 0), 0)
-      const sumCost = costs.reduce((s: number, r: any) => s + (r.amount || 0), 0)
-      const net = sumIncome - sumCost
-      netPerInstance.set(inst.instanceName, net)
-      totalNet += net
-
-      // monthly
-      incomes.forEach((r) => {
-        const d = new Date(r.date)
-        const ym = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`
-        monthly.set(ym, (monthly.get(ym) || 0) + (r.amount || 0))
-      })
-      costs.forEach((r) => {
-        const d = new Date(r.date)
-        const ym = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`
-        monthly.set(ym, (monthly.get(ym) || 0) - (r.amount || 0)) // kurangi biaya
-      })
-
-      // yearly
-      incomes.forEach((r) => {
-        const y = new Date(r.date).getFullYear()
-        yearly.set(y.toString(), (yearly.get(y.toString()) || 0) + (r.amount || 0))
-      })
-      costs.forEach((r) => {
-        const y = new Date(r.date).getFullYear()
-        yearly.set(y.toString(), (yearly.get(y.toString()) || 0) - (r.amount || 0))
-      })
-    })
-
-    // sort monthly asc
-    const monthlyArr = Array.from(monthly.entries())
-      .sort((a, b) => (a[0] < b[0] ? -1 : 1))
-      .map(([ym, value]) => ({ ym, value }))
-    const yearlyArr = Array.from(yearly.entries())
-      .sort((a, b) => Number(a[0]) - Number(b[0]))
-      .map(([year, value]) => ({ year: Number(year), value }))
-
-    return {
-      instancesOfType: list,
-      netPerInstance,
-      monthly: monthlyArr,
-      yearly: yearlyArr,
-      totalNet,
-    }
-  }, [instances, plantTypeId])
-
-  // ---------- PER INVESTOR ----------
-  // Ambil data members SETELAH prefetch selesai
-  const members = useMemo(() => (ready ? generateEnhancedMemberData() : []), [ready])
-
-  const perInvestor = useMemo(() => {
-    const nameSet = new Set(dbAgg.instancesOfType.map((x) => x.instanceName))
-
-    const investPerInstance = new Map<string, number>()
-    members.forEach((m) => {
-      m.investments.forEach((inv: any) => {
-        if (nameSet.has(inv.plantName)) {
-          investPerInstance.set(inv.plantName, (investPerInstance.get(inv.plantName) || 0) + inv.amount)
-        }
-      })
-    })
-
-    const map = new Map<
-      string,
-      { name: string; invest: number; profit: number }
-    >()
-
-    members.forEach((m) => {
-      m.investments.forEach((inv: any) => {
-        if (!nameSet.has(inv.plantName)) return
-        const totalInst = investPerInstance.get(inv.plantName) || 0
-        const netInst = dbAgg.netPerInstance.get(inv.plantName) || 0
-        const share = totalInst > 0 ? (inv.amount || 0) / totalInst : 0
-        const profitShare = netInst * share
-
-        const prev = map.get(m.name) || { name: m.name, invest: 0, profit: 0 }
-        map.set(m.name, {
-          name: m.name,
-          invest: prev.invest + (inv.amount || 0),
-          profit: prev.profit + profitShare,
-        })
-      })
-    })
-
-    const rows = Array.from(map.values()).sort((a, b) => b.invest - a.invest)
-    const totalInvestAll = rows.reduce((s, r) => s + r.invest, 0)
-    return { rows, totalInvestAll }
-  }, [members, dbAgg.instancesOfType, dbAgg.netPerInstance])
-
-  // ========= UI data =========
-  const currentYear = new Date().getFullYear()
-  const [selectedYear, setSelectedYear] = useState(currentYear)
-
-  const availableYears = useMemo(
-    () =>
-      [...new Set(dbAgg.monthly.map((m) => Number(m.ym.split("-")[0])))].sort((a, b) => b - a),
-    [dbAgg.monthly],
-  )
-
-  const monthlySeries = useMemo(
-    () =>
-      dbAgg.monthly
-        .filter((m) => Number(m.ym.split("-")[0]) === selectedYear)
-        .map((m) => ({ month: m.ym, net: m.value })),
-    [dbAgg.monthly, selectedYear],
-  )
-
-  const yearlyRows = useMemo(
-    () => dbAgg.yearly.map((y) => ({ year: y.year, totalProfit: y.value })),
-    [dbAgg.yearly],
-  )
+  }, [plantTypeId, selectedYear])
 
   if (loading || !ready) {
     return (
@@ -383,7 +298,7 @@ export default function Page({ params }: {params: Promise<{ id: string }> }) {
                     plantTypeName: plantTypeMeta.name,
                     selectedYear,
                     totalInvestAll: perInvestor.totalInvestAll,
-                    totalNet: dbAgg.totalNet,
+                    totalNet: totalNet,
                     investorCount: perInvestor.rows.length,
                     monthlySelectedYear: monthlySeries,
                     yearlyRows,
@@ -426,7 +341,7 @@ export default function Page({ params }: {params: Promise<{ id: string }> }) {
             />
             <SummaryCard
               title="Total Profit (Net)"
-              value={fmtIDR(dbAgg.totalNet)}
+              value={fmtIDR(totalNet)}
               icon={<TrendingUp className="h-5 w-5" />}
               colorClass="text-chart-2"
               highlight
@@ -435,7 +350,7 @@ export default function Page({ params }: {params: Promise<{ id: string }> }) {
               title="ROI (Profit/Invest)"
               value={
                 perInvestor.totalInvestAll > 0
-                  ? `${((dbAgg.totalNet / perInvestor.totalInvestAll) * 100).toFixed(2)}%`
+                  ? `${((totalNet / perInvestor.totalInvestAll) * 100).toFixed(2)}%`
                   : "0%"
               }
               icon={<BarChart3 className="h-5 w-5" />}
@@ -508,7 +423,7 @@ export default function Page({ params }: {params: Promise<{ id: string }> }) {
                       cy="50%"
                       labelLine={false}
                       label={({ name }) => name}
-                      outerRadius={window.innerWidth < 640 ? 80 : 100}
+                      outerRadius={typeof window !== "undefined" && window.innerWidth < 640 ? 80 : 100}
                       dataKey="value"
                       stroke="#324D3E"
                       strokeWidth={2}
@@ -536,136 +451,136 @@ export default function Page({ params }: {params: Promise<{ id: string }> }) {
           </motion.div>
         </motion.header>
 
-          {/* Laporan Bulanan (table) + pilih tahun */}
-          <motion.section
-            className="mb-8 bg-white/90 backdrop-blur-xl rounded-3xl border border-[#324D3E]/10 p-6 sm:p-8 shadow-xl"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.6 }}
-          >
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center gap-4">
-                <h2 className="text-xl font-bold text-[#324D3E] flex items-center gap-3">
-                  <Calendar className="h-5 w-5 text-emerald-600" />
-                  Laporan Bulanan {plantTypeMeta.name}
-                </h2>
-                <select
-                  value={selectedYear}
-                  onChange={(e) => setSelectedYear(Number(e.target.value))}
-                  className="bg-white/80 backdrop-blur-xl border border-[#324D3E]/20 rounded-xl px-3 py-2 text-[#324D3E] font-medium focus:outline-none focus:ring-2 focus:ring-[#324D3E]/20 focus:border-[#324D3E]/40"
-                >
-                  {availableYears.map((y) => (
-                    <option key={y} value={y}>
-                      {y}
-                    </option>
-                  ))}
-                </select>
-              </div>
+        {/* Laporan Bulanan (table) + pilih tahun */}
+        <motion.section
+          className="mb-8 bg-white/90 backdrop-blur-xl rounded-3xl border border-[#324D3E]/10 p-6 sm:p-8 shadow-xl"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.6 }}
+        >
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-4">
+              <h2 className="text-xl font-bold text-[#324D3E] flex items-center gap-3">
+                <Calendar className="h-5 w-5 text-emerald-600" />
+                Laporan Bulanan {plantTypeMeta.name}
+              </h2>
+              <select
+                value={selectedYear}
+                onChange={(e) => setSelectedYear(Number(e.target.value))}
+                className="bg-white/80 backdrop-blur-xl border border-[#324D3E]/20 rounded-xl px-3 py-2 text-[#324D3E] font-medium focus:outline-none focus:ring-2 focus:ring-[#324D3E]/20 focus:border-[#324D3E]/40"
+              >
+                {availableYears.map((y) => (
+                  <option key={y} value={y}>
+                    {y}
+                  </option>
+                ))}
+              </select>
             </div>
+          </div>
 
-            <div className="overflow-x-auto">
-              <table className="min-w-full text-sm">
-                <thead>
-                  <tr className="border-b-2 border-[#324D3E]/10">
-                    <th className="py-3 pr-4 text-left font-semibold text-[#324D3E]">Bulan</th>
-                    <th className="py-3 pr-4 text-right font-semibold text-[#324D3E]">Net Profit</th>
+          <div className="overflow-x-auto">
+            <table className="min-w-full text-sm">
+              <thead>
+                <tr className="border-b-2 border-[#324D3E]/10">
+                  <th className="py-3 pr-4 text-left font-semibold text-[#324D3E]">Bulan</th>
+                  <th className="py-3 pr-4 text-right font-semibold text-[#324D3E]">Net Profit</th>
+                </tr>
+              </thead>
+              <tbody>
+                {monthlySeries.map((m, idx) => (
+                  <tr
+                    key={m.month}
+                    className={`border-b border-[#324D3E]/5 ${idx % 2 === 0 ? "bg-white/40" : "bg-[#324D3E]/5"}`}
+                  >
+                    <td className="py-3 pr-4 font-medium text-[#324D3E]">{m.month}</td>
+                    <td className="py-3 pr-4 text-right text-[#889063] font-semibold">{fmtIDR(m.net)}</td>
                   </tr>
-                </thead>
-                <tbody>
-                  {monthlySeries.map((m, idx) => (
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </motion.section>
+
+        {/* Ringkasan Tahunan */}
+        <motion.section
+          className="mb-8 bg-white/90 backdrop-blur-xl rounded-3xl border border-[#324D3E]/10 p-6 sm:p-8 shadow-xl"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.8 }}
+        >
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-xl font-bold text-[#324D3E]">Ringkasan Tahunan</h2>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="min-w-full text-sm">
+              <thead>
+                <tr className="border-b-2 border-[#324D3E]/10">
+                  <th className="py-3 pr-4 text-left font-semibold text-[#324D3E]">Tahun</th>
+                  <th className="py-3 pr-4 text-right font-semibold text-[#324D3E]">Total Profit</th>
+                </tr>
+              </thead>
+              <tbody>
+                {yearlyRows.map((y, idx) => (
+                  <tr
+                    key={y.year}
+                    className={`border-b border-[#324D3E]/5 ${idx % 2 === 0 ? "bg-white/40" : "bg-[#324D3E]/5"}`}
+                  >
+                    <td className="py-3 pr-4 font-medium text-[#324D3E]">{y.year}</td>
+                    <td className="py-3 pr-4 text-right text-green-600 font-semibold">{fmtIDR(y.totalProfit)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </motion.section>
+
+        {/* Per Investor */}
+        <motion.section
+          className="mb-8 bg-white/90 backdrop-blur-xl rounded-3xl border border-[#324D3E]/10 p-6 sm:p-8 shadow-xl"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 1.0 }}
+        >
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-xl font-bold text-[#324D3E]">Rincian Per Investor</h2>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="min-w-full text-sm">
+              <thead>
+                <tr className="border-b-2 border-[#324D3E]/10">
+                  <th className="py-3 pr-4 text-left font-semibold text-[#324D3E]">Nama</th>
+                  <th className="py-3 pr-4 text-right font-semibold text-[#324D3E]">Total Investasi</th>
+                  <th className="py-3 pr-4 text-right font-semibold text-[#324D3E]">Total Profit</th>
+                  <th className="py-3 pr-4 text-right font-semibold text-[#324D3E]">ROI Individu</th>
+                </tr>
+              </thead>
+              <tbody>
+                {perInvestor.rows.length === 0 ? (
+                  <tr>
+                    <td colSpan={4} className="py-6 text-center text-[#889063]">
+                      Belum ada data investasi untuk tipe ini.
+                    </td>
+                  </tr>
+                ) : (
+                  perInvestor.rows.map((r, idx) => (
                     <tr
-                      key={m.month}
+                      key={r.name}
                       className={`border-b border-[#324D3E]/5 ${idx % 2 === 0 ? "bg-white/40" : "bg-[#324D3E]/5"}`}
                     >
-                      <td className="py-3 pr-4 font-medium text-[#324D3E]">{m.month}</td>
-                      <td className="py-3 pr-4 text-right text-[#889063] font-semibold">{fmtIDR(m.net)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </motion.section>
-
-          {/* Ringkasan Tahunan */}
-          <motion.section
-            className="mb-8 bg-white/90 backdrop-blur-xl rounded-3xl border border-[#324D3E]/10 p-6 sm:p-8 shadow-xl"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.8 }}
-          >
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-bold text-[#324D3E]">Ringkasan Tahunan</h2>
-            </div>
-            <div className="overflow-x-auto">
-              <table className="min-w-full text-sm">
-                <thead>
-                  <tr className="border-b-2 border-[#324D3E]/10">
-                    <th className="py-3 pr-4 text-left font-semibold text-[#324D3E]">Tahun</th>
-                    <th className="py-3 pr-4 text-right font-semibold text-[#324D3E]">Total Profit</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {yearlyRows.map((y, idx) => (
-                    <tr
-                      key={y.year}
-                      className={`border-b border-[#324D3E]/5 ${idx % 2 === 0 ? "bg-white/40" : "bg-[#324D3E]/5"}`}
-                    >
-                      <td className="py-3 pr-4 font-medium text-[#324D3E]">{y.year}</td>
-                      <td className="py-3 pr-4 text-right text-green-600 font-semibold">{fmtIDR(y.totalProfit)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </motion.section>
-
-          {/* Per Investor */}
-          <motion.section
-            className="mb-8 bg-white/90 backdrop-blur-xl rounded-3xl border border-[#324D3E]/10 p-6 sm:p-8 shadow-xl"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 1.0 }}
-          >
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-bold text-[#324D3E]">Rincian Per Investor</h2>
-            </div>
-
-            <div className="overflow-x-auto">
-              <table className="min-w-full text-sm">
-                <thead>
-                  <tr className="border-b-2 border-[#324D3E]/10">
-                    <th className="py-3 pr-4 text-left font-semibold text-[#324D3E]">Nama</th>
-                    <th className="py-3 pr-4 text-right font-semibold text-[#324D3E]">Total Investasi</th>
-                    <th className="py-3 pr-4 text-right font-semibold text-[#324D3E]">Total Profit</th>
-                    <th className="py-3 pr-4 text-right font-semibold text-[#324D3E]">ROI Individu</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {perInvestor.rows.length === 0 ? (
-                    <tr>
-                      <td colSpan={4} className="py-6 text-center text-[#889063]">
-                        Belum ada data investasi untuk tipe ini.
+                      <td className="py-3 pr-4 font-medium text-[#324D3E]">{r.name}</td>
+                      <td className="py-3 pr-4 text-right text-[#889063] font-semibold">{fmtIDR(r.invest)}</td>
+                      <td className="py-3 pr-4 text-right text-green-600 font-semibold">{fmtIDR(r.profit)}</td>
+                      <td className="py-3 pr-4 text-right font-medium text-[#324D3E]">
+                        {r.invest > 0 ? `${((r.profit / r.invest) * 100).toFixed(2)}%` : "0%"}
                       </td>
                     </tr>
-                  ) : (
-                    perInvestor.rows.map((r, idx) => (
-                      <tr
-                        key={r.name}
-                        className={`border-b border-[#324D3E]/5 ${idx % 2 === 0 ? "bg-white/40" : "bg-[#324D3E]/5"}`}
-                      >
-                        <td className="py-3 pr-4 font-medium text-[#324D3E]">{r.name}</td>
-                        <td className="py-3 pr-4 text-right text-[#889063] font-semibold">{fmtIDR(r.invest)}</td>
-                        <td className="py-3 pr-4 text-right text-green-600 font-semibold">{fmtIDR(r.profit)}</td>
-                        <td className="py-3 pr-4 text-right font-medium text-[#324D3E]">
-                          {r.invest > 0 ? `${((r.profit / r.invest) * 100).toFixed(2)}%` : "0%"}
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </motion.section>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </motion.section>
       </div>
     </FinanceSidebar>
   )

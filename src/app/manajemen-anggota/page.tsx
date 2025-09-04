@@ -1,6 +1,6 @@
 "use client"
 import type React from "react"
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 
 import { FinanceSidebar } from "@/components/finance/FinanceSidebar"
 import { Button } from "@/components/ui-finance/button"
@@ -17,7 +17,7 @@ import {
   Mail,
   Phone,
   TrendingUp,
-  Users
+  Users,
 } from "lucide-react"
 import Link from "next/link"
 
@@ -47,7 +47,6 @@ export default function ManajemenAnggotaPage() {
   const [loading, setLoading] = useState(true)
   const [_, setError] = useState<string | null>(null)
 
-  // KPI ringkas untuk kartu di atas
   const [kpi, setKpi] = useState({
     totalInvestment: 0,
     totalProfit: 0,
@@ -58,6 +57,7 @@ export default function ManajemenAnggotaPage() {
 
   const membersPerPage = 5
 
+  // 1) Ambil daftar anggota (bentuk yang dipakai UI)
   useEffect(() => {
     ;(async () => {
       try {
@@ -77,21 +77,54 @@ export default function ManajemenAnggotaPage() {
     })()
   }, [])
 
+  // 2) KPI & metrik per-anggota dari summary
   useEffect(() => {
     let alive = true
     ;(async () => {
       try {
-        const r = await fetch("/api/finance/summary", { cache: "no-store" })
+        const r = await fetch("/api/investors/summary", { cache: "no-store" })
         if (!r.ok) throw new Error("fail summary")
         const d = await r.json()
         if (!alive) return
+
+        const totals = d?.totals ?? {}
         setKpi({
-          totalInvestment: Number(d.totalInvestment || 0),
-          totalProfit: Number(d.totalProfit || 0),
-          avgROI: Number((d.averageRoi ?? d.roi) || 0),
-          investors: Number(d.investorsCount || 0),
+          totalInvestment: Number(totals.totalInvestment || 0),
+          totalProfit: Number(totals.totalProfit || 0),
+          avgROI: Number(totals.avgROI || 0),
+          investors: Number(totals.membersCount || 0),
           loading: false,
         })
+
+        const arr: Array<{
+          id: string
+          totalInvestment: number
+          totalProfit: number
+          roi: number
+        }> = Array.isArray(d?.members)
+          ? d.members.map((m: any) => ({
+              id: String(m.id || m._id || ""),
+              totalInvestment: Number(m.totalInvestment || 0),
+              totalProfit: Number(m.totalProfit || 0),
+              roi: Number(m.roi || 0),
+            }))
+          : []
+
+        if (arr.length) {
+          const map = new Map(arr.map((x) => [x.id, x]))
+          setMembers((prev) =>
+            prev.map((m) => {
+              const met = map.get(m.id)
+              if (!met) return m
+              return {
+                ...m,
+                totalInvestment: met.totalInvestment,
+                totalProfit: met.totalProfit,
+                overallROI: met.roi,
+              }
+            })
+          )
+        }
       } catch (e) {
         console.error(e)
         if (!alive) return
@@ -103,58 +136,16 @@ export default function ManajemenAnggotaPage() {
     }
   }, [])
 
-  // === Ambil profit/ROI per investor & per investasi dari /api/investors/:id (versi robust) ===
+  // 3) Perkaya detail per-anggota dari /api/investors/:id (sekali saja -> anti spam)
+  const enrichedOnceRef = useRef(false)
   useEffect(() => {
+    if (enrichedOnceRef.current) return
     if (members.length === 0) return
-
-    const num = (v: any) => Number(v || 0)
-    const keyName = (s: any) => String(s ?? "").trim().toLowerCase()
-
-    // helper: ambil array investasi dari berbagai kemungkinan field
-    const getDetailInvestments = (det: any): any[] => {
-      return (
-        det?.investments ??
-        det?.portfolio ??
-        det?.data?.investments ??
-        det?.data?.portfolio ??
-        det?.member?.investments ??
-        det?.member?.portfolio ??
-        []
-      )
-    }
-
-    // helper: ambil nama instance dari berbagai kemungkinan field
-    const getName = (x: any) =>
-      x?.plantInstanceName ??
-      x?.productName ??
-      x?.name ??
-      x?.instanceName ??
-      x?.plantName ??
-      ""
-
-    // helper: ambil amount dari beberapa nama field
-    const getAmount = (x: any, fallback: number) =>
-      num(x?.amount ?? x?.totalAmount ?? x?.invested ?? x?.amountPaid ?? fallback)
-
-    // helper: ambil profit dari beberapa nama field / atau hitung dari income-expense
-    const getProfit = (x: any) => {
-      const fromDirect = x?.profit ?? x?.netProfit ?? x?.profitPaid
-      if (fromDirect !== undefined) return num(fromDirect)
-      const income =
-        num(x?.totalIncome ?? x?.income) + // agregat
-        (Array.isArray(x?.incomes) ? x.incomes.reduce((s: number, i: any) => s + num(i?.amount), 0) : 0)
-      const expense =
-        num(x?.totalExpense ?? x?.expense ?? x?.expenses) +
-        (Array.isArray(x?.operationalCosts)
-          ? x.operationalCosts.reduce((s: number, c: any) => s + num(c?.amount), 0)
-          : 0)
-      return income - expense
-    }
 
     ;(async () => {
       try {
         const resps = await Promise.all(
-          members.map((m) => fetch(`/api/investors/${encodeURIComponent(m.id)}`, { cache: "no-store" })),
+          members.map((m) => fetch(`/api/investors/${encodeURIComponent(m.id)}`, { cache: "no-store" }))
         )
         const details = await Promise.all(resps.map((r) => (r.ok ? r.json() : null)))
 
@@ -163,58 +154,43 @@ export default function ManajemenAnggotaPage() {
             const det = details[i]
             if (!det) return m
 
-            const detInvs = getDetailInvestments(det)
-
-            const updatedInvestments = m.investments.map((iv) => {
-              // cari match by id atau nama
-              const match =
-                detInvs.find(
-                  (di: any) =>
-                    String(di?.plantInstanceId ?? di?.instanceId ?? di?._id ?? "") === iv.plantId,
-                ) ??
-                detInvs.find(
-                  (di: any) => keyName(getName(di)) === keyName(iv.plantName),
-                ) ??
-                {}
-
-              const p = getProfit(match)
-              const amt = getAmount(match, iv.amount)
-              const roi = amt > 0 ? (p / amt) * 100 : 0
-              return { ...iv, profit: p, roi }
+            const detInvs: any[] = Array.isArray(det?.investments) ? det.investments : []
+            const updated = m.investments.map((iv) => {
+              const byId = detInvs.find((x: any) => String(x?.plantInstanceId ?? "") === iv.plantId)
+              if (!byId) return iv
+              return {
+                ...iv,
+                profit: Number(byId?.profit || 0),
+                roi: Number(byId?.roi || 0),
+              }
             })
-
-            const totalProfit = updatedInvestments.reduce((s, x) => s + num(x.profit), 0)
-            const overallROI = m.totalInvestment > 0 ? (totalProfit / m.totalInvestment) * 100 : 0
 
             return {
               ...m,
-              investments: updatedInvestments,
-              totalProfit,
-              overallROI,
+              investments: updated,
+              totalProfit: Number(det?.totalProfit || m.totalProfit),
+              overallROI: Number(det?.overallROI || m.overallROI),
             }
-          }),
+          })
         )
       } catch (e) {
-        console.warn("[manajemen-anggota] gagal mengambil detail investors:", e)
+        console.warn("[manajemen-anggota] enrich gagal:", e)
+      } finally {
+        // kunci supaya efek ini TIDAK jalan berulang-ulang
+        enrichedOnceRef.current = true
       }
     })()
-  }, [members.length, members])
+  }, [members.length])
 
   const totalPages = Math.ceil(members.length / membersPerPage)
   const startIndex = (currentPage - 1) * membersPerPage
   const currentMembers = members.slice(startIndex, startIndex + membersPerPage)
 
-
-
   return (
     <FinanceSidebar>
       <div className="p-4 sm:p-6 lg:p-8 space-y-8">
         {/* Header */}
-        <motion.header
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-        >
+        <motion.header initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
           <div className="flex items-center gap-4 mb-6">
             <Link href="/finance">
               <motion.button
@@ -233,7 +209,7 @@ export default function ManajemenAnggotaPage() {
             <p className="text-[#889063] text-sm sm:text-base lg:text-lg">Kelola data investor dan kontrak investasi</p>
           </div>
 
-          {/* Summary Stats */}
+          {/* Summary Cards */}
           {loading ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-6">
               {[...Array(4)].map((_, i) => (
@@ -246,30 +222,10 @@ export default function ManajemenAnggotaPage() {
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-6">
-              <SummaryCard
-                title="Total Anggota"
-                value={members.length.toString()}
-                icon={<Users className="h-5 w-5" />}
-                colorClass="text-chart-1"
-              />
-              <SummaryCard
-                title="Total Investasi"
-                value={kpi.loading ? "…" : formatCurrency(kpi.totalInvestment)}
-                icon={<DollarSign className="h-5 w-5" />}
-                colorClass="text-chart-2"
-              />
-              <SummaryCard
-                title="Total Keuntungan"
-                value={kpi.loading ? "…" : formatCurrency(kpi.totalProfit)}
-                icon={<TrendingUp className="h-5 w-5" />}
-                colorClass="text-chart-3"
-              />
-              <SummaryCard
-                title="Rata-rata ROI"
-                value={kpi.loading ? "…" : formatPercentage(kpi.avgROI)}
-                icon={<BarChart3 className="h-5 w-5" />}
-                colorClass="text-chart-4"
-              />
+              <SummaryCard title="Total Anggota" value={members.length.toString()} icon={<Users className="h-5 w-5" />} colorClass="text-chart-1" />
+              <SummaryCard title="Total Investasi" value={kpi.loading ? "…" : formatCurrency(kpi.totalInvestment)} icon={<DollarSign className="h-5 w-5" />} colorClass="text-chart-2" />
+              <SummaryCard title="Total Keuntungan" value={kpi.loading ? "…" : formatCurrency(kpi.totalProfit)} icon={<TrendingUp className="h-5 w-5" />} colorClass="text-chart-3" />
+              <SummaryCard title="Rata-rata ROI" value={kpi.loading ? "…" : formatPercentage(kpi.avgROI)} icon={<BarChart3 className="h-5 w-5" />} colorClass="text-chart-4" />
             </div>
           )}
         </motion.header>
@@ -279,25 +235,11 @@ export default function ManajemenAnggotaPage() {
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-xl font-bold text-[#324D3E]">Daftar Anggota ({members.length})</h2>
             <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-                disabled={currentPage === 1}
-                className="border-[#324D3E]/20 text-[#324D3E] hover:bg-[#324D3E] hover:text-white"
-              >
+              <Button variant="outline" size="sm" onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))} disabled={currentPage === 1} className="border-[#324D3E]/20 text-[#324D3E] hover:bg-[#324D3E] hover:text-white">
                 <ChevronLeft className="w-4 h-4" />
               </Button>
-              <span className="text-sm text-[#889063] px-2">
-                Halaman {currentPage} dari {totalPages}
-              </span>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
-                disabled={currentPage === totalPages}
-                className="border-[#324D3E]/20 text-[#324D3E] hover:bg-[#324D3E] hover:text-white"
-              >
+              <span className="text-sm text-[#889063] px-2">Halaman {currentPage} dari {totalPages}</span>
+              <Button variant="outline" size="sm" onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))} disabled={currentPage === totalPages} className="border-[#324D3E]/20 text-[#324D3E] hover:bg-[#324D3E] hover:text-white">
                 <ChevronRight className="w-4 h-4" />
               </Button>
             </div>

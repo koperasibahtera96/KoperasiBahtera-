@@ -1,230 +1,174 @@
 // src/app/api/finance/summary/route.ts
-import { NextResponse } from "next/server"
-import { ensureConnection } from "@/lib/utils/utils/database"
-import { Investor, PlantInstance, PlantType, Transaction } from "@/models"
+import { NextResponse } from "next/server";
+import { ensureConnection } from "@/lib/utils/utils/database";
 
-type NumMap = Record<string, number>
+// ⬇️ Ganti path ini jika modelmu berbeda
+import Investor from "@/models/Investor";
+import PlantInstance from "@/models/PlantInstance";
 
-const slug = (s: string) =>
-  String(s || "")
-    .toLowerCase()
-    .normalize("NFKD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/(^-|-$)/g, "")
+export const dynamic = "force-dynamic";
+
+type Lean<T> = T & { _id: any };
+
+// util angka aman
+const num = (v: any): number => {
+  if (v === null || v === undefined) return 0;
+  if (typeof v === "number" && isFinite(v)) return v;
+  const n = Number(String(v).replace(/[^0-9.-]/g, ""));
+  return isFinite(n) ? n : 0;
+};
+const sumAmount = (arr: any[] = []) => arr.reduce((a, r) => a + num(r?.amount), 0);
 
 export async function GET() {
-  try {
-    await ensureConnection()
+  await ensureConnection();
 
-    // ---------- 1) INVESTOR + INVESTMENTS ----------
-    const investors = await Investor.find({}).lean()
-    const allInvestments = investors
-      .flatMap((inv: any) =>
-        (inv.investments ?? []).map((r: any) => ({
-          userId: String(inv.userId ?? inv._id ?? ""),
-          amount: Number(r.totalAmount ?? r.amount) || 0,
-          // `productName` = kode instance: ex "gaharu-001"
-          plantInstanceCode: String(r.productName ?? r.plantInstanceId ?? ""),
-        })),
-      )
-      .filter((x: any) => x.plantInstanceCode)
-
-    if (allInvestments.length === 0) {
-      return NextResponse.json({
-        totalInvestment: 0,
-        totalProfit: 0,
-        roi: 0,
-        investorsCount: investors.length,
-        averageRoi: 0,
-        aum: 0,
-        distribution: [],
-        topPlantTypes: [],
-      })
+  // 1) PlantInstance → hitung net profit per instance (income - cost)
+  const instances = (await PlantInstance.find(
+    {},
+    {
+      _id: 1,
+      plantType: 1,
+      instanceName: 1,
+      treeCount: 1,
+      incomeRecords: 1,
+      operationalCosts: 1,
     }
+  ).lean()) as Array<
+    Lean<{
+      plantType?: string;
+      instanceName?: string;
+      treeCount?: number;
+      incomeRecords?: Array<{ amount: number | string }>;
+      operationalCosts?: Array<{ amount: number | string }>;
+    }>
+  >;
 
-    // ---------- 2) INSTANCES ----------
-    const instCodes = Array.from(new Set(allInvestments.map((r) => r.plantInstanceCode)))
-    const instances = await PlantInstance.find({ id: { $in: instCodes } }).lean()
-    const instByCode = new Map<string, any>()
-    instances.forEach((p: any) => instByCode.set(String(p.id), p))
+  const netByInst = new Map<string, number>();
+  const instIdByName = new Map<string, string>();
+  for (const pi of instances) {
+    const income = sumAmount(pi.incomeRecords);
+    const cost = sumAmount(pi.operationalCosts);
+    netByInst.set(String(pi._id), income - cost);
+    if (pi.instanceName) instIdByName.set(String(pi.instanceName), String(pi._id));
+  }
 
-    // ---------- 3) INCOME/EXPENSE ----------
-    const tx = await Transaction.find({ plantInstanceId: { $in: instCodes } }).lean()
-    const incomeTx: NumMap = {}
-    const expenseTx: NumMap = {}
-    tx.forEach((t: any) => {
-      const key = String(t.plantInstanceId)
-      const amt = Number(t.amount) || 0
-      if (t.type === "income") incomeTx[key] = (incomeTx[key] || 0) + amt
-      else expenseTx[key] = (expenseTx[key] || 0) + amt
-    })
+  // 2) Investor.investments → total investasi & distribusi
+  const investors = (await Investor.find(
+    {},
+    { investments: 1, status: 1 }
+  ).lean()) as Array<Lean<{ status?: string; investments?: any[] }>>;
 
-    const netByInst: NumMap = {}
-    instances.forEach((inst: any) => {
-      const code = String(inst.id)
-      const inc = Array.isArray(inst.incomeRecords)
-        ? inst.incomeRecords.reduce((s: number, v: any) => s + (Number(v.amount) || 0), 0)
-        : 0
-      const exp = Array.isArray(inst.operationalCosts)
-        ? inst.operationalCosts.reduce((s: number, v: any) => s + (Number(v.amount) || 0), 0)
-        : 0
-      const hasEmbedded = (inc || exp) > 0
-      const totalIncome = hasEmbedded ? inc : (incomeTx[code] || 0)
-      const totalExpense = hasEmbedded ? exp : (expenseTx[code] || 0)
-      netByInst[code] = totalIncome - totalExpense
-    })
+  type InvRow = {
+    userId: string;
+    instKey: string; // _id PlantInstance
+    plantType: string;
+    amount: number;
+  };
+  const invRows: InvRow[] = [];
 
-    // Total invest per instance (akumulasi semua investor pada instance tsb)
-    const totalInvestByInst: NumMap = {}
-    allInvestments.forEach((r) => {
-      totalInvestByInst[r.plantInstanceCode] =
-        (totalInvestByInst[r.plantInstanceCode] || 0) + r.amount
-    })
+  for (const inv of investors) {
+    const uid = String(inv._id);
+    for (const it of inv.investments || []) {
+      // ambil nominal dari berbagai kemungkinan field
+      const amount =
+        num(it.amount) ||
+        num(it.totalAmount) ||
+        num(it.amountPaid) ||
+        num(it.total) ||
+        num(it.investmentAmount);
+      if (amount <= 0) continue;
 
-    // ---------- 4) MAP PLANT TYPE ----------
-    const typeKeyOfInst: Record<string, string> = {} // code -> typeKey
-    const typeNameOfKey: Record<string, string> = {} // typeKey -> name
-
-    const candIds = new Set<string>()
-    const candCodes = new Set<string>()
-    const candNames = new Set<string>()
-    instances.forEach((inst: any) => {
-      if (inst.plantTypeId) candIds.add(String(inst.plantTypeId))
-      if (inst.plantType) candCodes.add(String(inst.plantType))
-      if (inst.plantTypeName) candNames.add(String(inst.plantTypeName))
-    })
-
-    const types = await PlantType.find({
-      $or: [
-        { _id: { $in: Array.from(candIds) } as any },
-        { id: { $in: Array.from(candCodes) } as any },
-        { name: { $in: Array.from(candNames) } as any },
-      ],
-    }).lean()
-
-    const indexType = new Map<string, any>()
-    types.forEach((t: any) => {
-      indexType.set(String(t._id), t)
-      if (t.id) indexType.set(String(t.id), t)
-      if (t.name) indexType.set(String(t.name), t)
-    })
-
-    instances.forEach((inst: any) => {
-      const code = String(inst.id)
-      const keys = [
-        String(inst.plantTypeId ?? ""),
-        String(inst.plantType ?? ""),
-        String(inst.plantTypeName ?? ""),
-      ].filter(Boolean)
-
-      let pick = ""
-      let label = ""
-      for (const k of keys) {
-        if (indexType.has(k)) {
-          const t = indexType.get(k)
-          pick = String(t._id ?? t.id ?? slug(t.name))
-          label = String(t.name ?? t.id ?? k)
-          break
-        }
+      // referensi instance
+      let instKey: string | null = null;
+      if (it.plantInstanceId) instKey = String(it.plantInstanceId);
+      else if (it.instanceId) instKey = String(it.instanceId);
+      else if (it.productName && instIdByName.has(String(it.productName))) {
+        instKey = instIdByName.get(String(it.productName))!;
       }
-      if (!pick) {
-        pick = slug(keys[0] || "lainnya")
-        label = keys[0] || "Lainnya"
-      }
-      typeKeyOfInst[code] = pick
-      typeNameOfKey[pick] = label
-    })
+      if (!instKey) continue;
 
-    // ---------- 5) TOTALS (overall & AUM) ----------
-    let totalInvestment = 0
-    let totalProfit = 0
-    allInvestments.forEach((r) => {
-      totalInvestment += r.amount
-      const plantTotal = totalInvestByInst[r.plantInstanceCode] || 0
-      const share = plantTotal > 0 ? r.amount / plantTotal : 0
-      totalProfit += (netByInst[r.plantInstanceCode] || 0) * share
-    })
-    const roi = totalInvestment > 0 ? (totalProfit / totalInvestment) * 100 : 0
-    const aum = totalInvestment // <— Total AUM
+      const pi = instances.find((x) => String(x._id) === instKey);
+      const plantType = (pi?.plantType || "lainnya").toString().toLowerCase();
 
-    // ---------- 6) DISTRIBUSI & TOP TYPES ----------
-    const sumInvestByType: NumMap = {}
-    const sumProfitByType: NumMap = {}
-    const treeCountByType: NumMap = {}
-    const activeInvestorByType = new Map<string, Set<string>>()
+      invRows.push({ userId: uid, instKey, plantType, amount });
+    }
+  }
 
-    instances.forEach((inst: any) => {
-      const typeKey = typeKeyOfInst[String(inst.id)]
-      if (!typeKey) return
-      const trees = Number(inst.treeCount) || 1
-      treeCountByType[typeKey] = (treeCountByType[typeKey] || 0) + trees
-    })
+  // 3) Total investasi
+  const totalInvestment = invRows.reduce((a, r) => a + r.amount, 0);
 
-    allInvestments.forEach((r) => {
-      const typeKey = typeKeyOfInst[r.plantInstanceCode]
-      if (!typeKey) return
-      sumInvestByType[typeKey] = (sumInvestByType[typeKey] || 0) + r.amount
-      const plantTotal = totalInvestByInst[r.plantInstanceCode] || 0
-      const share = plantTotal > 0 ? r.amount / plantTotal : 0
-      sumProfitByType[typeKey] =
-        (sumProfitByType[typeKey] || 0) + (netByInst[r.plantInstanceCode] || 0) * share
-      if (!activeInvestorByType.has(typeKey)) activeInvestorByType.set(typeKey, new Set<string>())
-      activeInvestorByType.get(typeKey)!.add(r.userId)
-    })
+  // total investasi per instance
+  const investByInst = new Map<string, number>();
+  for (const r of invRows) {
+    investByInst.set(r.instKey, (investByInst.get(r.instKey) || 0) + r.amount);
+  }
 
-    const typeKeys = Array.from(
-      new Set(Object.keys(sumInvestByType).concat(Object.keys(treeCountByType))),
-    )
+  // 4) Profit total (agregat sistem) = jumlah net semua instance yg punya investasi
+  let totalProfit = 0;
+  const profitByType = new Map<string, number>();
+  for (const [instKey] of investByInst) {
+    const net = netByInst.get(instKey) || 0;
+    totalProfit += net;
 
-    const distribution = typeKeys.map((k) => ({
-      name: typeNameOfKey[k] || k,
-      value: sumInvestByType[k] || 0,
-    }))
+    const type = (instances.find((x) => String(x._id) === instKey)?.plantType || "lainnya")
+      .toString()
+      .toLowerCase();
+    profitByType.set(type, (profitByType.get(type) || 0) + net);
+  }
 
-    const topPlantTypes = typeKeys
-      .map((k) => {
-        const invest = sumInvestByType[k] || 0
-        const profit = sumProfitByType[k] || 0
-        const roiType = invest > 0 ? (profit / invest) * 100 : 0
-        return {
-          plantTypeId: k,
-          plantTypeName: typeNameOfKey[k] || k,
-          totalInvestment: invest,
-          paidProfit: profit,
-          roi: roiType,
-          treeCount: treeCountByType[k] || 0,
-          activeInvestors: Array.from(activeInvestorByType.get(k) ?? []).length,
-        }
-      })
-      .sort((a, b) => b.totalInvestment - a.totalInvestment)
+  const roi = totalInvestment > 0 ? (totalProfit / totalInvestment) * 100 : 0;
 
-    // ---------- 7) ROI RATA-RATA ----------
-    // rata-rata aritmetik ROI per INSTANSI (instance) yang punya investasi
-    let roiSum = 0
-    let roiCnt = 0
-    Object.keys(totalInvestByInst).forEach((code) => {
-      const inv = totalInvestByInst[code] || 0
-      if (inv > 0) {
-        const net = netByInst[code] || 0
-        roiSum += (net / inv) * 100
-        roiCnt += 1
-      }
-    })
-    const averageRoi = roiCnt > 0 ? roiSum / roiCnt : 0
+  // 5) Distribusi investasi per jenis tanaman
+  const investByType = new Map<string, number>();
+  for (const r of invRows) {
+    investByType.set(r.plantType, (investByType.get(r.plantType) || 0) + r.amount);
+  }
+  const distribution = Array.from(investByType.entries()).map(([name, value]) => ({ name, value }));
 
-    return NextResponse.json({
-      totalInvestment,
-      totalProfit,
-      roi,
-      investorsCount: investors.length,
-      averageRoi, // <—
-      aum,        // <—
+  // 6) Top Investasi Tanaman
+  const topPlantTypes = Array.from(investByType.entries()).map(([type, totalInv]) => {
+    const insts = instances.filter(
+      (pi) => (pi.plantType || "lainnya").toString().toLowerCase() === type
+    );
+    const treeCount = insts.reduce((a, pi) => a + num(pi.treeCount), 0);
+    const activeInvestors = new Set(invRows.filter((r) => r.plantType === type).map((r) => r.userId)).size;
+    const paidProfit = profitByType.get(type) || 0;
+    const tRoi = totalInv > 0 ? (paidProfit / totalInv) * 100 : 0;
+
+    return {
+      type,
+      totalInvestment: totalInv,
+      paidProfit,
+      roi: tRoi,
+      treeCount,
+      activeInvestors,
+    };
+  });
+  topPlantTypes.sort((a, b) => b.totalInvestment - a.totalInvestment);
+
+  // 7) Jumlah anggota
+  const totalMembers =
+    (await Investor.countDocuments().catch(() => 0)) || investors.length;
+
+  // 8) Response + alias kunci untuk kompatibilitas UI
+  return NextResponse.json(
+    {
+      totals: {
+        // kunci utama
+        investment: totalInvestment,
+        profit: totalProfit,
+        roi,
+        members: totalMembers,
+        // alias agar komponen lama langsung kebaca
+        totalInvestment,
+        totalProfit,
+        roiPercent: roi,
+        totalMembers,
+        membersCount: totalMembers,
+      },
       distribution,
       topPlantTypes,
-    })
-  } catch (e) {
-    console.error("Finance summary error:", e)
-    return NextResponse.json({ error: "Failed to fetch summary" }, { status: 500 })
-  }
+    },
+    { status: 200 }
+  );
 }

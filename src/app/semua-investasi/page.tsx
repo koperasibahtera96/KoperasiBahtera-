@@ -17,6 +17,14 @@ interface PlantSummary {
   instanceCount: number
 }
 
+// helper angka aman (string/number → number)
+const toNum = (v: any): number => {
+  if (v === null || v === undefined) return 0
+  if (typeof v === "number" && isFinite(v)) return v
+  const n = Number(String(v).replace(/[^0-9.-]/g, ""))
+  return isFinite(n) ? n : 0
+}
+
 export default function SemuaInvestasiPage() {
   const [plantSummaries, setPlantSummaries] = useState<PlantSummary[]>([])
   const [loading, setLoading] = useState(true)
@@ -28,13 +36,33 @@ export default function SemuaInvestasiPage() {
   const loadPlantSummaries = async () => {
     try {
       setLoading(true)
-      const response = await fetch("/api/reports/summary")
-      if (response.ok) {
-        const data = await response.json()
-        setPlantSummaries(data.plantSummaries || [])
-      }
+      // ➜ ambil dari API baru
+      const response = await fetch("/api/finance/summary", { cache: "no-store" })
+      if (!response.ok) throw new Error("Failed to fetch /api/finance/summary")
+      const data = await response.json()
+
+      // data.topPlantTypes → map ke bentuk PlantSummary
+      const mapped: PlantSummary[] = (data?.topPlantTypes ?? []).map((t: any) => {
+        const type = String(t.plantTypeName ?? t.type ?? "")
+        return {
+          id: String(t.plantTypeId ?? t.type ?? type),
+          name: type,                       // tampilkan nama tipe tanaman
+          plantType: type,                  // dipakai untuk link detail
+          totalInvestment: toNum(t.totalInvestment),
+          totalProfit: toNum(t.paidProfit),
+          roi: toNum(t.roi),
+          investorCount: toNum(t.activeInvestors),
+          instanceCount: toNum(t.treeCount), // jumlah pohon/instance
+        }
+      })
+
+      // urutkan sesuai kebutuhan (mis. investasi terbesar dulu)
+      mapped.sort((a, b) => b.totalInvestment - a.totalInvestment)
+
+      setPlantSummaries(mapped)
     } catch (error) {
       console.error("Failed to load plant summaries:", error)
+      setPlantSummaries([])
     } finally {
       setLoading(false)
     }
