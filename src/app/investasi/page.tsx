@@ -2,6 +2,7 @@
 
 import { AnimatePresence, motion } from "framer-motion";
 import jsPDF from "jspdf";
+import { formatDate, parseDateString } from "@/lib/utils/date";
 import {
   BarChart3,
   CheckCircle,
@@ -226,13 +227,7 @@ export default function InvestasiPage() {
     }).format(amount);
   };
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("id-ID", {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-    });
-  };
+  // formatDate is now imported from date utility
 
   const handleDownloadHistoryPDF = async (investment: any) => {
     if (!investment?.plantInstance) return;
@@ -291,9 +286,7 @@ export default function InvestasiPage() {
       yPosition += 15;
 
       const sortedHistory = [...(plantData.history || [])].sort((a, b) => {
-        const dateA = new Date(a.date.split("/").reverse().join("-"));
-        const dateB = new Date(b.date.split("/").reverse().join("-"));
-        return dateA.getTime() - dateB.getTime();
+        return parseDateString(a.date).getTime() - parseDateString(b.date).getTime();
       });
 
       for (let i = 0; i < sortedHistory.length; i++) {
@@ -311,7 +304,7 @@ export default function InvestasiPage() {
 
         pdf.setFontSize(10);
         pdf.setFont("helvetica", "normal");
-        pdf.text(`Tanggal: ${item.date}`, 20, yPosition);
+        pdf.text(`Tanggal: ${formatDate(item.date)}`, 20, yPosition);
         yPosition += 8;
 
         if (item.imageUrl) {
@@ -686,12 +679,10 @@ export default function InvestasiPage() {
                                         {historyItem.action}
                                       </span>
                                       <span className="text-gray-500 ml-2">
-                                        {new Date(
-                                          historyItem.date
-                                        ).toLocaleDateString("id-ID", {
-                                          day: "2-digit",
-                                          month: "short",
-                                        })}
+                                        {formatDate(historyItem.date, {
+                                        day: '2-digit',
+                                        month: 'short'
+                                      })}
                                       </span>
                                     </div>
                                     {historyItem.description && (
@@ -1065,8 +1056,8 @@ export default function InvestasiPage() {
                               ]
                                 .sort(
                                   (a, b) =>
-                                    new Date(b.date).getTime() -
-                                    new Date(a.date).getTime()
+                                    parseDateString(b.date).getTime() -
+                                    parseDateString(a.date).getTime()
                                 )
                                 .map((activity, index) => (
                                   <div
