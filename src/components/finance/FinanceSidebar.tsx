@@ -57,6 +57,13 @@ export function FinanceSidebar({ children }: FinanceSidebarProps) {
       description: "Analisis pengeluaran operasional",
       gradient: "from-orange-500 to-red-500"
     },
+      {
+    name: "Invoice",
+    href: "/invoice",
+    icon: Receipt, // boleh ganti ikon lain kalau mau
+    description: "Tagihan & pembayaran",
+    gradient: "from-emerald-500 to-green-600",
+  },
   ]
 
   const handleLogout = async () => {
