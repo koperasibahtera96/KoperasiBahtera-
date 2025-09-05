@@ -340,23 +340,29 @@ export default function AdminCicilanPage() {
                         </div>
                       </div>
 
-                      <div className="flex flex-col sm:flex-row lg:flex-col gap-2 lg:min-w-0 lg:w-auto">
-                        {investor.pendingReviews > 0 && (
-                          <div className="bg-gradient-to-r from-yellow-100 to-yellow-200 text-yellow-800 px-2 sm:px-3 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-medium border border-yellow-300 text-center whitespace-nowrap">
-                            {investor.pendingReviews} Review
-                          </div>
-                        )}
-                        {investor.overdueCount > 0 && (
-                          <div className="bg-gradient-to-r from-red-100 to-red-200 text-red-800 px-2 sm:px-3 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-medium border border-red-300 text-center whitespace-nowrap">
-                            {investor.overdueCount} Terlambat
-                          </div>
-                        )}
-                        <button
-                          onClick={() => handleViewDetails(investor.userId)}
-                          className="px-4 sm:px-6 py-2 sm:py-3 bg-gradient-to-r from-[#324D3E] to-[#4C3D19] text-white rounded-xl hover:shadow-lg hover:scale-105 transition-all duration-300 text-xs sm:text-sm font-semibold font-[family-name:var(--font-poppins)] whitespace-nowrap"
-                        >
-                          Lihat Detail
-                        </button>
+                      <div className="flex flex-col gap-2 lg:min-w-0 lg:w-auto">
+                        <div className="flex flex-wrap gap-2">
+                          {investor.pendingReviews > 0 && (
+                            <div className="bg-gradient-to-r from-yellow-100 to-yellow-200 text-yellow-800 px-2 sm:px-3 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-medium border border-yellow-300 text-center whitespace-nowrap">
+                              {investor.pendingReviews} Review
+                            </div>
+                          )}
+                          {investor.overdueCount > 0 && (
+                            <div className="bg-gradient-to-r from-red-100 to-red-200 text-red-800 px-2 sm:px-3 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-medium border border-red-300 text-center whitespace-nowrap">
+                              {investor.overdueCount} Terlambat
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Action Buttons */}
+                        <div className="flex flex-col gap-2">
+                          <button
+                            onClick={() => handleViewDetails(investor.userId)}
+                            className="px-4 sm:px-6 py-2 sm:py-3 bg-gradient-to-r from-[#324D3E] to-[#4C3D19] text-white rounded-xl hover:shadow-lg hover:scale-105 transition-all duration-300 text-xs sm:text-sm font-semibold font-[family-name:var(--font-poppins)] whitespace-nowrap"
+                          >
+                            Lihat Detail
+                          </button>
+                        </div>
                       </div>
                     </div>
                   </div>

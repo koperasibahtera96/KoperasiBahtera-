@@ -10,12 +10,12 @@ import {
 type JSONish = string | number | boolean | null | JSONish[] | { [k: string]: JSONish };
 type Props = { payment: { [k: string]: JSONish } };
 
-// HEX themes (aman untuk capture)
+// Finance theme (matching the finance layout colors)
 const THEMES = {
-  emerald: { bg:"#ECFDF5", border:"#A7F3D0", gradFrom:"#D1FAE5", gradTo:"#ECFDF5", text:"#065F46", chipBorder:"#A7F3D0", chipText:"#065F46", icon:(s=16)=><Wallet size={s} style={{color:"#059669"}}/> },
-  sky:     { bg:"#F0F9FF", border:"#BAE6FD", gradFrom:"#E0F2FE", gradTo:"#F0F9FF", text:"#075985", chipBorder:"#BAE6FD", chipText:"#075985", icon:(s=16)=><CreditCard size={s} style={{color:"#0284C7"}}/> },
-  amber:   { bg:"#FFFBEB", border:"#FDE68A", gradFrom:"#FEF3C7", gradTo:"#FFFBEB", text:"#92400E", chipBorder:"#FDE68A", chipText:"#92400E", icon:(s=16)=><CalendarClock size={s} style={{color:"#D97706"}}/> },
-  slate:   { bg:"#F8FAFC", border:"#E2E8F0", gradFrom:"#F1F5F9", gradTo:"#F8FAFC", text:"#334155", chipBorder:"#E2E8F0", chipText:"#334155", icon:(s=16)=><ReceiptText size={s} style={{color:"#475569"}}/> },
+  emerald: { bg:"#ffffff", border:"#324D3E", gradFrom:"#f0fdf4", gradTo:"#ffffff", text:"#324D3E", chipBorder:"#324D3E", chipText:"#324D3E", icon:(s=16)=><Wallet size={s} style={{color:"#324D3E"}}/> },
+  sky:     { bg:"#ffffff", border:"#324D3E", gradFrom:"#ecfdf5", gradTo:"#ffffff", text:"#324D3E", chipBorder:"#324D3E", chipText:"#324D3E", icon:(s=16)=><CreditCard size={s} style={{color:"#4C3D19"}}/> },
+  amber:   { bg:"#ffffff", border:"#324D3E", gradFrom:"#fef3c7", gradTo:"#ffffff", text:"#324D3E", chipBorder:"#324D3E", chipText:"#324D3E", icon:(s=16)=><CalendarClock size={s} style={{color:"#059669"}}/> },
+  slate:   { bg:"#ffffff", border:"#324D3E", gradFrom:"#f8fafc", gradTo:"#ffffff", text:"#324D3E", chipBorder:"#324D3E", chipText:"#324D3E", icon:(s=16)=><ReceiptText size={s} style={{color:"#324D3E"}}/> },
 } as const;
 
 const themeOf = (t?: string) => {
@@ -38,8 +38,8 @@ const fmtIDR = (n?: number)=> typeof n==="number"
 function Row({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex justify-between gap-3">
-      <dt style={{color:"#64748B"}}>{label}</dt>
-      <dd className="text-right break-words" style={{color:"#0F172A"}}>{value}</dd>
+      <dt style={{color:"#889063"}}>{label}</dt>
+      <dd className="text-right break-words font-medium" style={{color:"#324D3E"}}>{value}</dd>
     </div>
   );
 }
@@ -85,81 +85,87 @@ export default function InvoiceCard({ payment }: Props) {
   return (
     <div
       ref={cardRef}
-      className="rounded-2xl overflow-hidden"
-      style={{ backgroundColor: tone.bg, border:`1px solid ${tone.border}`, boxShadow:"0 8px 30px rgba(0,0,0,.06)" }}
+      className="rounded-3xl overflow-hidden group hover:scale-105 transition-all duration-300 w-full"
+      style={{ backgroundColor: tone.bg, border:`1px solid ${tone.border}/20`, boxShadow:"0 10px 40px rgba(50, 77, 62, 0.08)" }}
     >
       {/* Header */}
-      <div className="px-4 pt-4 pb-3" style={{ backgroundImage:`linear-gradient(180deg, ${tone.gradFrom} 0%, ${tone.gradTo} 100%)` }}>
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            {tone.icon(16)}
-            <span className="text-sm font-semibold" style={{color:tone.text}}>
-              {String(payment?.paymentType || "Payment").replace("-", " ")}
+      <div className="px-4 sm:px-6 pt-4 sm:pt-6 pb-3 sm:pb-4" style={{ backgroundImage:`linear-gradient(180deg, ${tone.gradFrom} 0%, ${tone.gradTo} 100%)` }}>
+        <div className="flex items-start sm:items-center justify-between gap-2">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
+            <div className="p-2 rounded-xl bg-white/80 backdrop-blur-sm flex-shrink-0">
+              {tone.icon(16)}
+            </div>
+            <span className="text-xs sm:text-sm font-bold truncate" style={{color:tone.text}}>
+              {String(payment?.paymentType || "Payment").replace("-", " ").toUpperCase()}
             </span>
           </div>
           {/* Kode REF (warna mengikuti tema) */}
-          <span className="text-[11px] font-mono font-semibold break-all" style={{ color: tone.text }} title={refCode}>
+          <span className="text-xs font-mono font-bold px-2 py-1 rounded-lg bg-white/80 backdrop-blur-sm flex-shrink-0 max-w-[120px] truncate" style={{ color: tone.text }} title={refCode}>
             #{refCode}
           </span>
         </div>
-        <div className="mt-2 text-xs" style={{color:"#64748B"}}>
-          {created && <span className="mr-3">Dibuat: <b style={{color:"#334155"}}>{created}</b></span>}
-          {updated && <span>Diupdate: <b style={{color:"#334155"}}>{updated}</b></span>}
+        <div className="mt-2 sm:mt-3 text-xs" style={{color:"#889063"}}>
+          <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-4">
+            {created && <span className="truncate">Dibuat: <b style={{color:"#324D3E"}}>{created}</b></span>}
+            {updated && <span className="truncate">Diupdate: <b style={{color:"#324D3E"}}>{updated}</b></span>}
+          </div>
         </div>
       </div>
 
       {/* Body */}
-      <div className="p-4">
+      <div className="p-4 sm:p-6">
         {/* Status + orderId */}
-        <div className="flex flex-wrap items-center gap-2 text-xs mb-3">
-          <span className="px-2.5 py-1 rounded-full" style={{ background:"#FFFFFF", border:`1px solid ${tone.chipBorder}`, color:tone.chipText }}>
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-xs mb-4 sm:mb-6">
+          <span className="px-2 sm:px-3 py-2 rounded-2xl bg-white/90 backdrop-blur-sm shadow-sm text-xs" style={{ border:`1px solid ${tone.chipBorder}/30`, color:tone.chipText }}>
             <BadgeCheck size={12} className="inline mr-1" />
             Status: <b>{(payment?.transactionStatus as string) ?? "—"}</b>
           </span>
           {payment?.orderId && (
-            <span className="px-2.5 py-1 rounded-full" style={{ background:"#FFFFFF", border:`1px solid ${tone.chipBorder}`, color:tone.chipText }}>
+            <span className="px-2 sm:px-3 py-2 rounded-2xl bg-white/90 backdrop-blur-sm shadow-sm text-xs truncate max-w-[200px]" style={{ border:`1px solid ${tone.chipBorder}/30`, color:tone.chipText }}>
               <Hash size={12} className="inline mr-1" />
-              {String(payment.orderId)}
+              <span className="truncate">{String(payment.orderId)}</span>
             </span>
           )}
         </div>
 
         {/* Nominal */}
         {typeof amount !== "undefined" && (
-          <div className="mb-3">
-            <div className="text-[11px]" style={{color:"#64748B"}}>Nominal</div>
-            <div className="text-xl font-extrabold tracking-tight" style={{color:"#0F172A"}}>
+          <div className="mb-4 sm:mb-6 p-3 sm:p-4 rounded-2xl bg-gradient-to-r from-[#324D3E]/5 to-[#4C3D19]/5 border border-[#324D3E]/10">
+            <div className="text-xs font-medium" style={{color:"#889063"}}>Nominal</div>
+            <div className="text-xl sm:text-2xl font-bold tracking-tight mt-1 break-words" style={{color:"#324D3E"}}>
               {fmtIDR(Number(amount)) ?? String(amount)}
             </div>
           </div>
         )}
 
         {/* User */}
-        <div className="mb-3">
-          <div className="text-[11px]" style={{color:"#64748B"}}>User</div>
-          <div className="flex items-center gap-2 font-medium" style={{color:"#0F172A"}}>
-            <UserIcon size={14} style={{ color: tone.text }} />
-            {String((payment as any).userName ?? "—")}
+        <div className="mb-4 sm:mb-6">
+          <div className="text-xs font-medium mb-2" style={{color:"#889063"}}>User</div>
+          <div className="flex items-center gap-2 sm:gap-3 p-3 rounded-2xl bg-white/60 backdrop-blur-sm border border-[#324D3E]/10">
+            <div className="p-2 rounded-xl bg-[#324D3E]/10 flex-shrink-0">
+              <UserIcon size={16} style={{ color: tone.text }} />
+            </div>
+            <span className="font-semibold text-sm truncate min-w-0" style={{color:"#324D3E"}}>{String((payment as any).userName ?? "—")}</span>
           </div>
         </div>
 
         {/* Tombol & Toggle Detail */}
-        <div className="mt-3 flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
           <button
             data-hide-on-print
             onClick={handleDownload}
-            className="inline-flex items-center gap-2 rounded-full px-3 py-2 text-xs font-semibold"
-            style={{ backgroundColor:"#0F172A", color:"#FFFFFF" }}
+            className="inline-flex items-center justify-center gap-2 rounded-2xl px-3 sm:px-4 py-2 sm:py-3 text-xs font-bold bg-gradient-to-r from-[#324D3E] to-[#4C3D19] text-white hover:shadow-lg transition-all duration-300"
           >
             <Download size={14} />
-            Download Invoice
+            <span className="hidden sm:inline">Download Invoice</span>
+            <span className="sm:hidden">Download</span>
           </button>
 
           <button
             data-hide-on-print
             onClick={() => setOpen(v=>!v)}
-            className="inline-flex items-center gap-1 text-xs font-semibold"
-            style={{ color:"#475569" }}
+            className="inline-flex items-center justify-center gap-2 text-sm font-semibold px-3 py-2 rounded-xl hover:bg-[#324D3E]/5 transition-all duration-300"
+            style={{ color:"#324D3E" }}
             aria-expanded={open}
           >
             Detail
@@ -169,8 +175,8 @@ export default function InvoiceCard({ payment }: Props) {
 
         {/* PANEL DETAIL (tampil saat diklik; ikut otomatis saat download) */}
         {open && (
-          <div className="mt-3 rounded-xl p-3" style={{ background:"#FFFFFF", border:`1px solid ${tone.border}` }}>
-            <dl className="grid grid-cols-1 gap-2 text-[13px]">
+          <div className="mt-4 sm:mt-6 rounded-2xl p-3 sm:p-4 bg-white/80 backdrop-blur-sm" style={{ border:`1px solid ${tone.border}/20` }}>
+            <dl className="grid grid-cols-1 gap-2 sm:gap-3 text-xs sm:text-sm">
               <Row label="REF"      value={refCode || "—"} />
               <Row label="orderId"  value={String(payment?.orderId ?? "—")} />
               <Row label="userId"   value={String(payment?.userId ?? "—")} />

@@ -11,6 +11,7 @@ import {
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { use, useEffect, useState } from 'react';
+import { MessageCircle } from 'lucide-react';
 
 export default function InvestorDetailPage({ params }: { params: Promise<{ userId: string }> }) {
   const [investorDetail, setInvestorDetail] = useState<InvestorDetail | null>(null);
@@ -20,6 +21,7 @@ export default function InvestorDetailPage({ params }: { params: Promise<{ userI
     installment: CicilanInstallmentWithPayment | null;
   }>({ isOpen: false, installment: null });
   const [isReviewing, setIsReviewing] = useState(false);
+  const [whatsappLoading, setWhatsappLoading] = useState<{[key: string]: boolean}>({});
   const { showSuccess, showError, AlertComponent } = useAlert();
   const router = useRouter();
   const { userId } = use(params);
@@ -84,6 +86,41 @@ export default function InvestorDetailPage({ params }: { params: Promise<{ userI
       showError('Error', 'Terjadi kesalahan saat memproses review');
     } finally {
       setIsReviewing(false);
+    }
+  };
+
+  const handleSendWhatsApp = async (installment: CicilanInstallmentWithPayment) => {
+    if (!investorDetail) return;
+
+    const loadingKey = installment._id;
+    setWhatsappLoading(prev => ({ ...prev, [loadingKey]: true }));
+
+    try {
+      const response = await fetch('/api/admin/whatsapp/send-reminder', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          paymentId: installment.paymentId || installment._id,
+          userInfo: {
+            fullName: investorDetail.userInfo.fullName,
+            phoneNumber: investorDetail.userInfo.phoneNumber,
+          },
+        }),
+      });
+
+      if (response.ok) {
+        showSuccess('Berhasil!', `WhatsApp reminder sent to ${investorDetail.userInfo.fullName}`);
+      } else {
+        const errorData = await response.json();
+        showError('Gagal Mengirim WhatsApp', errorData.error || 'Unknown error');
+      }
+    } catch (error) {
+      console.error('Error sending WhatsApp:', error);
+      showError('Gagal Mengirim WhatsApp', 'Failed to send WhatsApp message');
+    } finally {
+      setWhatsappLoading(prev => ({ ...prev, [loadingKey]: false }));
     }
   };
 
@@ -339,6 +376,18 @@ export default function InvestorDetailPage({ params }: { params: Promise<{ userI
                               className="w-full px-3 sm:px-4 py-2 sm:py-3 bg-gradient-to-r from-[#324D3E] to-[#4C3D19] text-white text-xs sm:text-sm rounded-xl hover:shadow-lg hover:scale-105 transition-all duration-300 font-semibold font-[family-name:var(--font-poppins)]"
                             >
                               Review
+                            </button>
+                          )}
+
+                          {/* WhatsApp Button */}
+                          {(effectiveStatus === 'pending' || effectiveStatus === 'overdue') && (
+                            <button
+                              onClick={() => handleSendWhatsApp(installment)}
+                              disabled={whatsappLoading[installment._id]}
+                              className="w-full mt-2 flex items-center justify-center gap-2 px-3 sm:px-4 py-2 sm:py-3 bg-green-600 text-white text-xs sm:text-sm rounded-xl hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-semibold font-[family-name:var(--font-poppins)]"
+                            >
+                              <MessageCircle className="w-4 h-4" />
+                              {whatsappLoading[installment._id] ? 'Mengirim...' : 'Kirim Pengingat'}
                             </button>
                           )}
                         </div>

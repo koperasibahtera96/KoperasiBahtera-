@@ -4,11 +4,11 @@ import LandingHeader from "@/components/landing/LandingHeader";
 import { useAlert } from "@/components/ui/Alert";
 import { provinceOptions } from "@/constant/PROVINCE";
 import { motion } from "framer-motion";
+import { Check, Edit2, X } from "lucide-react";
 import { useSession } from "next-auth/react";
 import Image from "next/image";
 import { redirect } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { Edit2, Check, X } from "lucide-react";
 
 const containerVariants: any = {
   hidden: { opacity: 0 },
@@ -50,9 +50,6 @@ export default function ProfilePage() {
   const [email, setEmail] = useState("");
   const [nameReason, setNameReason] = useState("");
   const [emailReason, setEmailReason] = useState("");
-  const [showHistoryModal, setShowHistoryModal] = useState(false);
-  const [requestHistory, setRequestHistory] = useState<any[]>([]);
-  const [loadingHistory, setLoadingHistory] = useState(false);
   const [pendingRequests, setPendingRequests] = useState<any[]>([]);
   const [passwordData, setPasswordData] = useState({
     currentPassword: "",
@@ -73,11 +70,11 @@ export default function ProfilePage() {
   const fetchUserData = async () => {
     try {
       setFetchingUser(true);
-      
+
       // Fetch user profile and pending requests in parallel
       const [profileResponse, requestsResponse] = await Promise.all([
         fetch("/api/user/profile"),
-        fetch("/api/user/profile-change-request")
+        fetch("/api/user/profile-change-request"),
       ]);
 
       const profileData = await profileResponse.json();
@@ -93,7 +90,9 @@ export default function ProfilePage() {
       }
 
       if (requestsResponse.ok && requestsData.success) {
-        const pending = requestsData.requests.filter((req: any) => req.status === 'pending');
+        const pending = requestsData.requests.filter(
+          (req: any) => req.status === "pending"
+        );
         setPendingRequests(pending);
       }
     } catch (error) {
@@ -132,13 +131,8 @@ export default function ProfilePage() {
   };
 
   // Helper function to check if there's a pending request for a specific field
-  const hasPendingRequest = (changeType: 'fullName' | 'email') => {
+  const hasPendingRequest = (changeType: "fullName" | "email") => {
     return pendingRequests.some((req: any) => req.changeType === changeType);
-  };
-
-  // Helper function to get pending request for a specific field
-  const getPendingRequest = (changeType: 'fullName' | 'email') => {
-    return pendingRequests.find((req: any) => req.changeType === changeType);
   };
 
   const handleImageUpload = async (
@@ -235,14 +229,20 @@ export default function ProfilePage() {
         throw new Error(data.error || "Failed to submit name change request");
       }
 
-      showSuccess("Success", "Name change request submitted! It will be reviewed by an administrator.");
+      showSuccess(
+        "Success",
+        "Name change request submitted! It will be reviewed by an administrator."
+      );
       setIsEditingName(false);
       setNameReason("");
       // Refresh pending requests
       fetchUserData();
     } catch (error: any) {
       console.error("Error submitting name change request:", error);
-      showError("Error", error.message || "Failed to submit name change request");
+      showError(
+        "Error",
+        error.message || "Failed to submit name change request"
+      );
     } finally {
       setIsLoading(false);
     }
@@ -282,14 +282,20 @@ export default function ProfilePage() {
         throw new Error(data.error || "Failed to submit email change request");
       }
 
-      showSuccess("Success", "Email change request submitted! It will be reviewed by an administrator.");
+      showSuccess(
+        "Success",
+        "Email change request submitted! It will be reviewed by an administrator."
+      );
       setIsEditingEmail(false);
       setEmailReason("");
       // Refresh pending requests
       fetchUserData();
     } catch (error: any) {
       console.error("Error submitting email change request:", error);
-      showError("Error", error.message || "Failed to submit email change request");
+      showError(
+        "Error",
+        error.message || "Failed to submit email change request"
+      );
     } finally {
       setIsLoading(false);
     }
@@ -334,25 +340,6 @@ export default function ProfilePage() {
       showError("Error", error.message || "Failed to update phone number");
     } finally {
       setIsLoading(false);
-    }
-  };
-
-  const fetchRequestHistory = async () => {
-    try {
-      setLoadingHistory(true);
-      const response = await fetch("/api/user/profile-change-request");
-      const data = await response.json();
-
-      if (response.ok && data.success) {
-        setRequestHistory(data.requests);
-      } else {
-        showError("Error", data.error || "Failed to fetch request history");
-      }
-    } catch (error) {
-      console.error("Error fetching request history:", error);
-      showError("Error", "Failed to fetch request history");
-    } finally {
-      setLoadingHistory(false);
     }
   };
 
@@ -456,15 +443,17 @@ export default function ProfilePage() {
                   <p className="text-gray-600 text-sm">{user.email}</p>
                 </div>
               </div>
-              
+
               <div className="absolute bottom-0 right-0 bg-gray-50 p-3 rounded-lg">
-                <p className="text-xs font-medium text-gray-500 mb-1">User ID</p>
+                <p className="text-xs font-medium text-gray-500 mb-1">
+                  User ID
+                </p>
                 <p className="text-sm font-mono font-bold text-[#324D3E] bg-white/80 px-3 py-1 rounded-md border border-gray-200">
-                  {user.userCode || 'N/A'}
+                  {user.userCode || "N/A"}
                 </p>
               </div>
             </div>
-            
+
             <div className="mt-6">
               <button
                 onClick={() => fileInputRef.current?.click()}
@@ -503,12 +492,20 @@ export default function ProfilePage() {
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Full Name
                 </label>
-                {hasPendingRequest('fullName') ? (
+                {hasPendingRequest("fullName") ? (
                   <div className="p-3 bg-yellow-100 border border-yellow-300 rounded-lg">
-                    <p className="text-gray-700">{user.fullName} <span className="text-yellow-700 text-sm">• Request Sent</span></p>
+                    <p className="text-gray-700">
+                      {user.fullName}{" "}
+                      <span className="text-yellow-700 text-sm">
+                        • Request Sent
+                      </span>
+                    </p>
                   </div>
                 ) : isEditingName ? (
-                  <form onSubmit={handleNameChangeRequest} className="space-y-3">
+                  <form
+                    onSubmit={handleNameChangeRequest}
+                    className="space-y-3"
+                  >
                     <div className="relative">
                       <input
                         type="text"
@@ -573,12 +570,20 @@ export default function ProfilePage() {
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Email
                 </label>
-                {hasPendingRequest('email') ? (
+                {hasPendingRequest("email") ? (
                   <div className="p-3 bg-yellow-100 border border-yellow-300 rounded-lg">
-                    <p className="text-gray-700">{user.email} <span className="text-yellow-700 text-sm">• Request Sent</span></p>
+                    <p className="text-gray-700">
+                      {user.email}{" "}
+                      <span className="text-yellow-700 text-sm">
+                        • Request Sent
+                      </span>
+                    </p>
                   </div>
                 ) : isEditingEmail ? (
-                  <form onSubmit={handleEmailChangeRequest} className="space-y-3">
+                  <form
+                    onSubmit={handleEmailChangeRequest}
+                    className="space-y-3"
+                  >
                     <div className="relative">
                       <input
                         type="email"

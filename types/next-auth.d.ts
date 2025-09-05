@@ -1,6 +1,6 @@
-import 'next-auth';
+import "next-auth";
 
-declare module 'next-auth' {
+declare module "next-auth" {
   interface Session {
     user: {
       id: string;
@@ -15,6 +15,7 @@ declare module 'next-auth' {
       city: string;
       verificationStatus: string;
       canPurchase: boolean;
+      profileImageUrl: string;
     };
   }
 
@@ -34,7 +35,7 @@ declare module 'next-auth' {
   }
 }
 
-declare module 'next-auth/jwt' {
+declare module "next-auth/jwt" {
   interface JWT {
     role: string;
     isVerified: boolean;
@@ -45,5 +46,6 @@ declare module 'next-auth/jwt' {
     city: string;
     verificationStatus: string;
     canPurchase: boolean;
+    profileImageUrl: string;
   }
 }

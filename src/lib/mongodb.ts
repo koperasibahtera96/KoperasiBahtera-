@@ -1,14 +1,20 @@
-import FilteredWord from '@/models/FilteredWord';
-import Payment from '@/models/Payment'; // adjust path
-import Plant from '@/models/Plant'; // adjust path
-import PlantInstance from '@/models/PlantInstance';
-import Review from '@/models/Review';
-import User from '@/models/User'; // adjust path
-import mongoose from 'mongoose';
+import FilteredWord from "@/models/FilteredWord";
+import Payment from "@/models/Payment"; // adjust path
+import Plant from "@/models/Plant"; // adjust path
+import PlantInstance from "@/models/PlantInstance";
+import Review from "@/models/Review";
+import Settings from "@/models/Settings";
+import User from "@/models/User"; // adjust path
+import WhatsAppSession from "@/models/WhatsAppSession";
+import mongoose from "mongoose";
 
-const MONGODB_URI = process.env.MONGODB_URI||"mongodb+srv://BenZeta:BenZeta@benzeta.lfcf6it.mongodb.net/investasi-hijau?retryWrites=true&w=majority"
+const MONGODB_URI =
+  process.env.MONGODB_URI ||
+  "mongodb+srv://BenZeta:BenZeta@benzeta.lfcf6it.mongodb.net/investasi-hijau?retryWrites=true&w=majority";
 if (!MONGODB_URI) {
-  throw new Error('Please define the MONGODB_URI environment variable inside .env.local');
+  throw new Error(
+    "Please define the MONGODB_URI environment variable inside .env.local"
+  );
 }
 
 let cached = global.mongoose;
@@ -27,16 +33,20 @@ async function dbConnect() {
       bufferCommands: false,
     };
 
-    cached.promise = mongoose.connect(MONGODB_URI, opts).then(async (mongoose) => {
-      // ✅ Sync indexes to match current schema (removes old conflicting indexes)
-      await User.syncIndexes();
-      await Plant.syncIndexes();
-      await Payment.syncIndexes();
-      await PlantInstance.syncIndexes();
-      await Review.syncIndexes();
-      await FilteredWord.syncIndexes();
-      return mongoose;
-    });
+    cached.promise = mongoose
+      .connect(MONGODB_URI, opts)
+      .then(async (mongoose) => {
+        // ✅ Sync indexes to match current schema (removes old conflicting indexes)
+        await User.syncIndexes();
+        await Plant.syncIndexes();
+        await Payment.syncIndexes();
+        await PlantInstance.syncIndexes();
+        await Review.syncIndexes();
+        await FilteredWord.syncIndexes();
+        await WhatsAppSession.syncIndexes();
+        await Settings.syncIndexes();
+        return mongoose;
+      });
   }
 
   cached.conn = await cached.promise;

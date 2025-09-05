@@ -9,7 +9,8 @@ import {
   MessageCircle, 
   Trees, 
   HardHat, 
-  TrendingUp 
+  TrendingUp,
+  Settings 
 } from "lucide-react";
 import { signOut, useSession } from "next-auth/react";
 import Image from "next/image";
@@ -30,6 +31,7 @@ const navigation = [
   { name: "Data Pohon", href: "/admin/trees", icon: Trees, color: "text-emerald-600" },
   { name: "Kelola Staff", href: "/admin/staff", icon: HardHat, color: "text-orange-600" },
   { name: "Laporan", href: "/admin/laporan", icon: TrendingUp, color: "text-cyan-600" },
+  { name: "Pengaturan", href: "/admin/settings", icon: Settings, color: "text-indigo-600" },
 ];
 
 const sidebarVariants: any = {

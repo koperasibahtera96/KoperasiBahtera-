@@ -1,20 +1,20 @@
-import User from '@/models/User';
-import bcrypt from 'bcryptjs';
-import { NextAuthOptions } from 'next-auth';
-import CredentialsProvider from 'next-auth/providers/credentials';
-import dbConnect from './mongodb';
+import User from "@/models/User";
+import bcrypt from "bcryptjs";
+import { NextAuthOptions } from "next-auth";
+import CredentialsProvider from "next-auth/providers/credentials";
+import dbConnect from "./mongodb";
 
 export const authOptions: NextAuthOptions = {
   providers: [
     CredentialsProvider({
-      name: 'credentials',
+      name: "credentials",
       credentials: {
-        email: { label: 'Email', type: 'email' },
-        password: { label: 'Password', type: 'password' }
+        email: { label: "Email", type: "email" },
+        password: { label: "Password", type: "password" },
       },
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) {
-          throw new Error('Email dan password wajib diisi');
+          throw new Error("Email dan password wajib diisi");
         }
 
         try {
@@ -22,17 +22,20 @@ export const authOptions: NextAuthOptions = {
 
           const user = await User.findOne({
             email: credentials.email.toLowerCase().trim(),
-            isActive: true
+            isActive: true,
           });
 
           if (!user) {
-            throw new Error('Email atau password tidak valid');
+            throw new Error("Email atau password tidak valid");
           }
 
-          const isPasswordValid = await bcrypt.compare(credentials.password, user.password);
+          const isPasswordValid = await bcrypt.compare(
+            credentials.password,
+            user.password
+          );
 
           if (!isPasswordValid) {
-            throw new Error('Email atau password tidak valid');
+            throw new Error("Email atau password tidak valid");
           }
 
           // Update last login
@@ -54,17 +57,17 @@ export const authOptions: NextAuthOptions = {
             profileImageUrl: user.profileImageUrl,
           };
         } catch (error) {
-          console.error('Auth error:', error);
+          console.error("Auth error:", error);
           throw error;
         }
-      }
-    })
+      },
+    }),
   ],
   session: {
-    strategy: 'jwt',
+    strategy: "jwt",
   },
   pages: {
-    signIn: '/login',
+    signIn: "/login",
   },
   callbacks: {
     async jwt({ token, user, trigger }) {
@@ -78,14 +81,14 @@ export const authOptions: NextAuthOptions = {
         token.city = user.city;
         token.verificationStatus = user.verificationStatus;
         token.canPurchase = user.canPurchase;
-        token.profileImageUrl = user.profileImageUrl;
+        token.profileImageUrl = (user as any).profileImageUrl;
       }
-      
+
       // Handle session updates by fetching fresh data from database
-      if (trigger === 'update' && token.sub) {
+      if (trigger === "update" && token.sub) {
         try {
           await dbConnect();
-          const dbUser = await User.findById(token.sub).select('-password');
+          const dbUser = await User.findById(token.sub).select("-password");
           if (dbUser) {
             token.role = dbUser.role;
             token.isVerified = dbUser.isEmailVerified;
@@ -99,10 +102,10 @@ export const authOptions: NextAuthOptions = {
             token.profileImageUrl = dbUser.profileImageUrl;
           }
         } catch (error) {
-          console.error('Error updating token from database:', error);
+          console.error("Error updating token from database:", error);
         }
       }
-      
+
       return token;
     },
     async session({ session, token }) {
