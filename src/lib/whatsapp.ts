@@ -2,14 +2,13 @@ import Settings from "@/models/Settings";
 import WhatsAppSession from "@/models/WhatsAppSession";
 import { Boom } from "@hapi/boom";
 import makeWASocket, {
+  AuthenticationCreds,
   AuthenticationState,
   ConnectionState,
   DisconnectReason,
-  useMultiFileAuthState,
+  initAuthCreds,
+  SignalDataTypeMap,
 } from "@whiskeysockets/baileys";
-import { promises as fs } from "fs";
-import os from "os";
-import path from "path";
 import QRCode from "qrcode";
 import dbConnect from "./mongodb";
 
@@ -21,14 +20,24 @@ const connectionStates = new Map<
 >();
 const connectionPromises = new Map<string, Promise<any>>();
 
-// Interface for our MongoDB auth state
-interface MongoAuthState extends AuthenticationState {
-  saveCreds: () => Promise<void>;
-  hasExistingAuth: boolean;
-}
+// Helper function to convert objects with buffer data back to BufferJSON format
+const fixBufferJSON = (obj: any): any => {
+  if (obj && typeof obj === "object") {
+    if (obj.type === "Buffer" && Array.isArray(obj.data)) {
+      return Buffer.from(obj.data);
+    }
 
-// Database-backed implementation using real useMultiFileAuthState
-const useMongoDBAuthState = async (
+    const result: any = Array.isArray(obj) ? [] : {};
+    for (const key in obj) {
+      result[key] = fixBufferJSON(obj[key]);
+    }
+    return result;
+  }
+  return obj;
+};
+
+// Custom MongoDB-based auth state implementation without temp files
+const getMongoDBAuthState = async (
   whatsappNumber: string
 ): Promise<{
   state: AuthenticationState;
@@ -37,67 +46,135 @@ const useMongoDBAuthState = async (
 }> => {
   await dbConnect();
 
-  // Create a temporary directory for this WhatsApp session
-  const sessionDir = path.join(os.tmpdir(), `wa_session_${whatsappNumber}`);
-
-  // Ensure directory exists
-  try {
-    await fs.mkdir(sessionDir, { recursive: true });
-  } catch (error) {
-    // Directory might already exist
-  }
-
-  // Check if we have existing auth data in MongoDB and restore it to temp files
+  // Get existing session from MongoDB
   const session = await WhatsAppSession.findOne({ whatsappNumber });
-  let hasExistingAuth = false;
+  let creds: AuthenticationCreds;
+  let keys: any = {};
 
-  if (session && session.authData && Object.keys(session.authData).length > 0) {
-    hasExistingAuth = true;
+  // Check if we have existing credentials
+  const hasExistingAuth = !!(
+    session &&
+    session.authData &&
+    session.authData.creds
+  );
+
+  if (hasExistingAuth) {
     console.log(
-      `Restoring ${
-        Object.keys(session.authData).length
-      } auth files from MongoDB`
+      `Loading existing auth data for ${whatsappNumber} from MongoDB`
     );
 
-    // Restore all files from MongoDB to temp directory
-    for (const [fileName, fileData] of Object.entries(session.authData)) {
-      try {
-        const filePath = path.join(sessionDir, fileName);
-        const buffer = Buffer.from(fileData as string, "base64");
-        await fs.writeFile(filePath, buffer);
-      } catch (error) {
-        console.error(`Error restoring file ${fileName}:`, error);
-      }
-    }
-  }
-
-  console.log(`MongoDB Auth State - hasExistingAuth: ${hasExistingAuth}`);
-
-  // Use the real useMultiFileAuthState with the temp directory
-  const { state, saveCreds } = await useMultiFileAuthState(sessionDir);
-
-  // Override saveCreds to also save to MongoDB
-  const originalSaveCreds = saveCreds;
-  const enhancedSaveCreds = async () => {
-    // First save using the original method (to temp files)
-    await originalSaveCreds();
-
-    // Then backup all files to MongoDB
     try {
-      const files = await fs.readdir(sessionDir);
-      const authData: { [key: string]: string } = {};
+      // Parse credentials from base64 JSON and fix Buffer objects
+      if (session.authData.creds) {
+        const credsBuffer = Buffer.from(session.authData.creds, "base64");
+        const parsedCreds = JSON.parse(credsBuffer.toString("utf8"));
+        creds = fixBufferJSON(parsedCreds);
+      } else {
+        throw new Error("No credentials found");
+      }
 
-      for (const fileName of files) {
-        try {
-          const filePath = path.join(sessionDir, fileName);
-          const fileBuffer = await fs.readFile(filePath);
-          authData[fileName] = fileBuffer.toString("base64");
-        } catch (error) {
-          console.error(`Error reading file ${fileName}:`, error);
+      // Parse all key files
+      for (const [fileName, fileData] of Object.entries(session.authData)) {
+        if (
+          fileName !== "creds" &&
+          fileName.startsWith("app-state-sync-key-")
+        ) {
+          try {
+            const keyBuffer = Buffer.from(fileData as string, "base64");
+            const keyId = fileName
+              .replace("app-state-sync-key-", "")
+              .replace(".json", "");
+            const parsedKey = JSON.parse(keyBuffer.toString("utf8"));
+            keys[keyId] = fixBufferJSON(parsedKey);
+          } catch (error) {
+            console.error(`Error parsing key file ${fileName}:`, error);
+          }
         }
       }
 
-      // Update MongoDB with all auth files
+      console.log(
+        `Loaded credentials and ${Object.keys(keys).length} keys from MongoDB`
+      );
+    } catch (error) {
+      console.error(
+        "Error parsing auth data from MongoDB, initializing new credentials:",
+        error
+      );
+      creds = initAuthCreds();
+      keys = {};
+    }
+  } else {
+    console.log(
+      `No existing auth data found for ${whatsappNumber}, initializing new credentials`
+    );
+    creds = initAuthCreds();
+    keys = {};
+  }
+
+  // Create the authentication state
+  const state: AuthenticationState = {
+    creds,
+    keys: {
+      get: (type: keyof SignalDataTypeMap, ids: string[]) => {
+        const data: { [_: string]: any } = {};
+
+        switch (type) {
+          case "app-state-sync-key":
+            for (const id of ids) {
+              if (keys[id]) {
+                data[id] = keys[id];
+              }
+            }
+            break;
+          default:
+            break;
+        }
+
+        return data;
+      },
+      set: (data: any) => {
+        for (const category in data) {
+          if (category === "creds") {
+            creds = { ...creds, ...data.creds };
+          } else {
+            const signalCategory = category as keyof SignalDataTypeMap;
+            switch (signalCategory) {
+              case "app-state-sync-key":
+                for (const id in data[category]) {
+                  keys[id] = data[category][id];
+                }
+                break;
+              default:
+                break;
+            }
+          }
+        }
+      },
+    },
+  };
+
+  // Save credentials function
+  const saveCreds = async () => {
+    try {
+      console.log(`Saving auth data for ${whatsappNumber} to MongoDB`);
+
+      // Prepare auth data for MongoDB storage
+      const authData: { [key: string]: string } = {};
+
+      // Save credentials
+      authData.creds = Buffer.from(JSON.stringify(creds), "utf8").toString(
+        "base64"
+      );
+
+      // Save all keys
+      for (const [keyId, keyData] of Object.entries(keys)) {
+        authData[`app-state-sync-key-${keyId}.json`] = Buffer.from(
+          JSON.stringify(keyData),
+          "utf8"
+        ).toString("base64");
+      }
+
+      // Update MongoDB with auth data
       await WhatsAppSession.findOneAndUpdate(
         { whatsappNumber },
         {
@@ -111,16 +188,19 @@ const useMongoDBAuthState = async (
       );
 
       console.log(
-        `Backed up ${Object.keys(authData).length} auth files to MongoDB`
+        `Saved credentials and ${
+          Object.keys(keys).length
+        } keys to MongoDB for ${whatsappNumber}`
       );
     } catch (error) {
-      console.error("Error backing up auth files to MongoDB:", error);
+      console.error("Error saving auth data to MongoDB:", error);
+      throw error;
     }
   };
 
   return {
     state,
-    saveCreds: enhancedSaveCreds,
+    saveCreds,
     hasExistingAuth,
   };
 };
@@ -203,7 +283,7 @@ export const createWhatsAppConnection = async (whatsappNumber: string) => {
     }
 
     // Use MongoDB auth state
-    const { state, saveCreds, hasExistingAuth } = await useMongoDBAuthState(
+    const { state, saveCreds, hasExistingAuth } = await getMongoDBAuthState(
       whatsappNumber
     );
 
@@ -212,9 +292,9 @@ export const createWhatsAppConnection = async (whatsappNumber: string) => {
 
     const socket = makeWASocket({
       auth: state,
-      printQRInTerminal: true, // Enable terminal for debugging
+      printQRInTerminal: false, // Disable terminal QR, send to frontend instead
       mobile: false,
-      browser: ["Widi Salon", "Chrome", "10.0"], // Exact same as working implementation
+      browser: ["Investasi Hijau", "Chrome", "10.0"],
       connectTimeoutMs: 60000,
       defaultQueryTimeoutMs: 60000,
       retryRequestDelayMs: 2000,
@@ -228,28 +308,10 @@ export const createWhatsAppConnection = async (whatsappNumber: string) => {
       async (update: Partial<ConnectionState>) => {
         const { connection, lastDisconnect, qr } = update;
 
-        console.log(`Connection update for ${whatsappNumber}:`, {
-          connection,
-          hasQr: !!qr,
-          qrLength: qr ? qr.length : 0,
-          hasLastDisconnect: !!lastDisconnect,
-          statusCode: (lastDisconnect?.error as any)?.output?.statusCode,
-        });
-
-        // Debug: Log raw QR data when received
-        if (qr) {
-          console.log(`RAW QR CODE RECEIVED:`, qr.substring(0, 100) + "...");
-        }
-
         if (qr) {
           // Set QR state
           connectionStates.set(whatsappNumber, "qr");
           await updateWhatsAppStatus(whatsappNumber, "qr");
-
-          // Generate QR code as base64 string and store in memory for browser display
-          console.log(
-            `Received QR code data for ${whatsappNumber}, generating data URL...`
-          );
 
           const qrString = await QRCode.toDataURL(qr, {
             errorCorrectionLevel: "M",
@@ -281,122 +343,31 @@ export const createWhatsAppConnection = async (whatsappNumber: string) => {
           }
         }
 
-        if (connection === "close") {
-          const statusCode = (lastDisconnect?.error as Boom)?.output
-            ?.statusCode;
-          const errorMessage = (lastDisconnect?.error as any)?.message || "";
-
-          console.log(
-            "Connection closed due to ",
-            lastDisconnect?.error,
-            ", status code:",
-            statusCode,
-            ", error message:",
-            errorMessage
-          );
-
-          // Handle the restartRequired case as per Baileys documentation
-          if (statusCode === DisconnectReason.restartRequired) {
-            console.log(
-              "WhatsApp requires restart after QR scan - this is normal behavior"
+        if (
+          connection === "close" &&
+          (lastDisconnect?.error as Boom)?.output?.statusCode ===
+            DisconnectReason.restartRequired
+        ) {
+          // Clear the old socket as per documentation (it's now useless)
+          whatsappSockets.delete(whatsappNumber);
+          // Clear QR code from database
+          try {
+            await WhatsAppSession.findOneAndUpdate(
+              { whatsappNumber },
+              { $unset: { qrCode: "", qrGeneratedAt: "" } }
             );
-            console.log("Creating new socket with saved credentials...");
-
-            // Clear the old socket as per documentation (it's now useless)
-            whatsappSockets.delete(whatsappNumber);
-            // Clear QR code from database
-            try {
-              await WhatsAppSession.findOneAndUpdate(
-                { whatsappNumber },
-                { $unset: { qrCode: "", qrGeneratedAt: "" } }
-              );
-            } catch (error) {
-              console.error("Error clearing QR code:", error);
-            }
-
-            // Create new connection with saved auth
-            setTimeout(async () => {
-              try {
-                await createWhatsAppConnection(whatsappNumber);
-              } catch (error) {
-                console.error(
-                  "Error creating new socket after restart:",
-                  error
-                );
-              }
-            }, 1000);
-
-            return;
+          } catch (error) {
+            console.error("Error clearing QR code:", error);
           }
 
-          // Set disconnected state for other cases
-          connectionStates.set(whatsappNumber, "disconnected");
-          await updateWhatsAppStatus(whatsappNumber, "disconnected");
-
-          // Check if the error is related to corrupted auth state
-          if (errorMessage.includes("Cannot read properties of undefined")) {
-            console.log("Detected auth corruption error, clearing auth...");
-            await WhatsAppSession.findOneAndDelete({ whatsappNumber });
-            await cleanupTempAuthFiles(whatsappNumber);
-            whatsappSockets.delete(whatsappNumber);
-            connectionStates.delete(whatsappNumber);
-            connectionPromises.delete(whatsappNumber);
-            // Clear QR code from database
-            try {
-              await WhatsAppSession.findOneAndUpdate(
-                { whatsappNumber },
-                { $unset: { qrCode: "", qrGeneratedAt: "" } }
-              );
-            } catch (error) {
-              console.error("Error clearing QR code:", error);
-            }
-            return;
+          try {
+            await createWhatsAppConnection(whatsappNumber);
+          } catch (error) {
+            console.error("Error creating new socket after restart:", error);
           }
 
-          // Handle other disconnect reasons
-          const shouldReconnect = statusCode !== DisconnectReason.loggedOut;
-
-          if (
-            errorMessage.includes("Connection Failure") &&
-            statusCode === 405
-          ) {
-            console.log(
-              "Connection Failure (405) - temporary failure, not retrying immediately"
-            );
-            // Don't retry immediately for 405 errors to avoid being blocked
-            // Let the frontend polling handle the retry
-          } else if (
-            errorMessage.includes("Connection Terminated") &&
-            statusCode === 428
-          ) {
-            console.log("Connection Terminated (428) - will retry with delay");
-            setTimeout(() => {
-              connectionStates.delete(whatsappNumber);
-              createWhatsAppConnection(whatsappNumber);
-            }, 8000); // Wait longer for 428 errors
-          } else if (shouldReconnect) {
-            console.log("Reconnecting after recoverable disconnect...");
-            setTimeout(() => {
-              connectionStates.delete(whatsappNumber);
-              createWhatsAppConnection(whatsappNumber);
-            }, 5000);
-          } else {
-            console.log("Clearing socket due to logout or unrecoverable error");
-            whatsappSockets.delete(whatsappNumber);
-            connectionStates.delete(whatsappNumber);
-            connectionPromises.delete(whatsappNumber);
-            // Clear QR code from database
-            try {
-              await WhatsAppSession.findOneAndUpdate(
-                { whatsappNumber },
-                { $unset: { qrCode: "", qrGeneratedAt: "" } }
-              );
-            } catch (error) {
-              console.error("Error clearing QR code:", error);
-            }
-          }
+          return;
         } else if (connection === "open") {
-          console.log(`WhatsApp connected for ${whatsappNumber}`);
           connectionStates.set(whatsappNumber, "connected");
           // Clear QR code from database
           try {
@@ -454,15 +425,13 @@ export const getWhatsAppSocket = async (whatsappNumber: string) => {
       `Creating messaging socket for authenticated ${whatsappNumber}`
     );
     try {
-      const { state } = await useMongoDBAuthState(whatsappNumber);
+      const { state } = await getMongoDBAuthState(whatsappNumber);
 
       const socket = makeWASocket({
         auth: state,
         printQRInTerminal: false,
-        browser: ["Ubuntu", "Chrome", "22.04.4"],
-        connectTimeoutMs: 60000,
-        defaultQueryTimeoutMs: 60000,
-        retryRequestDelayMs: 2000,
+        mobile: false,
+        browser: ["Investasi Hijau", "Chrome", "10.0"],
       });
 
       whatsappSockets.set(whatsappNumber, socket);
@@ -498,13 +467,17 @@ export const getPairingCode = async (whatsappNumber: string) => {
   try {
     await dbConnect();
     const session = await WhatsAppSession.findOne({ whatsappNumber });
-    
+
     if (session && session.pairingCode) {
-      console.log(`Getting pairing code from MongoDB for ${whatsappNumber}: Found`);
+      console.log(
+        `Getting pairing code from MongoDB for ${whatsappNumber}: Found`
+      );
       return session.pairingCode;
     }
-    
-    console.log(`Getting pairing code from MongoDB for ${whatsappNumber}: Not found`);
+
+    console.log(
+      `Getting pairing code from MongoDB for ${whatsappNumber}: Not found`
+    );
     return null;
   } catch (error) {
     console.error("Error getting pairing code from MongoDB:", error);
@@ -609,25 +582,14 @@ const updateWhatsAppStatus = async (
   }
 };
 
-// Clean up temporary auth files
-const cleanupTempAuthFiles = async (whatsappNumber: string) => {
+// Clean up auth data from MongoDB
+const cleanupAuthData = async (whatsappNumber: string) => {
   try {
-    // Using imported modules from top of file
-
-    const sessionDir = path.join(os.tmpdir(), `wa_session_${whatsappNumber}`);
-
-    try {
-      const files = await fs.readdir(sessionDir);
-      for (const file of files) {
-        await fs.unlink(path.join(sessionDir, file));
-      }
-      await fs.rmdir(sessionDir);
-      console.log(`Cleaned up temp auth files for ${whatsappNumber}`);
-    } catch (error) {
-      // Directory might not exist or already cleaned up
-    }
+    await dbConnect();
+    await WhatsAppSession.findOneAndDelete({ whatsappNumber });
+    console.log(`Cleaned up auth data for ${whatsappNumber} from MongoDB`);
   } catch (error) {
-    console.error(`Error cleaning up temp auth files:`, error);
+    console.error(`Error cleaning up auth data:`, error);
   }
 };
 
@@ -657,12 +619,8 @@ export const removeWhatsAppAuth = async (whatsappNumber: string) => {
       console.error("Error clearing QR code:", error);
     }
 
-    // Remove auth state from database
-    await WhatsAppSession.findOneAndDelete({ whatsappNumber });
-    console.log(`Removed auth state from MongoDB for ${whatsappNumber}`);
-
-    // Clean up temporary files
-    await cleanupTempAuthFiles(whatsappNumber);
+    // Clean up auth data from MongoDB
+    await cleanupAuthData(whatsappNumber);
 
     // Update status in database
     await updateWhatsAppStatus(whatsappNumber, "disconnected");
