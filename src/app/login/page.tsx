@@ -1,14 +1,16 @@
-'use client';
+"use client";
 
 import { FormField } from '@/components/forms/FormField';
 import { Input } from '@/components/forms/Input';
 import { useSession } from 'next-auth/react';
+import { useTheme } from "next-themes";
 import Image from 'next/image';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 
 export default function LoginPage() {
   const { data: session } = useSession();
+  const { theme, resolvedTheme, setTheme } = useTheme();
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -56,6 +58,16 @@ export default function LoginPage() {
       window.location.href = redirectPath;
     }
   }, [loginSuccess, session]);
+
+  // Force light theme on this page and restore on unmount
+  useEffect(() => {
+    const previous = theme || resolvedTheme;
+    setTheme("light");
+    return () => {
+      if (previous) setTheme(previous);
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;

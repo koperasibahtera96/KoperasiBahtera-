@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import { CameraSelfie, CameraSelfieRef } from '@/components/forms/CameraSelfie';
 import { FormActions, FormField, FormRow } from '@/components/forms/FormField';
@@ -16,10 +16,12 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useTheme } from "next-themes";
 import { useForm } from 'react-hook-form';
 
 
 export default function RegisterPage() {
+  const { theme, resolvedTheme, setTheme } = useTheme();
   const [currentStep, setCurrentStep] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
   const [submitError, setSubmitError] = useState('');
@@ -65,6 +67,16 @@ export default function RegisterPage() {
         clearInterval(countdownIntervalRef.current);
       }
     };
+  }, []);
+
+  // Force light theme on this page and restore on unmount
+  useEffect(() => {
+    const previous = theme || resolvedTheme;
+    setTheme("light");
+    return () => {
+      if (previous) setTheme(previous);
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Options for select fields

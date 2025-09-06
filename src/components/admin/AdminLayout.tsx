@@ -90,7 +90,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#F8FAF9] to-[#E8F5E8] font-[family-name:var(--font-poppins)]">
+    <div className="min-h-screen bg-gradient-to-br from-[#F8FAF9] to-[#E8F5E8] dark:from-gray-900 dark:to-gray-800 font-[family-name:var(--font-poppins)] transition-colors duration-300">
       {/* Mobile sidebar overlay */}
       <AnimatePresence>
         {sidebarOpen && (
@@ -107,7 +107,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
       {/* Sidebar */}
       <motion.div
         className={`
-          fixed inset-y-0 left-0 w-64 sm:w-72 bg-white/95 backdrop-blur-lg shadow-2xl transform transition-transform duration-300 ease-in-out z-50 border-r border-[#324D3E]/10
+          fixed inset-y-0 left-0 w-64 sm:w-72 bg-white/95 dark:bg-gray-900/95 backdrop-blur-lg shadow-2xl transform transition-all duration-300 ease-in-out z-50 border-r border-[#324D3E]/10 dark:border-gray-700
           ${
             sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
           }
@@ -118,7 +118,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
       >
         {/* Logo */}
         <motion.div
-          className="flex items-center gap-3 p-4 sm:p-6 border-b border-[#324D3E]/10"
+          className="flex items-center gap-3 p-4 sm:p-6 border-b border-[#324D3E]/10 dark:border-gray-700"
           variants={itemVariants}
         >
           <motion.div
@@ -139,12 +139,12 @@ export function AdminLayout({ children }: AdminLayoutProps) {
           </motion.div>
           <div className="min-w-0 flex-1">
             <motion.h1
-              className="font-bold text-[#324D3E] text-base sm:text-lg truncate"
+              className="font-bold text-[#324D3E] dark:text-white text-base sm:text-lg truncate"
               whileHover={{ color: "#4C3D19" }}
             >
               Admin Panel
             </motion.h1>
-            <p className="text-xs sm:text-sm text-[#889063] truncate">
+            <p className="text-xs sm:text-sm text-[#889063] dark:text-gray-400 truncate">
               Koperasi BAHTERA
             </p>
           </div>
@@ -168,7 +168,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
                     ${
                       isActive
                         ? "bg-gradient-to-r from-[#324D3E] to-[#4C3D19] text-white shadow-lg"
-                        : "text-[#324D3E] hover:bg-[#324D3E]/10 hover:text-[#4C3D19]"
+                        : "text-[#324D3E] dark:text-gray-200 hover:bg-[#324D3E]/10 dark:hover:bg-gray-700 hover:text-[#4C3D19] dark:hover:text-white"
                     }
                   `}
                   onClick={() => setSidebarOpen(false)} // Close sidebar on mobile when clicking nav item
@@ -189,10 +189,10 @@ export function AdminLayout({ children }: AdminLayoutProps) {
 
         {/* User info at bottom */}
         <motion.div
-          className="absolute bottom-0 left-0 right-0 p-2 sm:p-4 border-t border-[#324D3E]/10"
+          className="absolute bottom-0 left-0 right-0 p-2 sm:p-4 border-t border-[#324D3E]/10 dark:border-gray-700"
           variants={itemVariants}
         >
-          <motion.div className="flex items-center gap-2 sm:gap-3 p-2 sm:p-3 rounded-xl hover:bg-[#324D3E]/5 transition-colors mb-1 sm:mb-2">
+          <motion.div className="flex items-center gap-2 sm:gap-3 p-2 sm:p-3 rounded-xl hover:bg-[#324D3E]/5 dark:hover:bg-gray-700/50 transition-colors mb-1 sm:mb-2">
             <motion.div
               className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-r from-[#324D3E] to-[#4C3D19] rounded-full flex items-center justify-center flex-shrink-0"
               whileHover={{
@@ -205,10 +205,10 @@ export function AdminLayout({ children }: AdminLayoutProps) {
               </span>
             </motion.div>
             <div className="flex-1 min-w-0">
-              <p className="font-semibold text-[#324D3E] text-sm sm:text-base truncate">
+              <p className="font-semibold text-[#324D3E] dark:text-white text-sm sm:text-base truncate">
                 {session?.user?.name || "Admin"}
               </p>
-              <p className="text-xs sm:text-sm text-[#889063] truncate">
+              <p className="text-xs sm:text-sm text-[#889063] dark:text-gray-400 truncate">
                 Administrator
               </p>
             </div>
@@ -217,11 +217,11 @@ export function AdminLayout({ children }: AdminLayoutProps) {
           {/* Logout button */}
           <motion.button
             onClick={handleLogout}
-            className="w-full flex items-center gap-2 sm:gap-3 p-2 sm:p-3 rounded-xl text-red-600 hover:bg-red-50 transition-colors group"
+            className="w-full flex items-center gap-2 sm:gap-3 p-2 sm:p-3 rounded-xl text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors group"
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
           >
-            <div className="w-8 h-8 sm:w-10 sm:h-10 bg-red-100 rounded-full flex items-center justify-center group-hover:bg-red-200 transition-colors flex-shrink-0">
+            <div className="w-8 h-8 sm:w-10 sm:h-10 bg-red-100 dark:bg-red-900/40 rounded-full flex items-center justify-center group-hover:bg-red-200 dark:group-hover:bg-red-800/60 transition-colors flex-shrink-0">
               <svg
                 className="w-4 h-4 sm:w-5 sm:h-5"
                 fill="none"
@@ -247,7 +247,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
         <div className="lg:hidden fixed top-4 right-4 z-40">
           <motion.button
             onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="p-2 rounded-xl text-[#324D3E] bg-white/80 backdrop-blur-lg shadow-md hover:bg-[#324D3E]/10 transition-colors"
+            className="p-2 rounded-xl text-[#324D3E] dark:text-white bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg shadow-md hover:bg-[#324D3E]/10 dark:hover:bg-gray-700/50 transition-colors"
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.9 }}
           >

@@ -3,6 +3,7 @@
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { RefreshCw } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 interface Tree {
@@ -421,9 +422,9 @@ export default function LaporanPage() {
             <button
               onClick={fetchReportData}
               disabled={loading}
-              className="bg-[#324D3E]/10 hover:bg-[#324D3E]/20 text-[#324D3E] px-3 sm:px-4 py-2 rounded-xl font-medium transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 text-sm sm:text-base whitespace-nowrap"
+              className="bg-[#324D3E]/10 dark:bg-[#324D3E]/20 hover:bg-[#324D3E]/20 dark:hover:bg-[#324D3E]/30 text-[#324D3E] dark:text-[#324D3E] px-3 sm:px-4 py-2 rounded-xl font-medium transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 text-sm sm:text-base whitespace-nowrap"
             >
-              <span>🔄</span>
+              <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
               <span className="hidden sm:inline">{loading ? 'Memuat...' : 'Refresh'}</span>
             </button>
             <button

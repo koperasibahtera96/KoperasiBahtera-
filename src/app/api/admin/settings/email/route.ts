@@ -1,4 +1,5 @@
 import { authOptions } from "@/lib/auth";
+import { encrypt } from "@/lib/encryption";
 import dbConnect from "@/lib/mongodb";
 import Settings from "@/models/Settings";
 import { getServerSession } from "next-auth/next";
@@ -19,10 +20,12 @@ export async function GET() {
 
     const settings = await Settings.findOne({ type: "email" });
 
+    // Return email and service, but not the password for security
+    // We'll include a flag to indicate if a password is set
     return NextResponse.json({
       email: settings?.config?.email || "",
       service: settings?.config?.service || "gmail",
-      // Never return password for security
+      hasPassword: !!settings?.config?.password,
     });
   } catch (error) {
     console.error("Error fetching email settings:", error);
@@ -46,25 +49,43 @@ export async function POST(req: NextRequest) {
 
     const { email, password, service } = await req.json();
 
-    if (!email || !password) {
+    if (!email) {
       return NextResponse.json(
-        { error: "Email and password are required" },
+        { error: "Email is required" },
         { status: 400 }
       );
     }
 
     await dbConnect();
 
+    // Get existing settings to preserve password if not provided
+    const existingSettings = await Settings.findOne({ type: "email" });
+    
+    let finalPassword = existingSettings?.config?.password || "";
+
+    // If password is provided, encrypt and update it
+    if (password && password.trim() !== "") {
+      finalPassword = encrypt(password);
+    } else if (!existingSettings?.config?.password) {
+      // If no password provided and no existing password, require it
+      return NextResponse.json(
+        { error: "Password is required for new configuration" },
+        { status: 400 }
+      );
+    }
+
+    const configToUpdate = {
+      email,
+      service,
+      password: finalPassword
+    };
+
     // Update or create email settings
     await Settings.findOneAndUpdate(
       { type: "email" },
       {
         type: "email",
-        config: {
-          email,
-          password, // In production, consider encrypting this
-          service,
-        },
+        config: configToUpdate,
         updatedAt: new Date(),
         updatedBy: session.user.id,
       },

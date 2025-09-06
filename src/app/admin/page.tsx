@@ -2,6 +2,7 @@
 
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import { motion } from 'framer-motion';
+import { RefreshCw } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 interface DashboardData {
@@ -65,12 +66,12 @@ export default function AdminDashboard() {
       <AdminLayout>
         <div className="space-y-8">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
-            <p className="text-gray-600 mt-2">Memuat data...</p>
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Dashboard</h1>
+            <p className="text-gray-600 dark:text-gray-300 mt-2">Memuat data...</p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 animate-pulse">
+              <div key={i} className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 animate-pulse">
                 <div className="h-4 bg-gray-200 rounded w-1/2 mb-2"></div>
                 <div className="h-8 bg-gray-200 rounded w-3/4"></div>
               </div>
@@ -86,8 +87,8 @@ export default function AdminDashboard() {
       <AdminLayout>
         <div className="space-y-8">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
-            <p className="text-gray-600 mt-2">Gagal memuat data dashboard</p>
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Dashboard</h1>
+            <p className="text-gray-600 dark:text-gray-300 mt-2">Gagal memuat data dashboard</p>
           </div>
         </div>
       </AdminLayout>
@@ -163,8 +164,8 @@ export default function AdminDashboard() {
       >
         {/* Page Header */}
         <motion.div variants={itemVariants} className="mb-6 sm:mb-8">
-          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-[#324D3E] font-[family-name:var(--font-poppins)]">Dashboard</h1>
-          <p className="text-[#889063] mt-1 sm:mt-2 text-sm sm:text-base">Selamat datang di panel admin Koperasi BAHTERA</p>
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-[#324D3E] dark:text-white font-[family-name:var(--font-poppins)] transition-colors duration-300">Dashboard</h1>
+          <p className="text-[#889063] dark:text-gray-400 mt-1 sm:mt-2 text-sm sm:text-base transition-colors duration-300">Selamat datang di panel admin Koperasi BAHTERA</p>
         </motion.div>
 
         {/* Stats Grid */}
@@ -175,7 +176,7 @@ export default function AdminDashboard() {
           {stats.map((stat, index) => (
             <motion.div
               key={stat.name}
-              className="bg-white/80 backdrop-blur-lg rounded-2xl shadow-lg border border-[#324D3E]/10 p-4 sm:p-6 hover:shadow-xl hover:scale-105 transition-all duration-300 flex flex-col h-full"
+              className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg rounded-2xl shadow-lg border border-[#324D3E]/10 dark:border-gray-700 p-4 sm:p-6 hover:shadow-xl hover:scale-105 transition-all duration-300 flex flex-col h-full"
               variants={itemVariants}
               whileHover={{
                 scale: 1.05,
@@ -184,8 +185,8 @@ export default function AdminDashboard() {
             >
               <div className="flex items-center justify-between flex-1">
                 <div className="min-w-0 flex-1">
-                  <p className="text-xs sm:text-sm font-medium text-[#889063] truncate">{stat.name}</p>
-                  <p className="text-lg sm:text-xl lg:text-2xl font-bold text-[#324D3E] mt-1 truncate">{stat.value}</p>
+                  <p className="text-xs sm:text-sm font-medium text-[#889063] dark:text-gray-400 truncate transition-colors duration-300">{stat.name}</p>
+                  <p className="text-lg sm:text-xl lg:text-2xl font-bold text-[#324D3E] dark:text-white mt-1 truncate transition-colors duration-300">{stat.value}</p>
                 </div>
                 <motion.div
                   className="text-2xl sm:text-3xl ml-2 flex-shrink-0"
@@ -205,7 +206,7 @@ export default function AdminDashboard() {
                 <span className={`text-xs sm:text-sm font-medium ${stat.changeType === 'positive' ? 'text-[#4C3D19]' : 'text-red-600'}`}>
                   {stat.change}
                 </span>
-                <span className="text-xs sm:text-sm text-[#889063] ml-2 truncate">dari bulan lalu</span>
+                <span className="text-xs sm:text-sm text-[#889063] dark:text-gray-400 ml-2 truncate transition-colors duration-300">dari bulan lalu</span>
               </div>
             </motion.div>
           ))}
@@ -217,12 +218,12 @@ export default function AdminDashboard() {
         >
           {/* Recent Investors */}
           <motion.div
-            className="bg-white/80 backdrop-blur-lg rounded-2xl shadow-lg border border-[#324D3E]/10"
+            className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg rounded-2xl shadow-lg border border-[#324D3E]/10 dark:border-gray-700 transition-colors duration-300"
             variants={itemVariants}
           >
-            <div className="p-6 border-b border-[#324D3E]/10">
+            <div className="p-6 border-b border-[#324D3E]/10 dark:border-gray-700 transition-colors duration-300">
               <div className="flex items-center justify-between">
-                <h2 className="text-xl font-bold text-[#324D3E] font-[family-name:var(--font-poppins)]">Investor Terbaru</h2>
+                <h2 className="text-xl font-bold text-[#324D3E] dark:text-white font-[family-name:var(--font-poppins)] transition-colors duration-300">Investor Terbaru</h2>
                 <button
                   onClick={() => window.location.href = '/admin/investors'}
                   className="text-[#4C3D19] hover:text-[#324D3E] font-medium text-sm transition-colors"
@@ -234,26 +235,26 @@ export default function AdminDashboard() {
             <div className="p-6">
               <div className="space-y-4">
                 {dashboardData.recentInvestors.length === 0 ? (
-                  <div className="text-center py-8 text-gray-500">
+                  <div className="text-center py-8 text-gray-500 dark:text-gray-400 transition-colors duration-300">
                     Belum ada investor
                   </div>
                 ) : (
                   dashboardData.recentInvestors.map((investor) => (
-                    <div key={investor.id} className="flex items-center justify-between p-4 bg-gradient-to-r from-[#F8FAF9] to-[#E8F5E8] rounded-xl hover:shadow-md transition-all duration-300">
+                    <div key={investor.id} className="flex items-center justify-between p-4 bg-gradient-to-r from-[#F8FAF9] to-[#E8F5E8] dark:from-gray-700 dark:to-gray-600 rounded-xl hover:shadow-md transition-all duration-300">
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 bg-gradient-to-r from-[#324D3E] to-[#4C3D19] rounded-full flex items-center justify-center">
                           <span className="text-white font-bold">{investor.name.charAt(0)}</span>
                         </div>
                         <div>
-                          <p className="font-medium text-[#324D3E]">{investor.name}</p>
-                          <p className="text-sm text-[#889063]">{investor.email}</p>
+                          <p className="font-medium text-[#324D3E] dark:text-white transition-colors duration-300">{investor.name}</p>
+                          <p className="text-sm text-[#889063] dark:text-gray-400 transition-colors duration-300">{investor.email}</p>
                         </div>
                       </div>
                       <div className="text-right">
-                        <p className="font-medium text-[#324D3E]">{investor.investment}</p>
-                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${investor.status === 'active'
-                          ? 'bg-[#4C3D19]/10 text-[#4C3D19]'
-                          : 'bg-red-100 text-red-800'
+                        <p className="font-medium text-[#324D3E] dark:text-white transition-colors duration-300">{investor.investment}</p>
+                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full transition-colors duration-300 ${investor.status === 'active'
+                          ? 'bg-[#4C3D19]/10 dark:bg-[#4C3D19]/20 text-[#4C3D19] dark:text-[#4C3D19]'
+                          : 'bg-red-100 dark:bg-red-900/20 text-red-800 dark:text-red-300'
                           }`}>
                           {investor.status === 'active' ? 'Aktif' : 'Tidak Aktif'}
                         </span>
@@ -267,12 +268,12 @@ export default function AdminDashboard() {
 
           {/* Tree Statistics */}
           <motion.div
-            className="bg-white/80 backdrop-blur-lg rounded-2xl shadow-lg border border-[#324D3E]/10"
+            className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg rounded-2xl shadow-lg border border-[#324D3E]/10 dark:border-gray-700 transition-colors duration-300"
             variants={itemVariants}
           >
-            <div className="p-6 border-b border-[#324D3E]/10">
+            <div className="p-6 border-b border-[#324D3E]/10 dark:border-gray-700 transition-colors duration-300">
               <div className="flex items-center justify-between">
-                <h2 className="text-xl font-bold text-[#324D3E] font-[family-name:var(--font-poppins)]">Statistik Pohon</h2>
+                <h2 className="text-xl font-bold text-[#324D3E] dark:text-white font-[family-name:var(--font-poppins)] transition-colors duration-300">Statistik Pohon</h2>
                 <button
                   onClick={() => window.location.href = '/admin/trees'}
                   className="text-[#4C3D19] hover:text-[#324D3E] font-medium text-sm transition-colors"
@@ -284,7 +285,7 @@ export default function AdminDashboard() {
             <div className="p-6">
               <div className="space-y-6">
                 {dashboardData.treeStats.length === 0 ? (
-                  <div className="text-center py-8 text-gray-500">
+                  <div className="text-center py-8 text-gray-500 dark:text-gray-400 transition-colors duration-300">
                     Belum ada data pohon
                   </div>
                 ) : (
@@ -295,13 +296,13 @@ export default function AdminDashboard() {
                           tree.color === 'green' ? 'bg-green-500' : 'bg-emerald-500'
                           }`}></div>
                         <div>
-                          <p className="font-medium text-[#324D3E]">{tree.name}</p>
-                          <p className="text-sm text-[#889063]">{tree.count} pohon</p>
+                          <p className="font-medium text-[#324D3E] dark:text-white transition-colors duration-300">{tree.name}</p>
+                          <p className="text-sm text-[#889063] dark:text-gray-400 transition-colors duration-300">{tree.count} pohon</p>
                         </div>
                       </div>
                       <div className="text-right">
-                        <p className="font-medium text-[#324D3E]">{tree.value}</p>
-                        <p className="text-sm text-[#4C3D19]">{tree.growth}</p>
+                        <p className="font-medium text-[#324D3E] dark:text-white transition-colors duration-300">{tree.value}</p>
+                        <p className="text-sm text-[#4C3D19] dark:text-[#4C3D19] transition-colors duration-300">{tree.growth}</p>
                       </div>
                     </div>
                   ))
@@ -309,19 +310,19 @@ export default function AdminDashboard() {
               </div>
 
               {/* Stats Summary */}
-              <div className="mt-6 p-4 bg-gradient-to-r from-[#F8FAF9] to-[#E8F5E8] rounded-xl">
+              <div className="mt-6 p-4 bg-gradient-to-r from-[#F8FAF9] to-[#E8F5E8] dark:from-gray-700 dark:to-gray-600 rounded-xl transition-colors duration-300">
                 <div className="grid grid-cols-3 gap-4 text-center">
                   <div>
-                    <p className="text-sm text-[#889063]">Aktif</p>
-                    <p className="text-lg font-bold text-[#4C3D19]">{dashboardData.investorStats.active}</p>
+                    <p className="text-sm text-[#889063] dark:text-gray-400 transition-colors duration-300">Aktif</p>
+                    <p className="text-lg font-bold text-[#4C3D19] dark:text-[#4C3D19] transition-colors duration-300">{dashboardData.investorStats.active}</p>
                   </div>
                   <div>
-                    <p className="text-sm text-[#889063]">Tidak Aktif</p>
-                    <p className="text-lg font-bold text-red-600">{dashboardData.investorStats.inactive}</p>
+                    <p className="text-sm text-[#889063] dark:text-gray-400 transition-colors duration-300">Tidak Aktif</p>
+                    <p className="text-lg font-bold text-red-600 dark:text-red-400 transition-colors duration-300">{dashboardData.investorStats.inactive}</p>
                   </div>
                   <div>
-                    <p className="text-sm text-[#889063]">Total</p>
-                    <p className="text-lg font-bold text-[#324D3E]">{dashboardData.investorStats.total}</p>
+                    <p className="text-sm text-[#889063] dark:text-gray-400 transition-colors duration-300">Total</p>
+                    <p className="text-lg font-bold text-[#324D3E] dark:text-white transition-colors duration-300">{dashboardData.investorStats.total}</p>
                   </div>
                 </div>
               </div>
@@ -331,16 +332,17 @@ export default function AdminDashboard() {
 
         {/* Quick Actions */}
         <motion.div
-          className="bg-white/80 backdrop-blur-lg rounded-2xl shadow-lg border border-[#324D3E]/10 p-6"
+          className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg rounded-2xl shadow-lg border border-[#324D3E]/10 dark:border-gray-700 p-6 transition-colors duration-300"
           variants={itemVariants}
         >
           <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 sm:mb-6 gap-3">
-            <h2 className="text-lg sm:text-xl font-bold text-[#324D3E] font-[family-name:var(--font-poppins)]">Aksi Cepat</h2>
+            <h2 className="text-lg sm:text-xl font-bold text-[#324D3E] dark:text-white font-[family-name:var(--font-poppins)] transition-colors duration-300">Aksi Cepat</h2>
             <button
               onClick={fetchDashboardData}
-              className="text-[#4C3D19] hover:text-[#324D3E] font-medium text-sm flex items-center gap-2 transition-colors self-start sm:self-auto"
+              className="text-[#4C3D19] dark:text-[#4C3D19] hover:text-[#324D3E] dark:hover:text-[#6b5b47] font-medium text-sm flex items-center gap-2 transition-colors self-start sm:self-auto"
             >
-              🔄 Refresh Data
+              <RefreshCw className="w-4 h-4" />
+              Refresh Data
             </button>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
@@ -385,14 +387,14 @@ export default function AdminDashboard() {
 
             <button
               onClick={fetchDashboardData}
-              className="flex items-center gap-3 p-4 border-2 border-dashed border-[#889063]/20 rounded-xl hover:border-[#889063] hover:bg-[#889063]/5 transition-all group"
+              className="flex items-center gap-3 p-4 border-2 border-dashed border-[#889063]/20 dark:border-[#889063]/40 rounded-xl hover:border-[#889063] hover:bg-[#889063]/5 dark:hover:bg-[#889063]/10 transition-all group"
             >
-              <div className="w-10 h-10 bg-[#889063]/10 group-hover:bg-[#889063]/20 rounded-xl flex items-center justify-center transition-colors">
-                <span className="text-[#889063]">📊</span>
+              <div className="w-10 h-10 bg-[#889063]/10 dark:bg-[#889063]/20 group-hover:bg-[#889063]/20 dark:group-hover:bg-[#889063]/30 rounded-xl flex items-center justify-center transition-colors">
+                <RefreshCw className="w-5 h-5 text-[#889063]" />
               </div>
               <div className="text-left">
-                <p className="font-medium text-[#324D3E]">Refresh Dashboard</p>
-                <p className="text-sm text-[#889063]">Perbarui data terbaru</p>
+                <p className="font-medium text-[#324D3E] dark:text-white transition-colors duration-300">Refresh Dashboard</p>
+                <p className="text-sm text-[#889063] dark:text-gray-400 transition-colors duration-300">Perbarui data terbaru</p>
               </div>
             </button>
           </div>

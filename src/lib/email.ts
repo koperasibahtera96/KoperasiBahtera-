@@ -1,6 +1,7 @@
 import Settings from "@/models/Settings";
 import nodemailer from "nodemailer";
 import dbConnect from "./mongodb";
+import { decrypt } from "./encryption";
 
 // Get email configuration from database
 export const getEmailConfig = async () => {
@@ -20,11 +21,14 @@ export const getEmailConfig = async () => {
 const createTransporter = async () => {
   const config = await getEmailConfig();
 
+  // Decrypt the password before using it
+  const decryptedPassword = decrypt(config.password);
+  
   return nodemailer.createTransport({
     service: config.service || "gmail",
     auth: {
       user: config.email,
-      pass: config.password,
+      pass: decryptedPassword,
     },
   });
 };

@@ -1,16 +1,14 @@
 import { authOptions } from "@/lib/auth";
 import { getServerSession } from "next-auth/next";
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import nodemailer from "nodemailer";
+import { decrypt } from "@/lib/encryption";
 
-export async function POST(req: NextRequest) {
+export async function POST(req: Request) {
   try {
     const session = await getServerSession(authOptions);
 
-    if (
-      !session?.user?.role ||
-      !["admin", "staff"].includes(session.user.role)
-    ) {
+    if (!session?.user?.role || !["admin", "staff"].includes(session.user.role)) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -18,62 +16,68 @@ export async function POST(req: NextRequest) {
 
     if (!email || !password) {
       return NextResponse.json(
-        { error: "Email and password are required" },
+        { error: "Email dan password diperlukan untuk pengujian" },
         { status: 400 }
       );
     }
 
-    // Create transporter with provided settings
+    // Create transporter with the provided settings
+    // Check if the password is encrypted (contains a colon)
+    const decryptedPassword = password.includes(':') ? decrypt(password) : password;
+    
     const transporter = nodemailer.createTransport({
-      service: service,
+      service: service || "gmail",
       auth: {
         user: email,
-        pass: password,
+        pass: decryptedPassword,
       },
     });
 
+    // Verify connection configuration
+    await transporter.verify();
+
     // Send test email
-    const testMailOptions = {
-      from: `"Koperasi Bintang Merah Sejahtera" <${email}>`,
-      to: email, // Send to self for testing
-      subject: "Test Email Configuration - Koperasi Bintang Merah Sejahtera",
+    const _info = await transporter.sendMail({
+      from: `"Investasi Hijau" <${email}>`,
+      to: email,
+      subject: "Test Email dari Investasi Hijau",
+      text: "Ini adalah email percobaan untuk memverifikasi pengaturan email Anda.",
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2 style="color: #2E7D32;">Test Email Berhasil!</h2>
-
-          <p>Selamat! Konfigurasi email Anda berhasil.</p>
-
-          <div style="background-color: #e8f5e8; padding: 20px; border-radius: 8px; margin: 20px 0;">
-            <h3 style="color: #2E7D32; margin-top: 0;">Detail Konfigurasi:</h3>
-            <p><strong>Email:</strong> ${email}</p>
-            <p><strong>Service:</strong> ${service}</p>
-            <p><strong>Tanggal Test:</strong> ${new Date().toLocaleString(
-              "id-ID"
-            )}</p>
-          </div>
-
-          <p>Email ini menunjukkan bahwa sistem dapat mengirim notifikasi cicilan kepada investor.</p>
-
-          <hr style="border: none; border-top: 1px solid #e0e0e0; margin: 30px 0;">
-          <p style="font-size: 12px; color: #666;">
-            Koperasi Bintang Merah Sejahtera<br>
-            Email test dikirim secara otomatis.
+          <h2>Test Email dari Investasi Hijau</h2>
+          <p>Email ini menandakan bahwa pengaturan email Anda berfungsi dengan benar.</p>
+          <p>Jika Anda menerima email ini, berarti konfigurasi SMTP Anda sudah benar.</p>
+          <hr>
+          <p style="color: #666; font-size: 12px;">
+            Ini adalah email otomatis - mohon jangan membalas pesan ini.
           </p>
         </div>
       `,
-    };
-
-    const result = await transporter.sendMail(testMailOptions);
-    console.log(`Test email sent successfully:`, result.messageId);
+    });
 
     return NextResponse.json({
-      message: "Test email sent successfully",
-      messageId: result.messageId,
+      success: true,
+      message: "Test email berhasil dikirim!"
     });
   } catch (error) {
-    console.error("Failed to send test email:", error);
+    console.error("Error sending test email:", error);
+    
+    let errorMessage = "Gagal mengirim email percobaan";
+    
+    if (error instanceof Error) {
+      if (error.message.includes("Invalid login")) {
+        errorMessage = "Email atau password salah";
+      } else if (error.message.includes("self signed certificate")) {
+        errorMessage = "Masalah dengan sertifikat SSL. Pastikan konfigurasi keamanan benar.";
+      } else if (error.message.includes("connect ETIMEDOUT")) {
+        errorMessage = "Tidak dapat terhubung ke server email. Periksa koneksi internet Anda.";
+      } else {
+        errorMessage = error.message;
+      }
+    }
+    
     return NextResponse.json(
-      { error: (error as any).message || "Failed to send test email" },
+      { error: errorMessage },
       { status: 500 }
     );
   }

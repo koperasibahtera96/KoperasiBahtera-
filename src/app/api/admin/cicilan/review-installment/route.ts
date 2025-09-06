@@ -63,7 +63,7 @@ export async function POST(request: NextRequest) {
 
             // Check if PlantInstance already exists for this cicilan
             const existingPlantInstance = await PlantInstance.findOne({
-              contractNumber: `CONTRACT-${payment.cicilanOrderId}`
+              contractNumber: `CONTRACT-${payment.cicilanOrderId}`,
             }).session(mongoSession);
 
             if (existingPlantInstance) {
@@ -71,19 +71,21 @@ export async function POST(request: NextRequest) {
               const existingInvestor = await Investor.findOne({
                 userId: user._id,
               }).session(mongoSession);
-              
+
               if (existingInvestor) {
                 const investment = existingInvestor.investments.find(
                   (inv: any) => inv.investmentId === payment.cicilanOrderId
                 );
-                
+
                 if (investment) {
-                  investment.plantInstanceId = existingPlantInstance._id.toString();
+                  investment.plantInstanceId =
+                    existingPlantInstance._id.toString();
                   investment.status = "active";
                   investment.amountPaid += payment.amount;
 
                   const installment = investment.installments?.find(
-                    (inst: any) => inst.installmentNumber === payment.installmentNumber
+                    (inst: any) =>
+                      inst.installmentNumber === payment.installmentNumber
                   );
                   if (installment) {
                     installment.isPaid = true;
@@ -92,21 +94,25 @@ export async function POST(request: NextRequest) {
                   }
 
                   existingInvestor.totalPaid += payment.amount;
-                  
+
                   const extractTreeCount = (productName: string): number => {
                     if (!productName) return 1;
                     if (productName.includes("1 Pohon")) return 1;
                     if (productName.includes("10 Pohon")) return 10;
                     return 10;
                   };
-                  
-                  existingInvestor.jumlahPohon += extractTreeCount(payment.productName);
+
+                  existingInvestor.jumlahPohon += extractTreeCount(
+                    payment.productName
+                  );
                   await existingInvestor.save({ session: mongoSession });
                 }
               }
             } else {
               // Create new PlantInstance
-              const plantInstanceId = `PLANT-${payment.cicilanOrderId}-${Date.now()}`;
+              const plantInstanceId = `PLANT-${
+                payment.cicilanOrderId
+              }-${Date.now()}`;
 
               // Map product name to plant type
               const getPlantType = (
@@ -159,6 +165,9 @@ export async function POST(request: NextRequest) {
                 }),
                 history: [
                   {
+                    id: `HISTORY-${Date.now()}-${Math.random()
+                      .toString(36)
+                      .substring(2, 9)}`,
                     action: "Kontrak Baru",
                     type: "Kontrak Baru",
                     date: new Date().toLocaleDateString("id-ID", {

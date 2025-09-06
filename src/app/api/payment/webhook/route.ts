@@ -285,6 +285,9 @@ export async function POST(request: NextRequest) {
           }),
           history: [
             {
+              id: `HISTORY-${Date.now()}-${Math.random()
+                .toString(36)
+                .substring(2, 9)}`,
               action: "Kontrak Baru",
               type: "Kontrak Baru",
               date: new Date().toLocaleDateString("id-ID", {

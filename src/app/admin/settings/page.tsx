@@ -6,15 +6,21 @@ import {
   CheckCircle,
   Eye,
   EyeOff,
+  Hash,
   Mail,
   MessageCircle,
+  Monitor,
+  Moon,
   Phone,
-  Hash,
   Save,
+  Settings,
+  Sun,
   TestTube,
   Trash2,
   XCircle,
 } from "lucide-react";
+import { useTheme } from "next-themes";
+import Image from "next/image";
 import { useEffect, useState } from "react";
 
 interface EmailSettings {
@@ -29,11 +35,17 @@ interface WhatsAppSettings {
 }
 
 export default function AdminSettingsPage() {
+  const { theme, setTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+  
   const [emailSettings, setEmailSettings] = useState<EmailSettings>({
     email: "",
     password: "",
     service: "gmail",
   });
+  const [hasPassword, setHasPassword] = useState(false);
+  const [isEditingEmail, setIsEditingEmail] = useState(false);
+  const [hasSessionData, setHasSessionData] = useState(false);
 
   const [whatsappSettings, setWhatsappSettings] = useState<WhatsAppSettings>({
     whatsappNumber: "",
@@ -57,6 +69,7 @@ export default function AdminSettingsPage() {
   } | null>(null);
 
   useEffect(() => {
+    setMounted(true);
     fetchSettings();
   }, []);
 
@@ -71,6 +84,7 @@ export default function AdminSettingsPage() {
           password: "", // Never show saved password
           service: emailData.service || "gmail",
         });
+        setHasPassword(emailData.hasPassword || false);
       }
 
       // Fetch WhatsApp settings
@@ -81,6 +95,17 @@ export default function AdminSettingsPage() {
           whatsappNumber: whatsappData.whatsappNumber || "",
           status: whatsappData.status || "disconnected",
         });
+
+        // Check if WhatsApp session data exists
+        if (whatsappData?.whatsappNumber) {
+          const sessionResponse = await fetch(
+            `/api/admin/settings/whatsapp/session?number=${whatsappData.whatsappNumber}`
+          );
+          if (sessionResponse.ok) {
+            const sessionData = await sessionResponse.json();
+            setHasSessionData(sessionData.hasSession || false);
+          }
+        }
       }
     } catch (error) {
       console.error("Failed to fetch settings:", error);
@@ -107,6 +132,9 @@ export default function AdminSettingsPage() {
           type: "success",
           message: "Pengaturan email berhasil disimpan!",
         });
+        setHasPassword(true);
+        setIsEditingEmail(false);
+        setEmailSettings((prev) => ({ ...prev, password: "" })); // Clear password field
       } else {
         setSaveResult({
           type: "error",
@@ -188,6 +216,15 @@ export default function AdminSettingsPage() {
           message: "Pengaturan WhatsApp berhasil disimpan!",
         });
         fetchSettings(); // Refresh settings
+
+        // Check session data for the new number
+        const sessionResponse = await fetch(
+          `/api/admin/settings/whatsapp/session?number=${whatsappSettings.whatsappNumber}`
+        );
+        if (sessionResponse.ok) {
+          const sessionData = await sessionResponse.json();
+          setHasSessionData(sessionData.hasSession || false);
+        }
       } else {
         setWhatsappResult({
           type: "error",
@@ -296,6 +333,7 @@ export default function AdminSettingsPage() {
           message: "Autentikasi WhatsApp berhasil dihapus!",
         });
         setWhatsappSettings((prev) => ({ ...prev, status: "disconnected" }));
+        setHasSessionData(false);
       } else {
         setWhatsappResult({
           type: "error",
@@ -320,14 +358,131 @@ export default function AdminSettingsPage() {
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-[#324D3E]/10"
+          className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl p-4 sm:p-6 shadow-lg border border-[#324D3E]/10 dark:border-gray-700 transition-colors duration-300"
         >
-          <h1 className="text-2xl font-bold text-[#324D3E] mb-2">
+          <h1 className="text-xl sm:text-2xl font-bold text-[#324D3E] dark:text-white mb-2 transition-colors duration-300">
             Pengaturan Sistem
           </h1>
-          <p className="text-[#889063]">
+          <p className="text-sm sm:text-base text-[#889063] dark:text-gray-400 transition-colors duration-300">
             Kelola pengaturan email dan notifikasi sistem
           </p>
+        </motion.div>
+
+        {/* Theme Configuration */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.05 }}
+          className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl p-4 sm:p-6 shadow-lg border border-[#324D3E]/10 dark:border-gray-700 transition-colors duration-300"
+        >
+          <div className="flex items-start sm:items-center gap-3 mb-4 sm:mb-6">
+            <div className="p-2 sm:p-3 bg-purple-100 rounded-xl flex-shrink-0">
+              <Settings className="w-5 h-5 sm:w-6 sm:h-6 text-purple-600" />
+            </div>
+            <div>
+              <h2 className="text-lg sm:text-xl font-semibold text-[#324D3E] dark:text-white transition-colors duration-300">
+                Tema Tampilan
+              </h2>
+              <p className="text-sm sm:text-base text-[#889063] dark:text-gray-400 transition-colors duration-300">
+                Pilih antara mode terang, gelap, atau otomatis
+              </p>
+            </div>
+          </div>
+
+          {/* Theme Options */}
+          {mounted && (
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+              {/* Light Mode */}
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => setTheme('light')}
+                className={`p-4 rounded-xl border-2 transition-all duration-300 ${
+                  theme === 'light'
+                    ? 'border-[#324D3E] bg-[#324D3E]/5'
+                    : 'border-gray-200 hover:border-[#324D3E]/30'
+                }`}
+              >
+                <div className="flex flex-col items-center gap-3">
+                  <div className={`p-3 rounded-full ${
+                    theme === 'light' ? 'bg-[#324D3E] text-white' : 'bg-gray-100 text-gray-600'
+                  }`}>
+                    <Sun className="w-5 h-5" />
+                  </div>
+                  <div className="text-center">
+                    <p className={`font-medium ${
+                      theme === 'light' ? 'text-[#324D3E]' : 'text-gray-700'
+                    }`}>
+                      Mode Terang
+                    </p>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Latar belakang terang
+                    </p>
+                  </div>
+                </div>
+              </motion.button>
+
+              {/* Dark Mode */}
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => setTheme('dark')}
+                className={`p-4 rounded-xl border-2 transition-all duration-300 ${
+                  theme === 'dark'
+                    ? 'border-[#324D3E] bg-[#324D3E]/5'
+                    : 'border-gray-200 hover:border-[#324D3E]/30'
+                }`}
+              >
+                <div className="flex flex-col items-center gap-3">
+                  <div className={`p-3 rounded-full ${
+                    theme === 'dark' ? 'bg-[#324D3E] text-white' : 'bg-gray-100 text-gray-600'
+                  }`}>
+                    <Moon className="w-5 h-5" />
+                  </div>
+                  <div className="text-center">
+                    <p className={`font-medium ${
+                      theme === 'dark' ? 'text-[#324D3E]' : 'text-gray-700'
+                    }`}>
+                      Mode Gelap
+                    </p>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Latar belakang gelap
+                    </p>
+                  </div>
+                </div>
+              </motion.button>
+
+              {/* System Mode */}
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => setTheme('system')}
+                className={`p-4 rounded-xl border-2 transition-all duration-300 ${
+                  theme === 'system'
+                    ? 'border-[#324D3E] bg-[#324D3E]/5'
+                    : 'border-gray-200 hover:border-[#324D3E]/30'
+                }`}
+              >
+                <div className="flex flex-col items-center gap-3">
+                  <div className={`p-3 rounded-full ${
+                    theme === 'system' ? 'bg-[#324D3E] text-white' : 'bg-gray-100 text-gray-600'
+                  }`}>
+                    <Monitor className="w-5 h-5" />
+                  </div>
+                  <div className="text-center">
+                    <p className={`font-medium ${
+                      theme === 'system' ? 'text-[#324D3E]' : 'text-gray-700'
+                    }`}>
+                      Otomatis
+                    </p>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Sesuai sistem
+                    </p>
+                  </div>
+                </div>
+              </motion.button>
+            </div>
+          )}
         </motion.div>
 
         {/* Email Configuration */}
@@ -335,26 +490,26 @@ export default function AdminSettingsPage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-[#324D3E]/10"
+          className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl p-4 sm:p-6 shadow-lg border border-[#324D3E]/10 dark:border-gray-700 transition-colors duration-300"
         >
-          <div className="flex items-center gap-3 mb-6">
-            <div className="p-3 bg-blue-100 rounded-xl">
-              <Mail className="w-6 h-6 text-blue-600" />
+          <div className="flex items-start sm:items-center gap-3 mb-4 sm:mb-6">
+            <div className="p-2 sm:p-3 bg-blue-100 rounded-xl flex-shrink-0">
+              <Mail className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600" />
             </div>
             <div>
-              <h2 className="text-xl font-semibold text-[#324D3E]">
+              <h2 className="text-lg sm:text-xl font-semibold text-[#324D3E] dark:text-white transition-colors duration-300">
                 Konfigurasi Email
               </h2>
-              <p className="text-[#889063]">
+              <p className="text-sm sm:text-base text-[#889063] dark:text-gray-400 transition-colors duration-300">
                 Pengaturan untuk pengiriman notifikasi cicilan
               </p>
             </div>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
             {/* Email Service */}
             <div>
-              <label className="block text-sm font-medium text-[#324D3E] mb-2">
+              <label className="block text-sm font-medium text-[#324D3E] dark:text-gray-200 mb-2 transition-colors duration-300">
                 Email Service Provider
               </label>
               <select
@@ -365,7 +520,7 @@ export default function AdminSettingsPage() {
                     service: e.target.value,
                   }))
                 }
-                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#324D3E] focus:border-transparent"
+                className="w-full px-4 py-3 border border-gray-200 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#324D3E] focus:border-transparent transition-colors duration-300"
               >
                 <option value="gmail">Gmail</option>
                 <option value="outlook">Outlook</option>
@@ -375,7 +530,7 @@ export default function AdminSettingsPage() {
 
             {/* Email Address */}
             <div>
-              <label className="block text-sm font-medium text-[#324D3E] mb-2">
+              <label className="block text-sm font-medium text-[#324D3E] dark:text-gray-200 mb-2 transition-colors duration-300">
                 Email Address
               </label>
               <input
@@ -388,41 +543,73 @@ export default function AdminSettingsPage() {
                   }))
                 }
                 placeholder="admin@koperasi.com"
-                className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#324D3E] focus:border-transparent"
+                className="w-full px-4 py-3 border border-gray-200 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#324D3E] focus:border-transparent transition-colors duration-300"
               />
             </div>
 
             {/* Email Password */}
-            <div className="lg:col-span-2">
-              <label className="block text-sm font-medium text-[#324D3E] mb-2">
-                App Password / Email Password
-              </label>
-              <div className="relative">
-                <input
-                  type={showPassword ? "text" : "password"}
-                  value={emailSettings.password}
-                  onChange={(e) =>
-                    setEmailSettings((prev) => ({
-                      ...prev,
-                      password: e.target.value,
-                    }))
-                  }
-                  placeholder="Masukkan password atau app password"
-                  className="w-full px-4 py-3 pr-12 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#324D3E] focus:border-transparent"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                >
-                  {showPassword ? (
-                    <EyeOff className="w-5 h-5" />
-                  ) : (
-                    <Eye className="w-5 h-5" />
+            <div className="md:col-span-2">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-2 gap-2 sm:gap-0">
+                <label className="block text-sm font-medium text-[#324D3E]">
+                  App Password / Email Password
+                </label>
+                <div className="flex gap-2 flex-shrink-0">
+                  {hasPassword && !isEditingEmail && (
+                    <button
+                      type="button"
+                      onClick={() => setIsEditingEmail(true)}
+                      className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 font-medium transition-colors duration-300"
+                    >
+                      Edit Password
+                    </button>
                   )}
-                </button>
+                  {isEditingEmail && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsEditingEmail(false);
+                        setEmailSettings((prev) => ({ ...prev, password: "" }));
+                      }}
+                      className="text-sm text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-300 font-medium transition-colors duration-300"
+                    >
+                      Cancel
+                    </button>
+                  )}
+                </div>
               </div>
-              <p className="text-xs text-gray-500 mt-2">
+
+              {!hasPassword || isEditingEmail ? (
+                <div className="relative">
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    placeholder="Enter password"
+                    value={emailSettings.password}
+                    onChange={(e) =>
+                      setEmailSettings({
+                        ...emailSettings,
+                        password: e.target.value,
+                      })
+                    }
+                    className="w-full px-4 py-3 pr-12 border border-gray-200 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#324D3E] focus:border-transparent transition-colors duration-300"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors duration-300"
+                  >
+                    {showPassword ? (
+                      <EyeOff className="w-5 h-5" />
+                    ) : (
+                      <Eye className="w-5 h-5" />
+                    )}
+                  </button>
+                </div>
+              ) : (
+                <div className="px-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-gray-500 dark:text-gray-300 transition-colors duration-300">
+                  Password tersimpan (klik Edit Password untuk mengubah)
+                </div>
+              )}
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-2 transition-colors duration-300">
                 Untuk Gmail, gunakan App Password. Untuk provider lain, gunakan
                 password akun.
               </p>
@@ -434,10 +621,10 @@ export default function AdminSettingsPage() {
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              className={`mt-4 p-4 rounded-xl flex items-center gap-3 ${
+              className={`mt-4 p-4 rounded-xl flex items-center gap-3 transition-colors duration-300 ${
                 saveResult.type === "success"
-                  ? "bg-green-50 border border-green-200 text-green-800"
-                  : "bg-red-50 border border-red-200 text-red-800"
+                  ? "bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-700 text-green-800 dark:text-green-300"
+                  : "bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 text-red-800 dark:text-red-300"
               }`}
             >
               {saveResult.type === "success" ? (
@@ -453,10 +640,10 @@ export default function AdminSettingsPage() {
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              className={`mt-4 p-4 rounded-xl flex items-center gap-3 ${
+              className={`mt-4 p-4 rounded-xl flex items-center gap-3 transition-colors duration-300 ${
                 testResult.type === "success"
-                  ? "bg-green-50 border border-green-200 text-green-800"
-                  : "bg-red-50 border border-red-200 text-red-800"
+                  ? "bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-700 text-green-800 dark:text-green-300"
+                  : "bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 text-red-800 dark:text-red-300"
               }`}
             >
               {testResult.type === "success" ? (
@@ -469,15 +656,17 @@ export default function AdminSettingsPage() {
           )}
 
           {/* Action Buttons */}
-          <div className="flex gap-4 mt-6">
+          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 mt-6">
             <motion.button
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
               onClick={handleSave}
               disabled={
-                isLoading || !emailSettings.email || !emailSettings.password
+                isLoading ||
+                !emailSettings.email ||
+                (!emailSettings.password && !hasPassword)
               }
-              className="flex items-center gap-2 px-6 py-3 bg-[#324D3E] text-white rounded-xl font-medium hover:bg-[#4C3D19] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex items-center justify-center gap-2 px-4 sm:px-6 py-3 bg-[#324D3E] text-white rounded-xl font-medium hover:bg-[#4C3D19] transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
             >
               <Save className="w-5 h-5" />
               {isLoading ? "Menyimpan..." : "Simpan Pengaturan"}
@@ -487,10 +676,8 @@ export default function AdminSettingsPage() {
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
               onClick={handleTestEmail}
-              disabled={
-                isLoading || !emailSettings.email || !emailSettings.password
-              }
-              className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={isLoading || !emailSettings.email || !hasPassword}
+              className="flex items-center justify-center gap-2 px-4 sm:px-6 py-3 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
             >
               <TestTube className="w-5 h-5" />
               Test Email
@@ -503,26 +690,26 @@ export default function AdminSettingsPage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.15 }}
-          className="bg-white/80 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-[#324D3E]/10"
+          className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl p-4 sm:p-6 shadow-lg border border-[#324D3E]/10 dark:border-gray-700 transition-colors duration-300"
         >
-          <div className="flex items-center gap-3 mb-6">
-            <div className="p-3 bg-green-100 rounded-xl">
-              <MessageCircle className="w-6 h-6 text-green-600" />
+          <div className="flex items-start sm:items-center gap-3 mb-4 sm:mb-6">
+            <div className="p-2 sm:p-3 bg-green-100 rounded-xl flex-shrink-0">
+              <MessageCircle className="w-5 h-5 sm:w-6 sm:h-6 text-green-600" />
             </div>
             <div>
-              <h2 className="text-xl font-semibold text-[#324D3E]">
+              <h2 className="text-lg sm:text-xl font-semibold text-[#324D3E] dark:text-white transition-colors duration-300">
                 Konfigurasi WhatsApp
               </h2>
-              <p className="text-[#889063]">
+              <p className="text-sm sm:text-base text-[#889063] dark:text-gray-400 transition-colors duration-300">
                 Pengaturan untuk pengiriman pesan WhatsApp cicilan
               </p>
             </div>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
             {/* WhatsApp Number */}
-            <div className="lg:col-span-2">
-              <label className="block text-sm font-medium text-[#324D3E] mb-2">
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium text-[#324D3E] dark:text-gray-200 mb-2 transition-colors duration-300">
                 Nomor WhatsApp
               </label>
               <div className="relative">
@@ -537,10 +724,10 @@ export default function AdminSettingsPage() {
                     }))
                   }
                   placeholder="628123456789"
-                  className="w-full pl-12 pr-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#324D3E] focus:border-transparent"
+                  className="w-full pl-12 pr-4 py-3 border border-gray-200 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#324D3E] focus:border-transparent transition-colors duration-300"
                 />
               </div>
-              <p className="text-xs text-gray-500 mt-2">
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-2 transition-colors duration-300">
                 Masukkan nomor dalam format 628xxxxx. Pastikan WhatsApp
                 terpasang di nomor ini.
               </p>
@@ -548,18 +735,18 @@ export default function AdminSettingsPage() {
 
             {/* Status */}
             <div>
-              <label className="block text-sm font-medium text-[#324D3E] mb-2">
+              <label className="block text-sm font-medium text-[#324D3E] dark:text-gray-200 mb-2 transition-colors duration-300">
                 Status Koneksi
               </label>
               <div
-                className={`px-4 py-3 rounded-xl border ${
+                className={`px-4 py-3 rounded-xl border transition-colors duration-300 ${
                   whatsappSettings.status === "connected"
-                    ? "bg-green-50 border-green-200 text-green-800"
+                    ? "bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-700 text-green-800 dark:text-green-300"
                     : whatsappSettings.status === "connecting"
-                    ? "bg-yellow-50 border-yellow-200 text-yellow-800"
+                    ? "bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-700 text-yellow-800 dark:text-yellow-300"
                     : whatsappSettings.status === "qr"
-                    ? "bg-purple-50 border-purple-200 text-purple-800"
-                    : "bg-red-50 border-red-200 text-red-800"
+                    ? "bg-purple-50 dark:bg-purple-900/20 border-purple-200 dark:border-purple-700 text-purple-800 dark:text-purple-300"
+                    : "bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-700 text-red-800 dark:text-red-300"
                 }`}
               >
                 <div className="flex items-center gap-2">
@@ -587,33 +774,35 @@ export default function AdminSettingsPage() {
             <motion.div
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
-              className="mt-6 text-center"
+              className="mt-4 sm:mt-6 text-center"
             >
-              <h3 className="text-lg font-semibold text-[#324D3E] mb-4">
+              <h3 className="text-base sm:text-lg font-semibold text-[#324D3E] mb-3 sm:mb-4">
                 QR Code WhatsApp
               </h3>
-              <div className="inline-block p-6 bg-white rounded-2xl shadow-lg border">
-                <img 
-                  src={qrCode} 
-                  alt="WhatsApp QR Code" 
-                  className="w-64 h-64 mx-auto mb-4"
+              <div className="inline-block p-4 sm:p-6 bg-white rounded-2xl shadow-lg border">
+                <Image
+                  width={256}
+                  height={256}
+                  src={qrCode}
+                  alt="WhatsApp QR Code"
+                  className="w-48 h-48 sm:w-64 sm:h-64 mx-auto mb-3 sm:mb-4"
                 />
                 <button
                   onClick={() => {
-                    const link = document.createElement('a');
+                    const link = document.createElement("a");
                     link.href = qrCode;
                     link.download = `whatsapp-qr-${whatsappSettings.whatsappNumber}.png`;
                     link.click();
                   }}
-                  className="text-sm text-blue-600 hover:text-blue-800 transition-colors"
+                  className="text-xs sm:text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 transition-colors"
                 >
                   💾 Download QR
                 </button>
               </div>
-              <div className="mt-6 space-y-2 text-sm text-gray-600">
+              <div className="mt-4 sm:mt-6 space-y-1 sm:space-y-2 text-xs sm:text-sm text-gray-600 dark:text-gray-400 transition-colors duration-300">
                 <p className="font-semibold">Cara scan QR Code:</p>
                 <p>1. Buka WhatsApp → Menu (⋮) → Perangkat Tertaut</p>
-                <p>2. Tap "Tautkan Perangkat"</p>
+                <p>2. Tap &quot;Tautkan Perangkat&quot;</p>
                 <p>3. Arahkan kamera ke QR code di atas</p>
                 <p>4. Tunggu hingga berhasil terhubung</p>
               </div>
@@ -625,10 +814,10 @@ export default function AdminSettingsPage() {
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              className={`mt-4 p-4 rounded-xl flex items-center gap-3 ${
+              className={`mt-4 p-4 rounded-xl flex items-center gap-3 transition-colors duration-300 ${
                 whatsappResult.type === "success"
-                  ? "bg-green-50 border border-green-200 text-green-800"
-                  : "bg-red-50 border border-red-200 text-red-800"
+                  ? "bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-700 text-green-800 dark:text-green-300"
+                  : "bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 text-red-800 dark:text-red-300"
               }`}
             >
               {whatsappResult.type === "success" ? (
@@ -641,13 +830,13 @@ export default function AdminSettingsPage() {
           )}
 
           {/* WhatsApp Action Buttons */}
-          <div className="flex flex-wrap gap-4 mt-6">
+          <div className="flex flex-col sm:flex-row flex-wrap gap-3 sm:gap-4 mt-6">
             <motion.button
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
               onClick={handleWhatsAppSave}
               disabled={isLoading || !whatsappSettings.whatsappNumber}
-              className="flex items-center gap-2 px-6 py-3 bg-[#324D3E] text-white rounded-xl font-medium hover:bg-[#4C3D19] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex items-center justify-center gap-2 px-4 sm:px-6 py-3 bg-[#324D3E] text-white rounded-xl font-medium hover:bg-[#4C3D19] transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base min-w-0"
             >
               <Save className="w-5 h-5" />
               Simpan Nomor
@@ -662,7 +851,7 @@ export default function AdminSettingsPage() {
                 !whatsappSettings.whatsappNumber ||
                 whatsappSettings.status === "connected"
               }
-              className="flex items-center gap-2 px-6 py-3 bg-green-600 text-white rounded-xl font-medium hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex items-center justify-center gap-2 px-4 sm:px-6 py-3 bg-green-600 text-white rounded-xl font-medium hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base min-w-0"
             >
               <Hash className="w-5 h-5" />
               Generate QR Code
@@ -673,11 +862,9 @@ export default function AdminSettingsPage() {
               whileTap={{ scale: 0.98 }}
               onClick={handleRemoveAuth}
               disabled={
-                isLoading ||
-                !whatsappSettings.whatsappNumber ||
-                whatsappSettings.status === "disconnected"
+                isLoading || !whatsappSettings.whatsappNumber || !hasSessionData
               }
-              className="flex items-center gap-2 px-6 py-3 bg-red-600 text-white rounded-xl font-medium hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex items-center justify-center gap-2 px-4 sm:px-6 py-3 bg-red-600 text-white rounded-xl font-medium hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base min-w-0"
             >
               <Trash2 className="w-5 h-5" />
               Hapus Auth
@@ -690,32 +877,76 @@ export default function AdminSettingsPage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
-          className="bg-blue-50/80 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-blue-200/50"
+          className="bg-blue-50/80 dark:bg-blue-900/20 backdrop-blur-sm rounded-2xl p-4 sm:p-6 shadow-lg border border-blue-200/50 dark:border-blue-700/50 transition-colors duration-300"
         >
-          <h3 className="text-lg font-semibold text-blue-800 mb-3">
-            Informasi Penting
+          <h3 className="text-base sm:text-lg font-semibold text-blue-800 dark:text-blue-300 mb-3 transition-colors duration-300">
+            Panduan Setup & Cara Kerja
           </h3>
-          <ul className="space-y-2 text-blue-700">
-            <li>
-              <strong>📧 Email:</strong> Otomatis mengirim reminder harian via
-              cron job
-            </li>
-            <li>
-              <strong>📱 WhatsApp:</strong> Manual, admin klik tombol kirim per
-              investor
-            </li>
-            <li>
-              <strong>📅 Timing:</strong> Notifikasi untuk 7 hari sebelum dan
-              hari jatuh tempo
-            </li>
-            <li>
-              <strong>🔧 Setup:</strong> Pastikan email dan WhatsApp sudah
-              terkoneksi
-            </li>
-            <li>
-              <strong>✅ Test:</strong> Gunakan tombol test untuk verifikasi
-            </li>
-          </ul>
+          <div className="space-y-3 sm:space-y-4 text-blue-700 dark:text-blue-300 transition-colors duration-300">
+            <div>
+              <h4 className="font-semibold text-blue-800 dark:text-blue-200 mb-2 text-sm sm:text-base transition-colors duration-300">
+                📧 Setup Email:
+              </h4>
+              <ol className="list-decimal list-inside space-y-1 text-xs sm:text-sm ml-2 sm:ml-4">
+                <li>Pilih email service provider (Gmail, Outlook, Yahoo)</li>
+                <li>Masukkan email address yang akan digunakan</li>
+                <li>Masukkan App Password (untuk Gmail) atau password akun</li>
+                <li>Klik &quot;Simpan Pengaturan&quot; untuk menyimpan</li>
+                <li>
+                  Gunakan &quot;Test Email&quot; untuk memverifikasi konfigurasi
+                </li>
+              </ol>
+              <p className="text-xs mt-2 bg-blue-50 dark:bg-blue-800/30 p-2 rounded leading-relaxed transition-colors duration-300">
+                <strong>📝 Catatan:</strong> Password tersimpan aman dan tidak
+                ditampilkan. Klik &quot;Edit Password&quot; jika perlu mengubah.
+              </p>
+            </div>
+
+            <div>
+              <h4 className="font-semibold text-blue-800 dark:text-blue-200 mb-2 text-sm sm:text-base transition-colors duration-300">
+                📱 Setup WhatsApp:
+              </h4>
+              <ol className="list-decimal list-inside space-y-1 text-xs sm:text-sm ml-2 sm:ml-4">
+                <li>
+                  <strong>Simpan Nomor:</strong> Masukkan nomor WhatsApp (format
+                  628xxx)
+                </li>
+                <li>
+                  <strong>Generate QR:</strong> Klik setelah nomor tersimpan
+                  untuk buat QR code
+                </li>
+                <li>
+                  <strong>Scan QR:</strong> Gunakan WhatsApp → Menu → Perangkat
+                  Tertaut
+                </li>
+                <li>
+                  <strong>Hapus Auth:</strong> Tersedia hanya jika ada sesi
+                  aktif
+                </li>
+              </ol>
+              <p className="text-xs mt-2 bg-blue-50 dark:bg-blue-800/30 p-2 rounded leading-relaxed transition-colors duration-300">
+                <strong>⚠️ Penting:</strong> Tombol diaktifkan bertahap sesuai
+                status koneksi.
+              </p>
+            </div>
+
+            <div>
+              <h4 className="font-semibold text-blue-800 dark:text-blue-200 mb-2 text-sm sm:text-base transition-colors duration-300">
+                🔄 Cara Kerja:
+              </h4>
+              <ul className="space-y-1 text-xs sm:text-sm ml-2 sm:ml-4">
+                <li>
+                  <strong>Email:</strong> Otomatis via cron job harian
+                </li>
+                <li>
+                  <strong>WhatsApp:</strong> Manual per investor oleh admin
+                </li>
+                <li>
+                  <strong>Timing:</strong> 7 hari sebelum & hari jatuh tempo
+                </li>
+              </ul>
+            </div>
+          </div>
         </motion.div>
       </div>
     </AdminLayout>

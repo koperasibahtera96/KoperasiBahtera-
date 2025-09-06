@@ -57,13 +57,13 @@ export default function AdminCicilanPage() {
   const getInvestmentStatusColor = (status: string) => {
     switch (status) {
       case "active":
-        return "bg-blue-100 text-blue-800";
+        return "bg-blue-100 dark:bg-blue-900/20 text-blue-800 dark:text-blue-300";
       case "completed":
-        return "bg-green-100 text-green-800";
+        return "bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-300";
       case "overdue":
-        return "bg-red-100 text-red-800";
+        return "bg-red-100 dark:bg-red-900/20 text-red-800 dark:text-red-300";
       default:
-        return "bg-gray-100 text-gray-800";
+        return "bg-gray-100 dark:bg-gray-600 text-gray-800 dark:text-gray-300";
     }
   };
 
@@ -86,19 +86,19 @@ export default function AdminCicilanPage() {
       <div className="space-y-6">
         {/* Header */}
         <div>
-          <h1 className="text-3xl font-bold text-[#324D3E] font-[family-name:var(--font-poppins)]">
+          <h1 className="text-3xl font-bold text-[#324D3E] dark:text-white font-[family-name:var(--font-poppins)] transition-colors duration-300">
             Kelola Cicilan
           </h1>
-          <p className="text-[#889063] mt-2">
+          <p className="text-[#889063] dark:text-gray-300 mt-2 transition-colors duration-300">
             Kelola pembayaran cicilan investasi dari pengguna
           </p>
         </div>
 
         {/* Search and Filters */}
-        <div className="bg-white/80 backdrop-blur-lg rounded-2xl shadow-lg border border-[#324D3E]/10 p-4 sm:p-6">
+        <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg rounded-2xl shadow-lg border border-[#324D3E]/10 dark:border-gray-700 p-4 sm:p-6 transition-colors duration-300 overflow-visible">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <div className="sm:col-span-2 lg:col-span-2">
-              <label className="block text-sm font-medium text-[#324D3E] mb-2 font-[family-name:var(--font-poppins)]">
+              <label className="block text-sm font-medium text-[#324D3E] dark:text-white mb-2 font-[family-name:var(--font-poppins)] transition-colors duration-300">
                 Cari Investor
               </label>
               <input
@@ -112,11 +112,11 @@ export default function AdminCicilanPage() {
                     page: 1,
                   }))
                 }
-                className="w-full border border-[#324D3E]/20 rounded-xl p-3 focus:border-[#324D3E] focus:ring-2 focus:ring-[#324D3E]/20 text-[#324D3E] placeholder-[#889063] transition-all duration-300 text-sm sm:text-base"
+                className="w-full border border-[#324D3E]/20 dark:border-gray-600 rounded-xl p-3 bg-white dark:bg-gray-700 focus:border-[#324D3E] focus:ring-2 focus:ring-[#324D3E]/20 text-[#324D3E] dark:text-white placeholder-[#889063] dark:placeholder-gray-400 transition-all duration-300 text-sm sm:text-base"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-[#324D3E] mb-2 font-[family-name:var(--font-poppins)]">
+              <label className="block text-sm font-medium text-[#324D3E] dark:text-white mb-2 font-[family-name:var(--font-poppins)] transition-colors duration-300">
                 Status Investasi
               </label>
               <select
@@ -128,7 +128,7 @@ export default function AdminCicilanPage() {
                     page: 1,
                   }))
                 }
-                className="w-full border border-[#324D3E]/20 rounded-xl p-3 focus:border-[#324D3E] focus:ring-2 focus:ring-[#324D3E]/20 text-[#324D3E] transition-all duration-300 text-sm sm:text-base"
+                className="w-full border border-[#324D3E]/20 dark:border-gray-600 rounded-xl p-3 bg-white dark:bg-gray-700 focus:border-[#324D3E] focus:ring-2 focus:ring-[#324D3E]/20 text-[#324D3E] dark:text-white transition-all duration-300 text-sm sm:text-base"
               >
                 <option value="">Semua Status</option>
                 <option value="active">Aktif</option>
@@ -139,7 +139,7 @@ export default function AdminCicilanPage() {
             <div className="flex items-end">
               <button
                 onClick={() => setFilters({ status: "", search: "", page: 1 })}
-                className="w-full px-4 py-3 bg-[#324D3E]/10 text-[#324D3E] rounded-xl hover:bg-[#324D3E]/20 transition-all duration-300 font-medium font-[family-name:var(--font-poppins)] text-sm sm:text-base"
+                className="w-full px-4 py-3 bg-[#324D3E]/10 dark:bg-[#324D3E]/20 text-[#324D3E] dark:text-[#324D3E] rounded-xl hover:bg-[#324D3E]/20 dark:hover:bg-[#324D3E]/30 transition-all duration-300 font-medium font-[family-name:var(--font-poppins)] text-sm sm:text-base"
               >
                 Reset Filter
               </button>
@@ -149,13 +149,13 @@ export default function AdminCicilanPage() {
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="bg-white/80 backdrop-blur-lg rounded-2xl shadow-lg border border-[#324D3E]/10 p-6 hover:shadow-xl hover:scale-105 transition-all duration-300">
+          <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg rounded-2xl shadow-lg border border-[#324D3E]/10 dark:border-gray-700 p-6 hover:shadow-xl hover:scale-105 transition-all duration-300">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-[#889063] font-[family-name:var(--font-poppins)]">
+                <p className="text-sm text-[#889063] dark:text-gray-300 font-[family-name:var(--font-poppins)] transition-colors duration-300">
                   Total Investor
                 </p>
-                <p className="text-2xl font-bold text-[#324D3E]">
+                <p className="text-2xl font-bold text-[#324D3E] dark:text-white transition-colors duration-300">
                   {pagination?.totalCount || 0}
                 </p>
               </div>
@@ -164,13 +164,13 @@ export default function AdminCicilanPage() {
               </div>
             </div>
           </div>
-          <div className="bg-white/80 backdrop-blur-lg rounded-2xl shadow-lg border border-[#324D3E]/10 p-6 hover:shadow-xl hover:scale-105 transition-all duration-300">
+          <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg rounded-2xl shadow-lg border border-[#324D3E]/10 dark:border-gray-700 p-6 hover:shadow-xl hover:scale-105 transition-all duration-300">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-[#889063] font-[family-name:var(--font-poppins)]">
+                <p className="text-sm text-[#889063] dark:text-gray-300 font-[family-name:var(--font-poppins)] transition-colors duration-300">
                   Perlu Review
                 </p>
-                <p className="text-2xl font-bold text-[#889063]">
+                <p className="text-2xl font-bold text-[#889063] dark:text-gray-300 transition-colors duration-300">
                   {investorGroups.reduce(
                     (sum, group) => sum + group.pendingReviews,
                     0
@@ -182,13 +182,13 @@ export default function AdminCicilanPage() {
               </div>
             </div>
           </div>
-          <div className="bg-white/80 backdrop-blur-lg rounded-2xl shadow-lg border border-[#324D3E]/10 p-6 hover:shadow-xl hover:scale-105 transition-all duration-300">
+          <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg rounded-2xl shadow-lg border border-[#324D3E]/10 dark:border-gray-700 p-6 hover:shadow-xl hover:scale-105 transition-all duration-300">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-[#889063] font-[family-name:var(--font-poppins)]">
+                <p className="text-sm text-[#889063] dark:text-gray-300 font-[family-name:var(--font-poppins)] transition-colors duration-300">
                   Total Investasi
                 </p>
-                <p className="text-2xl font-bold text-[#4C3D19]">
+                <p className="text-2xl font-bold text-[#4C3D19] dark:text-emerald-300 transition-colors duration-300">
                   {investorGroups.reduce(
                     (sum, group) => sum + group.totalInvestments,
                     0
@@ -200,13 +200,13 @@ export default function AdminCicilanPage() {
               </div>
             </div>
           </div>
-          <div className="bg-white/80 backdrop-blur-lg rounded-2xl shadow-lg border border-[#324D3E]/10 p-6 hover:shadow-xl hover:scale-105 transition-all duration-300">
+          <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg rounded-2xl shadow-lg border border-[#324D3E]/10 dark:border-gray-700 p-6 hover:shadow-xl hover:scale-105 transition-all duration-300">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-[#889063] font-[family-name:var(--font-poppins)]">
+                <p className="text-sm text-[#889063] dark:text-gray-300 font-[family-name:var(--font-poppins)] transition-colors duration-300">
                   Terlambat
                 </p>
-                <p className="text-2xl font-bold text-red-600">
+                <p className="text-2xl font-bold text-red-600 dark:text-red-300 transition-colors duration-300">
                   {investorGroups.reduce(
                     (sum, group) => sum + group.overdueCount,
                     0
@@ -221,51 +221,51 @@ export default function AdminCicilanPage() {
         </div>
 
         {/* Investor List */}
-        <div className="bg-white/80 backdrop-blur-lg rounded-2xl shadow-lg border border-[#324D3E]/10">
+        <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg rounded-2xl shadow-lg border border-[#324D3E]/10 dark:border-gray-700 transition-colors duration-300">
           {loading ? (
             <div className="p-6 sm:p-8 text-center">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#324D3E] mx-auto mb-4"></div>
-              <p className="text-[#889063] font-[family-name:var(--font-poppins)] text-sm sm:text-base">
+              <p className="text-[#889063] dark:text-gray-300 font-[family-name:var(--font-poppins)] text-sm sm:text-base transition-colors duration-300">
                 Memuat data investor...
               </p>
             </div>
           ) : investorGroups.length === 0 ? (
             <div className="p-8 text-center">
               <div className="text-[#889063] text-4xl mb-4">👥</div>
-              <h3 className="text-lg font-semibold text-[#324D3E] mb-2 font-[family-name:var(--font-poppins)]">
+              <h3 className="text-lg font-semibold text-[#324D3E] dark:text-white mb-2 font-[family-name:var(--font-poppins)] transition-colors duration-300">
                 Belum ada data investor
               </h3>
-              <p className="text-[#889063]">
+              <p className="text-[#889063] dark:text-gray-300 transition-colors duration-300">
                 Data investor akan muncul di sini ketika pengguna membuat
                 cicilan
               </p>
             </div>
           ) : (
             <>
-              <div className="divide-y divide-[#324D3E]/10">
+              <div className="divide-y divide-[#324D3E]/10 dark:divide-gray-600 transition-colors duration-300">
                 {investorGroups.map((investor) => (
                   <div
                     key={investor.userId}
-                    className="p-4 sm:p-6 hover:bg-[#324D3E]/5 transition-all duration-300"
+                    className="p-4 sm:p-6 hover:bg-[#324D3E]/5 dark:hover:bg-gray-600/30 transition-all duration-300"
                   >
                     <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
                       <div className="flex-1">
                         <div className="flex items-center gap-3 sm:gap-4">
                           <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-[#324D3E]/10 to-[#4C3D19]/10 rounded-full flex items-center justify-center border border-[#324D3E]/20 flex-shrink-0">
-                            <span className="text-[#324D3E] font-semibold text-base sm:text-lg font-[family-name:var(--font-poppins)]">
+                            <span className="text-[#324D3E] dark:text-white font-semibold text-base sm:text-lg font-[family-name:var(--font-poppins)] transition-colors duration-300">
                               {investor.userInfo.fullName
                                 .charAt(0)
                                 .toUpperCase()}
                             </span>
                           </div>
                           <div className="min-w-0 flex-1">
-                            <h3 className="text-base sm:text-lg font-semibold text-[#324D3E] font-[family-name:var(--font-poppins)] truncate">
+                            <h3 className="text-base sm:text-lg font-semibold text-[#324D3E] dark:text-white font-[family-name:var(--font-poppins)] truncate transition-colors duration-300">
                               {investor.userInfo.fullName}
                             </h3>
-                            <p className="text-xs sm:text-sm text-[#889063] truncate">
+                            <p className="text-xs sm:text-sm text-[#889063] dark:text-gray-300 truncate transition-colors duration-300">
                               {investor.userInfo.email}
                             </p>
-                            <p className="text-xs text-[#889063]/70 truncate">
+                            <p className="text-xs text-[#889063]/70 dark:text-gray-400 truncate transition-colors duration-300">
                               {investor.userInfo.phoneNumber}
                             </p>
                           </div>
@@ -273,34 +273,34 @@ export default function AdminCicilanPage() {
 
                         <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
                           <div className="bg-gradient-to-r from-[#324D3E]/5 to-[#324D3E]/10 p-3 sm:p-4 rounded-xl border border-[#324D3E]/10">
-                            <div className="text-xs sm:text-sm text-[#889063] font-[family-name:var(--font-poppins)]">
+                            <div className="text-xs sm:text-sm text-[#889063] dark:text-gray-300 font-[family-name:var(--font-poppins)] transition-colors duration-300">
                               Total Investasi
                             </div>
-                            <div className="text-base sm:text-lg font-semibold text-[#324D3E]">
+                            <div className="text-base sm:text-lg font-semibold text-[#324D3E] dark:text-white transition-colors duration-300">
                               {investor.totalInvestments}
                             </div>
                           </div>
                           <div className="bg-gradient-to-r from-[#4C3D19]/5 to-[#4C3D19]/10 p-3 sm:p-4 rounded-xl border border-[#4C3D19]/10">
-                            <div className="text-xs sm:text-sm text-[#889063] font-[family-name:var(--font-poppins)]">
+                            <div className="text-xs sm:text-sm text-[#889063] dark:text-gray-300 font-[family-name:var(--font-poppins)] transition-colors duration-300">
                               Nilai Investasi
                             </div>
-                            <div className="text-base sm:text-lg font-semibold text-[#4C3D19] truncate">
+                            <div className="text-base sm:text-lg font-semibold text-[#4C3D19] dark:text-emerald-300 truncate transition-colors duration-300">
                               Rp {investor.totalAmount.toLocaleString("id-ID")}
                             </div>
                           </div>
                           <div className="bg-gradient-to-r from-[#889063]/5 to-[#889063]/10 p-3 sm:p-4 rounded-xl border border-[#889063]/10">
-                            <div className="text-xs sm:text-sm text-[#889063] font-[family-name:var(--font-poppins)]">
+                            <div className="text-xs sm:text-sm text-[#889063] dark:text-gray-300 font-[family-name:var(--font-poppins)] transition-colors duration-300">
                               Sudah Dibayar
                             </div>
-                            <div className="text-base sm:text-lg font-semibold text-[#889063] truncate">
+                            <div className="text-base sm:text-lg font-semibold text-[#889063] dark:text-blue-300 truncate transition-colors duration-300">
                               Rp {investor.totalPaid.toLocaleString("id-ID")}
                             </div>
                           </div>
-                          <div className="bg-gradient-to-r from-yellow-50 to-yellow-100 p-3 sm:p-4 rounded-xl border border-yellow-200">
-                            <div className="text-xs sm:text-sm text-yellow-700 font-[family-name:var(--font-poppins)]">
+                          <div className="bg-gradient-to-r from-yellow-50 to-yellow-100 dark:from-yellow-900/20 dark:to-yellow-800/20 p-3 sm:p-4 rounded-xl border border-yellow-200 dark:border-yellow-700/50 transition-colors duration-300">
+                            <div className="text-xs sm:text-sm text-yellow-700 dark:text-yellow-300 font-[family-name:var(--font-poppins)] transition-colors duration-300">
                               Perlu Review
                             </div>
-                            <div className="text-base sm:text-lg font-semibold text-yellow-600">
+                            <div className="text-base sm:text-lg font-semibold text-yellow-600 dark:text-yellow-200 transition-colors duration-300">
                               {investor.pendingReviews}
                             </div>
                           </div>
@@ -308,7 +308,7 @@ export default function AdminCicilanPage() {
 
                         {/* Investment Summary */}
                         <div className="mt-4">
-                          <div className="text-xs sm:text-sm text-[#889063] mb-2 font-[family-name:var(--font-poppins)]">
+                          <div className="text-xs sm:text-sm text-[#889063] dark:text-gray-300 mb-2 font-[family-name:var(--font-poppins)] transition-colors duration-300">
                             Investasi Aktif:
                           </div>
                           <div className="flex flex-wrap gap-2">
@@ -319,7 +319,7 @@ export default function AdminCicilanPage() {
                                   key={`${investor.userId}-investment-${index}`}
                                   className="flex items-center gap-1 sm:gap-2 bg-[#324D3E]/5 px-2 sm:px-3 py-1 sm:py-2 rounded-full text-xs sm:text-sm border border-[#324D3E]/10"
                                 >
-                                  <span className="text-[#324D3E] font-medium truncate max-w-20 sm:max-w-none">
+                                  <span className="text-[#324D3E] dark:text-white font-medium truncate max-w-20 sm:max-w-none transition-colors duration-300">
                                     {investment.productName}
                                   </span>
                                   <span
@@ -332,7 +332,7 @@ export default function AdminCicilanPage() {
                                 </div>
                               ))}
                             {investor.investments.length > 3 && (
-                              <span className="text-xs sm:text-sm text-[#889063]">
+                              <span className="text-xs sm:text-sm text-[#889063] dark:text-gray-300 transition-colors duration-300">
                                 +{investor.investments.length - 3} lainnya
                               </span>
                             )}
