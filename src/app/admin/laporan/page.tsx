@@ -347,13 +347,13 @@ export default function LaporanPage() {
   const getKondisiBadge = (kondisi: string) => {
     switch (kondisi) {
       case 'sehat':
-        return 'bg-green-100 text-green-800';
+        return 'bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-300';
       case 'perlu_perawatan':
-        return 'bg-yellow-100 text-yellow-800';
+        return 'bg-yellow-100 dark:bg-yellow-900/20 text-yellow-800 dark:text-yellow-300';
       case 'sakit':
-        return 'bg-red-100 text-red-800';
+        return 'bg-red-100 dark:bg-red-900/20 text-red-800 dark:text-red-300';
       default:
-        return 'bg-gray-100 text-gray-800';
+        return 'bg-gray-100 dark:bg-gray-600 text-gray-800 dark:text-gray-300';
     }
   };
 
@@ -380,14 +380,14 @@ export default function LaporanPage() {
       <AdminLayout>
         <div className="space-y-6">
           <div>
-            <h1 className="text-2xl lg:text-3xl font-bold text-gray-900">Laporan Investasi</h1>
-            <p className="text-gray-600 mt-2">Memuat laporan...</p>
+            <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white transition-colors duration-300">Laporan Investasi</h1>
+            <p className="text-gray-600 dark:text-gray-200 mt-2 transition-colors duration-300">Memuat laporan...</p>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
             {[1,2,3,4].map((i) => (
-              <div key={i} className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 animate-pulse">
-                <div className="h-4 bg-gray-200 rounded w-1/2 mb-2"></div>
-                <div className="h-8 bg-gray-200 rounded w-3/4"></div>
+              <div key={i} className="bg-white/80 dark:bg-gray-800/80 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 animate-pulse transition-colors duration-300">
+                <div className="h-4 bg-gray-200 dark:bg-gray-600 rounded w-1/2 mb-2"></div>
+                <div className="h-8 bg-gray-200 dark:bg-gray-600 rounded w-3/4"></div>
               </div>
             ))}
           </div>
@@ -401,8 +401,8 @@ export default function LaporanPage() {
       <AdminLayout>
         <div className="space-y-6">
           <div>
-            <h1 className="text-2xl lg:text-3xl font-bold text-gray-900">Laporan Investasi</h1>
-            <p className="text-gray-600 mt-2">Gagal memuat data laporan</p>
+            <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white transition-colors duration-300">Laporan Investasi</h1>
+            <p className="text-gray-600 dark:text-gray-200 mt-2 transition-colors duration-300">Gagal memuat data laporan</p>
           </div>
         </div>
       </AdminLayout>
@@ -415,14 +415,14 @@ export default function LaporanPage() {
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
           <div className="min-w-0 flex-1">
-            <h1 className="text-2xl sm:text-3xl font-bold text-[#324D3E] font-[family-name:var(--font-poppins)] truncate">Laporan Admin</h1>
-            <p className="text-[#889063] mt-1 sm:mt-2 text-sm sm:text-base">Ringkasan manajemen investor dan pelacakan instansi tanaman</p>
+            <h1 className="text-2xl sm:text-3xl font-bold text-[#324D3E] dark:text-white font-[family-name:var(--font-poppins)] truncate transition-colors duration-300">Laporan Admin</h1>
+            <p className="text-[#889063] dark:text-gray-200 mt-1 sm:mt-2 text-sm sm:text-base transition-colors duration-300">Ringkasan manajemen investor dan pelacakan instansi tanaman</p>
           </div>
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3">
             <button
               onClick={fetchReportData}
               disabled={loading}
-              className="bg-[#324D3E]/10 dark:bg-[#324D3E]/20 hover:bg-[#324D3E]/20 dark:hover:bg-[#324D3E]/30 text-[#324D3E] dark:text-[#324D3E] px-3 sm:px-4 py-2 rounded-xl font-medium transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 text-sm sm:text-base whitespace-nowrap"
+              className="bg-[#324D3E]/10 dark:bg-[#324D3E]/20 hover:bg-[#324D3E]/20 dark:hover:bg-[#324D3E]/30 text-[#324D3E] dark:text-white px-3 sm:px-4 py-2 rounded-xl font-medium transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 text-sm sm:text-base whitespace-nowrap"
             >
               <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
               <span className="hidden sm:inline">{loading ? 'Memuat...' : 'Refresh'}</span>
@@ -440,37 +440,37 @@ export default function LaporanPage() {
 
         {/* Summary Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
-          <div className="bg-white/80 backdrop-blur-lg rounded-2xl shadow-lg border border-[#324D3E]/10 p-6 hover:shadow-xl hover:scale-105 transition-all duration-300">
+          <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg rounded-2xl shadow-lg border border-[#324D3E]/10 dark:border-gray-700 p-6 hover:shadow-xl hover:scale-105 transition-all duration-300">
             <div>
-              <p className="text-sm font-medium text-[#889063]">👥 Total Investor</p>
-              <p className="text-2xl font-bold text-[#324D3E]">{reportData.summary.totalInvestors}</p>
+              <p className="text-sm font-medium text-[#889063] dark:text-gray-200 transition-colors duration-300">👥 Total Investor</p>
+              <p className="text-2xl font-bold text-[#324D3E] dark:text-white transition-colors duration-300">{reportData.summary.totalInvestors}</p>
             </div>
           </div>
 
-          <div className="bg-white/80 backdrop-blur-lg rounded-2xl shadow-lg border border-[#324D3E]/10 p-6 hover:shadow-xl hover:scale-105 transition-all duration-300">
+          <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg rounded-2xl shadow-lg border border-[#324D3E]/10 dark:border-gray-700 p-6 hover:shadow-xl hover:scale-105 transition-all duration-300">
             <div>
-              <p className="text-sm font-medium text-[#889063]">🌳 Total Instansi Tanaman</p>
-              <p className="text-2xl font-bold text-[#4C3D19]">{reportData.summary.totalTrees}</p>
+              <p className="text-sm font-medium text-[#889063] dark:text-gray-200 transition-colors duration-300">🌳 Total Instansi Tanaman</p>
+              <p className="text-2xl font-bold text-[#4C3D19] dark:text-emerald-300 transition-colors duration-300">{reportData.summary.totalTrees}</p>
             </div>
           </div>
 
-          <div className="bg-white/80 backdrop-blur-lg rounded-2xl shadow-lg border border-[#324D3E]/10 p-6 hover:shadow-xl hover:scale-105 transition-all duration-300">
+          <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg rounded-2xl shadow-lg border border-[#324D3E]/10 dark:border-gray-700 p-6 hover:shadow-xl hover:scale-105 transition-all duration-300">
             <div>
-              <p className="text-sm font-medium text-[#889063]">🚨 Investor Tidak Aktif</p>
-              <p className="text-2xl font-bold text-[#889063]">{reportData.summary.inactiveInvestors || 0}</p>
+              <p className="text-sm font-medium text-[#889063] dark:text-gray-200 transition-colors duration-300">🚨 Investor Tidak Aktif</p>
+              <p className="text-2xl font-bold text-[#889063] dark:text-gray-200 transition-colors duration-300">{reportData.summary.inactiveInvestors || 0}</p>
             </div>
           </div>
 
-          <div className="bg-white/80 backdrop-blur-lg rounded-2xl shadow-lg border border-[#324D3E]/10 p-6 hover:shadow-xl hover:scale-105 transition-all duration-300">
+          <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg rounded-2xl shadow-lg border border-[#324D3E]/10 dark:border-gray-700 p-6 hover:shadow-xl hover:scale-105 transition-all duration-300">
             <div>
-              <p className="text-sm font-medium text-[#889063]">✅ Investor Aktif</p>
-              <p className="text-2xl font-bold text-[#4C3D19]">{reportData.summary.activeInvestors}</p>
+              <p className="text-sm font-medium text-[#889063] dark:text-gray-200 transition-colors duration-300">✅ Investor Aktif</p>
+              <p className="text-2xl font-bold text-[#4C3D19] dark:text-emerald-300 transition-colors duration-300">{reportData.summary.activeInvestors}</p>
             </div>
           </div>
         </div>
 
         {/* Search */}
-        <div className="bg-white/80 backdrop-blur-lg rounded-2xl shadow-lg border border-[#324D3E]/10 p-4 lg:p-6">
+        <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg rounded-2xl shadow-lg border border-[#324D3E]/10 dark:border-gray-700 p-4 lg:p-6 transition-colors duration-300">
           <div className="flex flex-col lg:flex-row gap-4">
             <div className="flex-1">
               <input
@@ -478,7 +478,7 @@ export default function LaporanPage() {
                 placeholder="Cari investor berdasarkan nama atau email..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full px-4 py-2 border border-[#324D3E]/20 rounded-xl focus:ring-2 focus:ring-[#324D3E]/20 focus:border-[#324D3E] text-[#324D3E] placeholder-[#889063]"
+                className="w-full px-4 py-2 border border-[#324D3E]/20 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-[#324D3E]/20 focus:border-[#324D3E] text-[#324D3E] dark:text-white placeholder-[#889063] dark:placeholder-gray-300 bg-white dark:bg-gray-700 transition-all duration-300"
               />
             </div>
           </div>
@@ -487,35 +487,35 @@ export default function LaporanPage() {
         {/* Investor Reports */}
         <div className="space-y-4">
           {filteredReports.length === 0 ? (
-            <div className="bg-white/80 backdrop-blur-lg rounded-2xl shadow-lg border border-[#324D3E]/10 p-8 text-center text-[#889063]">
+            <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg rounded-2xl shadow-lg border border-[#324D3E]/10 dark:border-gray-700 p-8 text-center text-[#889063] dark:text-gray-200 transition-colors duration-300">
               {searchTerm ? 'Tidak ada investor yang sesuai dengan pencarian' : 'Belum ada data investor'}
             </div>
           ) : (
             filteredReports.map((report) => (
-              <div key={report.investor._id} className="bg-white/80 backdrop-blur-lg rounded-2xl shadow-lg border border-[#324D3E]/10 overflow-hidden">
+              <div key={report.investor._id} className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg rounded-2xl shadow-lg border border-[#324D3E]/10 dark:border-gray-700 overflow-hidden transition-colors duration-300">
                 {/* Investor Header */}
-                <div className="p-4 lg:p-6 border-b border-[#324D3E]/10">
+                <div className="p-4 lg:p-6 border-b border-[#324D3E]/10 dark:border-gray-600 transition-colors duration-300">
                   <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
                     <div className="flex items-center gap-4">
                       <div className="w-12 h-12 bg-gradient-to-r from-[#324D3E] to-[#4C3D19] rounded-full flex items-center justify-center">
                         <span className="text-white font-bold text-lg">{report.investor.name.charAt(0)}</span>
                       </div>
                       <div>
-                        <h3 className="text-lg lg:text-xl font-bold text-[#324D3E] font-[family-name:var(--font-poppins)]">{report.investor.name}</h3>
-                        <p className="text-sm text-[#889063]">{report.investor.email}</p>
+                        <h3 className="text-lg lg:text-xl font-bold text-[#324D3E] dark:text-white font-[family-name:var(--font-poppins)] transition-colors duration-300">{report.investor.name}</h3>
+                        <p className="text-sm text-[#889063] dark:text-gray-200 transition-colors duration-300">{report.investor.email}</p>
                       </div>
                     </div>
                     <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
                       <span className={`inline-flex px-3 py-1 text-sm font-semibold rounded-full ${
                         report.investor.status === 'active'
-                          ? 'bg-[#4C3D19]/10 text-[#4C3D19] border border-[#4C3D19]/20'
-                          : 'bg-red-100 text-red-800'
+                          ? 'bg-[#4C3D19]/10 dark:bg-[#4C3D19]/20 text-[#4C3D19] dark:text-emerald-300 border border-[#4C3D19]/20 dark:border-emerald-600/50'
+                          : 'bg-red-100 dark:bg-red-900/20 text-red-800 dark:text-red-300'
                       }`}>
                         {report.investor.status === 'active' ? 'Aktif' : 'Tidak Aktif'}
                       </span>
                       <button
                         onClick={() => downloadIndividualInvestorReport(report)}
-                        className="bg-[#324D3E]/10 hover:bg-[#324D3E]/20 text-[#324D3E] px-3 py-1 rounded-xl text-sm font-medium transition-colors hover:shadow-sm"
+                        className="bg-[#324D3E]/10 dark:bg-[#324D3E]/20 hover:bg-[#324D3E]/20 dark:hover:bg-[#324D3E]/30 text-[#324D3E] dark:text-white px-3 py-1 rounded-xl text-sm font-medium transition-colors hover:shadow-sm"
                       >
                         📥 Unduh PDF
                       </button>
@@ -524,23 +524,23 @@ export default function LaporanPage() {
                 </div>
 
                 {/* Administrative Summary */}
-                <div className="p-4 lg:p-6 bg-gradient-to-r from-[#324D3E]/5 to-[#4C3D19]/5 border-b border-[#324D3E]/10">
+                <div className="p-4 lg:p-6 bg-gradient-to-r from-[#324D3E]/5 to-[#4C3D19]/5 dark:from-gray-700/50 dark:to-gray-600/50 border-b border-[#324D3E]/10 dark:border-gray-600 transition-colors duration-300">
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                     <div className="text-center">
-                      <p className="text-2xl font-bold text-[#324D3E]">{report.investor.jumlahPohon || 0}</p>
-                      <p className="text-sm text-[#889063]">Tanaman Terdaftar</p>
+                      <p className="text-2xl font-bold text-[#324D3E] dark:text-white transition-colors duration-300">{report.investor.jumlahPohon || 0}</p>
+                      <p className="text-sm text-[#889063] dark:text-gray-200 transition-colors duration-300">Tanaman Terdaftar</p>
                     </div>
                     <div className="text-center">
-                      <p className="text-2xl font-bold text-[#4C3D19]">{report.statistics.total}</p>
-                      <p className="text-sm text-[#889063]">Instansi Tanaman</p>
+                      <p className="text-2xl font-bold text-[#4C3D19] dark:text-emerald-300 transition-colors duration-300">{report.statistics.total}</p>
+                      <p className="text-sm text-[#889063] dark:text-gray-200 transition-colors duration-300">Instansi Tanaman</p>
                     </div>
                     <div className="text-center">
-                      <p className="text-2xl font-bold text-[#889063]">{report.statistics.byCondition.sehat}</p>
-                      <p className="text-sm text-[#889063]">Tanaman Sehat</p>
+                      <p className="text-2xl font-bold text-[#889063] dark:text-gray-300 transition-colors duration-300">{report.statistics.byCondition.sehat}</p>
+                      <p className="text-sm text-[#889063] dark:text-gray-200 transition-colors duration-300">Tanaman Sehat</p>
                     </div>
                     <div className="text-center">
-                      <p className="text-2xl font-bold text-[#324D3E]">{report.statistics.avgAge}</p>
-                      <p className="text-sm text-[#889063]">Rata-rata Umur (bulan)</p>
+                      <p className="text-2xl font-bold text-[#324D3E] dark:text-white transition-colors duration-300">{report.statistics.avgAge}</p>
+                      <p className="text-sm text-[#889063] dark:text-gray-200 transition-colors duration-300">Rata-rata Umur (bulan)</p>
                     </div>
                   </div>
                 </div>
@@ -549,12 +549,12 @@ export default function LaporanPage() {
                 <div className="p-4 lg:p-6">
                   <button
                     onClick={() => toggleExpanded(report.investor._id)}
-                    className="flex items-center justify-between w-full text-left hover:bg-[#324D3E]/5 p-2 rounded-xl transition-colors"
+                    className="flex items-center justify-between w-full text-left hover:bg-[#324D3E]/5 dark:hover:bg-gray-600/30 p-2 rounded-xl transition-colors"
                   >
-                    <span className="text-lg font-medium text-[#324D3E] font-[family-name:var(--font-poppins)]">
+                    <span className="text-lg font-medium text-[#324D3E] dark:text-white font-[family-name:var(--font-poppins)] transition-colors duration-300">
                       Detail Instansi Tanaman ({report.statistics.total})
                     </span>
-                    <span className={`transform transition-transform duration-200 text-[#324D3E] ${
+                    <span className={`transform transition-transform duration-200 text-[#324D3E] dark:text-white ${
                       expandedInvestor === report.investor._id ? 'rotate-180' : ''
                     }`}>
                       ▼
@@ -565,15 +565,15 @@ export default function LaporanPage() {
                   {expandedInvestor === report.investor._id && (
                     <div className="mt-4 space-y-4">
                       {report.trees.length === 0 ? (
-                        <p className="text-center py-4 text-gray-500">Tidak ada instansi tanaman yang ditugaskan untuk investor ini</p>
+                        <p className="text-center py-4 text-gray-500 dark:text-gray-200 transition-colors duration-300">Tidak ada instansi tanaman yang ditugaskan untuk investor ini</p>
                       ) : (
                         <>
                           {/* Plant Type Summary */}
                           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-4">
                             {Object.entries(report.statistics.bySpecies).map(([plantType, count]) => (
-                              <div key={plantType} className="bg-gradient-to-r from-[#324D3E]/10 to-[#4C3D19]/10 p-3 rounded-xl border border-[#324D3E]/20">
-                                <p className="font-medium text-[#324D3E] capitalize">{plantType}</p>
-                                <p className="text-sm text-[#889063]">{count} instansi</p>
+                              <div key={plantType} className="bg-gradient-to-r from-[#324D3E]/10 to-[#4C3D19]/10 dark:from-gray-700/50 dark:to-gray-600/50 p-3 rounded-xl border border-[#324D3E]/20 dark:border-gray-600/50 transition-colors duration-300">
+                                <p className="font-medium text-[#324D3E] dark:text-white capitalize transition-colors duration-300">{plantType}</p>
+                                <p className="text-sm text-[#889063] dark:text-gray-200 transition-colors duration-300">{count} instansi</p>
                               </div>
                             ))}
                           </div>
@@ -581,31 +581,31 @@ export default function LaporanPage() {
                           {/* Plant Instance List */}
                           <div className="overflow-x-auto">
                             <table className="w-full text-sm">
-                              <thead className="bg-[#324D3E]/5">
+                              <thead className="bg-[#324D3E]/5 dark:bg-gray-700/50 transition-colors duration-300">
                                 <tr>
-                                  <th className="px-3 py-2 text-left font-medium text-[#324D3E]">Nama Instansi</th>
-                                  <th className="px-3 py-2 text-left font-medium text-[#324D3E] hidden sm:table-cell">Lokasi</th>
-                                  <th className="px-3 py-2 text-left font-medium text-[#324D3E]">Umur</th>
-                                  <th className="px-3 py-2 text-left font-medium text-[#324D3E] hidden lg:table-cell">Jenis</th>
-                                  <th className="px-3 py-2 text-left font-medium text-[#324D3E] hidden sm:table-cell">Dibuat</th>
-                                  <th className="px-3 py-2 text-left font-medium text-[#324D3E]">Status</th>
+                                  <th className="px-3 py-2 text-left font-medium text-[#324D3E] dark:text-white transition-colors duration-300">Nama Instansi</th>
+                                  <th className="px-3 py-2 text-left font-medium text-[#324D3E] dark:text-white hidden sm:table-cell transition-colors duration-300">Lokasi</th>
+                                  <th className="px-3 py-2 text-left font-medium text-[#324D3E] dark:text-white transition-colors duration-300">Umur</th>
+                                  <th className="px-3 py-2 text-left font-medium text-[#324D3E] dark:text-white hidden lg:table-cell transition-colors duration-300">Jenis</th>
+                                  <th className="px-3 py-2 text-left font-medium text-[#324D3E] dark:text-white hidden sm:table-cell transition-colors duration-300">Dibuat</th>
+                                  <th className="px-3 py-2 text-left font-medium text-[#324D3E] dark:text-white transition-colors duration-300">Status</th>
                                 </tr>
                               </thead>
-                              <tbody className="divide-y divide-[#324D3E]/10">
+                              <tbody className="divide-y divide-[#324D3E]/10 dark:divide-gray-600 transition-colors duration-300">
                                 {report.trees.map((tree) => (
-                                  <tr key={tree._id} className="hover:bg-[#324D3E]/5 transition-colors">
+                                  <tr key={tree._id} className="hover:bg-[#324D3E]/5 dark:hover:bg-gray-600/30 transition-colors">
                                     <td className="px-3 py-2">
                                       <div>
-                                        <p className="font-medium text-[#324D3E]">{tree.spesiesPohon}</p>
-                                        <p className="text-xs text-[#889063] sm:hidden">{tree.lokasi}</p>
+                                        <p className="font-medium text-[#324D3E] dark:text-white transition-colors duration-300">{tree.spesiesPohon}</p>
+                                        <p className="text-xs text-[#889063] dark:text-gray-200 sm:hidden transition-colors duration-300">{tree.lokasi}</p>
                                       </div>
                                     </td>
-                                    <td className="px-3 py-2 text-[#889063] hidden sm:table-cell">{tree.lokasi}</td>
+                                    <td className="px-3 py-2 text-[#889063] dark:text-gray-200 hidden sm:table-cell transition-colors duration-300">{tree.lokasi}</td>
                                     <td className="px-3 py-2">
-                                      <span className="text-[#324D3E]">{formatNumber(tree.umur)} bulan</span>
+                                      <span className="text-[#324D3E] dark:text-white transition-colors duration-300">{formatNumber(tree.umur)} bulan</span>
                                     </td>
-                                    <td className="px-3 py-2 text-[#889063] hidden lg:table-cell capitalize">{tree.spesiesPohon.split(' ')[0] || 'Tidak Diketahui'}</td>
-                                    <td className="px-3 py-2 text-[#889063] hidden sm:table-cell">
+                                    <td className="px-3 py-2 text-[#889063] dark:text-gray-200 hidden lg:table-cell capitalize transition-colors duration-300">{tree.spesiesPohon.split(' ')[0] || 'Tidak Diketahui'}</td>
+                                    <td className="px-3 py-2 text-[#889063] dark:text-gray-200 hidden sm:table-cell transition-colors duration-300">
                                       {new Date(tree.tanggalTanam).toLocaleDateString('id-ID')}
                                     </td>
                                     <td className="px-3 py-2">

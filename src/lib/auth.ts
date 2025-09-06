@@ -9,24 +9,60 @@ export const authOptions: NextAuthOptions = {
     CredentialsProvider({
       name: "credentials",
       credentials: {
-        email: { label: "Email", type: "email" },
+        identifier: { label: "Email atau No. HP", type: "text" },
         password: { label: "Password", type: "password" },
       },
       async authorize(credentials) {
-        if (!credentials?.email || !credentials?.password) {
-          throw new Error("Email dan password wajib diisi");
+        if (!credentials?.identifier || !credentials?.password) {
+          throw new Error("Email/No. HP dan password wajib diisi");
         }
 
         try {
           await dbConnect();
 
-          const user = await User.findOne({
-            email: credentials.email.toLowerCase().trim(),
-            isActive: true,
-          });
+          // Helper to normalize Indonesian phone numbers
+          const normalizePhone = (input: string) => {
+            let v = input.replace(/\s|\-/g, ""); // remove spaces and dashes
+            // Remove parentheses and dots if any
+            v = v.replace(/[().]/g, "");
+
+            if (v.startsWith("+62")) return v;
+            if (v.startsWith("62")) return "+" + v; // to +62
+            if (v.startsWith("0")) return "+62" + v.slice(1);
+            return v; // return as-is; DB regex will still enforce valid numbers on registration
+          };
+
+          const isEmail = credentials.identifier.includes("@");
+          const identifier = credentials.identifier.trim();
+
+          let user = null as any;
+          if (isEmail) {
+            user = await User.findOne({
+              email: identifier.toLowerCase(),
+              isActive: true,
+            });
+          } else {
+            const plus62 = normalizePhone(identifier);
+            // Also prepare alternative zero-leading in case DB stored with 0 prefix
+            let zeroLeading = identifier;
+            if (plus62.startsWith("+62")) {
+              zeroLeading = "0" + plus62.slice(3);
+            } else if (identifier.startsWith("62")) {
+              zeroLeading = "0" + identifier.slice(2);
+            }
+
+            user = await User.findOne({
+              isActive: true,
+              $or: [
+                { phoneNumber: plus62 },
+                { phoneNumber: zeroLeading },
+                { phoneNumber: identifier },
+              ],
+            });
+          }
 
           if (!user) {
-            throw new Error("Email atau password tidak valid");
+            throw new Error("Email/No. HP atau password tidak valid");
           }
 
           const isPasswordValid = await bcrypt.compare(
@@ -35,7 +71,7 @@ export const authOptions: NextAuthOptions = {
           );
 
           if (!isPasswordValid) {
-            throw new Error("Email atau password tidak valid");
+            throw new Error("Email/No. HP atau password tidak valid");
           }
 
           // Update last login
@@ -82,6 +118,10 @@ export const authOptions: NextAuthOptions = {
         token.verificationStatus = user.verificationStatus;
         token.canPurchase = user.canPurchase;
         token.profileImageUrl = (user as any).profileImageUrl;
+        // Ensure email on token is always in sync at sign-in
+        if ((user as any).email) {
+          token.email = (user as any).email as string;
+        }
       }
 
       // Handle session updates by fetching fresh data from database
@@ -100,6 +140,7 @@ export const authOptions: NextAuthOptions = {
             token.verificationStatus = dbUser.verificationStatus;
             token.canPurchase = dbUser.canPurchase;
             token.profileImageUrl = dbUser.profileImageUrl;
+            token.email = dbUser.email;
           }
         } catch (error) {
           console.error("Error updating token from database:", error);
@@ -121,6 +162,22 @@ export const authOptions: NextAuthOptions = {
         session.user.verificationStatus = token.verificationStatus as string;
         session.user.canPurchase = token.canPurchase as boolean;
         session.user.profileImageUrl = token.profileImageUrl as string;
+        // Map email from token, if present
+        if (token.email) {
+          session.user.email = token.email as string;
+        }
+      }
+      // Safety net: fetch the latest email to avoid stale session after admin changes
+      try {
+        if (token.sub) {
+          await dbConnect();
+          const dbUser = await User.findById(token.sub).select("email");
+          if (dbUser && session.user) {
+            session.user.email = dbUser.email;
+          }
+        }
+      } catch (error) {
+        console.error("Error ensuring latest email in session:", error);
       }
       return session;
     },

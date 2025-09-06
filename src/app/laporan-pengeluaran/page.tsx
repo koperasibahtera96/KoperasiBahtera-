@@ -35,6 +35,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
+import { useTheme } from "next-themes";
 
 const BRUTALIST_COLORS = [
   "#FF6B35",
@@ -62,6 +63,8 @@ export default function LaporanPengeluaranPage() {
   const [loading, setLoading] = useState(true);
   const filename = "laporan-pengeluaran.xls"; // Declare the filename variable
   const { showError, AlertComponent } = useAlert();
+  const { theme, systemTheme } = useTheme();
+  const isDark = (theme === "system" ? systemTheme : theme) === "dark";
 
   useEffect(() => {
     loadData();
@@ -430,8 +433,8 @@ export default function LaporanPengeluaranPage() {
       <FinanceSidebar>
         <div className="p-4 sm:p-6 lg:p-8 flex items-center justify-center min-h-[50vh]">
           <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#324D3E] mx-auto mb-4"></div>
-            <p className="text-[#889063] text-lg">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#324D3E] dark:border-white mx-auto mb-4"></div>
+            <p className="text-[#889063] dark:text-gray-200 text-lg">
               Memuat laporan pengeluaran...
             </p>
           </div>
@@ -453,7 +456,7 @@ export default function LaporanPengeluaranPage() {
           <div className="flex items-center gap-4">
             <Link href="/finance">
               <motion.button
-                className="group flex items-center gap-2 px-3 sm:px-4 py-2 bg-white/90 backdrop-blur-xl rounded-xl sm:rounded-2xl shadow-lg border border-[#324D3E]/10 text-[#324D3E] hover:bg-[#324D3E] hover:text-white transition-all duration-300 self-start"
+                className="group flex items-center gap-2 px-3 sm:px-4 py-2 bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl rounded-xl sm:rounded-2xl shadow-lg border border-[#324D3E]/10 dark:border-gray-700 text-[#324D3E] dark:text-white hover:bg-[#324D3E] hover:text-white transition-all duration-300 self-start"
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
               >
@@ -462,10 +465,10 @@ export default function LaporanPengeluaranPage() {
               </motion.button>
             </Link>
             <div>
-              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-[#324D3E]">
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-[#324D3E] dark:text-white transition-colors duration-300">
                 Laporan Pengeluaran
               </h1>
-              <p className="text-[#889063] mt-1 text-sm sm:text-base lg:text-lg">
+              <p className="text-[#889063] dark:text-gray-200 mt-1 text-sm sm:text-base lg:text-lg transition-colors duration-300">
                 Analisis dan manajemen pengeluaran operasional
               </p>
             </div>
@@ -483,9 +486,9 @@ export default function LaporanPengeluaranPage() {
           </div>
         </motion.div>
 
-        <Card className="bg-white/90 mb-6">
+        <Card className="bg-white/90 dark:bg-gray-800/90 mb-6 border border-[#324D3E]/10 dark:border-gray-700 transition-colors duration-300">
           <CardHeader>
-            <CardTitle className="text-black flex items-center gap-2">
+            <CardTitle className="text-black dark:text-white flex items-center gap-2 transition-colors duration-300">
               <Filter className="h-5 w-5" />
               Filter Laporan
             </CardTitle>
@@ -493,23 +496,23 @@ export default function LaporanPengeluaranPage() {
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <div>
-                <label className="block text-sm font-medium text-black mb-2">
+                <label className="block text-sm font-medium text-black dark:text-white mb-2 transition-colors duration-300">
                   Tahun
                 </label>
                 <div className="relative">
                   <select
                     value={selectedYear}
                     onChange={(e) => setSelectedYear(Number(e.target.value))}
-                    className="w-full border bg-white/90 border-gray-200 text-black px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none cursor-pointer"
+                    className="w-full border bg-white/90 dark:bg-gray-700/80 border-gray-200 dark:border-gray-600 text-black dark:text-white px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none cursor-pointer transition-colors duration-300"
                   >
                     <option value={2024}>2024</option>
                     <option value={2025}>2025</option>
                   </select>
-                  <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
+                  <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400 dark:text-gray-300 pointer-events-none" />
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-black mb-2">
+                <label className="block text-sm font-medium text-black dark:text-white mb-2 transition-colors duration-300">
                   Bulan
                 </label>
                 <div className="relative">
@@ -520,7 +523,7 @@ export default function LaporanPengeluaranPage() {
                         e.target.value ? Number(e.target.value) : null
                       )
                     }
-                    className="w-full border bg-white/90 border-gray-200 text-black px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none cursor-pointer"
+                    className="w-full border bg-white/90 dark:bg-gray-700/80 border-gray-200 dark:border-gray-600 text-black dark:text-white px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none cursor-pointer transition-colors duration-300"
                   >
                     <option value="">Semua Bulan</option>
                     {Array.from({ length: 12 }, (_, i) => (
@@ -531,18 +534,18 @@ export default function LaporanPengeluaranPage() {
                       </option>
                     ))}
                   </select>
-                  <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
+                  <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400 dark:text-gray-300 pointer-events-none" />
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-black mb-2">
+                <label className="block text-sm font-medium text-black dark:text-white mb-2 transition-colors duration-300">
                   Tanaman
                 </label>
                 <div className="relative">
                   <select
                     value={selectedPlant}
                     onChange={(e) => setSelectedPlant(e.target.value)}
-                    className="w-full border bg-white/90 border-gray-200 text-black px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none cursor-pointer hover:bg-slate-600 transition-colors"
+                    className="w-full border bg-white/90 dark:bg-gray-700/80 border-gray-200 dark:border-gray-600 text-black dark:text-white px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none cursor-pointer transition-colors duration-300"
                   >
                     <option value="all">Semua Tanaman</option>
                     {plantTypes.map((plantType) => (
@@ -551,7 +554,7 @@ export default function LaporanPengeluaranPage() {
                       </option>
                     ))}
                   </select>
-                  <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
+                  <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400 dark:text-gray-300 pointer-events-none" />
                 </div>
               </div>
               <div className="flex items-end">
@@ -561,7 +564,7 @@ export default function LaporanPengeluaranPage() {
                     setSelectedPlant("all");
                   }}
                   variant="outline"
-                  className="w-full border bg-white/90 border-gray-200 text-black hover:bg-gray-200"
+                  className="w-full border bg-white/90 dark:bg-gray-700/80 border-gray-200 dark:border-gray-600 text-black dark:text-white hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors duration-300"
                 >
                   Reset Filter
                 </Button>
@@ -576,17 +579,17 @@ export default function LaporanPengeluaranPage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.2 }}
           >
-            <Card className="bg-white/90 backdrop-blur-xl border-[#324D3E]/10 shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300">
+            <Card className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl border-[#324D3E]/10 dark:border-gray-700 shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300">
               <CardContent className="p-6">
                 <div className="flex items-center justify-between mb-4">
-                  <div className="text-sm text-[#889063]">
+                  <div className="text-sm text-[#889063] dark:text-gray-200 transition-colors duration-300">
                     Total Pengeluaran
                   </div>
                   <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-red-500/10 text-red-600">
                     <TrendingDown className="h-5 w-5" />
                   </div>
                 </div>
-                <div className="text-2xl font-bold text-red-600">
+                <div className="text-2xl font-bold text-red-600 dark:text-red-400 transition-colors duration-300">
                   {formatCurrency(totalExpenses)}
                 </div>
               </CardContent>
@@ -598,15 +601,15 @@ export default function LaporanPengeluaranPage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.3 }}
           >
-            <Card className="bg-white/90 backdrop-blur-xl border-[#324D3E]/10 shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300">
+            <Card className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl border-[#324D3E]/10 dark:border-gray-700 shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300">
               <CardContent className="p-6">
                 <div className="flex items-center justify-between mb-4">
-                  <div className="text-sm text-[#889063]">Jumlah Transaksi</div>
+                  <div className="text-sm text-[#889063] dark:text-gray-200 transition-colors duration-300">Jumlah Transaksi</div>
                   <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-blue-500/10 text-blue-600">
                     <BarChart3 className="h-5 w-5" />
                   </div>
                 </div>
-                <div className="text-2xl font-bold text-blue-600">
+                <div className="text-2xl font-bold text-blue-600 dark:text-blue-400 transition-colors duration-300">
                   {filteredExpenses.length}
                 </div>
               </CardContent>
@@ -618,17 +621,17 @@ export default function LaporanPengeluaranPage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.4 }}
           >
-            <Card className="bg-white/90 backdrop-blur-xl border-[#324D3E]/10 shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300">
+            <Card className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl border-[#324D3E]/10 dark:border-gray-700 shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300">
               <CardContent className="p-6">
                 <div className="flex items-center justify-between mb-4">
-                  <div className="text-sm text-[#889063]">
+                  <div className="text-sm text-[#889063] dark:text-gray-200 transition-colors duration-300">
                     Rata-rata per Transaksi
                   </div>
                   <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-yellow-500/10 text-yellow-600">
                     <DollarSign className="h-5 w-5" />
                   </div>
                 </div>
-                <div className="text-2xl font-bold text-yellow-600">
+                <div className="text-2xl font-bold text-yellow-600 dark:text-yellow-400 transition-colors duration-300">
                   {filteredExpenses.length > 0
                     ? formatCurrency(totalExpenses / filteredExpenses.length)
                     : "Rp 0"}
@@ -642,15 +645,15 @@ export default function LaporanPengeluaranPage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.5 }}
           >
-            <Card className="bg-white/90 backdrop-blur-xl border-[#324D3E]/10 shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300">
+            <Card className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl border-[#324D3E]/10 dark:border-gray-700 shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300">
               <CardContent className="p-6">
                 <div className="flex items-center justify-between mb-4">
-                  <div className="text-sm text-[#889063]">Periode</div>
+                  <div className="text-sm text-[#889063] dark:text-gray-200 transition-colors duration-300">Periode</div>
                   <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-green-500/10 text-green-600">
                     <Calendar className="h-5 w-5" />
                   </div>
                 </div>
-                <div className="text-2xl font-bold text-green-600">
+                <div className="text-2xl font-bold text-green-600 dark:text-emerald-400 transition-colors duration-300">
                   {selectedMonth
                     ? `${new Date(
                         selectedYear,
@@ -672,9 +675,9 @@ export default function LaporanPengeluaranPage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.6 }}
           >
-            <Card className="bg-white/90 backdrop-blur-xl border-[#324D3E]/10 shadow-lg">
+            <Card className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl border-[#324D3E]/10 dark:border-gray-700 shadow-lg transition-colors duration-300">
               <CardHeader>
-                <CardTitle className="text-[#324D3E]">
+                <CardTitle className="text-[#324D3E] dark:text-white transition-colors duration-300">
                   Pengeluaran per Tanaman
                 </CardTitle>
               </CardHeader>
@@ -708,10 +711,10 @@ export default function LaporanPengeluaranPage() {
                           "Pengeluaran",
                         ]}
                         contentStyle={{
-                          backgroundColor: "#ffffff",
-                          border: "3px solid #000000",
+                          backgroundColor: isDark ? "#111827" : "#ffffff",
+                          border: isDark ? "3px solid #374151" : "3px solid #000000",
                           borderRadius: "8px",
-                          color: "#000000",
+                          color: isDark ? "#ffffff" : "#000000",
                           fontWeight: "bold",
                           boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
                         }}
@@ -728,9 +731,9 @@ export default function LaporanPengeluaranPage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.7 }}
           >
-            <Card className="bg-white/90 backdrop-blur-xl border-[#324D3E]/10 shadow-lg">
+            <Card className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl border-[#324D3E]/10 dark:border-gray-700 shadow-lg transition-colors duration-300">
               <CardHeader>
-                <CardTitle className="text-[#324D3E]">
+                <CardTitle className="text-[#324D3E] dark:text-white transition-colors duration-300">
                   Tren Pengeluaran Bulanan {selectedYear}
                 </CardTitle>
               </CardHeader>
@@ -738,14 +741,14 @@ export default function LaporanPengeluaranPage() {
                 <div className="h-80">
                   <ResponsiveContainer width="100%" height="100%">
                     <LineChart data={monthlyTrends}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                      <CartesianGrid strokeDasharray="3 3" stroke={isDark ? "#4b5563" : "#374151"} />
                       <XAxis
                         dataKey="month"
-                        stroke="#9ca3af"
+                        stroke={isDark ? "#d1d5db" : "#9ca3af"}
                         style={{ fontSize: "12px", fontWeight: "bold" }}
                       />
                       <YAxis
-                        stroke="#9ca3af"
+                        stroke={isDark ? "#d1d5db" : "#9ca3af"}
                         style={{ fontSize: "12px", fontWeight: "bold" }}
                         tickFormatter={(value) =>
                           `${(value / 1000000).toFixed(0)}M`
@@ -757,10 +760,10 @@ export default function LaporanPengeluaranPage() {
                           "Pengeluaran",
                         ]}
                         contentStyle={{
-                          backgroundColor: "#ffffff",
-                          border: "3px solid #000000",
+                          backgroundColor: isDark ? "#111827" : "#ffffff",
+                          border: isDark ? "3px solid #374151" : "3px solid #000000",
                           borderRadius: "8px",
-                          color: "#000000",
+                          color: isDark ? "#ffffff" : "#000000",
                           fontWeight: "bold",
                           boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
                         }}
@@ -768,12 +771,12 @@ export default function LaporanPengeluaranPage() {
                       <Line
                         type="monotone"
                         dataKey="expenses"
-                        stroke="#ef4444"
+                        stroke={isDark ? "#f87171" : "#ef4444"}
                         strokeWidth={4}
                         dot={{
-                          fill: "#ef4444",
+                          fill: isDark ? "#f87171" : "#ef4444",
                           strokeWidth: 3,
-                          stroke: "#000",
+                          stroke: isDark ? "#d1d5db" : "#000",
                           r: 6,
                         }}
                       />
@@ -790,9 +793,9 @@ export default function LaporanPengeluaranPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.8 }}
         >
-          <Card className="bg-white/90 backdrop-blur-xl border-[#324D3E]/10 shadow-lg">
+          <Card className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl border-[#324D3E]/10 dark:border-gray-700 shadow-lg transition-colors duration-300">
             <CardHeader>
-              <CardTitle className="text-[#324D3E]">
+              <CardTitle className="text-[#324D3E] dark:text-white transition-colors duration-300">
                 Detail Pengeluaran
               </CardTitle>
             </CardHeader>
@@ -801,17 +804,17 @@ export default function LaporanPengeluaranPage() {
                 <div className="overflow-x-auto">
                   <table className="w-full">
                     <thead>
-                      <tr className="border-b-2 border-[#324D3E]/10">
-                        <th className="text-left py-3 px-4 text-[#324D3E] font-semibold">
+                      <tr className="border-b-2 border-[#324D3E]/10 dark:border-gray-600 transition-colors duration-300">
+                        <th className="text-left py-3 px-4 text-[#324D3E] dark:text-white font-semibold transition-colors duration-300">
                           Tanggal
                         </th>
-                        <th className="text-left py-3 px-4 text-[#324D3E] font-semibold">
+                        <th className="text-left py-3 px-4 text-[#324D3E] dark:text-white font-semibold transition-colors duration-300">
                           Deskripsi
                         </th>
-                        <th className="text-right py-3 px-4 text-[#324D3E] font-semibold">
+                        <th className="text-right py-3 px-4 text-[#324D3E] dark:text-white font-semibold transition-colors duration-300">
                           Jumlah
                         </th>
-                        <th className="text-left py-3 px-4 text-[#324D3E] font-semibold">
+                        <th className="text-left py-3 px-4 text-[#324D3E] dark:text-white font-semibold transition-colors duration-300">
                           Input Oleh
                         </th>
                       </tr>
@@ -826,22 +829,24 @@ export default function LaporanPengeluaranPage() {
                         .map((expense, index) => (
                           <tr
                             key={index}
-                            className={`border-b border-[#324D3E]/5 ${
-                              index % 2 === 0 ? "bg-white/40" : "bg-[#324D3E]/5"
-                            } hover:bg-[#324D3E]/10 transition-colors duration-200`}
+                            className={`border-b border-[#324D3E]/5 dark:border-gray-700 ${
+                              index % 2 === 0
+                                ? "bg-white/40 dark:bg-gray-800/40"
+                                : "bg-[#324D3E]/5 dark:bg-gray-700/50"
+                            } hover:bg-[#324D3E]/10 dark:hover:bg-gray-700 transition-colors duration-200`}
                           >
-                            <td className="py-3 px-4 text-[#324D3E]">
+                            <td className="py-3 px-4 text-[#324D3E] dark:text-white transition-colors duration-300">
                               {new Date(expense.date).toLocaleDateString(
                                 "id-ID"
                               )}
                             </td>
-                            <td className="py-3 px-4 text-[#324D3E]">
+                            <td className="py-3 px-4 text-[#324D3E] dark:text-white transition-colors duration-300">
                               {expense.description}
                             </td>
-                            <td className="py-3 px-4 text-right text-red-600 font-medium">
+                            <td className="py-3 px-4 text-right text-red-600 dark:text-red-400 font-medium transition-colors duration-300">
                               {formatCurrency(expense.amount)}
                             </td>
-                            <td className="py-3 px-4 text-[#889063]">
+                            <td className="py-3 px-4 text-[#889063] dark:text-gray-200 transition-colors duration-300">
                               {expense.addedBy}
                             </td>
                           </tr>
@@ -850,8 +855,8 @@ export default function LaporanPengeluaranPage() {
                   </table>
                 </div>
               ) : (
-                <div className="text-center py-8 text-[#889063]">
-                  <TrendingDown className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                <div className="text-center py-8 text-[#889063] dark:text-gray-200 transition-colors duration-300">
+                  <TrendingDown className="h-12 w-12 mx-auto mb-4 opacity-50 text-[#324D3E] dark:text-white transition-colors duration-300" />
                   <p>
                     Tidak ada pengeluaran ditemukan untuk filter yang dipilih
                   </p>

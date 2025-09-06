@@ -85,13 +85,13 @@ export default function SemuaInvestasiPage() {
         <div className="min-h-screen flex items-center justify-center">
           <div className="text-center">
             <motion.div
-              className="inline-block p-6 bg-white/90 backdrop-blur-xl rounded-3xl shadow-xl border border-[#324D3E]/10"
+              className="inline-block p-6 bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl rounded-3xl shadow-xl border border-[#324D3E]/10 dark:border-gray-700 transition-colors duration-300"
               animate={{ rotate: 360 }}
               transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
             >
               <Leaf className="h-8 w-8 text-[#324D3E]" />
             </motion.div>
-            <p className="text-[#324D3E] text-lg font-medium mt-4">Memuat data investasi...</p>
+            <p className="text-[#324D3E] dark:text-white text-lg font-medium mt-4 transition-colors duration-300">Memuat data investasi...</p>
           </div>
         </div>
       </FinanceSidebar>
@@ -110,7 +110,7 @@ export default function SemuaInvestasiPage() {
         >
           <Link href="/finance">
             <motion.button 
-              className="group flex items-center gap-2 px-3 sm:px-4 py-2 bg-white/90 backdrop-blur-xl rounded-xl sm:rounded-2xl shadow-lg border border-[#324D3E]/10 text-[#324D3E] hover:bg-[#324D3E] hover:text-white transition-all duration-300 self-start"
+              className="group flex items-center gap-2 px-3 sm:px-4 py-2 bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl rounded-xl sm:rounded-2xl shadow-lg border border-[#324D3E]/10 dark:border-gray-700 text-[#324D3E] dark:text-white hover:bg-[#324D3E] hover:text-white transition-all duration-300 self-start"
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
             >
@@ -119,8 +119,8 @@ export default function SemuaInvestasiPage() {
             </motion.button>
           </Link>
           <div className="flex-1">
-            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-[#324D3E] mb-1 sm:mb-2">Semua Investasi Tanaman</h1>
-            <p className="text-[#889063] text-sm sm:text-base lg:text-lg">Daftar lengkap semua jenis tanaman investasi</p>
+            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-[#324D3E] dark:text-white mb-1 sm:mb-2 transition-colors duration-300">Semua Investasi Tanaman</h1>
+            <p className="text-[#889063] dark:text-gray-300 text-sm sm:text-base lg:text-lg transition-colors duration-300">Daftar lengkap semua jenis tanaman investasi</p>
           </div>
         </motion.div>
 
@@ -134,7 +134,7 @@ export default function SemuaInvestasiPage() {
           {plantSummaries.map((plant, index) => (
             <motion.div
               key={plant.id}
-              className="group bg-white/90 backdrop-blur-xl rounded-2xl sm:rounded-3xl shadow-xl border border-[#324D3E]/10 p-4 sm:p-6 hover:shadow-2xl hover:scale-105 transition-all duration-500"
+              className="group bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl rounded-2xl sm:rounded-3xl shadow-xl border border-[#324D3E]/10 dark:border-gray-700 p-4 sm:p-6 hover:shadow-2xl hover:scale-105 transition-all duration-500"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: index * 0.1 }}
@@ -142,12 +142,12 @@ export default function SemuaInvestasiPage() {
               {/* Header - Stack on mobile, side by side on larger screens */}
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 sm:mb-6 space-y-3 sm:space-y-0">
                 <div className="flex items-center gap-3">
-                  <div className="p-2 sm:p-3 bg-[#324D3E]/10 rounded-xl sm:rounded-2xl text-[#324D3E]">
+                  <div className="p-2 sm:p-3 bg-[#324D3E]/10 dark:bg-[#324D3E]/20 rounded-xl sm:rounded-2xl text-[#324D3E] dark:text-white transition-colors duration-300">
                     <Leaf className="h-5 w-5 sm:h-6 sm:w-6" />
                   </div>
-                  <h3 className="text-lg sm:text-xl font-bold text-[#324D3E] capitalize break-words">{plant.plantType}</h3>
+                  <h3 className="text-lg sm:text-xl font-bold text-[#324D3E] dark:text-white capitalize break-words transition-colors duration-300">{plant.plantType}</h3>
                 </div>
-                <div className="flex items-center gap-1 px-2 sm:px-3 py-1 bg-green-500/10 rounded-full text-green-600 self-start sm:self-auto">
+                <div className="flex items-center gap-1 px-2 sm:px-3 py-1 bg-green-500/10 dark:bg-green-900/30 rounded-full text-green-600 dark:text-green-400 self-start sm:self-auto transition-colors duration-300">
                   <TrendingUp className="h-3 w-3 sm:h-4 sm:w-4" />
                   <span className="text-xs sm:text-sm font-medium">ROI {plant.roi.toFixed(1)}%</span>
                 </div>
@@ -156,27 +156,27 @@ export default function SemuaInvestasiPage() {
               {/* Financial Info */}
               <div className="space-y-3 sm:space-y-4 mb-4 sm:mb-6">
                 <div className="flex justify-between items-center">
-                  <span className="text-[#889063] font-medium text-sm sm:text-base">Total Investasi</span>
-                  <span className="text-[#324D3E] font-bold text-sm sm:text-base break-all text-right">{formatCurrency(plant.totalInvestment)}</span>
+                  <span className="text-[#889063] dark:text-gray-200 font-medium text-sm sm:text-base transition-colors duration-300">Total Investasi</span>
+                  <span className="text-[#324D3E] dark:text-white font-bold text-sm sm:text-base break-all text-right transition-colors duration-300">{formatCurrency(plant.totalInvestment)}</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-[#889063] font-medium text-sm sm:text-base">Total Profit</span>
-                  <span className="text-green-600 font-bold text-sm sm:text-base break-all text-right">{formatCurrency(plant.totalProfit)}</span>
+                  <span className="text-[#889063] dark:text-gray-200 font-medium text-sm sm:text-base transition-colors duration-300">Total Profit</span>
+                  <span className="text-green-600 dark:text-emerald-400 font-bold text-sm sm:text-base break-all text-right transition-colors duration-300">{formatCurrency(plant.totalProfit)}</span>
                 </div>
               </div>
 
               {/* ROI Section */}
-              <div className="bg-gradient-to-r from-green-500/10 to-[#324D3E]/10 rounded-xl sm:rounded-2xl p-3 sm:p-4 mb-4 sm:mb-6">
+              <div className="bg-gradient-to-r from-green-500/10 to-[#324D3E]/10 dark:from-green-900/20 dark:to-gray-700/50 rounded-xl sm:rounded-2xl p-3 sm:p-4 mb-4 sm:mb-6 transition-colors duration-300">
                 <div className="text-center">
-                  <p className="text-[#889063] text-xs sm:text-sm font-medium mb-1">ROI Aktual</p>
-                  <p className="text-xl sm:text-2xl font-bold text-[#324D3E]">{plant.roi.toFixed(1)}%</p>
+                  <p className="text-[#889063] dark:text-gray-200 text-xs sm:text-sm font-medium mb-1 transition-colors duration-300">ROI Aktual</p>
+                  <p className="text-xl sm:text-2xl font-bold text-[#324D3E] dark:text-white transition-colors duration-300">{plant.roi.toFixed(1)}%</p>
                 </div>
               </div>
 
               {/* Footer - Stack on mobile, side by side on larger screens */}
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-3 sm:space-y-0 gap-3">
-                <div className="flex items-center gap-2 text-[#889063]">
-                  <div className="p-1.5 sm:p-2 bg-purple-500/10 rounded-lg sm:rounded-xl text-purple-600">
+                <div className="flex items-center gap-2 text-[#889063] dark:text-gray-200 transition-colors duration-300">
+                  <div className="p-1.5 sm:p-2 bg-purple-500/10 dark:bg-purple-900/30 rounded-lg sm:rounded-xl text-purple-600 dark:text-purple-400 transition-colors duration-300">
                     <Users className="h-3 w-3 sm:h-4 sm:w-4" />
                   </div>
                   <span className="font-medium text-sm sm:text-base">{plant.investorCount} investor</span>
@@ -202,12 +202,12 @@ export default function SemuaInvestasiPage() {
             animate={{ opacity: 1 }}
             transition={{ duration: 0.6, delay: 0.4 }}
           >
-            <div className="bg-white/90 backdrop-blur-xl rounded-3xl shadow-xl border border-[#324D3E]/10 p-12 max-w-md mx-auto">
-              <div className="p-6 bg-[#324D3E]/10 rounded-3xl inline-block mb-6">
-                <Leaf className="h-12 w-12 text-[#324D3E]" />
+            <div className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl rounded-3xl shadow-xl border border-[#324D3E]/10 dark:border-gray-700 p-12 max-w-md mx-auto transition-colors duration-300">
+              <div className="p-6 bg-[#324D3E]/10 dark:bg-[#324D3E]/20 rounded-3xl inline-block mb-6 transition-colors duration-300">
+                <Leaf className="h-12 w-12 text-[#324D3E] dark:text-white transition-colors duration-300" />
               </div>
-              <h3 className="text-xl font-bold text-[#324D3E] mb-2">Belum Ada Data</h3>
-              <p className="text-[#889063]">Tidak ada data investasi tanaman saat ini</p>
+              <h3 className="text-xl font-bold text-[#324D3E] dark:text-white mb-2 transition-colors duration-300">Belum Ada Data</h3>
+              <p className="text-[#889063] dark:text-gray-200 transition-colors duration-300">Tidak ada data investasi tanaman saat ini</p>
             </div>
           </motion.div>
         )}

@@ -9,6 +9,7 @@ import { useEffect, useState } from "react";
 
 interface Investor {
   _id: string;
+  userId: string;
   name: string;
   email: string;
   totalInvestasi: number;
@@ -124,6 +125,7 @@ export default function InvestorsPage() {
       const response = await fetch("/api/admin/profile-change-requests");
       if (response.ok) {
         const result = await response.json();
+        console.log(result, "result");
         setProfileChangeRequests(result.requests);
       } else {
         showError(
@@ -347,23 +349,26 @@ export default function InvestorsPage() {
     }
   };
 
-  // Get pending request count for a specific user email
-  const getPendingRequestCount = (email: string) => {
+  // Get pending request count for a specific user (by ID)
+  const getPendingRequestCount = (userId: string) => {
     return profileChangeRequests.filter(
-      (request) => request.user?.email === email && request.status === "pending"
+      (request) => request.user?._id === userId && request.status === "pending"
     ).length;
   };
 
-  // Get all requests for a specific user email
-  const getUserRequests = (email: string) => {
-    return profileChangeRequests.filter(
-      (request) => request.user?.email === email
-    );
+  // Get all requests for a specific user (by ID), sorted by requestedAt desc
+  const getUserRequests = (userId: string) => {
+    return profileChangeRequests
+      .filter((request) => request.user?._id === userId)
+      .sort(
+        (a, b) =>
+          new Date(b.requestedAt).getTime() - new Date(a.requestedAt).getTime()
+      );
   };
 
   // Handle viewing investor requests
-  const handleViewInvestorRequests = (email: string) => {
-    const investorRequests = getUserRequests(email);
+  const handleViewInvestorRequests = (userId: string) => {
+    const investorRequests = getUserRequests(userId);
     setSelectedInvestorRequests(investorRequests);
     setShowInvestorRequestsModal(true);
   };
@@ -377,7 +382,7 @@ export default function InvestorsPage() {
             <h1 className="text-2xl sm:text-3xl font-bold text-[#324D3E] dark:text-white font-[family-name:var(--font-poppins)] truncate transition-colors duration-300">
               Manajemen Investor
             </h1>
-            <p className="text-[#889063] dark:text-gray-300 mt-1 sm:mt-2 text-sm sm:text-base transition-colors duration-300">
+            <p className="text-[#889063] dark:text-gray-200 mt-1 sm:mt-2 text-sm sm:text-base transition-colors duration-300">
               Kelola data investor dan portfolio mereka
             </p>
           </div>
@@ -385,9 +390,11 @@ export default function InvestorsPage() {
             <button
               onClick={fetchInvestors}
               disabled={loading}
-              className="bg-[#324D3E]/10 dark:bg-[#324D3E]/20 hover:bg-[#324D3E]/20 dark:hover:bg-[#324D3E]/30 text-[#324D3E] dark:text-[#324D3E] px-3 sm:px-4 py-2 rounded-xl font-medium transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 text-sm sm:text-base whitespace-nowrap"
+              className="bg-[#324D3E]/10 dark:bg-[#324D3E]/20 hover:bg-[#324D3E]/20 dark:hover:bg-[#324D3E]/30 text-[#324D3E] dark:text-white px-3 sm:px-4 py-2 rounded-xl font-medium transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 text-sm sm:text-base whitespace-nowrap"
             >
-              <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
+              <RefreshCw
+                className={`w-4 h-4 ${loading ? "animate-spin" : ""}`}
+              />
               <span className="hidden sm:inline">Refresh</span>
             </button>
             <button
@@ -405,7 +412,7 @@ export default function InvestorsPage() {
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6 mb-6">
           <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg rounded-2xl shadow-lg border border-[#324D3E]/10 dark:border-gray-700 p-4 sm:p-6 hover:shadow-xl hover:scale-105 transition-all duration-300">
             <div>
-              <p className="text-xs sm:text-sm font-medium text-[#889063] dark:text-gray-300 truncate transition-colors duration-300">
+              <p className="text-xs sm:text-sm font-medium text-[#889063] dark:text-gray-200 truncate transition-colors duration-300">
                 👥 Total Investor
               </p>
               <p className="text-lg sm:text-xl lg:text-2xl font-bold text-[#324D3E] dark:text-white transition-colors duration-300">
@@ -416,10 +423,10 @@ export default function InvestorsPage() {
 
           <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg rounded-2xl shadow-lg border border-[#324D3E]/10 dark:border-gray-700 p-4 sm:p-6 hover:shadow-xl hover:scale-105 transition-all duration-300">
             <div>
-              <p className="text-xs sm:text-sm font-medium text-[#889063] dark:text-gray-300 truncate transition-colors duration-300">
+              <p className="text-xs sm:text-sm font-medium text-[#889063] dark:text-gray-200 truncate transition-colors duration-300">
                 ✅ Investor Aktif
               </p>
-              <p className="text-lg sm:text-xl lg:text-2xl font-bold text-[#4C3D19]">
+              <p className="text-lg sm:text-xl lg:text-2xl font-bold text-[#4C3D19] dark:text-emerald-300 transition-colors duration-300">
                 {investors.filter((i) => i.status === "active").length}
               </p>
             </div>
@@ -427,10 +434,10 @@ export default function InvestorsPage() {
 
           <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg rounded-2xl shadow-lg border border-[#324D3E]/10 dark:border-gray-700 p-4 sm:p-6 hover:shadow-xl hover:scale-105 transition-all duration-300">
             <div>
-              <p className="text-xs sm:text-sm font-medium text-[#889063] dark:text-gray-300 truncate transition-colors duration-300">
+              <p className="text-xs sm:text-sm font-medium text-[#889063] dark:text-gray-200 truncate transition-colors duration-300">
                 ❌ Tidak Aktif
               </p>
-              <p className="text-lg sm:text-xl lg:text-2xl font-bold text-red-600">
+              <p className="text-lg sm:text-xl lg:text-2xl font-bold text-red-600 dark:text-red-400 transition-colors duration-300">
                 {investors.filter((i) => i.status === "inactive").length}
               </p>
             </div>
@@ -438,11 +445,11 @@ export default function InvestorsPage() {
 
           <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg rounded-2xl shadow-lg border border-[#324D3E]/10 dark:border-gray-700 p-4 sm:p-6 hover:shadow-xl hover:scale-105 transition-all duration-300">
             <div className="min-w-0">
-              <p className="text-xs sm:text-sm font-medium text-[#889063] dark:text-gray-300 truncate transition-colors duration-300">
+              <p className="text-xs sm:text-sm font-medium text-[#889063] dark:text-gray-200 truncate transition-colors duration-300">
                 💰 Total Investasi
               </p>
               <div className="flex flex-col">
-                <p className="text-sm sm:text-base lg:text-lg font-bold text-[#324D3E] leading-tight break-all">
+                <p className="text-sm sm:text-base lg:text-lg font-bold text-[#324D3E] dark:text-white leading-tight break-all transition-colors duration-300">
                   Rp.{" "}
                   {investors
                     .reduce((sum, inv) => sum + inv.totalInvestasi, 0)
@@ -462,7 +469,7 @@ export default function InvestorsPage() {
                 placeholder="Cari investor berdasarkan nama atau email..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full px-4 py-2 border border-[#324D3E]/20 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 focus:ring-2 focus:ring-[#324D3E]/20 focus:border-[#324D3E] text-[#324D3E] dark:text-white placeholder-[#889063] dark:placeholder-gray-400 transition-colors duration-300"
+                className="w-full px-4 py-2 border border-[#324D3E]/20 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 focus:ring-2 focus:ring-[#324D3E]/20 focus:border-[#324D3E] text-[#324D3E] dark:text-white placeholder-[#889063] dark:placeholder-gray-300 transition-colors duration-300"
               />
             </div>
             <Select
@@ -513,7 +520,7 @@ export default function InvestorsPage() {
                     <td colSpan={7} className="px-6 py-12 text-center">
                       <div className="flex items-center justify-center">
                         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-500"></div>
-                        <span className="ml-2 text-gray-600 dark:text-gray-300 transition-colors duration-300">
+                        <span className="ml-2 text-gray-600 dark:text-gray-200 transition-colors duration-300">
                           Memuat data investor...
                         </span>
                       </div>
@@ -523,7 +530,7 @@ export default function InvestorsPage() {
                   <tr>
                     <td
                       colSpan={7}
-                      className="px-6 py-12 text-center text-gray-500 dark:text-gray-300 transition-colors duration-300"
+                      className="px-6 py-12 text-center text-gray-500 dark:text-gray-200 transition-colors duration-300"
                     >
                       Belum ada data investor
                     </td>
@@ -545,10 +552,10 @@ export default function InvestorsPage() {
                             <p className="font-medium text-[#324D3E] dark:text-white text-sm lg:text-base truncate transition-colors duration-300">
                               {investor.name}
                             </p>
-                            <p className="text-xs lg:text-sm text-[#889063] dark:text-gray-300 md:hidden transition-colors duration-300">
+                            <p className="text-xs lg:text-sm text-[#889063] dark:text-gray-200 md:hidden transition-colors duration-300">
                               {investor.email}
                             </p>
-                            <p className="text-xs text-[#889063] dark:text-gray-300 transition-colors duration-300">
+                            <p className="text-xs text-[#889063] dark:text-gray-200 transition-colors duration-300">
                               ID: {investor._id.slice(-6)}
                             </p>
                           </div>
@@ -563,7 +570,7 @@ export default function InvestorsPage() {
                         <p className="font-medium text-[#324D3E] dark:text-white text-sm lg:text-base transition-colors duration-300">
                           Rp {investor.totalInvestasi.toLocaleString("id-ID")}
                         </p>
-                        <p className="text-xs text-[#889063] dark:text-gray-300 lg:hidden transition-colors duration-300">
+                        <p className="text-xs text-[#889063] dark:text-gray-200 lg:hidden transition-colors duration-300">
                           {investor.jumlahPohon} pohon
                         </p>
                       </td>
@@ -576,7 +583,7 @@ export default function InvestorsPage() {
                         <span
                           className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full transition-colors duration-300 ${
                             investor.status === "active"
-                              ? "bg-[#4C3D19]/10 dark:bg-[#4C3D19]/20 text-[#4C3D19] border border-[#4C3D19]/20"
+                              ? "bg-[#4C3D19]/10 dark:bg-[#4C3D19]/20 text-[#4C3D19] dark:text-emerald-300 border border-[#4C3D19]/20 dark:border-emerald-600/50"
                               : "bg-red-100 dark:bg-red-900/20 text-red-800 dark:text-red-300"
                           }`}
                         >
@@ -586,31 +593,26 @@ export default function InvestorsPage() {
                       <td className="px-3 lg:px-6 py-4">
                         {(() => {
                           const pendingCount = getPendingRequestCount(
-                            investor.email
+                            investor.userId
                           );
                           const totalRequests = getUserRequests(
-                            investor.email
+                            investor.userId
                           ).length;
+                          const hasPending = pendingCount > 0;
                           return (
                             <div className="flex items-center gap-2">
-                              {totalRequests > 0 ? (
-                                <button
-                                  onClick={() =>
-                                    handleViewInvestorRequests(investor.email)
-                                  }
-                                  className={`px-2 py-1 text-xs font-semibold rounded-full transition-colors duration-300 ${
-                                    pendingCount > 0
-                                      ? "bg-orange-100 dark:bg-orange-900/20 text-orange-800 dark:text-orange-300 hover:bg-orange-200 dark:hover:bg-orange-800/30"
-                                      : "bg-gray-100 dark:bg-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-500"
-                                  }`}
-                                >
-                                  {totalRequests} permohonan
-                                </button>
-                              ) : (
-                                <span className="text-xs text-gray-400 dark:text-gray-300 transition-colors duration-300">
-                                  Tidak ada permohonan
-                                </span>
-                              )}
+                              <button
+                                onClick={() =>
+                                  handleViewInvestorRequests(investor.userId)
+                                }
+                                className={`px-2 py-1 text-xs font-semibold rounded-full transition-colors duration-300 ${
+                                  hasPending
+                                    ? "bg-orange-100 dark:bg-orange-900/20 text-orange-800 dark:text-orange-200 hover:bg-orange-200 dark:hover:bg-orange-800/30"
+                                    : "bg-gray-100 dark:bg-gray-600 text-gray-600 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-gray-500"
+                                }`}
+                              >
+                                {totalRequests} permohonan
+                              </button>
                             </div>
                           );
                         })()}
@@ -619,7 +621,7 @@ export default function InvestorsPage() {
                         <div className="flex flex-col lg:flex-row items-start lg:items-center gap-1 lg:gap-2">
                           <button
                             onClick={() => handleEdit(investor)}
-                            className="text-[#324D3E] hover:text-[#4C3D19] font-medium text-xs lg:text-sm transition-colors"
+                            className="text-[#324D3E] dark:text-white hover:text-[#4C3D19] dark:hover:text-gray-200 font-medium text-xs lg:text-sm transition-colors"
                           >
                             Edit
                           </button>
@@ -673,7 +675,7 @@ export default function InvestorsPage() {
                     ]}
                     placeholder="Pilih user untuk dijadikan investor..."
                   />
-                  <p className="text-sm text-gray-500 dark:text-gray-300 mt-1 transition-colors duration-300">
+                  <p className="text-sm text-gray-500 dark:text-gray-200 mt-1 transition-colors duration-300">
                     Nama dan email akan otomatis terisi setelah memilih user
                   </p>
                 </div>
@@ -691,7 +693,7 @@ export default function InvestorsPage() {
                     onChange={(e) =>
                       setFormData({ ...formData, name: e.target.value })
                     }
-                    className="w-full px-3 py-2 border border-[#324D3E]/20 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 focus:ring-2 focus:ring-[#324D3E]/20 focus:border-[#324D3E] text-[#324D3E] dark:text-white placeholder-[#889063] dark:placeholder-gray-400 transition-colors duration-300"
+                    className="w-full px-3 py-2 border border-[#324D3E]/20 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 focus:ring-2 focus:ring-[#324D3E]/20 focus:border-[#324D3E] text-[#324D3E] dark:text-white placeholder-[#889063] dark:placeholder-gray-300 transition-colors duration-300"
                     placeholder="Masukkan nama lengkap"
                     readOnly={!editingInvestor && selectedUserId !== ""}
                   />
@@ -708,7 +710,7 @@ export default function InvestorsPage() {
                     onChange={(e) =>
                       setFormData({ ...formData, email: e.target.value })
                     }
-                    className="w-full px-3 py-2 border border-[#324D3E]/20 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 focus:ring-2 focus:ring-[#324D3E]/20 focus:border-[#324D3E] text-[#324D3E] dark:text-white placeholder-[#889063] dark:placeholder-gray-400 transition-colors duration-300"
+                    className="w-full px-3 py-2 border border-[#324D3E]/20 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 focus:ring-2 focus:ring-[#324D3E]/20 focus:border-[#324D3E] text-[#324D3E] dark:text-white placeholder-[#889063] dark:placeholder-gray-300 transition-colors duration-300"
                     placeholder="investor@email.com"
                     readOnly={!editingInvestor && selectedUserId !== ""}
                   />
@@ -728,7 +730,7 @@ export default function InvestorsPage() {
                         parsed > 0 ? formatNumber(parsed) : e.target.value
                       );
                     }}
-                    className="w-full px-3 py-2 border border-[#324D3E]/20 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 focus:ring-2 focus:ring-[#324D3E]/20 focus:border-[#324D3E] text-[#324D3E] dark:text-white placeholder-[#889063] dark:placeholder-gray-400 transition-colors duration-300"
+                    className="w-full px-3 py-2 border border-[#324D3E]/20 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 focus:ring-2 focus:ring-[#324D3E]/20 focus:border-[#324D3E] text-[#324D3E] dark:text-white placeholder-[#889063] dark:placeholder-gray-300 transition-colors duration-300"
                     placeholder="0"
                   />
                 </div>
@@ -747,7 +749,7 @@ export default function InvestorsPage() {
                         parsed > 0 ? formatNumber(parsed) : e.target.value
                       );
                     }}
-                    className="w-full px-3 py-2 border border-[#324D3E]/20 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 focus:ring-2 focus:ring-[#324D3E]/20 focus:border-[#324D3E] text-[#324D3E] dark:text-white placeholder-[#889063] dark:placeholder-gray-400 transition-colors duration-300"
+                    className="w-full px-3 py-2 border border-[#324D3E]/20 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 focus:ring-2 focus:ring-[#324D3E]/20 focus:border-[#324D3E] text-[#324D3E] dark:text-white placeholder-[#889063] dark:placeholder-gray-300 transition-colors duration-300"
                     placeholder="0"
                   />
                 </div>
@@ -818,6 +820,9 @@ export default function InvestorsPage() {
             </div>
 
             <div className="p-6">
+              <h3 className="text-lg font-semibold text-[#324D3E] dark:text-white mb-3">
+                Riwayat Permohonan
+              </h3>
               {selectedInvestorRequests.length === 0 ? (
                 <div className="text-center py-12">
                   <div className="text-6xl mb-4">📝</div>
@@ -890,6 +895,17 @@ export default function InvestorsPage() {
                               </p>
                               <p className="text-sm text-gray-900">
                                 {request.reason}
+                              </p>
+                            </div>
+                          )}
+
+                          {request.adminNotes && (
+                            <div className="mb-3">
+                              <p className="text-sm font-medium text-gray-700">
+                                Catatan Admin
+                              </p>
+                              <p className="text-sm text-gray-900">
+                                {request.adminNotes}
                               </p>
                             </div>
                           )}

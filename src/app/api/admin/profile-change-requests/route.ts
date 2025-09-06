@@ -15,9 +15,10 @@ export async function GET() {
     // Connect to database
     await dbConnect();
 
-    // Check if user is admin
+    // Check if user has sufficient role
     const adminUser = await User.findOne({ email: session.user.email });
-    if (!adminUser || adminUser.role !== 'admin') {
+    const allowedRoles = ['admin', 'staff', 'spv_staff', 'finance'];
+    if (!adminUser || !allowedRoles.includes(adminUser.role)) {
       return NextResponse.json({ error: 'Access denied' }, { status: 403 });
     }
 

@@ -188,17 +188,18 @@ export default async function InvoicePage({
   );
   const usersById = new Map<
     string,
-    { name?: string; username?: string; email?: string }
+    { name?: string; username?: string; email?: string; profileImageUrl?: string }
   >();
   if (userIds.length) {
     const users = await User.find({ _id: { $in: userIds } })
-      .select({ _id: 1, name: 1, username: 1, email: 1 })
+      .select({ _id: 1, name: 1, username: 1, email: 1, profileImageUrl: 1 })
       .lean();
     for (const u of users) {
       usersById.set(String(u._id), {
         name: (u as any).name,
         username: (u as any).username,
         email: (u as any).email,
+        profileImageUrl: (u as any).profileImageUrl,
       });
     }
   }
@@ -210,7 +211,8 @@ export default async function InvoicePage({
     const userIdStr = plain.userId ? String(plain.userId) : "";
     const u = usersById.get(userIdStr);
     const userName = u?.name || u?.username || u?.email || userIdStr || "—";
-    return { ...plain, ref, userName };
+    const userImage = u?.profileImageUrl || undefined;
+    return { ...plain, ref, userName, userImage };
   });
 
   return (
@@ -218,10 +220,10 @@ export default async function InvoicePage({
       <div className="p-4 sm:p-6 space-y-6 sm:space-y-8 font-[family-name:var(--font-poppins)]">
         <header>
           <div className="mb-6 sm:mb-8">
-            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-[#324D3E] mb-2 sm:mb-4">
+            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-[#324D3E] dark:text-white mb-2 sm:mb-4 transition-colors duration-300">
               Invoice
             </h1>
-            <p className="text-[#889063] text-base sm:text-lg">
+            <p className="text-[#889063] dark:text-gray-200 text-base sm:text-lg transition-colors duration-300">
               {new Date().toLocaleDateString("id-ID", {
                 weekday: "long",
                 day: "numeric",
@@ -231,7 +233,7 @@ export default async function InvoicePage({
             </p>
           </div>
 
-          <div className="bg-white/90 backdrop-blur-xl rounded-3xl p-4 sm:p-6 lg:p-8 border border-[#324D3E]/10 shadow-xl">
+          <div className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl rounded-3xl p-4 sm:p-6 lg:p-8 border border-[#324D3E]/10 dark:border-gray-700 shadow-xl transition-colors duration-300">
             {/* Controls */}
             <InvoiceControls
               q={q}
@@ -250,7 +252,7 @@ export default async function InvoicePage({
             </div>
 
             {payments.length === 0 && (
-              <div className="text-center text-[#889063] py-8 sm:py-12 bg-white/60 backdrop-blur-lg rounded-2xl border border-[#324D3E]/10 mt-6 sm:mt-8">
+              <div className="text-center text-[#889063] dark:text-gray-200 py-8 sm:py-12 bg-white/60 dark:bg-gray-700/60 backdrop-blur-lg rounded-2xl border border-[#324D3E]/10 dark:border-gray-600 mt-6 sm:mt-8 transition-colors duration-300">
                 <div className="text-sm sm:text-base">
                   Tidak ada invoice yang cocok.
                 </div>

@@ -221,22 +221,22 @@ export default function FinancePage() {
       <div className="p-6 space-y-8 font-[family-name:var(--font-poppins)]">
         <header>
           <div className="mb-8">
-            <h1 className="text-3xl lg:text-4xl font-bold text-[#324D3E] mb-4">Dashboard Finance</h1>
-            <p className="text-[#889063] text-lg">
+            <h1 className="text-3xl lg:text-4xl font-bold text-[#324D3E] dark:text-white mb-4 transition-colors duration-300">Dashboard Finance</h1>
+            <p className="text-[#889063] dark:text-gray-300 text-lg transition-colors duration-300">
               {new Date().toLocaleDateString("id-ID", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
             </p>
             {error && (
-              <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-2xl text-red-600 text-sm">
+              <div className="mt-4 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-2xl text-red-600 dark:text-red-400 text-sm transition-colors duration-300">
                 ⚠️ {error}
               </div>
             )}
           </div>
 
-          <div className="bg-white/90 backdrop-blur-xl rounded-3xl p-8 border border-[#324D3E]/10 shadow-xl">
+          <div className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl rounded-3xl p-8 border border-[#324D3E]/10 dark:border-gray-700 shadow-xl transition-colors duration-300">
             <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between mb-8 gap-4">
               <div>
-                <h2 className="text-2xl font-bold text-[#324D3E] mb-2">Ringkasan Investasi</h2>
-                <p className="text-[#889063] text-lg">Analisis detail per jenis tanaman dan kinerja anggota</p>
+                <h2 className="text-2xl font-bold text-[#324D3E] dark:text-white mb-2 transition-colors duration-300">Ringkasan Investasi</h2>
+                <p className="text-[#889063] dark:text-gray-300 text-lg transition-colors duration-300">Analisis detail per jenis tanaman dan kinerja anggota</p>
               </div>
               <Button 
                 className="bg-gradient-to-r from-[#324D3E] to-[#4C3D19] hover:shadow-lg text-white font-semibold px-6 py-3 rounded-2xl transition-all duration-300 flex items-center gap-2" 
@@ -250,10 +250,10 @@ export default function FinancePage() {
             {loading ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
                 {[...Array(4)].map((_, i) => (
-                  <div key={i} className="rounded-3xl bg-white/60 p-6 border border-[#324D3E]/10 animate-pulse">
-                    <div className="h-12 w-12 bg-[#324D3E]/20 rounded-2xl mb-4"></div>
-                    <div className="h-4 bg-[#324D3E]/20 rounded-full mb-2"></div>
-                    <div className="h-8 bg-[#324D3E]/20 rounded-full"></div>
+                  <div key={i} className="rounded-3xl bg-white/60 dark:bg-gray-700/60 p-6 border border-[#324D3E]/10 dark:border-gray-600 animate-pulse transition-colors duration-300">
+                    <div className="h-12 w-12 bg-[#324D3E]/20 dark:bg-gray-600/50 rounded-2xl mb-4"></div>
+                    <div className="h-4 bg-[#324D3E]/20 dark:bg-gray-600/50 rounded-full mb-2"></div>
+                    <div className="h-8 bg-[#324D3E]/20 dark:bg-gray-600/50 rounded-full"></div>
                   </div>
                 ))}
               </div>
@@ -287,11 +287,11 @@ export default function FinancePage() {
             )}
 
             {/* PIE + LEGEND WARNA */}
-            <div className="bg-white/60 backdrop-blur-lg rounded-3xl p-8 border border-[#324D3E]/10">
-              <h3 className="text-2xl font-bold text-[#324D3E] mb-6">Distribusi Investasi</h3>
+            <div className="bg-white/60 dark:bg-gray-700/60 backdrop-blur-lg rounded-3xl p-8 border border-[#324D3E]/10 dark:border-gray-600 transition-colors duration-300">
+              <h3 className="text-2xl font-bold text-[#324D3E] dark:text-white mb-6 transition-colors duration-300">Distribusi Investasi</h3>
               {loading ? (
                 <div className="h-80 flex items-center justify-center">
-                  <div className="animate-spin rounded-full h-20 w-20 border-b-4 border-[#324D3E]"></div>
+                  <div className="animate-spin rounded-full h-20 w-20 border-b-4 border-[#324D3E] dark:border-white"></div>
                 </div>
               ) : (
                 <>
@@ -344,8 +344,8 @@ export default function FinancePage() {
 
         <div>
           <div className="flex items-center justify-between mb-8">
-            <h2 className="text-2xl font-bold text-[#324D3E]">Top Investasi Tanaman</h2>
-            <Link href="/semua-investasi" className="text-[#4C3D19] hover:text-[#324D3E] text-lg font-semibold hover:underline transition-all duration-300">
+            <h2 className="text-2xl font-bold text-[#324D3E] dark:text-white transition-colors duration-300">Top Investasi Tanaman</h2>
+            <Link href="/semua-investasi" className="text-[#4C3D19] dark:text-emerald-300 hover:text-[#324D3E] dark:hover:text-emerald-200 text-lg font-semibold hover:underline transition-all duration-300">
               Lihat Semua →
             </Link>
           </div>
@@ -353,16 +353,16 @@ export default function FinancePage() {
           {loading ? (
             <div className="grid grid-cols-1 gap-8">
               {[...Array(1)].map((_, i) => (
-                <div key={i} className="rounded-3xl bg-white/90 backdrop-blur-xl border border-[#324D3E]/10 p-8 animate-pulse shadow-xl">
+                <div key={i} className="rounded-3xl bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl border border-[#324D3E]/10 dark:border-gray-700 p-8 animate-pulse shadow-xl transition-colors duration-300">
                   <div className="h-8 bg-[#324D3E]/20 rounded-full mb-6 w-1/3"></div>
                   <div className="grid grid-cols-2 gap-6 mb-8">
-                    <div className="rounded-2xl bg-white/60 p-6">
+                    <div className="rounded-2xl bg-white/60 dark:bg-gray-700/60 p-6">
                       <div className="h-4 bg-[#324D3E]/20 rounded-full mb-3"></div>
-                      <div className="h-8 bg-[#324D3E]/20 rounded-full"></div>
+                      <div className="h-8 bg-[#324D3E]/20 dark:bg-gray-600/50 rounded-full"></div>
                     </div>
-                    <div className="rounded-2xl bg-white/60 p-6">
+                    <div className="rounded-2xl bg-white/60 dark:bg-gray-700/60 p-6">
                       <div className="h-4 bg-[#324D3E]/20 rounded-full mb-3"></div>
-                      <div className="h-8 bg-[#324D3E]/20 rounded-full"></div>
+                      <div className="h-8 bg-[#324D3E]/20 dark:bg-gray-600/50 rounded-full"></div>
                     </div>
                   </div>
                   <div className="h-12 bg-[#324D3E]/20 rounded-2xl"></div>
@@ -403,15 +403,15 @@ function SummaryCard({
   const color = colors[colorClass as keyof typeof colors] || colors['text-chart-1']
   
   return (
-    <div className="group rounded-3xl bg-white/90 backdrop-blur-xl p-6 border border-[#324D3E]/10 shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300">
+    <div className="group rounded-3xl bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl p-6 border border-[#324D3E]/10 dark:border-gray-700 shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300">
       <div className="flex items-center justify-between mb-4">
         <div className={`flex h-12 w-12 items-center justify-center rounded-2xl ${color.bg} ${color.text} ${color.hover} transition-all duration-300 group-hover:scale-110`}>
           {icon}
         </div>
       </div>
       <div className="space-y-2">
-        <p className="text-sm font-medium text-[#889063]">{title}</p>
-        <p className="text-2xl font-bold text-[#324D3E] group-hover:text-[#4C3D19] transition-colors duration-300">{value}</p>
+        <p className="text-sm font-medium text-[#889063] dark:text-gray-300 transition-colors duration-300">{title}</p>
+        <p className="text-2xl font-bold text-[#324D3E] dark:text-white group-hover:text-[#4C3D19] dark:group-hover:text-gray-200 transition-colors duration-300">{value}</p>
       </div>
     </div>
   )
@@ -419,18 +419,18 @@ function SummaryCard({
 
 function PlantCard({ plant }: { plant: any }) {
   return (
-    <div className="group relative overflow-hidden rounded-3xl bg-white/90 backdrop-blur-xl border border-[#324D3E]/10 hover:border-[#324D3E]/30 transition-all duration-300 shadow-xl hover:shadow-2xl hover:scale-105">
+    <div className="group relative overflow-hidden rounded-3xl bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl border border-[#324D3E]/10 dark:border-gray-700 hover:border-[#324D3E]/30 dark:hover:border-gray-600 transition-all duration-300 shadow-xl hover:shadow-2xl hover:scale-105">
       <div className="p-8">
         <div className="flex items-start justify-between mb-8">
           <div>
-            <h2 className="text-2xl font-bold text-[#324D3E] mb-4 capitalize group-hover:text-[#4C3D19] transition-colors duration-300">{plant.name}</h2>
+            <h2 className="text-2xl font-bold text-[#324D3E] dark:text-white mb-4 capitalize group-hover:text-[#4C3D19] dark:group-hover:text-gray-200 transition-colors duration-300">{plant.name}</h2>
             <div className="flex items-center gap-4 text-sm">
-              <span className="flex items-center gap-2 text-[#889063]">
-                <BarChart3 className="h-4 w-4 text-[#324D3E]" />
+              <span className="flex items-center gap-2 text-[#889063] dark:text-gray-200 transition-colors duration-300">
+                <BarChart3 className="h-4 w-4 text-[#324D3E] dark:text-white" />
                 ROI {formatPercentage(plant.roi || 0)}
               </span>
-              <span className="flex items-center gap-2 text-[#889063]">
-                <TrendingUp className="h-4 w-4 text-[#4C3D19]" />
+              <span className="flex items-center gap-2 text-[#889063] dark:text-gray-200 transition-colors duration-300">
+                <TrendingUp className="h-4 w-4 text-[#4C3D19] dark:text-emerald-300" />
                 {plant.instanceCount} pohon
               </span>
             </div>
@@ -438,33 +438,33 @@ function PlantCard({ plant }: { plant: any }) {
         </div>
 
         <div className="grid grid-cols-2 gap-6 mb-8">
-          <div className="rounded-2xl bg-white/60 backdrop-blur-lg p-6 border border-[#324D3E]/10 group-hover:bg-white/80 transition-all duration-300">
+          <div className="rounded-2xl bg-white/60 dark:bg-gray-700/60 backdrop-blur-lg p-6 border border-[#324D3E]/10 dark:border-gray-600 group-hover:bg-white/80 dark:group-hover:bg-gray-600/80 transition-all duration-300">
             <div className="flex items-center gap-3 mb-3">
-              <DollarSign className="h-5 w-5 text-[#324D3E]" />
-              <span className="text-sm font-medium text-[#889063]">Total Investasi</span>
+              <DollarSign className="h-5 w-5 text-[#324D3E] dark:text-white" />
+              <span className="text-sm font-medium text-[#889063] dark:text-gray-200 transition-colors duration-300">Total Investasi</span>
             </div>
-            <div className="text-xl font-bold text-[#324D3E]">{formatCurrency(plant.totalInvestment)}</div>
+            <div className="text-xl font-bold text-[#324D3E] dark:text-white transition-colors duration-300">{formatCurrency(plant.totalInvestment)}</div>
           </div>
-          <div className="rounded-2xl bg-white/60 backdrop-blur-lg p-6 border border-[#324D3E]/10 group-hover:bg-white/80 transition-all duration-300">
+          <div className="rounded-2xl bg-white/60 dark:bg-gray-700/60 backdrop-blur-lg p-6 border border-[#324D3E]/10 dark:border-gray-600 group-hover:bg-white/80 dark:group-hover:bg-gray-600/80 transition-all duration-300">
             <div className="flex items-center gap-3 mb-3">
-              <TrendingUp className="h-5 w-5 text-green-600" />
-              <span className="text-sm font-medium text-[#889063]">Total Profit</span>
+              <TrendingUp className="h-5 w-5 text-green-600 dark:text-emerald-400" />
+              <span className="text-sm font-medium text-[#889063] dark:text-gray-200 transition-colors duration-300">Total Profit</span>
             </div>
-            <div className="text-xl font-bold text-green-600">{formatCurrency(plant.totalProfit)}</div>
+            <div className="text-xl font-bold text-green-600 dark:text-emerald-400 transition-colors duration-300">{formatCurrency(plant.totalProfit)}</div>
           </div>
         </div>
 
-        <div className="flex items-center justify-between mb-8 p-4 bg-[#324D3E]/5 rounded-2xl border border-[#324D3E]/10">
+        <div className="flex items-center justify-between mb-8 p-4 bg-[#324D3E]/5 dark:bg-gray-600/50 rounded-2xl border border-[#324D3E]/10 dark:border-gray-600 transition-colors duration-300">
           <div className="flex items-center gap-3">
-            <BarChart3 className="h-5 w-5 text-blue-600" />
-            <span className="text-lg font-medium text-[#324D3E]">ROI Aktual</span>
+            <BarChart3 className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+            <span className="text-lg font-medium text-[#324D3E] dark:text-white transition-colors duration-300">ROI Aktual</span>
           </div>
-          <div className="text-2xl font-bold text-blue-600">{formatPercentage(plant.roi || 0)}</div>
+          <div className="text-2xl font-bold text-blue-600 dark:text-blue-400 transition-colors duration-300">{formatPercentage(plant.roi || 0)}</div>
         </div>
 
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3 text-[#889063]">
-            <Users className="h-5 w-5 text-[#324D3E]" />
+          <div className="flex items-center gap-3 text-[#889063] dark:text-gray-200 transition-colors duration-300">
+            <Users className="h-5 w-5 text-[#324D3E] dark:text-white" />
             <span className="font-medium">{plant.investorCount} investor aktif</span>
           </div>
         </div>

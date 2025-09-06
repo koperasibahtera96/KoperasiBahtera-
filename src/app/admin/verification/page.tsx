@@ -103,7 +103,7 @@ export default function UserVerificationPage() {
         <div className="space-y-8">
           <div>
             <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Verifikasi User</h1>
-            <p className="text-gray-600 dark:text-gray-300 mt-2">Memuat data...</p>
+            <p className="text-gray-600 dark:text-gray-200 mt-2">Memuat data...</p>
           </div>
           <div className="grid grid-cols-1 gap-6">
             {[1, 2, 3].map((i) => (
@@ -131,7 +131,7 @@ export default function UserVerificationPage() {
           <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-[#324D3E] dark:text-white font-[family-name:var(--font-poppins)] transition-colors duration-300">
             Verifikasi User
           </h1>
-          <p className="text-[#889063] dark:text-gray-400 mt-1 sm:mt-2 text-sm sm:text-base transition-colors duration-300">
+          <p className="text-[#889063] dark:text-gray-200 mt-1 sm:mt-2 text-sm sm:text-base transition-colors duration-300">
             Kelola verifikasi KTP dan foto selfie user yang mendaftar
           </p>
         </motion.div>
@@ -147,7 +147,7 @@ export default function UserVerificationPage() {
           >
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-[#889063] dark:text-gray-400 transition-colors duration-300">Menunggu Verifikasi</p>
+                <p className="text-sm font-medium text-[#889063] dark:text-gray-200 transition-colors duration-300">Menunggu Verifikasi</p>
                 <p className="text-2xl font-bold text-[#324D3E] dark:text-white mt-1 transition-colors duration-300">
                   {pendingUsers.filter(u => u.verificationStatus === 'pending').length}
                 </p>
@@ -162,7 +162,7 @@ export default function UserVerificationPage() {
           >
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-[#889063] dark:text-gray-400 transition-colors duration-300">Disetujui</p>
+                <p className="text-sm font-medium text-[#889063] dark:text-gray-200 transition-colors duration-300">Disetujui</p>
                 <p className="text-2xl font-bold text-green-600 dark:text-green-400 mt-1 transition-colors duration-300">
                   {pendingUsers.filter(u => u.verificationStatus === 'approved').length}
                 </p>
@@ -177,7 +177,7 @@ export default function UserVerificationPage() {
           >
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-[#889063] dark:text-gray-400 transition-colors duration-300">Ditolak</p>
+                <p className="text-sm font-medium text-[#889063] dark:text-gray-200 transition-colors duration-300">Ditolak</p>
                 <p className="text-2xl font-bold text-red-600 dark:text-red-400 mt-1 transition-colors duration-300">
                   {pendingUsers.filter(u => u.verificationStatus === 'rejected').length}
                 </p>
@@ -199,7 +199,7 @@ export default function UserVerificationPage() {
               </h2>
               <button
                 onClick={fetchPendingUsers}
-                className="text-[#4C3D19] dark:text-[#4C3D19] hover:text-[#324D3E] dark:hover:text-[#6b5b47] font-medium text-sm transition-colors flex items-center gap-2"
+                className="text-[#4C3D19] dark:text-white hover:text-[#324D3E] dark:hover:text-gray-200 font-medium text-sm transition-colors flex items-center gap-2"
               >
                 <RefreshCw className="w-4 h-4" />
                 Refresh
@@ -209,7 +209,7 @@ export default function UserVerificationPage() {
 
           <div className="p-4 sm:p-6">
             {pendingUsers.length === 0 ? (
-              <div className="text-center py-8 text-gray-500 dark:text-gray-400 text-sm sm:text-base transition-colors duration-300">
+              <div className="text-center py-8 text-gray-500 dark:text-gray-200 text-sm sm:text-base transition-colors duration-300">
                 Tidak ada user yang perlu diverifikasi
               </div>
             ) : (
@@ -229,7 +229,7 @@ export default function UserVerificationPage() {
                             </div>
                             <div className="min-w-0 flex-1">
                               <h3 className="font-semibold text-[#324D3E] dark:text-white text-sm sm:text-base truncate transition-colors duration-300">{user.fullName}</h3>
-                              <p className="text-xs sm:text-sm text-[#889063] dark:text-gray-400 truncate transition-colors duration-300">{user.email}</p>
+                              <p className="text-xs sm:text-sm text-[#889063] dark:text-gray-200 truncate transition-colors duration-300">{user.email}</p>
                             </div>
                           </div>
                           <span className={`px-2 sm:px-3 py-1 text-xs font-semibold rounded-full self-start transition-colors duration-300 ${
@@ -244,12 +244,12 @@ export default function UserVerificationPage() {
 
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4 text-xs sm:text-sm">
                           <div className="space-y-1">
-                            <p className="text-[#889063] dark:text-gray-400 truncate transition-colors duration-300">Telepon: {user.phoneNumber}</p>
-                            <p className="text-[#889063] dark:text-gray-400 truncate transition-colors duration-300">Alamat: {user.address}</p>
-                            <p className="text-[#889063] dark:text-gray-400 truncate transition-colors duration-300">Kota: {user.city}, {user.province}</p>
+                            <p className="text-[#889063] dark:text-gray-200 truncate transition-colors duration-300">Telepon: {user.phoneNumber}</p>
+                            <p className="text-[#889063] dark:text-gray-200 truncate transition-colors duration-300">Alamat: {user.address}</p>
+                            <p className="text-[#889063] dark:text-gray-200 truncate transition-colors duration-300">Kota: {user.city}, {user.province}</p>
                           </div>
                           <div>
-                            <p className="text-[#889063] dark:text-gray-400 transition-colors duration-300">
+                            <p className="text-[#889063] dark:text-gray-200 transition-colors duration-300">
                               Tanggal Daftar: {new Date(user.createdAt).toLocaleDateString('id-ID')}
                             </p>
                           </div>
@@ -293,7 +293,7 @@ export default function UserVerificationPage() {
                   </h3>
                   <button
                     onClick={() => setSelectedUser(null)}
-                    className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 p-1 flex-shrink-0 transition-colors duration-300"
+                    className="text-gray-500 dark:text-gray-300 hover:text-gray-700 dark:hover:text-gray-200 p-1 flex-shrink-0 transition-colors duration-300"
                   >
                     ✕
                   </button>
@@ -317,7 +317,7 @@ export default function UserVerificationPage() {
                       </div>
                     ) : (
                       <div className="aspect-[3/2] bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center transition-colors duration-300">
-                        <p className="text-gray-500 dark:text-gray-400 text-sm transition-colors duration-300">Tidak ada foto KTP</p>
+                        <p className="text-gray-500 dark:text-gray-200 text-sm transition-colors duration-300">Tidak ada foto KTP</p>
                       </div>
                     )}
                   </div>
@@ -336,7 +336,7 @@ export default function UserVerificationPage() {
                       </div>
                     ) : (
                       <div className="aspect-[3/4] bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center transition-colors duration-300">
-                        <p className="text-gray-500 dark:text-gray-400 text-sm transition-colors duration-300">Tidak ada foto selfie</p>
+                        <p className="text-gray-500 dark:text-gray-200 text-sm transition-colors duration-300">Tidak ada foto selfie</p>
                       </div>
                     )}
                   </div>
@@ -347,14 +347,14 @@ export default function UserVerificationPage() {
                   <h4 className="font-semibold text-[#324D3E] dark:text-white mb-3 text-sm sm:text-base transition-colors duration-300">Informasi User</h4>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs sm:text-sm">
                     <div>
-                      <p className="text-gray-600 dark:text-gray-300 transition-colors duration-300">Nama: <span className="font-medium">{selectedUser.fullName}</span></p>
-                      <p className="text-gray-600 dark:text-gray-300 transition-colors duration-300">Email: <span className="font-medium">{selectedUser.email}</span></p>
-                      <p className="text-gray-600 dark:text-gray-300 transition-colors duration-300">Telepon: <span className="font-medium">{selectedUser.phoneNumber}</span></p>
+                      <p className="text-gray-600 dark:text-gray-200 transition-colors duration-300">Nama: <span className="font-medium">{selectedUser.fullName}</span></p>
+                      <p className="text-gray-600 dark:text-gray-200 transition-colors duration-300">Email: <span className="font-medium">{selectedUser.email}</span></p>
+                      <p className="text-gray-600 dark:text-gray-200 transition-colors duration-300">Telepon: <span className="font-medium">{selectedUser.phoneNumber}</span></p>
                     </div>
                     <div>
-                      <p className="text-gray-600 dark:text-gray-300 transition-colors duration-300">Alamat: <span className="font-medium">{selectedUser.address}</span></p>
-                      <p className="text-gray-600 dark:text-gray-300 transition-colors duration-300">Kota: <span className="font-medium">{selectedUser.city}</span></p>
-                      <p className="text-gray-600 dark:text-gray-300 transition-colors duration-300">Provinsi: <span className="font-medium">{selectedUser.province}</span></p>
+                      <p className="text-gray-600 dark:text-gray-200 transition-colors duration-300">Alamat: <span className="font-medium">{selectedUser.address}</span></p>
+                      <p className="text-gray-600 dark:text-gray-200 transition-colors duration-300">Kota: <span className="font-medium">{selectedUser.city}</span></p>
+                      <p className="text-gray-600 dark:text-gray-200 transition-colors duration-300">Provinsi: <span className="font-medium">{selectedUser.province}</span></p>
                     </div>
                   </div>
                 </div>

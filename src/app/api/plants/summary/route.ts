@@ -1,6 +1,5 @@
-// src/app/api/plants/route.ts
-import { NextResponse } from "next/server";
 import { ensureConnection } from "@/lib/utils/utils/database";
+import { NextResponse } from "next/server";
 
 // SESUAIKAN path model jika berbeda
 import Investor from "@/models/Investor";
@@ -24,7 +23,11 @@ function parseDate(v: any): Date | null {
   if (!v) return null;
   try {
     const dt =
-      typeof v === "string" || typeof v === "number" ? new Date(v) : v instanceof Date ? v : null;
+      typeof v === "string" || typeof v === "number"
+        ? new Date(v)
+        : v instanceof Date
+        ? v
+        : null;
     if (!dt || isNaN(dt.getTime())) return null;
     return dt;
   } catch {
@@ -36,12 +39,17 @@ export async function GET(req: Request) {
   await ensureConnection();
 
   const { searchParams } = new URL(req.url);
-  const typeParam =
-    (searchParams.get("type") || searchParams.get("slug") || searchParams.get("plantType") || "")
-      .toString()
-      .trim()
-      .toLowerCase();
-  const yearParam = Number(searchParams.get("year")) || new Date().getUTCFullYear();
+  const typeParam = (
+    searchParams.get("type") ||
+    searchParams.get("slug") ||
+    searchParams.get("plantType") ||
+    ""
+  )
+    .toString()
+    .trim()
+    .toLowerCase();
+  const yearParam =
+    Number(searchParams.get("year")) || new Date().getUTCFullYear();
 
   if (!typeParam) {
     return NextResponse.json(
@@ -79,14 +87,17 @@ export async function GET(req: Request) {
   // peta nama -> id untuk fallback investasi yang simpan productName (instanceName)
   const instIdByName = new Map<string, string>();
   for (const pi of targetInsts) {
-    if (pi.instanceName) instIdByName.set(String(pi.instanceName), String(pi._id));
+    if (pi.instanceName)
+      instIdByName.set(String(pi.instanceName), String(pi._id));
   }
 
   // 2) Ambil semua investor + investasinya
   const investors = (await Investor.find(
     {},
     { name: 1, email: 1, investments: 1 }
-  ).lean()) as Array<Lean<{ name?: string; email?: string; investments?: any[] }>>;
+  ).lean()) as Array<
+    Lean<{ name?: string; email?: string; investments?: any[] }>
+  >;
 
   // Per investor & per instance
   const investTotalByInvestor = new Map<string, number>();
@@ -116,9 +127,13 @@ export async function GET(req: Request) {
       if (!instId || !instIds.has(instId)) continue;
 
       totalInvestment += amount;
-      investTotalByInvestor.set(uid, (investTotalByInvestor.get(uid) || 0) + amount);
+      investTotalByInvestor.set(
+        uid,
+        (investTotalByInvestor.get(uid) || 0) + amount
+      );
 
-      if (!investByInvestorPerInst.has(instId)) investByInvestorPerInst.set(instId, new Map());
+      if (!investByInvestorPerInst.has(instId))
+        investByInvestorPerInst.set(instId, new Map());
       const m = investByInvestorPerInst.get(instId)!;
       m.set(uid, (m.get(uid) || 0) + amount);
     }
@@ -162,7 +177,10 @@ export async function GET(req: Request) {
   // 5) Alokasi profit ke investor (proporsional porsi per instance)
   const profitByInvestor = new Map<string, number>();
   for (const [instId, perInvestor] of investByInvestorPerInst.entries()) {
-    const instInvestTotal = Array.from(perInvestor.values()).reduce((a, v) => a + v, 0);
+    const instInvestTotal = Array.from(perInvestor.values()).reduce(
+      (a, v) => a + v,
+      0
+    );
     const instNet = netByInst.get(instId) || 0;
     if (instInvestTotal <= 0 || instNet === 0) continue;
     for (const [uid, amt] of perInvestor.entries()) {
@@ -172,16 +190,28 @@ export async function GET(req: Request) {
   }
 
   // 6) Distribusi investasi per investor (untuk pie chart)
-  const investorDistribution = Array.from(investTotalByInvestor.entries()).map(([uid, amount]) => {
-    const who = investors.find((x) => String(x._id) === uid);
-    const label = who?.name || who?.email || uid;
-    return { name: String(label), value: amount };
-  });
+  const investorDistribution = Array.from(investTotalByInvestor.entries()).map(
+    ([uid, amount]) => {
+      const who = investors.find((x) => String(x._id) === uid);
+      const label = who?.name || who?.email || uid;
+      return { name: String(label), value: amount };
+    }
+  );
 
   // 7) Tabel bulanan (tahun terpilih) & tahunan (semua tahun yang ada)
   const MONTHS_ID = [
-    "Januari","Februari","Maret","April","Mei","Juni",
-    "Juli","Agustus","September","Oktober","November","Desember"
+    "Januari",
+    "Februari",
+    "Maret",
+    "April",
+    "Mei",
+    "Juni",
+    "Juli",
+    "Agustus",
+    "September",
+    "Oktober",
+    "November",
+    "Desember",
   ];
 
   const monthlyTable = monthlyNet.map((v, i) => ({
@@ -195,19 +225,21 @@ export async function GET(req: Request) {
     .map(([y, v]) => ({ year: y, netProfit: v }));
 
   // 8) Tabel per investor (total investasi, total profit, ROI individu)
-  const investorsTable = Array.from(investTotalByInvestor.entries()).map(([uid, invAmt]) => {
-    const who = investors.find((x) => String(x._id) === uid);
-    const label = who?.name || who?.email || uid;
-    const p = profitByInvestor.get(uid) || 0;
-    const r = invAmt > 0 ? (p / invAmt) * 100 : 0;
-    return {
-      investorId: uid,
-      name: label,
-      totalInvestment: invAmt,
-      totalProfit: p,
-      roi: r,
-    };
-  });
+  const investorsTable = Array.from(investTotalByInvestor.entries()).map(
+    ([uid, invAmt]) => {
+      const who = investors.find((x) => String(x._id) === uid);
+      const label = who?.name || who?.email || uid;
+      const p = profitByInvestor.get(uid) || 0;
+      const r = invAmt > 0 ? (p / invAmt) * 100 : 0;
+      return {
+        investorId: uid,
+        name: label,
+        totalInvestment: invAmt,
+        totalProfit: p,
+        roi: r,
+      };
+    }
+  );
 
   // 9) Response sesuai kebutuhan halaman tanaman[id]
   return NextResponse.json(
@@ -221,13 +253,13 @@ export async function GET(req: Request) {
         investorsCount: investorsTable.length,
       },
       charts: {
-        monthlyNetProfit: monthlyTable,           // untuk "Net Profit Bulanan {year}"
-        investorDistribution,                     // untuk "Distribusi Investasi per Investor"
+        monthlyNetProfit: monthlyTable, // untuk "Net Profit Bulanan {year}"
+        investorDistribution, // untuk "Distribusi Investasi per Investor"
       },
       tables: {
-        monthly: monthlyTable,                    // jika halaman butuh tabel bulanan
-        yearly: yearlyTable,                      // jika halaman butuh tabel tahunan
-        investors: investorsTable,                // tabel investor: investasi, profit, ROI individu
+        monthly: monthlyTable, // jika halaman butuh tabel bulanan
+        yearly: yearlyTable, // jika halaman butuh tabel tahunan
+        investors: investorsTable, // tabel investor: investasi, profit, ROI individu
       },
     },
     { status: 200 }

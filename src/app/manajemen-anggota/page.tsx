@@ -194,7 +194,7 @@ export default function ManajemenAnggotaPage() {
           <div className="flex items-center gap-4 mb-6">
             <Link href="/finance">
               <motion.button
-                className="group flex items-center gap-2 px-3 sm:px-4 py-2 bg-white/90 backdrop-blur-xl rounded-xl sm:rounded-2xl shadow-lg border border-[#324D3E]/10 text-[#324D3E] hover:bg-[#324D3E] hover:text-white transition-all duration-300 self-start"
+                className="group flex items-center gap-2 px-3 sm:px-4 py-2 bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl rounded-xl sm:rounded-2xl shadow-lg border border-[#324D3E]/10 dark:border-gray-700 text-[#324D3E] dark:text-white hover:bg-[#324D3E] hover:text-white transition-all duration-300 self-start"
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
               >
@@ -205,16 +205,16 @@ export default function ManajemenAnggotaPage() {
           </div>
 
           <div className="mb-6">
-            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-[#324D3E] mb-2">Manajemen Anggota</h1>
-            <p className="text-[#889063] text-sm sm:text-base lg:text-lg">Kelola data investor dan kontrak investasi</p>
+            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-[#324D3E] dark:text-white mb-2 transition-colors duration-300">Manajemen Anggota</h1>
+            <p className="text-[#889063] dark:text-gray-200 text-sm sm:text-base lg:text-lg transition-colors duration-300">Kelola data investor dan kontrak investasi</p>
           </div>
 
           {/* Summary Cards */}
           {loading ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-6">
               {[...Array(4)].map((_, i) => (
-                <div key={i} className="bg-white/60 backdrop-blur-xl rounded-3xl p-6 border border-[#324D3E]/10 animate-pulse">
-                  <div className="h-12 w-12 bg-[#324D3E]/20 rounded-2xl mb-4"></div>
+                <div key={i} className="bg-white/60 dark:bg-gray-700/60 backdrop-blur-xl rounded-3xl p-6 border border-[#324D3E]/10 dark:border-gray-600 animate-pulse transition-colors duration-300">
+                  <div className="h-12 w-12 bg-[#324D3E]/20 dark:bg-gray-600/50 rounded-2xl mb-4"></div>
                   <div className="h-4 bg-[#324D3E]/20 rounded-full mb-2"></div>
                   <div className="h-8 bg-[#324D3E]/20 rounded-full"></div>
                 </div>
@@ -233,13 +233,13 @@ export default function ManajemenAnggotaPage() {
         {/* Member List */}
         <div>
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-bold text-[#324D3E]">Daftar Anggota ({members.length})</h2>
+            <h2 className="text-xl font-bold text-[#324D3E] dark:text-white transition-colors duration-300">Daftar Anggota ({members.length})</h2>
             <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm" onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))} disabled={currentPage === 1} className="border-[#324D3E]/20 text-[#324D3E] hover:bg-[#324D3E] hover:text-white">
+              <Button variant="outline" size="sm" onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))} disabled={currentPage === 1} className="border-[#324D3E]/20 dark:border-gray-600 text-[#324D3E] dark:text-white hover:bg-[#324D3E] hover:text-white transition-colors duration-300">
                 <ChevronLeft className="w-4 h-4" />
               </Button>
-              <span className="text-sm text-[#889063] px-2">Halaman {currentPage} dari {totalPages}</span>
-              <Button variant="outline" size="sm" onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))} disabled={currentPage === totalPages} className="border-[#324D3E]/20 text-[#324D3E] hover:bg-[#324D3E] hover:text-white">
+              <span className="text-sm text-[#889063] dark:text-gray-200 px-2 transition-colors duration-300">Halaman {currentPage} dari {totalPages}</span>
+              <Button variant="outline" size="sm" onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))} disabled={currentPage === totalPages} className="border-[#324D3E]/20 dark:border-gray-600 text-[#324D3E] dark:text-white hover:bg-[#324D3E] hover:text-white transition-colors duration-300">
                 <ChevronRight className="w-4 h-4" />
               </Button>
             </div>
@@ -249,7 +249,7 @@ export default function ManajemenAnggotaPage() {
           {loading ? (
             <div className="space-y-4">
               {[...Array(3)].map((_, i) => (
-                <div key={i} className="bg-white/60 backdrop-blur-xl rounded-3xl p-6 border border-[#324D3E]/10 animate-pulse">
+                <div key={i} className="bg-white/60 dark:bg-gray-700/60 backdrop-blur-xl rounded-3xl p-6 border border-[#324D3E]/10 dark:border-gray-600 animate-pulse transition-colors duration-300">
                   <div className="flex items-start justify-between mb-6">
                     <div className="flex items-center gap-4">
                       <div className="h-12 w-12 bg-[#324D3E]/20 rounded-2xl"></div>
@@ -292,24 +292,24 @@ function SummaryCard({
   colorClass: string
 }) {
   const colors = {
-    'text-chart-1': { bg: 'bg-[#324D3E]/10', text: 'text-[#324D3E]', hover: 'group-hover:bg-[#324D3E]/20' },
-    'text-chart-2': { bg: 'bg-green-500/10', text: 'text-green-600', hover: 'group-hover:bg-green-500/20' },
-    'text-chart-3': { bg: 'bg-blue-500/10', text: 'text-blue-600', hover: 'group-hover:bg-blue-500/20' },
-    'text-chart-4': { bg: 'bg-purple-500/10', text: 'text-purple-600', hover: 'group-hover:bg-purple-500/20' },
+    'text-chart-1': { bg: 'bg-[#324D3E]/10 dark:bg-[#324D3E]/20', text: 'text-[#324D3E] dark:text-white', hover: 'group-hover:bg-[#324D3E]/20 dark:group-hover:bg-[#324D3E]/30' },
+    'text-chart-2': { bg: 'bg-green-500/10 dark:bg-green-900/30', text: 'text-green-600 dark:text-emerald-400', hover: 'group-hover:bg-green-500/20 dark:group-hover:bg-green-800/40' },
+    'text-chart-3': { bg: 'bg-blue-500/10 dark:bg-blue-900/30', text: 'text-blue-600 dark:text-blue-400', hover: 'group-hover:bg-blue-500/20 dark:group-hover:bg-blue-800/40' },
+    'text-chart-4': { bg: 'bg-purple-500/10 dark:bg-purple-900/30', text: 'text-purple-600 dark:text-purple-400', hover: 'group-hover:bg-purple-500/20 dark:group-hover:bg-purple-800/40' },
   }
 
   const color = colors[colorClass as keyof typeof colors] || colors['text-chart-1']
 
   return (
-    <div className="group rounded-3xl bg-white/90 backdrop-blur-xl p-6 border border-[#324D3E]/10 shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300">
+    <div className="group rounded-3xl bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl p-6 border border-[#324D3E]/10 dark:border-gray-700 shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300">
       <div className="flex items-center justify-between mb-4">
         <div className={`flex h-12 w-12 items-center justify-center rounded-2xl ${color.bg} ${color.text} ${color.hover} transition-all duration-300 group-hover:scale-110`}>
           {icon}
         </div>
       </div>
       <div className="space-y-2">
-        <p className="text-sm font-medium text-[#889063]">{title}</p>
-        <p className="text-2xl font-bold text-[#324D3E] group-hover:text-[#4C3D19] transition-colors duration-300">{value}</p>
+        <p className="text-sm font-medium text-[#889063] dark:text-gray-200 transition-colors duration-300">{title}</p>
+        <p className="text-2xl font-bold text-[#324D3E] dark:text-white group-hover:text-[#4C3D19] dark:group-hover:text-gray-200 transition-colors duration-300">{value}</p>
       </div>
     </div>
   )
@@ -317,15 +317,15 @@ function SummaryCard({
 
 function MemberCard({ member }: { member: Member }) {
   return (
-    <div className="bg-white/90 backdrop-blur-xl rounded-3xl p-6 border border-[#324D3E]/10 shadow-lg hover:shadow-xl hover:border-[#324D3E]/30 transition-all duration-300">
+    <div className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl rounded-3xl p-6 border border-[#324D3E]/10 dark:border-gray-700 shadow-lg hover:shadow-xl hover:border-[#324D3E]/30 dark:hover:border-gray-600 transition-all duration-300">
       <div className="flex items-start justify-between mb-6">
         <div className="flex items-center gap-4">
           <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#324D3E] text-white font-bold text-lg">
             {member.name.charAt(0)}
           </div>
           <div>
-            <h3 className="text-xl font-bold text-[#324D3E] mb-1">{member.name}</h3>
-            <div className="flex items-center gap-4 text-sm text-[#889063]">
+            <h3 className="text-xl font-bold text-[#324D3E] dark:text-white mb-1 transition-colors duration-300">{member.name}</h3>
+            <div className="flex items-center gap-4 text-sm text-[#889063] dark:text-gray-200 transition-colors duration-300">
               <span className="flex items-center gap-1">
                 <Mail className="h-4 w-4" />
                 {member.email}
@@ -349,43 +349,43 @@ function MemberCard({ member }: { member: Member }) {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
         <div className="space-y-3">
-          <div className="flex items-center gap-2 text-sm text-[#889063]">
+          <div className="flex items-center gap-2 text-sm text-[#889063] dark:text-gray-200 transition-colors duration-300">
             <Calendar className="h-4 w-4" />
             <span>Bergabung: {new Date(member.joinDate).toLocaleDateString("id-ID")}</span>
           </div>
         </div>
         <div className="grid grid-cols-3 gap-4">
           <div>
-            <p className="text-sm font-medium text-[#889063] mb-1">Investasi</p>
-            <p className="text-lg font-bold text-[#324D3E]">{formatCurrency(member.totalInvestment)}</p>
+            <p className="text-sm font-medium text-[#889063] dark:text-gray-200 mb-1 transition-colors duration-300">Investasi</p>
+            <p className="text-lg font-bold text-[#324D3E] dark:text-white transition-colors duration-300">{formatCurrency(member.totalInvestment)}</p>
           </div>
           <div>
-            <p className="text-sm font-medium text-[#889063] mb-1">Keuntungan</p>
-            <p className="text-lg font-bold text-green-600">{formatCurrency(member.totalProfit)}</p>
+            <p className="text-sm font-medium text-[#889063] dark:text-gray-200 mb-1 transition-colors duration-300">Keuntungan</p>
+            <p className="text-lg font-bold text-green-600 dark:text-emerald-400 transition-colors duration-300">{formatCurrency(member.totalProfit)}</p>
           </div>
           <div>
-            <p className="text-sm font-medium text-[#889063] mb-1">ROI</p>
-            <p className="text-lg font-bold text-blue-600">{formatPercentage(member.overallROI)}</p>
+            <p className="text-sm font-medium text-[#889063] dark:text-gray-200 mb-1 transition-colors duration-300">ROI</p>
+            <p className="text-lg font-bold text-blue-600 dark:text-blue-400 transition-colors duration-300">{formatPercentage(member.overallROI)}</p>
           </div>
         </div>
       </div>
 
       {/* Investment Details */}
-      <div className="bg-[#324D3E]/5 rounded-2xl p-4 border border-[#324D3E]/10">
-        <h4 className="text-sm font-bold text-[#324D3E] mb-3">
+      <div className="bg-[#324D3E]/5 dark:bg-gray-700/50 rounded-2xl p-4 border border-[#324D3E]/10 dark:border-gray-600 transition-colors duration-300">
+        <h4 className="text-sm font-bold text-[#324D3E] dark:text-white mb-3 transition-colors duration-300">
           Portfolio Investasi ({member.investments.length} tanaman)
         </h4>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
           {member.investments.map((investment, index) => (
-            <div key={index} className="bg-white/80 backdrop-blur-xl rounded-xl p-3 border border-[#324D3E]/10">
+            <div key={index} className="bg-white/80 dark:bg-gray-600/80 backdrop-blur-xl rounded-xl p-3 border border-[#324D3E]/10 dark:border-gray-500 transition-colors duration-300">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-medium text-[#324D3E]">{investment.plantName}</span>
-                <span className="text-xs text-blue-600">{formatPercentage(investment.roi)}</span>
+                <span className="text-sm font-medium text-[#324D3E] dark:text-white transition-colors duration-300">{investment.plantName}</span>
+                <span className="text-xs text-blue-600 dark:text-blue-400 transition-colors duration-300">{formatPercentage(investment.roi)}</span>
               </div>
-              <div className="text-xs text-[#889063] space-y-1">
+              <div className="text-xs text-[#889063] dark:text-gray-200 space-y-1 transition-colors duration-300">
                 <div>Investasi: {formatCurrency(investment.amount)}</div>
                 <div>
-                  Profit: <span className="text-green-600">{formatCurrency(investment.profit)}</span>
+                  Profit: <span className="text-green-600 dark:text-emerald-400 transition-colors duration-300">{formatCurrency(investment.profit)}</span>
                 </div>
               </div>
             </div>

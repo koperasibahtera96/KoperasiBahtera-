@@ -55,7 +55,7 @@ export default function InvoiceControls({
   }, [page, totalPages]);
 
   return (
-    <section className="rounded-3xl border border-[#324D3E]/10 bg-white/60 backdrop-blur-lg p-4 sm:p-6 shadow-lg">
+    <section className="rounded-3xl border border-[#324D3E]/10 dark:border-gray-700 bg-white/60 dark:bg-gray-800/60 backdrop-blur-lg p-4 sm:p-6 shadow-lg transition-colors duration-300">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         {/* Search */}
         <form
@@ -70,9 +70,9 @@ export default function InvoiceControls({
               value={localQ}
               onChange={(e) => setLocalQ(e.target.value)}
               placeholder="Cari REF / OrderId / Tanggal (yyyy-mm-dd)"
-              className="w-full sm:w-64 md:w-72 lg:w-80 xl:w-96 pl-10 pr-4 py-3 rounded-2xl border border-[#324D3E]/20 text-sm focus:border-[#324D3E]/50 focus:ring-2 focus:ring-[#324D3E]/10 transition-all duration-300"
+              className="w-full sm:w-64 md:w-72 lg:w-80 xl:w-96 pl-10 pr-4 py-3 rounded-2xl border border-[#324D3E]/20 dark:border-gray-600 bg-white/90 dark:bg-gray-700/80 text-sm text-[#324D3E] dark:text-white placeholder:text-[#889063] dark:placeholder:text-gray-300 focus:border-[#324D3E]/50 focus:ring-2 focus:ring-[#324D3E]/10 transition-all duration-300"
             />
-            <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#889063]" />
+            <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#889063] dark:text-gray-300" />
           </div>
           <button
             type="submit"
@@ -87,15 +87,15 @@ export default function InvoiceControls({
           {/* Sort */}
           <button
             onClick={() => pushParams({ sort: sort === "desc" ? "asc" : "desc" })}
-            className="inline-flex items-center gap-2 px-4 py-3 rounded-2xl border border-[#324D3E]/20 bg-white/80 text-sm hover:bg-[#324D3E]/5 transition-all duration-300 whitespace-nowrap"
+            className="inline-flex items-center gap-2 px-4 py-3 rounded-2xl border border-[#324D3E]/20 dark:border-gray-600 bg-white/80 dark:bg-gray-700/80 text-sm hover:bg-[#324D3E]/5 dark:hover:bg-gray-700 transition-all duration-300 whitespace-nowrap"
             title={sort === "desc" ? "Urutkan: Terlama" : "Urutkan: Terbaru"}
           >
             {sort === "desc" ? <ArrowUpWideNarrow size={16} /> : <ArrowDownNarrowWide size={16} />}
-            <span className="text-[#324D3E] font-medium">{sort === "desc" ? "Terbaru" : "Terlama"}</span>
+            <span className="text-[#324D3E] dark:text-white font-medium">{sort === "desc" ? "Terbaru" : "Terlama"}</span>
           </button>
 
           {/* Info */}
-          <span className="text-sm text-[#889063] font-medium whitespace-nowrap">
+          <span className="text-sm text-[#889063] dark:text-gray-200 font-medium whitespace-nowrap">
             {total} hasil · {perPage}/hal
           </span>
 
@@ -104,7 +104,7 @@ export default function InvoiceControls({
             <button
               onClick={() => canPrev && pushParams({ page: page - 1 })}
               disabled={!canPrev}
-              className="p-2 rounded-xl border border-[#324D3E]/20 disabled:opacity-40 hover:bg-[#324D3E]/5 transition-all duration-300 flex-shrink-0"
+              className="p-2 rounded-xl border border-[#324D3E]/20 dark:border-gray-600 disabled:opacity-40 hover:bg-[#324D3E]/5 dark:hover:bg-gray-700 transition-all duration-300 flex-shrink-0"
               aria-label="Sebelumnya"
             >
               <ChevronLeft size={16} />
@@ -117,7 +117,7 @@ export default function InvoiceControls({
                   className={`px-2 sm:px-3 py-2 rounded-xl border text-sm font-medium transition-all duration-300 flex-shrink-0 min-w-[36px] ${
                     p === page 
                       ? "bg-gradient-to-r from-[#324D3E] to-[#4C3D19] text-white border-[#324D3E] shadow-lg" 
-                      : "bg-white/80 text-[#324D3E] border-[#324D3E]/20 hover:bg-[#324D3E]/5"
+                      : "bg-white/80 dark:bg-gray-700/80 text-[#324D3E] dark:text-white border-[#324D3E]/20 dark:border-gray-600 hover:bg-[#324D3E]/5 dark:hover:bg-gray-700"
                   }`}
                 >
                   {p}
@@ -127,7 +127,7 @@ export default function InvoiceControls({
             <button
               onClick={() => canNext && pushParams({ page: page + 1 })}
               disabled={!canNext}
-              className="p-2 rounded-xl border border-[#324D3E]/20 disabled:opacity-40 hover:bg-[#324D3E]/5 transition-all duration-300 flex-shrink-0"
+              className="p-2 rounded-xl border border-[#324D3E]/20 dark:border-gray-600 disabled:opacity-40 hover:bg-[#324D3E]/5 dark:hover:bg-gray-700 transition-all duration-300 flex-shrink-0"
               aria-label="Berikutnya"
             >
               <ChevronRight size={16} />

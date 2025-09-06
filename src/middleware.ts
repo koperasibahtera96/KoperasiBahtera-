@@ -16,7 +16,7 @@ export default withAuth(
     const roleRoutes: Record<string, string[]> = {
       "/staff": ["staff", "admin"],
       "/admin": ["admin"],
-      "/finance": ["finance", "admin"],
+      "/finance": ["finance", "admin", "spv_staff"],
     };
 
     for (const [route, roles] of Object.entries(roleRoutes)) {
