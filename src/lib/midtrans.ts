@@ -16,16 +16,19 @@ if (!process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY) {
   );
 }
 
+// TODO: Change this to true when ready for production
+const shouldBeProd = false;
+
 // Initialize Midtrans Snap
 const snap = new midtransClient.Snap({
-  isProduction: process.env.NODE_ENV === "production",
+  isProduction: shouldBeProd,
   serverKey: process.env.MIDTRANS_SERVER_KEY!,
   clientKey: process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY!,
 });
 
 // Initialize Midtrans Core API
 const coreApi = new midtransClient.CoreApi({
-  isProduction: process.env.NODE_ENV === "production",
+  isProduction: shouldBeProd,
   serverKey: process.env.MIDTRANS_SERVER_KEY!,
   clientKey: process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY!,
 });
