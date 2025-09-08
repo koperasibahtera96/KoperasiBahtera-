@@ -17,7 +17,7 @@ export default function LoginPage() {
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(false);
-  const [loginSuccess, setLoginSuccess] = useState(false);
+  const [_loginSuccess, setLoginSuccess] = useState(false);
 
   // Pre-fill identifier (email) from localStorage (from successful registration)
   useEffect(() => {
@@ -39,7 +39,7 @@ export default function LoginPage() {
 
   // Handle redirect after successful login
   useEffect(() => {
-    if (loginSuccess && session?.user?.role) {
+    if (session?.user?.role) {
       let redirectPath = "/";
 
       // Only redirect to specific pages for staff/admin/finance
@@ -53,6 +53,9 @@ export default function LoginPage() {
           case "staff":
             redirectPath = "/checker";
             break;
+          case "spv_staff":
+            redirectPath = "/checker";
+            break;
           case "finance":
             redirectPath = "/finance";
             break;
@@ -62,7 +65,7 @@ export default function LoginPage() {
       // Regular users (role: 'user') go to landing page (/)
       window.location.href = redirectPath;
     }
-  }, [loginSuccess, session]);
+  }, [session]);
 
   // Force light theme on this page and restore on unmount
   useEffect(() => {

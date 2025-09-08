@@ -14,33 +14,59 @@ export default withAuth(
 
     // === PROTECTED: role-based untuk route lain ===
     const roleRoutes: Record<string, string[]> = {
-      "/staff": ["staff", "admin"],
+      "/checker": ["staff", "admin"],
       "/admin": ["admin"],
-      "/finance": ["finance", "admin", "spv_staff"],
+      "/finance": ["finance", "admin"],
     };
 
     for (const [route, roles] of Object.entries(roleRoutes)) {
       if (pathname.startsWith(route)) {
-        if (!token || !roles.includes(token.role)) {
+        if (!token) {
           return NextResponse.redirect(new URL("/login", req.url));
+        }
+        // If user is logged in but doesn't have the right role, sign them out
+        if (!roles.includes(token.role)) {
+          const response = NextResponse.redirect(new URL("/login", req.url));
+          // Clear the NextAuth session cookie to force logout
+          response.cookies.set("next-auth.session-token", "", {
+            expires: new Date(0),
+            path: "/",
+          });
+          response.cookies.set("__Secure-next-auth.session-token", "", {
+            expires: new Date(0),
+            path: "/",
+            secure: true,
+          });
+          return response;
         }
       }
     }
 
     // === USER VERIFICATION CHECK ===
     // Routes that require user verification
-    const verificationRequiredRoutes = [
-      "/investasi",
-      "/cicilan",
-      "/semua-investasi",
-      "/tanaman",
-    ];
+    const verificationRequiredRoutes = ["/investasi", "/cicilan"];
 
     if (
       verificationRequiredRoutes.some((route) => pathname.startsWith(route))
     ) {
       if (!token) {
         return NextResponse.redirect(new URL("/login", req.url));
+      }
+
+      // If logged in but not a user role, sign them out
+      if (token.role !== "user") {
+        const response = NextResponse.redirect(new URL("/login", req.url));
+        // Clear the NextAuth session cookie to force logout
+        response.cookies.set("next-auth.session-token", "", {
+          expires: new Date(0),
+          path: "/",
+        });
+        response.cookies.set("__Secure-next-auth.session-token", "", {
+          expires: new Date(0),
+          path: "/",
+          secure: true,
+        });
+        return response;
       }
 
       // Check if user role is 'user' and not verified
