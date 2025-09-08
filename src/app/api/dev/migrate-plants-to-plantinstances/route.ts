@@ -1,7 +1,7 @@
-import { NextRequest, NextResponse } from "next/server"
-import mongoose from "mongoose"
-import { ensureConnection } from "@/lib/utils/utils/database"
-import { PlantInstance } from "@/models"
+import { ensureConnection } from "@/lib/utils/database";
+import { PlantInstance } from "@/models";
+import mongoose from "mongoose";
+import { NextRequest, NextResponse } from "next/server";
 
 // sumber: koleksi 'plants'
 const LegacyPlantSchema = new mongoose.Schema(
@@ -20,30 +20,31 @@ const LegacyPlantSchema = new mongoose.Schema(
     history: [mongoose.Schema.Types.Mixed],
   },
   { collection: "plants", strict: false }
-)
+);
 const LegacyPlant =
-  mongoose.models.__legacy_plants || mongoose.model("__legacy_plants", LegacyPlantSchema)
+  mongoose.models.__legacy_plants ||
+  mongoose.model("__legacy_plants", LegacyPlantSchema);
 
 function chooseType(name?: string, ptype?: string) {
-  const n = (name || "").toLowerCase()
-  const t = (ptype || "").toLowerCase()
-  if (n.includes("alpukat") || t.includes("alpukat")) return "alpukat"
-  if (n.includes("gaharu")  || t.includes("gaharu"))  return "gaharu"
-  if (n.includes("jengkol") || t.includes("jengkol")) return "jengkol"
-  if (n.includes("aren")    || t.includes("aren"))    return "aren"
-  return "alpukat"
+  const n = (name || "").toLowerCase();
+  const t = (ptype || "").toLowerCase();
+  if (n.includes("alpukat") || t.includes("alpukat")) return "alpukat";
+  if (n.includes("gaharu") || t.includes("gaharu")) return "gaharu";
+  if (n.includes("jengkol") || t.includes("jengkol")) return "jengkol";
+  if (n.includes("aren") || t.includes("aren")) return "aren";
+  return "alpukat";
 }
-const randROI = () => Number((0.10 + Math.random() * 0.10).toFixed(3)) // 0.100–0.200
+const randROI = () => Number((0.1 + Math.random() * 0.1).toFixed(3)); // 0.100–0.200
 
 async function runMigration(dry: boolean) {
-  await ensureConnection()
-  const src = await LegacyPlant.find({}).lean()
+  await ensureConnection();
+  const src = await LegacyPlant.find({}).lean();
 
-  let upserted = 0
-  const sample: any[] = []
+  let upserted = 0;
+  const sample: any[] = [];
 
   for (const p of src) {
-    const toId = String(p.id ?? p._id?.toString())
+    const toId = String(p.id ?? p._id?.toString());
 
     const doc: any = {
       id: toId,
@@ -64,7 +65,7 @@ async function runMigration(dry: boolean) {
       status: p.status,
       lastUpdate: p.lastUpdate,
       history: Array.isArray(p.history) ? p.history : [],
-    }
+    };
 
     if (!dry) {
       // upsert: kalau ada -> update, kalau belum ada -> insert
@@ -72,11 +73,12 @@ async function runMigration(dry: boolean) {
         { id: toId },
         { $set: doc },
         { upsert: true }
-      )
+      );
     }
 
-    upserted++
-    if (sample.length < 10) sample.push({ from: p.id, to: toId, type: doc.plantType })
+    upserted++;
+    if (sample.length < 10)
+      sample.push({ from: p.id, to: toId, type: doc.plantType });
   }
 
   return {
@@ -85,28 +87,34 @@ async function runMigration(dry: boolean) {
     totalSource: src.length,
     upserted,
     sample,
-  }
+  };
 }
 
 export async function GET(req: NextRequest) {
   try {
-    const dry = new URL(req.url).searchParams.get("dry") === "1"
-    const result = await runMigration(dry)
-    return NextResponse.json(result)
+    const dry = new URL(req.url).searchParams.get("dry") === "1";
+    const result = await runMigration(dry);
+    return NextResponse.json(result);
   } catch (e: any) {
-    console.error(e)
-    return NextResponse.json({ ok: false, error: e?.message || "Migration failed" }, { status: 500 })
+    console.error(e);
+    return NextResponse.json(
+      { ok: false, error: e?.message || "Migration failed" },
+      { status: 500 }
+    );
   }
 }
 
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json().catch(() => ({}))
-    const dry = Boolean(body?.dry)
-    const result = await runMigration(dry)
-    return NextResponse.json(result)
+    const body = await req.json().catch(() => ({}));
+    const dry = Boolean(body?.dry);
+    const result = await runMigration(dry);
+    return NextResponse.json(result);
   } catch (e: any) {
-    console.error(e)
-    return NextResponse.json({ ok: false, error: e?.message || "Migration failed" }, { status: 500 })
+    console.error(e);
+    return NextResponse.json(
+      { ok: false, error: e?.message || "Migration failed" },
+      { status: 500 }
+    );
   }
 }

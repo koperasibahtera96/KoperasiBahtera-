@@ -1,5 +1,5 @@
 // src/app/api/plants/[id]/costs/route.ts
-import { ensureConnection, generateUniqueId } from "@/lib/utils/utils/database";
+import { ensureConnection, generateUniqueId } from "@/lib/utils/database";
 import { PlantInstance } from "@/models";
 import { Types } from "mongoose";
 import { type NextRequest, NextResponse } from "next/server";

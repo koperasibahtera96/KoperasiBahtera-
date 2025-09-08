@@ -1,4 +1,4 @@
-import { ensureConnection } from "@/lib/utils/utils/database";
+import { ensureConnection } from "@/lib/utils/database";
 import { PlantInstance } from "@/models";
 import { type NextRequest, NextResponse } from "next/server";
 

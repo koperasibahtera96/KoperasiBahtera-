@@ -12,7 +12,7 @@ import WhyInvestAndRulesSection from "@/components/landing/WhyInvestAndRulesSect
 import WhatsAppIcon from "@/components/landing/WhatsAppIcon";
 import { useAlert } from "@/components/ui/Alert";
 import { useSearchParams } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, Suspense } from "react";
 
 function LandingPageContent() {
   const searchParams = useSearchParams();
@@ -84,5 +84,9 @@ function LandingPageContent() {
 }
 
 export default function LandingPage() {
-  return <LandingPageContent />;
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <LandingPageContent />
+    </Suspense>
+  );
 }

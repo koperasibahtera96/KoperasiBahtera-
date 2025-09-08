@@ -3,9 +3,9 @@
 import { Button } from '@/components/ui/Button';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 
-export default function InvestmentSuccessPage() {
+function InvestmentSuccessContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [transactionDetails, setTransactionDetails] = useState({
@@ -121,5 +121,18 @@ export default function InvestmentSuccessPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function InvestmentSuccessPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="max-w-lg w-full bg-white p-8 rounded-lg shadow-lg text-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-500 mx-auto"></div>
+        <p className="mt-4 text-gray-600">Loading...</p>
+      </div>
+    </div>}>
+      <InvestmentSuccessContent />
+    </Suspense>
   );
 }

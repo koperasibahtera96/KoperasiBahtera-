@@ -1,24 +1,24 @@
-import { NextRequest, NextResponse } from "next/server"
-import { ensureConnection } from "@/lib/utils/utils/database"
-import { Investor } from "@/models"
+import { ensureConnection } from "@/lib/utils/database";
+import { Investor } from "@/models";
+import { NextRequest, NextResponse } from "next/server";
 
 // ambil nominal investasi dari berbagai kemungkinan field
 const amt = (iv: any) =>
-  Number(iv?.totalAmount ?? iv?.amountPaid ?? iv?.amount ?? 0)
+  Number(iv?.totalAmount ?? iv?.amountPaid ?? iv?.amount ?? 0);
 
 export async function GET(req: NextRequest) {
   try {
-    await ensureConnection()
+    await ensureConnection();
 
-    const { searchParams } = new URL(req.url)
-    const format = searchParams.get("format")
+    const { searchParams } = new URL(req.url);
+    const format = searchParams.get("format");
 
-    const investors = await Investor.find({}).lean()
+    const investors = await Investor.find({}).lean();
 
     if (format === "membersLike") {
       // Bentuk yang dipakai UI manajemen-anggota
       const mapped = investors.map((m: any) => {
-        const invs = Array.isArray(m?.investments) ? m.investments : []
+        const invs = Array.isArray(m?.investments) ? m.investments : [];
         const investments = invs.map((iv: any) => ({
           plantId: String(iv?.plantInstanceId ?? iv?.instanceId ?? ""),
           plantName: String(
@@ -30,11 +30,11 @@ export async function GET(req: NextRequest) {
           investDate: String(
             iv?.investmentDate ?? iv?.createdAt ?? m?.createdAt ?? new Date()
           ),
-        }))
+        }));
 
         const totalInvestment =
           Number(m?.totalInvestasi ?? 0) ||
-          investments.reduce((s: number, x: any) => s + (x.amount || 0), 0)
+          investments.reduce((s: number, x: any) => s + (x.amount || 0), 0);
 
         return {
           id: String(m?._id ?? m?.id),
@@ -47,16 +47,19 @@ export async function GET(req: NextRequest) {
           totalInvestment,
           totalProfit: 0,
           overallROI: 0,
-        }
-      })
+        };
+      });
 
-      return NextResponse.json(mapped)
+      return NextResponse.json(mapped);
     }
 
     // default: raw investors
-    return NextResponse.json(investors)
+    return NextResponse.json(investors);
   } catch (e) {
-    console.error(e)
-    return NextResponse.json({ error: "Failed to fetch investors" }, { status: 500 })
+    console.error(e);
+    return NextResponse.json(
+      { error: "Failed to fetch investors" },
+      { status: 500 }
+    );
   }
 }

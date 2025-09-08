@@ -15,7 +15,7 @@ import {
   Plus,
 } from "lucide-react"
 import { getPlantTypesSummary } from "@/lib/finance"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 
 const fmtIDR = (n: number) =>
   new Intl.NumberFormat("id-ID", {
@@ -26,15 +26,28 @@ const fmtIDR = (n: number) =>
 
 export default function LaporanKeuanganPage() {
   const [currentPage, setCurrentPage] = useState(1)
+  const [plantsSummary, setPlantsSummary] = useState<any[]>([])
+  const [isLoading, setIsLoading] = useState(true)
   const plantsPerPage = 5
 
-  const plantsSummary = getPlantTypesSummary()
+  useEffect(() => {
+    try {
+      const summary = getPlantTypesSummary()
+      setPlantsSummary(summary)
+    } catch {
+      // If no cached data, set empty array
+      setPlantsSummary([])
+    } finally {
+      setIsLoading(false)
+    }
+  }, [])
+
   const totalPages = Math.ceil(plantsSummary.length / plantsPerPage)
   const startIndex = (currentPage - 1) * plantsPerPage
   const currentPlants = plantsSummary.slice(startIndex, startIndex + plantsPerPage)
 
   const overallTotals = plantsSummary.reduce(
-    (acc, plant) => ({
+    (acc: { invest: number; profit: number; investors: number }, plant: any) => ({
       invest: acc.invest + plant.totalInvestment,
       profit: acc.profit + plant.totalProfit,
       investors: acc.investors + plant.totalInvestors,
@@ -78,7 +91,7 @@ export default function LaporanKeuanganPage() {
       html += `<div class="header">DETAIL PER TANAMAN</div>`
       html += `<table>`
       html += `<tr><th>Nama Tanaman</th><th>Total Investasi</th><th>Total Keuntungan</th><th>ROI Rata-rata</th><th>Jumlah Investor</th><th>Jumlah Pohon</th></tr>`
-      plantsSummary.forEach((plant) => {
+      plantsSummary.forEach((plant: any) => {
         html += `<tr><td>${plant.name}</td><td>Rp ${plant.totalInvestment.toLocaleString("id-ID")}</td><td>Rp ${plant.totalProfit.toLocaleString("id-ID")}</td><td>${(plant.averageROI * 100).toFixed(2)}%</td><td>${plant.totalInvestors}</td><td>${plant.instanceCount}</td></tr>`
       })
       html += `</table>`
@@ -101,6 +114,14 @@ export default function LaporanKeuanganPage() {
     }
 
     generateExcelReport()
+  }
+
+  if (isLoading) {
+    return (
+      <div className="p-6 flex items-center justify-center min-h-screen">
+        <div className="text-white">Loading...</div>
+      </div>
+    )
   }
 
   return (
@@ -191,7 +212,7 @@ export default function LaporanKeuanganPage() {
 
         {/* Plant Cards Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-          {currentPlants.map((plant) => (
+          {currentPlants.map((plant: any) => (
             <div
               key={plant.id}
               className="group relative overflow-hidden rounded-2xl bg-slate-800 border border-slate-700 hover:border-emerald-500 transition-all duration-300"

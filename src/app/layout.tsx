@@ -40,7 +40,6 @@ export default function RootLayout({
           defaultTheme="light"
           enableSystem
           disableTransitionOnChange
-          suppressColorSchemeWarning={true}
         >
           <AuthProvider>
             {children}

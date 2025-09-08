@@ -1,8 +1,8 @@
-import dbConnect from '@/lib/mongodb';
-import Payment from '@/models/Payment';
-import User from '@/models/User';
-import { getServerSession } from 'next-auth/next';
-import { NextRequest, NextResponse } from 'next/server';
+import dbConnect from "@/lib/mongodb";
+import Payment from "@/models/Payment";
+import User from "@/models/User";
+import { getServerSession } from "next-auth/next";
+import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(req: NextRequest) {
   await dbConnect();
@@ -10,24 +10,24 @@ export async function GET(req: NextRequest) {
   try {
     const session = await getServerSession();
     if (!session?.user?.email) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     // Find user
     const user = await User.findOne({ email: session.user.email });
     if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
     // Get URL parameters
     const { searchParams } = new URL(req.url);
-    const status = searchParams.get('status');
-    const adminStatus = searchParams.get('adminStatus');
+    const status = searchParams.get("status");
+    const adminStatus = searchParams.get("adminStatus");
 
     // Build query for cicilan installment payments
     const query: any = {
       userId: user._id,
-      paymentType: 'cicilan-installment'
+      paymentType: "cicilan-installment",
     };
 
     if (status) query.status = status;
@@ -35,7 +35,7 @@ export async function GET(req: NextRequest) {
 
     // Get installment payments
     const installments = await Payment.find(query)
-      .populate('adminReviewBy', 'fullName email')
+      .populate("adminReviewBy", "fullName email")
       .sort({ cicilanOrderId: 1, installmentNumber: 1 });
 
     // Group by cicilanOrderId
@@ -50,7 +50,7 @@ export async function GET(req: NextRequest) {
           installmentAmount: payment.installmentAmount,
           paymentTerm: payment.paymentTerm,
           totalAmount: 0, // Will calculate from installments
-          installments: []
+          installments: [],
         };
       }
 
@@ -68,7 +68,9 @@ export async function GET(req: NextRequest) {
       // Create complete installment list
       const completeInstallments = [];
       for (let i = 1; i <= totalInstallments; i++) {
-        const existingInstallment = installments.find((inst: any) => inst.installmentNumber === i);
+        const existingInstallment = installments.find(
+          (inst: any) => inst.installmentNumber === i
+        );
         if (existingInstallment) {
           completeInstallments.push({
             _id: existingInstallment._id,
@@ -84,7 +86,7 @@ export async function GET(req: NextRequest) {
             adminReviewBy: existingInstallment.adminReviewBy,
             createdAt: existingInstallment.createdAt,
             updatedAt: existingInstallment.updatedAt,
-            exists: true
+            exists: true,
           });
         } else {
           // Show placeholder for future installments
@@ -92,9 +94,9 @@ export async function GET(req: NextRequest) {
             installmentNumber: i,
             amount: group.installmentAmount,
             dueDate: null, // Will be calculated when created
-            status: 'not_created',
-            adminStatus: 'not_created',
-            exists: false
+            status: "not_created",
+            adminStatus: "not_created",
+            exists: false,
           });
         }
       }
@@ -107,17 +109,19 @@ export async function GET(req: NextRequest) {
         totalInstallments: group.totalInstallments,
         installmentAmount: group.installmentAmount,
         paymentTerm: group.paymentTerm,
-        installments: completeInstallments
+        installments: completeInstallments,
       };
     });
 
     return NextResponse.json({
       success: true,
-      cicilanGroups
+      cicilanGroups,
     });
-
   } catch (error) {
-    console.error('Error getting user cicilan payments:', error);
-    return NextResponse.json({ error: 'Failed to get cicilan payments' }, { status: 500 });
+    console.error("Error getting user cicilan payments:", error);
+    return NextResponse.json(
+      { error: "Failed to get cicilan payments" },
+      { status: 500 }
+    );
   }
 }

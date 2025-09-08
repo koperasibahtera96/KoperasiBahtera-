@@ -1,7 +1,7 @@
 import InvoiceCard from "@/components/invoice/InvoiceCard";
 import InvoiceControls from "@/components/invoice/InvoiceControls";
 import { InvoiceLayout } from "@/components/invoice/InvoiceLayout";
-import { ensureConnection } from "@/lib/utils/utils/database";
+import { ensureConnection } from "@/lib/utils/database";
 import { User } from "@/models";
 import Payment from "@/models/Payment";
 import { Types } from "mongoose";
@@ -188,7 +188,12 @@ export default async function InvoicePage({
   );
   const usersById = new Map<
     string,
-    { name?: string; username?: string; email?: string; profileImageUrl?: string }
+    {
+      name?: string;
+      username?: string;
+      email?: string;
+      profileImageUrl?: string;
+    }
   >();
   if (userIds.length) {
     const users = await User.find({ _id: { $in: userIds } })

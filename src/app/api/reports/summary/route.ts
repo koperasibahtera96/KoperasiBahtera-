@@ -1,69 +1,98 @@
-import { NextResponse } from "next/server"
-import { PlantInstance, Member } from "@/models"
-import { ensureConnection } from "@/lib/utils/utils/database"
+import { ensureConnection } from "@/lib/utils/database";
+import { Member, PlantInstance } from "@/models";
+import { NextResponse } from "next/server";
+
+// Calculate totals by plant type
+interface PlantTypeSummaryItem {
+  id: string;
+  name: string;
+  plantType: string;
+  totalInvestment: number;
+  totalIncome: number;
+  totalExpenses: number;
+  instanceCount: number;
+  investorCount: number;
+}
 
 export async function GET() {
   try {
-    await ensureConnection()
+    await ensureConnection();
 
     // Get all plant instances
-    const plants = await PlantInstance.find({}).lean()
-    const members = await Member.find({}).lean()
+    const plants = await PlantInstance.find({}).lean();
+    const members = await Member.find({}).lean();
 
     // Calculate totals by plant type
-    const plantTypeSummary = plants.reduce((acc, plant) => {
-      const type = plant.plantType
-      if (!acc[type]) {
-        acc[type] = {
-          id: type,
-          name: type.charAt(0).toUpperCase() + type.slice(1),
-          plantType: type,
-          totalInvestment: 0,
-          totalIncome: 0,
-          totalExpenses: 0,
-          instanceCount: 0,
-          investorCount: 0,
+    const plantTypeSummary = plants.reduce(
+      (acc: Record<string, PlantTypeSummaryItem>, plant) => {
+        const type = plant.plantType;
+        if (!acc[type]) {
+          acc[type] = {
+            id: type,
+            name: type.charAt(0).toUpperCase() + type.slice(1),
+            plantType: type,
+            totalInvestment: 0,
+            totalIncome: 0,
+            totalExpenses: 0,
+            instanceCount: 0,
+            investorCount: 0,
+          };
         }
-      }
 
-      acc[type].instanceCount++
-      acc[type].totalIncome += plant.incomeRecords.reduce((sum, record) => sum + record.amount, 0)
-      acc[type].totalExpenses += plant.operationalCosts.reduce((sum, cost) => sum + cost.amount, 0)
+        acc[type].instanceCount++;
+        acc[type].totalIncome += plant.incomeRecords.reduce(
+          (sum: number, record: any) => sum + record.amount,
+          0
+        );
+        acc[type].totalExpenses += plant.operationalCosts.reduce(
+          (sum: number, cost: any) => sum + cost.amount,
+          0
+        );
 
-      // Count unique investors for this plant type
-      const investorsForType = new Set()
-      members.forEach((member) => {
-        const hasInvestmentInType = member.investments.some((inv) => {
-          const plantInstance = plants.find((p) => p.id === inv.plantInstanceId)
-          return plantInstance && plantInstance.plantType === type
-        })
-        if (hasInvestmentInType) {
-          investorsForType.add(member._id.toString())
-        }
-      })
-      acc[type].investorCount = investorsForType.size
+        // Count unique investors for this plant type
+        const investorsForType = new Set();
+        members.forEach((member: any) => {
+          const hasInvestmentInType = member.investments.some((inv: any) => {
+            const plantInstance = plants.find(
+              (p: any) => p.id === inv.plantInstanceId
+            );
+            return plantInstance && plantInstance.plantType === type;
+          });
+          if (hasInvestmentInType) {
+            investorsForType.add(member._id.toString());
+          }
+        });
+        acc[type].investorCount = investorsForType.size;
 
-      // Calculate total investment for this plant type
-      const investmentForType = members.reduce((sum, member) => {
-        const memberInvestment = member.investments
-          .filter((inv) => {
-            const plantInstance = plants.find((p) => p.id === inv.plantInstanceId)
-            return plantInstance && plantInstance.plantType === type
-          })
-          .reduce((invSum, inv) => invSum + inv.amount, 0)
-        return sum + memberInvestment
-      }, 0)
-      acc[type].totalInvestment += investmentForType
+        // Calculate total investment for this plant type
+        const investmentForType = members.reduce((sum: number, member: any) => {
+          const memberInvestment = member.investments
+            .filter((inv: any) => {
+              const plantInstance = plants.find(
+                (p: any) => p.id === inv.plantInstanceId
+              );
+              return plantInstance && plantInstance.plantType === type;
+            })
+            .reduce((invSum: number, inv: any) => invSum + inv.amount, 0);
+          return sum + memberInvestment;
+        }, 0);
+        acc[type].totalInvestment += investmentForType;
 
-      return acc
-    }, {})
+        return acc;
+      },
+      {}
+    );
 
     // Convert to array and calculate ROI and profit
     const plantSummaries = Object.values(plantTypeSummary).map((type: any) => ({
       ...type,
       totalProfit: type.totalIncome - type.totalExpenses,
-      roi: type.totalInvestment > 0 ? ((type.totalIncome - type.totalExpenses) / type.totalInvestment) * 100 : 0,
-    }))
+      roi:
+        type.totalInvestment > 0
+          ? ((type.totalIncome - type.totalExpenses) / type.totalInvestment) *
+            100
+          : 0,
+    }));
 
     // Overall totals
     const overallTotals = plantSummaries.reduce(
@@ -82,11 +111,13 @@ export async function GET() {
         netProfit: 0,
         totalMembers: 0,
         totalPlants: 0,
-      },
-    )
+      }
+    );
 
     const overallROI =
-      overallTotals.totalInvestment > 0 ? (overallTotals.netProfit / overallTotals.totalInvestment) * 100 : 0
+      overallTotals.totalInvestment > 0
+        ? (overallTotals.netProfit / overallTotals.totalInvestment) * 100
+        : 0;
 
     return NextResponse.json({
       plantSummaries,
@@ -95,9 +126,12 @@ export async function GET() {
         ...overallTotals,
         roi: overallROI,
       },
-    })
+    });
   } catch (error) {
-    console.error("Summary API error:", error)
-    return NextResponse.json({ error: "Failed to generate summary report" }, { status: 500 })
+    console.error("Summary API error:", error);
+    return NextResponse.json(
+      { error: "Failed to generate summary report" },
+      { status: 500 }
+    );
   }
 }

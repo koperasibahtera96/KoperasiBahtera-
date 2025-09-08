@@ -163,7 +163,7 @@ export default function CicilanPage() {
     }
   };
 
-  const isOverdue = (dueDate: Date) => {
+  const isOverdue = (dueDate: Date | string) => {
     return (
       new Date(dueDate) < new Date() &&
       new Date(dueDate).toDateString() !== new Date().toDateString()
@@ -182,7 +182,7 @@ export default function CicilanPage() {
     );
   };
 
-  const formatDate = (dateString: string) => {
+  const formatDate = (dateString: string | Date) => {
     return new Date(dateString).toLocaleDateString("id-ID", {
       year: "numeric",
       month: "long",
@@ -210,10 +210,10 @@ export default function CicilanPage() {
       (group) => group.installments
     );
     const overdueCount = allInstallments.filter(
-      (inst) => isOverdue(inst.dueDate) && inst.status === "pending"
+      (inst) => inst.dueDate && isOverdue(inst.dueDate) && inst.status === "pending"
     ).length;
     const upcomingCount = allInstallments.filter(
-      (inst) => !isOverdue(inst.dueDate) && inst.status === "pending"
+      (inst) => inst.dueDate && !isOverdue(inst.dueDate) && inst.status === "pending"
     ).length;
 
     return {
@@ -243,7 +243,7 @@ export default function CicilanPage() {
         ).length;
         const totalCount = group.installments.length;
         const hasOverdue = group.installments.some(
-          (inst) => isOverdue(inst.dueDate) && inst.status === "pending"
+          (inst) => inst.dueDate && isOverdue(inst.dueDate) && inst.status === "pending"
         );
 
         switch (filter) {
@@ -459,7 +459,7 @@ export default function CicilanPage() {
                             return false;
                           })
                           .map((installment) => {
-                            const overdue = isOverdue(installment.dueDate);
+                            const overdue = installment.dueDate ? isOverdue(installment.dueDate) : false;
                             // Determine effective status based on proof upload and admin review
                             let effectiveStatus = installment.status;
 
@@ -648,7 +648,7 @@ function InstallmentProofUploadModal({
     e.preventDefault();
     if (!file || !installment) return;
 
-    await onUpload(installment._id, file, description);
+    await onUpload(installment._id!, file, description);
     onClose();
     setFile(null);
     setDescription("");
@@ -750,7 +750,7 @@ function InstallmentProofUploadModal({
     </div>
   );
 
-  function formatDate(dateString: Date) {
+  function formatDate(dateString: Date | string) {
     return new Date(dateString).toLocaleDateString("id-ID", {
       year: "numeric",
       month: "long",

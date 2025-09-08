@@ -1,6 +1,6 @@
 // src/app/api/finance/summary/route.ts
+import { ensureConnection } from "@/lib/utils/database";
 import { NextResponse } from "next/server";
-import { ensureConnection } from "@/lib/utils/utils/database";
 
 // ⬇️ Ganti path ini jika modelmu berbeda
 import Investor from "@/models/Investor";
@@ -17,7 +17,8 @@ const num = (v: any): number => {
   const n = Number(String(v).replace(/[^0-9.-]/g, ""));
   return isFinite(n) ? n : 0;
 };
-const sumAmount = (arr: any[] = []) => arr.reduce((a, r) => a + num(r?.amount), 0);
+const sumAmount = (arr: any[] = []) =>
+  arr.reduce((a, r) => a + num(r?.amount), 0);
 
 export async function GET() {
   await ensureConnection();
@@ -49,7 +50,8 @@ export async function GET() {
     const income = sumAmount(pi.incomeRecords);
     const cost = sumAmount(pi.operationalCosts);
     netByInst.set(String(pi._id), income - cost);
-    if (pi.instanceName) instIdByName.set(String(pi.instanceName), String(pi._id));
+    if (pi.instanceName)
+      instIdByName.set(String(pi.instanceName), String(pi._id));
   }
 
   // 2) Investor.investments → total investasi & distribusi
@@ -110,7 +112,9 @@ export async function GET() {
     const net = netByInst.get(instKey) || 0;
     totalProfit += net;
 
-    const type = (instances.find((x) => String(x._id) === instKey)?.plantType || "lainnya")
+    const type = (
+      instances.find((x) => String(x._id) === instKey)?.plantType || "lainnya"
+    )
       .toString()
       .toLowerCase();
     profitByType.set(type, (profitByType.get(type) || 0) + net);
@@ -121,29 +125,38 @@ export async function GET() {
   // 5) Distribusi investasi per jenis tanaman
   const investByType = new Map<string, number>();
   for (const r of invRows) {
-    investByType.set(r.plantType, (investByType.get(r.plantType) || 0) + r.amount);
+    investByType.set(
+      r.plantType,
+      (investByType.get(r.plantType) || 0) + r.amount
+    );
   }
-  const distribution = Array.from(investByType.entries()).map(([name, value]) => ({ name, value }));
+  const distribution = Array.from(investByType.entries()).map(
+    ([name, value]) => ({ name, value })
+  );
 
   // 6) Top Investasi Tanaman
-  const topPlantTypes = Array.from(investByType.entries()).map(([type, totalInv]) => {
-    const insts = instances.filter(
-      (pi) => (pi.plantType || "lainnya").toString().toLowerCase() === type
-    );
-    const treeCount = insts.reduce((a, pi) => a + num(pi.treeCount), 0);
-    const activeInvestors = new Set(invRows.filter((r) => r.plantType === type).map((r) => r.userId)).size;
-    const paidProfit = profitByType.get(type) || 0;
-    const tRoi = totalInv > 0 ? (paidProfit / totalInv) * 100 : 0;
+  const topPlantTypes = Array.from(investByType.entries()).map(
+    ([type, totalInv]) => {
+      const insts = instances.filter(
+        (pi) => (pi.plantType || "lainnya").toString().toLowerCase() === type
+      );
+      const treeCount = insts.reduce((a, pi) => a + num(pi.treeCount), 0);
+      const activeInvestors = new Set(
+        invRows.filter((r) => r.plantType === type).map((r) => r.userId)
+      ).size;
+      const paidProfit = profitByType.get(type) || 0;
+      const tRoi = totalInv > 0 ? (paidProfit / totalInv) * 100 : 0;
 
-    return {
-      type,
-      totalInvestment: totalInv,
-      paidProfit,
-      roi: tRoi,
-      treeCount,
-      activeInvestors,
-    };
-  });
+      return {
+        type,
+        totalInvestment: totalInv,
+        paidProfit,
+        roi: tRoi,
+        treeCount,
+        activeInvestors,
+      };
+    }
+  );
   topPlantTypes.sort((a, b) => b.totalInvestment - a.totalInvestment);
 
   // 7) Jumlah anggota

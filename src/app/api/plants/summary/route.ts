@@ -1,4 +1,4 @@
-import { ensureConnection } from "@/lib/utils/utils/database";
+import { ensureConnection } from "@/lib/utils/database";
 import { NextResponse } from "next/server";
 
 // SESUAIKAN path model jika berbeda

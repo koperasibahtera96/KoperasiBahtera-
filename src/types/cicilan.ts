@@ -80,23 +80,28 @@ export interface CicilanPayment {
     __v: number;
 }
 
-// Combined types for UI components
-export interface CicilanInstallmentWithPayment extends CicilanInstallment {
-    // Payment details when available
-    paymentId?: string;
-    orderId?: string; // From payments table: CICILAN-xxx-INST-x format
+// Installment interface matching Payment model fields + API additions
+export interface CicilanInstallmentWithPayment {
+    // From Payment model when installment exists
+    _id?: string;
+    orderId?: string; // Payment orderId
+    installmentNumber: number;
+    amount: number;
+    dueDate: Date | string | null;
+    status: 'pending' | 'submitted' | 'approved' | 'rejected' | 'completed' | 'cancelled' | 'overdue' | 'not_created';
+    adminStatus?: 'pending' | 'approved' | 'rejected' | 'not_created';
     proofImageUrl?: string;
     proofDescription?: string;
-    adminStatus: 'pending' | 'approved' | 'rejected';
+    adminReviewDate?: Date | string;
     adminNotes?: string;
-    adminReviewBy?: {
-        $oid: string;
-    };
-    adminReviewDate?: {
-        $date: string;
-    };
-    submissionDate?: Date;
-    status: 'pending' | 'submitted' | 'approved' | 'rejected' | 'overdue';
+    adminReviewBy?: any; // Populated User reference
+    paidDate?: Date | string;
+    submissionDate?: Date | string;
+    createdAt?: Date | string;
+    updatedAt?: Date | string;
+    
+    // API-added flag to distinguish real vs placeholder installments
+    exists?: boolean;
 }
 
 export interface CicilanGroup {
@@ -106,10 +111,10 @@ export interface CicilanGroup {
     totalAmount: number;
     totalInstallments: number;
     installmentAmount: number;
-    paymentTerm: 'monthly' | 'quarterly' | 'annual';
+    paymentTerm: 'monthly' | 'quarterly' | 'semiannual' | 'annual';
     installments: CicilanInstallmentWithPayment[];
     status: 'active' | 'completed' | 'overdue';
-    createdAt: Date;
+    createdAt: Date | string;
 }
 
 export interface InvestorDetail {
