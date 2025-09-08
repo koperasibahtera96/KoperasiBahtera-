@@ -4,15 +4,10 @@ import { NextResponse } from "next/server";
 
 export default async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
-  const token = await getToken({ 
-    req, 
+  const token = await getToken({
+    req,
     secret: process.env.NEXTAUTH_SECRET,
-    secureCookie: process.env.NODE_ENV === "production"
-  });
-
-  console.log("🛡️ Middleware check:", {
-    pathname,
-    token: token ? { role: token.role, email: token.email } : null
+    secureCookie: process.env.NODE_ENV === "production",
   });
 
   // === PUBLIC: /checker dan /checker/plant/[id] (bahkan semua turunan /checker) ===

@@ -89,8 +89,6 @@ export default function LoginPage() {
         redirect: false, // Keep false to handle errors
       });
 
-      console.log("SignIn result:", result); // Debug log
-
       if (result?.error) {
         // Handle specific error messages
         let errorMessage = "Email/No. HP atau password salah";
@@ -110,55 +108,43 @@ export default function LoginPage() {
 
         setErrors({ submit: errorMessage });
       } else if (result?.ok) {
-        console.log("🎉 Login successful, result:", result);
-        
         // Get fresh session after successful login
         const { getSession } = await import("next-auth/react");
 
         // Try multiple times with increasing delays to catch session update
         const attemptRedirect = async (attempt = 1, maxAttempts = 5) => {
-          console.log(`📡 Attempt ${attempt}/${maxAttempts}: Getting fresh session...`);
-          
           const session = await getSession();
-          console.log("🍪 Browser cookies:", document.cookie);
-          console.log("🌐 Current URL:", window.location.href);
-          console.log(`📋 Session data (attempt ${attempt}):`, {
-            user: session?.user,
-            role: session?.user?.role,
-            email: session?.user?.email
-          });
 
           if (session?.user?.role) {
             let redirectPath = "/";
             switch (session.user.role) {
               case "admin":
                 redirectPath = "/admin";
-                console.log("🔑 Admin detected, redirecting to /admin");
                 break;
               case "staff":
               case "spv_staff":
                 redirectPath = "/checker";
-                console.log("👥 Staff detected, redirecting to /checker");
                 break;
               case "finance":
                 redirectPath = "/finance";
-                console.log("💰 Finance detected, redirecting to /finance");
                 break;
               default:
                 redirectPath = "/";
-                console.log("👤 User detected, redirecting to home");
             }
-            
-            console.log(`🚀 Final redirect to: ${redirectPath}`);
+
             window.location.replace(redirectPath); // Use replace instead of href
             return;
           }
-          
+
           if (attempt < maxAttempts) {
-            console.log(`⏳ No session role yet, trying again in ${attempt * 100}ms...`);
-            setTimeout(() => attemptRedirect(attempt + 1, maxAttempts), attempt * 100);
+            setTimeout(
+              () => attemptRedirect(attempt + 1, maxAttempts),
+              attempt * 100
+            );
           } else {
-            console.error("❌ Failed to get session after all attempts, forcing refresh");
+            console.error(
+              "❌ Failed to get session after all attempts, forcing refresh"
+            );
             window.location.reload();
           }
         };
