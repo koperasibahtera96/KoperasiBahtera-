@@ -1,9 +1,10 @@
-import { withAuth } from "next-auth/middleware";
+import { getToken } from "next-auth/jwt";
+import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 
-export default withAuth(function middleware(req) {
+export default async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
-  const token = req.nextauth.token as any;
+  const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
 
   // === PUBLIC: /checker dan /checker/plant/[id] (bahkan semua turunan /checker) ===
   if (pathname === "/checker" || pathname.startsWith("/checker/")) {
@@ -73,7 +74,7 @@ export default withAuth(function middleware(req) {
   }
 
   return NextResponse.next();
-});
+}
 
 // Middleware cukup dipasang untuk rute yang memang mau diproteksi.
 // (jangan tambahkan /checker ke matcher)

@@ -138,7 +138,6 @@ export default function LoginPage() {
 
         setErrors({ submit: errorMessage });
       } else if (result?.ok) {
-        console.log("Login successful, setting loginSuccess to true"); // Debug log
         setLoginSuccess(true);
         // The redirect will be handled by useEffect when session is available
       }
