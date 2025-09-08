@@ -110,38 +110,60 @@ export default function LoginPage() {
 
         setErrors({ submit: errorMessage });
       } else if (result?.ok) {
-        console.log(result, "signin result");
+        console.log("🎉 Login successful, result:", result);
+        
         // Get fresh session after successful login
         const { getSession } = await import("next-auth/react");
 
-        // Wait a bit for session to be updated, then get it
-        setTimeout(async () => {
+        // Try multiple times with increasing delays to catch session update
+        const attemptRedirect = async (attempt = 1, maxAttempts = 5) => {
+          console.log(`📡 Attempt ${attempt}/${maxAttempts}: Getting fresh session...`);
+          
           const session = await getSession();
-          console.log("Fresh session after login:", session?.user);
+          console.log("🍪 Browser cookies:", document.cookie);
+          console.log("🌐 Current URL:", window.location.href);
+          console.log(`📋 Session data (attempt ${attempt}):`, {
+            user: session?.user,
+            role: session?.user?.role,
+            email: session?.user?.email
+          });
 
           if (session?.user?.role) {
             let redirectPath = "/";
             switch (session.user.role) {
               case "admin":
                 redirectPath = "/admin";
+                console.log("🔑 Admin detected, redirecting to /admin");
                 break;
               case "staff":
               case "spv_staff":
                 redirectPath = "/checker";
+                console.log("👥 Staff detected, redirecting to /checker");
                 break;
               case "finance":
                 redirectPath = "/finance";
+                console.log("💰 Finance detected, redirecting to /finance");
                 break;
               default:
                 redirectPath = "/";
+                console.log("👤 User detected, redirecting to home");
             }
-            console.log("Redirecting to:", redirectPath);
-            window.location.href = redirectPath;
-          } else {
-            console.log("No session role found, defaulting to home");
-            window.location.href = "/";
+            
+            console.log(`🚀 Final redirect to: ${redirectPath}`);
+            window.location.replace(redirectPath); // Use replace instead of href
+            return;
           }
-        }, 200); // Small delay to ensure session is updated
+          
+          if (attempt < maxAttempts) {
+            console.log(`⏳ No session role yet, trying again in ${attempt * 100}ms...`);
+            setTimeout(() => attemptRedirect(attempt + 1, maxAttempts), attempt * 100);
+          } else {
+            console.error("❌ Failed to get session after all attempts, forcing refresh");
+            window.location.reload();
+          }
+        };
+
+        attemptRedirect();
       }
     } catch (error: unknown) {
       console.error("Login error:", error);
