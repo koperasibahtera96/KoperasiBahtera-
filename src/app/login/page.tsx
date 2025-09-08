@@ -17,55 +17,32 @@ export default function LoginPage() {
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(false);
-  const [_loginSuccess, setLoginSuccess] = useState(false);
-
-  // Pre-fill identifier (email) from localStorage (from successful registration)
-  useEffect(() => {
-    const registrationEmail = localStorage.getItem("registrationEmail");
-    console.log(
-      "Login page - registrationEmail from localStorage:",
-      registrationEmail
-    );
-    if (registrationEmail) {
-      console.log("Pre-filling email:", registrationEmail);
-      setFormData((prev) => ({
-        ...prev,
-        identifier: registrationEmail,
-      }));
-      // Clear the stored email after using it
-      localStorage.removeItem("registrationEmail");
-    }
-  }, []);
+  const [loginSuccess, setLoginSuccess] = useState(false);
 
   // Handle redirect after successful login
   useEffect(() => {
-    if (session?.user?.role) {
+    if (loginSuccess && session?.user?.role) {
       let redirectPath = "/";
 
-      // Only redirect to specific pages for staff/admin/finance
-      if (
-        ["admin", "staff", "finance", "spv_staff"].includes(session.user.role)
-      ) {
-        switch (session.user.role) {
-          case "admin":
-            redirectPath = "/admin";
-            break;
-          case "staff":
-            redirectPath = "/checker";
-            break;
-          case "spv_staff":
-            redirectPath = "/checker";
-            break;
-          case "finance":
-            redirectPath = "/finance";
-            break;
-        }
+      // Role-based default redirects
+      switch (session.user.role) {
+        case "admin":
+          redirectPath = "/admin";
+          break;
+        case "staff":
+        case "spv_staff":
+          redirectPath = "/checker";
+          break;
+        case "finance":
+          redirectPath = "/finance";
+          break;
+        default:
+          redirectPath = "/"; // Regular users go to home
       }
 
-      // Regular users (role: 'user') go to landing page (/)
       window.location.href = redirectPath;
     }
-  }, [session]);
+  }, [loginSuccess, session]);
 
   // Force light theme on this page and restore on unmount
   useEffect(() => {
