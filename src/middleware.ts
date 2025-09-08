@@ -6,6 +6,8 @@ export default async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
   const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
 
+  console.log(token, "middleware token");
+
   // === PUBLIC: /checker dan /checker/plant/[id] (bahkan semua turunan /checker) ===
   if (pathname === "/checker" || pathname.startsWith("/checker/")) {
     // lewati semua cek role dan jangan redirect
@@ -14,7 +16,6 @@ export default async function middleware(req: NextRequest) {
 
   // === PROTECTED: role-based untuk route lain ===
   const roleRoutes: Record<string, string[]> = {
-    "/checker": ["staff", "admin"],
     "/admin": ["admin"],
     "/finance": ["finance", "admin"],
   };
@@ -80,7 +81,6 @@ export default async function middleware(req: NextRequest) {
 // (jangan tambahkan /checker ke matcher)
 export const config = {
   matcher: [
-    "/staff/:path*",
     "/admin/:path*",
     "/finance/:path*",
     "/investasi/:path*",

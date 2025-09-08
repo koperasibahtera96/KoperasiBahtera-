@@ -2,14 +2,12 @@
 
 import { FormField } from "@/components/forms/FormField";
 import { Input } from "@/components/forms/Input";
-import { useSession } from "next-auth/react";
 import { useTheme } from "next-themes";
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
 export default function LoginPage() {
-  const { data: session } = useSession();
   const { theme, resolvedTheme, setTheme } = useTheme();
   const [formData, setFormData] = useState({
     identifier: "",
@@ -17,32 +15,6 @@ export default function LoginPage() {
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(false);
-  const [loginSuccess, setLoginSuccess] = useState(false);
-
-  // Handle redirect after successful login
-  useEffect(() => {
-    if (loginSuccess && session?.user?.role) {
-      let redirectPath = "/";
-
-      // Role-based default redirects
-      switch (session.user.role) {
-        case "admin":
-          redirectPath = "/admin";
-          break;
-        case "staff":
-        case "spv_staff":
-          redirectPath = "/checker";
-          break;
-        case "finance":
-          redirectPath = "/finance";
-          break;
-        default:
-          redirectPath = "/"; // Regular users go to home
-      }
-
-      window.location.href = redirectPath;
-    }
-  }, [loginSuccess, session]);
 
   // Force light theme on this page and restore on unmount
   useEffect(() => {
@@ -114,7 +86,7 @@ export default function LoginPage() {
       const result = await signIn("credentials", {
         identifier: formData.identifier,
         password: formData.password,
-        redirect: false,
+        redirect: false, // Keep false to handle errors
       });
 
       console.log("SignIn result:", result); // Debug log
@@ -138,8 +110,38 @@ export default function LoginPage() {
 
         setErrors({ submit: errorMessage });
       } else if (result?.ok) {
-        setLoginSuccess(true);
-        // The redirect will be handled by useEffect when session is available
+        console.log(result, "signin result");
+        // Get fresh session after successful login
+        const { getSession } = await import("next-auth/react");
+
+        // Wait a bit for session to be updated, then get it
+        setTimeout(async () => {
+          const session = await getSession();
+          console.log("Fresh session after login:", session?.user);
+
+          if (session?.user?.role) {
+            let redirectPath = "/";
+            switch (session.user.role) {
+              case "admin":
+                redirectPath = "/admin";
+                break;
+              case "staff":
+              case "spv_staff":
+                redirectPath = "/checker";
+                break;
+              case "finance":
+                redirectPath = "/finance";
+                break;
+              default:
+                redirectPath = "/";
+            }
+            console.log("Redirecting to:", redirectPath);
+            window.location.href = redirectPath;
+          } else {
+            console.log("No session role found, defaulting to home");
+            window.location.href = "/";
+          }
+        }, 200); // Small delay to ensure session is updated
       }
     } catch (error: unknown) {
       console.error("Login error:", error);
