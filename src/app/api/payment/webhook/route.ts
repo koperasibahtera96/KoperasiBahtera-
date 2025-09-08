@@ -253,7 +253,7 @@ export async function POST(request: NextRequest) {
         const plantType = getPlantType(productName);
         const instanceName = `${
           plantType.charAt(0).toUpperCase() + plantType.slice(1)
-        } - ${user.fullName} - ${orderId}`;
+        } - ${user.fullName}`;
 
         const plantInstance = new PlantInstance({
           id: plantInstanceId,
