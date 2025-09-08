@@ -295,7 +295,7 @@ export async function POST(request: NextRequest) {
                 month: "2-digit",
                 year: "numeric",
               }),
-              description: `Plant instance created for successful full payment ${orderId}`,
+              description: `Tanaman baru dibuat dengan pembayaran full untuk user ${user.fullName}`,
               addedBy: "system",
             },
           ],

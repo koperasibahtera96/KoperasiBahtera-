@@ -9,6 +9,7 @@ import {
   Clock,
   CreditCard,
   DollarSign,
+  FileText,
   Search,
   TrendingUp,
   Upload,
@@ -125,6 +126,28 @@ export default function CicilanPage() {
     }
   };
 
+  const handleContractSigning = (cicilanOrderId: string) => {
+    router.push(`/contract/${cicilanOrderId}`);
+  };
+
+  const isEligibleForContract = (group: CicilanGroup) => {
+    // Check if all installments are approved
+    const approvedInstallments = group.installments.filter(
+      (inst) => inst.status === "approved"
+    );
+    return approvedInstallments.length === group.totalInstallments;
+  };
+
+  const getContractStatus = (group: CicilanGroup) => {
+    if (!isEligibleForContract(group)) {
+      return "not_eligible";
+    }
+    if (group.contractSigned) {
+      return "signed";
+    }
+    return "ready_to_sign";
+  };
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case "pending":
@@ -210,10 +233,12 @@ export default function CicilanPage() {
       (group) => group.installments
     );
     const overdueCount = allInstallments.filter(
-      (inst) => inst.dueDate && isOverdue(inst.dueDate) && inst.status === "pending"
+      (inst) =>
+        inst.dueDate && isOverdue(inst.dueDate) && inst.status === "pending"
     ).length;
     const upcomingCount = allInstallments.filter(
-      (inst) => inst.dueDate && !isOverdue(inst.dueDate) && inst.status === "pending"
+      (inst) =>
+        inst.dueDate && !isOverdue(inst.dueDate) && inst.status === "pending"
     ).length;
 
     return {
@@ -243,7 +268,8 @@ export default function CicilanPage() {
         ).length;
         const totalCount = group.installments.length;
         const hasOverdue = group.installments.some(
-          (inst) => inst.dueDate && isOverdue(inst.dueDate) && inst.status === "pending"
+          (inst) =>
+            inst.dueDate && isOverdue(inst.dueDate) && inst.status === "pending"
         );
 
         switch (filter) {
@@ -459,7 +485,9 @@ export default function CicilanPage() {
                             return false;
                           })
                           .map((installment) => {
-                            const overdue = installment.dueDate ? isOverdue(installment.dueDate) : false;
+                            const overdue = installment.dueDate
+                              ? isOverdue(installment.dueDate)
+                              : false;
                             // Determine effective status based on proof upload and admin review
                             let effectiveStatus = installment.status;
 
@@ -601,6 +629,79 @@ export default function CicilanPage() {
                               </div>
                             );
                           })}
+                      </div>
+
+                      {/* Contract Status & Action */}
+                      <div className="mt-8 pt-6 border-t border-[#324D3E]/20">
+                        {getContractStatus(group) === "ready_to_sign" && (
+                          <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-2xl p-6 border border-green-200">
+                            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                              <div className="flex items-start gap-3">
+                                <div className="bg-green-100 rounded-full p-2 flex-shrink-0">
+                                  <CheckCircle className="w-5 h-5 text-green-600" />
+                                </div>
+                                <div>
+                                  <h4 className="font-semibold text-green-800 font-poppins">
+                                    Semua Angsuran Telah Disetujui!
+                                  </h4>
+                                  <p className="text-sm text-green-700 font-poppins">
+                                    Anda dapat menandatangani kontrak investasi
+                                    sekarang
+                                  </p>
+                                </div>
+                              </div>
+                              <button
+                                onClick={() =>
+                                  handleContractSigning(group.cicilanOrderId)
+                                }
+                                className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white px-6 py-3 rounded-2xl font-semibold transition-all duration-300 hover:shadow-lg flex items-center gap-2 font-poppins"
+                              >
+                                <FileText className="w-5 h-5" />
+                                Tanda Tangan Kontrak
+                              </button>
+                            </div>
+                          </div>
+                        )}
+
+                        {getContractStatus(group) === "signed" && (
+                          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl p-6 border border-blue-200">
+                            <div className="flex items-center gap-3">
+                              <div className="bg-blue-100 rounded-full p-2">
+                                <FileText className="w-5 h-5 text-blue-600" />
+                              </div>
+                              <div>
+                                <h4 className="font-semibold text-blue-800 font-poppins">
+                                  Kontrak Telah Ditandatangani
+                                </h4>
+                                <p className="text-sm text-blue-700 font-poppins">
+                                  Ditandatangani pada:{" "}
+                                  {group.contractSignedDate
+                                    ? formatDate(group.contractSignedDate)
+                                    : "Tidak diketahui"}
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+
+                        {getContractStatus(group) === "not_eligible" && (
+                          <div className="bg-gradient-to-r from-gray-50 to-slate-50 rounded-2xl p-6 border border-gray-200">
+                            <div className="flex items-center gap-3">
+                              <div className="bg-gray-100 rounded-full p-2">
+                                <Clock className="w-5 h-5 text-gray-600" />
+                              </div>
+                              <div>
+                                <h4 className="font-semibold text-gray-800 font-poppins">
+                                  Kontrak Belum Tersedia
+                                </h4>
+                                <p className="text-sm text-gray-700 font-poppins">
+                                  Selesaikan semua angsuran untuk mengakses
+                                  kontrak
+                                </p>
+                              </div>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>

@@ -1,6 +1,7 @@
 import dbConnect from "@/lib/mongodb";
 import Payment from "@/models/Payment";
 import User from "@/models/User";
+import Investor from "@/models/Investor";
 import { getServerSession } from "next-auth/next";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -38,6 +39,10 @@ export async function GET(req: NextRequest) {
       .populate("adminReviewBy", "fullName email")
       .sort({ cicilanOrderId: 1, installmentNumber: 1 });
 
+    // Get investor data for contract information
+    const investor = await Investor.findOne({ userId: user._id });
+    const investorInvestments = investor?.investments || [];
+
     // Group by cicilanOrderId
     const groupedPayments = installments.reduce((acc, payment) => {
       const key = payment.cicilanOrderId;
@@ -64,6 +69,11 @@ export async function GET(req: NextRequest) {
     const cicilanGroups = Object.values(groupedPayments).map((group: any) => {
       const installments = group.installments;
       const totalInstallments = group.totalInstallments || 0;
+
+      // Find matching investor investment record for contract info
+      const investorInvestment = investorInvestments.find(
+        (inv: any) => inv.investmentId === group.cicilanOrderId
+      );
 
       // Create complete installment list
       const completeInstallments = [];
@@ -101,6 +111,17 @@ export async function GET(req: NextRequest) {
         }
       }
 
+      // Determine if all installments are approved (for contract eligibility)
+      const approvedCount = completeInstallments.filter(
+        (inst: any) => inst.status === "approved"
+      ).length;
+      const status = 
+        approvedCount === totalInstallments ? "completed" :
+        completeInstallments.some((inst: any) => 
+          inst.exists && new Date(inst.dueDate) < new Date() && 
+          inst.status !== "approved"
+        ) ? "overdue" : "active";
+
       return {
         cicilanOrderId: group.cicilanOrderId,
         productName: group.productName,
@@ -110,6 +131,12 @@ export async function GET(req: NextRequest) {
         installmentAmount: group.installmentAmount,
         paymentTerm: group.paymentTerm,
         installments: completeInstallments,
+        status,
+        createdAt: group.installments[0]?.createdAt || new Date(),
+        contractSigned: investorInvestment?.contractSigned || false,
+        contractSignedDate: investorInvestment?.contractSignedDate,
+        contractDownloaded: investorInvestment?.contractDownloaded || false,
+        contractDownloadedDate: investorInvestment?.contractDownloadedDate,
       };
     });
 

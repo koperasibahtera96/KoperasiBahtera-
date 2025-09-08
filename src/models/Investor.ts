@@ -26,6 +26,12 @@ export interface IInvestmentRecord {
   // For full payment - proof image
   fullPaymentProofUrl?: string;
 
+  // Contract tracking fields
+  contractSigned?: boolean;
+  contractSignedDate?: Date;
+  contractDownloaded?: boolean;
+  contractDownloadedDate?: Date;
+
   investmentDate: Date;
   completionDate?: Date;
 }
@@ -68,6 +74,10 @@ const InvestmentRecordSchema = new Schema({
   status: { type: String, enum: ['pending', 'active', 'completed', 'cancelled'], default: 'pending' },
   installments: [InstallmentSummarySchema],
   fullPaymentProofUrl: { type: String },
+  contractSigned: { type: Boolean, default: false },
+  contractSignedDate: { type: Date },
+  contractDownloaded: { type: Boolean, default: false },
+  contractDownloadedDate: { type: Date },
   investmentDate: { type: Date, default: Date.now },
   completionDate: { type: Date },
 });

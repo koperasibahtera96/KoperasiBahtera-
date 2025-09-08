@@ -19,6 +19,10 @@ export interface CicilanInvestment {
     status: 'active' | 'completed' | 'overdue';
     installments: CicilanInstallment[];
     investmentDate: Date;
+    contractSigned?: boolean;
+    contractSignedDate?: Date;
+    contractDownloaded?: boolean;
+    contractDownloadedDate?: Date;
     _id: string;
 }
 
@@ -115,6 +119,10 @@ export interface CicilanGroup {
     installments: CicilanInstallmentWithPayment[];
     status: 'active' | 'completed' | 'overdue';
     createdAt: Date | string;
+    contractSigned?: boolean;
+    contractSignedDate?: Date;
+    contractDownloaded?: boolean;
+    contractDownloadedDate?: Date;
 }
 
 export interface InvestorDetail {

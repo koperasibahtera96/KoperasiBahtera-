@@ -17,6 +17,8 @@ export async function POST(request: NextRequest) {
 
     const { paymentId, action, adminNotes } = await request.json();
 
+    console.log(paymentId, "paymentId");
+
     if (!paymentId || !action || !["approve", "reject"].includes(action)) {
       return NextResponse.json(
         { error: "Invalid request data" },
@@ -176,7 +178,7 @@ export async function POST(request: NextRequest) {
                       year: "numeric",
                     }),
 
-                    description: `Plant instance created for approved first installment of cicilan ${payment.cicilanOrderId}`,
+                    description: `Tanaman baru dibuat dengan cicilan untuk user ${user.fullName}`,
                     addedBy: session.user.id,
                   },
                 ],

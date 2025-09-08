@@ -1,3 +1,4 @@
+import { Investor } from "@/models";
 import FilteredWord from "@/models/FilteredWord";
 import Payment from "@/models/Payment"; // adjust path
 import Plant from "@/models/Plant"; // adjust path
@@ -39,6 +40,7 @@ async function dbConnect() {
         // ✅ Sync indexes to match current schema (removes old conflicting indexes)
         await User.syncIndexes();
         await Plant.syncIndexes();
+        await Investor.syncIndexes();
         await Payment.syncIndexes();
         await PlantInstance.syncIndexes();
         await Review.syncIndexes();

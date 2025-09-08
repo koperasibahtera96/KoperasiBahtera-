@@ -145,13 +145,10 @@ export async function POST(
     }
 
     // Add contract signing information to the investment
-    investor.investments[investmentIndex] = {
-      ...investor.investments[investmentIndex],
-      contractSigned: true,
-      contractNumber,
-      contractSignedDate: new Date(),
-      signatureData: signatureData || null,
-    };
+    investor.investments[investmentIndex].contractSigned = true;
+    investor.investments[investmentIndex].contractNumber = contractNumber;
+    investor.investments[investmentIndex].contractSignedDate = new Date();
+    investor.investments[investmentIndex].signatureData = signatureData || null;
 
     await investor.save();
 

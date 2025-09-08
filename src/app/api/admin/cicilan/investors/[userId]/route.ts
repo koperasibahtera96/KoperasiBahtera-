@@ -80,8 +80,8 @@ export async function GET(
             submissionDate: payment?.createdAt || null,
             status:
               payment?.status || (installment.isPaid ? "approved" : "pending"),
-            // Keep original installment fields
-            _id: installment._id.toString(),
+            // Use payment ID for _id (needed for review functionality)
+            _id: payment?._id?.toString() || installment._id.toString(),
             installmentNumber: installment.installmentNumber,
             amount: installment.amount,
             dueDate: installment.dueDate,
