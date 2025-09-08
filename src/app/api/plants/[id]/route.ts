@@ -8,23 +8,34 @@ export async function GET(
 ) {
   try {
     await ensureConnection();
-    const plant = await PlantInstance.findOne({ id: (await params).id }).lean();
+    const plant = await PlantInstance.findOne({ id: (await params).id });
     if (!plant) {
       return NextResponse.json({ error: "Plant not found" }, { status: 404 });
     }
 
     // Get all unique user IDs from history entries
-    const userIds = [...new Set(plant.history?.map((item: any) => item.addedBy).filter((id: any) => id))] as string[];
-    
+    const userIds = [
+      ...new Set(
+        plant.history?.map((item: any) => item.addedBy).filter((id: any) => id)
+      ),
+    ] as string[];
+
     // Fetch user data for all user IDs
-    const users = await User.find({ _id: { $in: userIds } }).select('_id fullName name').lean();
-    const userMap = new Map(users.map(user => [user._id.toString(), user.fullName || user.name || 'Unknown User']));
+    const users = await User.find({ _id: { $in: userIds } }).select(
+      "_id fullName name"
+    );
+    const userMap = new Map(
+      users.map((user) => [
+        user._id.toString(),
+        user.fullName || user.name || "Unknown User",
+      ])
+    );
 
     // Replace addedBy UUIDs with user names in history
     if (plant.history) {
       plant.history = plant.history.map((item: any) => ({
         ...item,
-        addedBy: userMap.get(item.addedBy) || item.addedBy || 'Unknown User'
+        addedBy: userMap.get(item.addedBy) || item.addedBy || "Unknown User",
       }));
     }
 
