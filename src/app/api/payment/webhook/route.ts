@@ -119,15 +119,6 @@ export async function POST(request: NextRequest) {
       orderId.startsWith("REG-")
     ) {
       try {
-        console.log("Creating user account for:", payment.customerData.email);
-        console.log("🔍 Customer data received:", {
-          email: payment.customerData.email,
-          hasPassword: !!payment.customerData.password,
-          passwordLength: payment.customerData.password?.length || 0,
-          fullName: payment.customerData.fullName,
-          phoneNumber: payment.customerData.phoneNumber,
-        });
-
         // Check if user already exists
         const existingUser = await User.findOne({
           $or: [
@@ -345,11 +336,6 @@ export async function POST(request: NextRequest) {
           });
           await existingInvestor.save();
         }
-
-        console.log(
-          "Investor record created/updated for successful full payment:",
-          orderId
-        );
 
         // Set contract redirect URL for successful payment
         payment.contractRedirectUrl = `/contract/${orderId}`;

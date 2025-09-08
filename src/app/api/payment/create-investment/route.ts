@@ -1,8 +1,8 @@
-import { midtransService } from '@/lib/midtrans';
-import dbConnect from '@/lib/mongodb';
-import Payment from '@/models/Payment';
-import User from '@/models/User';
-import { NextRequest, NextResponse } from 'next/server';
+import { midtransService } from "@/lib/midtrans";
+import dbConnect from "@/lib/mongodb";
+import Payment from "@/models/Payment";
+import User from "@/models/User";
+import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(req: NextRequest) {
   try {
@@ -11,16 +11,21 @@ export async function POST(req: NextRequest) {
     const { plan, user } = await req.json();
 
     if (!plan || !user || !user.email) {
-      return NextResponse.json({ error: 'Missing plan or user data' }, { status: 400 });
+      return NextResponse.json(
+        { error: "Missing plan or user data" },
+        { status: 400 }
+      );
     }
 
     const dbUser = await User.findOne({ email: user.email });
 
     if (!dbUser) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 });
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    const orderId = `INV-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
+    const orderId = `INV-${Date.now()}-${Math.random()
+      .toString(36)
+      .substring(2, 11)}`;
 
     const transaction = await midtransService.createTransaction({
       orderId,
@@ -49,11 +54,11 @@ export async function POST(req: NextRequest) {
       orderId,
       userId: dbUser._id,
       amount: plan.price,
-      currency: 'IDR',
-      paymentType: 'full-investment',
-      transactionStatus: 'pending',
+      currency: "IDR",
+      paymentType: "full-investment",
+      transactionStatus: "pending",
       productName: plan.name,
-      productId: plan.name.toLowerCase().replace(/\s+/g, '-'),
+      productId: plan.name.toLowerCase().replace(/\s+/g, "-"),
       customerData: {
         fullName: dbUser.fullName,
         email: dbUser.email,
@@ -65,40 +70,42 @@ export async function POST(req: NextRequest) {
         province: dbUser.province,
         postalCode: dbUser.postalCode,
         occupation: dbUser.occupation,
-        password: '', // Not needed for investment payments
-        ktpImageUrl: '',
-        faceImageUrl: '',
+        password: "", // Not needed for investment payments
+        ktpImageUrl: "",
+        faceImageUrl: "",
       },
       midtransResponse: transaction,
       isProcessed: false,
     });
 
     await payment.save();
-    console.log('Investment payment record created:', orderId);
-
+    console.log("Investment payment record created:", orderId);
 
     return NextResponse.json({
       success: true,
       data: transaction,
     });
   } catch (error) {
-    console.error('Error creating investment payment:', error);
+    console.error("Error creating investment payment:", error);
 
     // Provide more specific error messages
-    let errorMessage = 'Failed to create payment';
+    let errorMessage = "Failed to create payment";
     if (error instanceof Error) {
-      if (error.message.includes('validation failed')) {
-        errorMessage = 'Invalid payment data provided';
-      } else if (error.message.includes('Midtrans')) {
-        errorMessage = 'Payment gateway error. Please try again.';
+      if (error.message.includes("validation failed")) {
+        errorMessage = "Invalid payment data provided";
+      } else if (error.message.includes("Midtrans")) {
+        errorMessage = "Payment gateway error. Please try again.";
       } else {
         errorMessage = error.message;
       }
     }
 
-    return NextResponse.json({
-      error: errorMessage,
-      details: error instanceof Error ? error.message : 'Unknown error'
-    }, { status: 500 });
+    return NextResponse.json(
+      {
+        error: errorMessage,
+        details: error instanceof Error ? error.message : "Unknown error",
+      },
+      { status: 500 }
+    );
   }
 }

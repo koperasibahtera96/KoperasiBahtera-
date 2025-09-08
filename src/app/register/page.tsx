@@ -1,42 +1,41 @@
 "use client";
 
-import { CameraSelfie, CameraSelfieRef } from '@/components/forms/CameraSelfie';
-import { FormActions, FormField, FormRow } from '@/components/forms/FormField';
-import { Select } from '@/components/forms/Select';
-import { ValidationInput } from '@/components/forms/ValidationInput';
-import LandingHeader from '@/components/landing/LandingHeader';
-import { occupationOptions } from '@/constant/OCCUPATION';
-import { provinceOptions } from '@/constant/PROVINCE';
-import { RegistrationFormData, registrationSchema } from '@/schemas/User';
-import { KebijakanPrivasiContent } from '@/components/legal/kebijakan-privasi';
-import { SyaratDanKetentuanContent } from '@/components/legal/syarat-dan-ketentuan';
-import { LegalModal } from '@/components/ui/legal-modal';
-import { zodResolver } from '@hookform/resolvers/zod';
-import Image from 'next/image';
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { CameraSelfie, CameraSelfieRef } from "@/components/forms/CameraSelfie";
+import { FormActions, FormField, FormRow } from "@/components/forms/FormField";
+import { Select } from "@/components/forms/Select";
+import { ValidationInput } from "@/components/forms/ValidationInput";
+import LandingHeader from "@/components/landing/LandingHeader";
+import { KebijakanPrivasiContent } from "@/components/legal/kebijakan-privasi";
+import { SyaratDanKetentuanContent } from "@/components/legal/syarat-dan-ketentuan";
+import { LegalModal } from "@/components/ui/legal-modal";
+import { occupationOptions } from "@/constant/OCCUPATION";
+import { provinceOptions } from "@/constant/PROVINCE";
+import { RegistrationFormData, registrationSchema } from "@/schemas/User";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { useTheme } from "next-themes";
-import { useForm } from 'react-hook-form';
-
+import Image from "next/image";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { useForm } from "react-hook-form";
 
 export default function RegisterPage() {
   const { theme, resolvedTheme, setTheme } = useTheme();
   const [currentStep, setCurrentStep] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
-  const [submitError, setSubmitError] = useState('');
+  const [submitError, setSubmitError] = useState("");
   const [isSuccess, setIsSuccess] = useState(false);
-  const [successMessage, setSuccessMessage] = useState('');
+  const [successMessage, setSuccessMessage] = useState("");
   const [redirectCountdown, setRedirectCountdown] = useState(3);
   const [_ktpImage, setKtpImage] = useState<File | null>(null);
-  const [ktpImageUrl, setKtpImageUrl] = useState<string>('');
+  const [ktpImageUrl, setKtpImageUrl] = useState<string>("");
   const [_faceImage, setFaceImage] = useState<File | null>(null);
-  const [faceImageUrl, setFaceImageUrl] = useState<string>('');
+  const [faceImageUrl, setFaceImageUrl] = useState<string>("");
   const [uploadingKtp, setUploadingKtp] = useState(false);
   const [uploadingFace, setUploadingFace] = useState(false);
-  const [_paymentToken, setPaymentToken] = useState<string>('');
-  const [paymentUrl, setPaymentUrl] = useState<string>('');
-  const [orderId, setOrderId] = useState<string>('');
+  const [_paymentToken, setPaymentToken] = useState<string>("");
+  const [paymentUrl, setPaymentUrl] = useState<string>("");
+  const [orderId, setOrderId] = useState<string>("");
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
   const [isCheckingAvailability, setIsCheckingAvailability] = useState(false);
   const [hasAttemptedSubmit, setHasAttemptedSubmit] = useState(false);
@@ -54,7 +53,7 @@ export default function RegisterPage() {
     trigger,
   } = useForm<RegistrationFormData>({
     resolver: zodResolver(registrationSchema),
-    mode: 'onSubmit',
+    mode: "onSubmit",
   });
 
   // Watch form values for real-time validation
@@ -76,40 +75,42 @@ export default function RegisterPage() {
     return () => {
       if (previous) setTheme(previous);
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Options for select fields
 
   // Get occupation code based on selected value
   const getOccupationCode = (value: string) => {
-    const occupation = occupationOptions.find(opt => opt.value === value);
-    return occupation?.code || '';
+    const occupation = occupationOptions.find((opt) => opt.value === value);
+    return occupation?.code || "";
   };
 
   const uploadImage = useCallback(async (file: File): Promise<string> => {
     const formData = new FormData();
-    formData.append('file', file);
+    formData.append("file", file);
 
-    const response = await fetch('/api/upload', {
-      method: 'POST',
+    const response = await fetch("/api/upload", {
+      method: "POST",
       body: formData,
     });
 
     if (!response.ok) {
-      throw new Error('Upload gagal');
+      throw new Error("Upload gagal");
     }
 
     const result = await response.json();
     return result.imageUrl;
   }, []);
 
-  const handleKtpUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleKtpUpload = async (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
     setUploadingKtp(true);
-    setSubmitError('');
+    setSubmitError("");
 
     try {
       const imageUrl = await uploadImage(file);
@@ -117,7 +118,7 @@ export default function RegisterPage() {
       setKtpImageUrl(imageUrl);
     } catch (error) {
       console.error(error);
-      setSubmitError('Gagal upload KTP. Silakan coba lagi.');
+      setSubmitError("Gagal upload KTP. Silakan coba lagi.");
     } finally {
       setUploadingKtp(false);
     }
@@ -125,8 +126,8 @@ export default function RegisterPage() {
 
   // Convert data URL to File object
   const dataURLtoFile = (dataurl: string, filename: string): File => {
-    const arr = dataurl.split(',');
-    const mime = arr[0].match(/:(.*?);/)?.[1] || 'image/jpeg';
+    const arr = dataurl.split(",");
+    const mime = arr[0].match(/:(.*?);/)?.[1] || "image/jpeg";
     const bstr = atob(arr[1]);
     let n = bstr.length;
     const u8arr = new Uint8Array(n);
@@ -138,7 +139,7 @@ export default function RegisterPage() {
 
   const handleCameraCapture = async (imageDataUrl: string) => {
     setUploadingFace(true);
-    setSubmitError('');
+    setSubmitError("");
 
     try {
       // Convert data URL to file
@@ -150,7 +151,7 @@ export default function RegisterPage() {
       setFaceImageUrl(imageUrl);
     } catch (error) {
       console.error(error);
-      setSubmitError('Gagal upload foto wajah. Silakan coba lagi.');
+      setSubmitError("Gagal upload foto wajah. Silakan coba lagi.");
     } finally {
       setUploadingFace(false);
     }
@@ -158,10 +159,12 @@ export default function RegisterPage() {
 
   const createPayment = async (formData: RegistrationFormData) => {
     setIsProcessingPayment(true);
-    setSubmitError('');
+    setSubmitError("");
 
     try {
-      const orderIdGenerated = `REG-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+      const orderIdGenerated = `REG-${Date.now()}-${Math.random()
+        .toString(36)
+        .substr(2, 9)}`;
 
       const paymentData = {
         orderId: orderIdGenerated,
@@ -173,17 +176,12 @@ export default function RegisterPage() {
         },
         itemDetails: [
           {
-            id: 'registration-fee',
+            id: "registration-fee",
             price: 1,
             quantity: 1,
-            name: 'Registration Fee',
+            name: "Registration Fee",
           },
         ],
-        callbacks: {
-          finish: `${window.location.origin}/payment/success`,
-          error: `${window.location.origin}/payment/error`,
-          pending: `${window.location.origin}/payment/pending`,
-        },
         registrationData: {
           fullName: formData.fullName.trim(),
           email: formData.email.toLowerCase().trim(),
@@ -201,10 +199,10 @@ export default function RegisterPage() {
         },
       };
 
-      const response = await fetch('/api/payment/create', {
-        method: 'POST',
+      const response = await fetch("/api/payment/create", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify(paymentData),
       });
@@ -212,7 +210,7 @@ export default function RegisterPage() {
       const result = await response.json();
 
       if (!response.ok) {
-        throw new Error(result.error || 'Failed to create payment');
+        throw new Error(result.error || "Failed to create payment");
       }
 
       setPaymentToken(result.data.token);
@@ -221,8 +219,8 @@ export default function RegisterPage() {
 
       return true;
     } catch (error) {
-      console.error('Payment creation error:', error);
-      setSubmitError('Gagal membuat pembayaran. Silakan coba lagi.');
+      console.error("Payment creation error:", error);
+      setSubmitError("Gagal membuat pembayaran. Silakan coba lagi.");
       return false;
     } finally {
       setIsProcessingPayment(false);
@@ -231,13 +229,13 @@ export default function RegisterPage() {
 
   const checkAvailability = async (email: string, phoneNumber: string) => {
     setIsCheckingAvailability(true);
-    setSubmitError('');
+    setSubmitError("");
 
     try {
-      const response = await fetch('/api/auth/check-availability', {
-        method: 'POST',
+      const response = await fetch("/api/auth/check-availability", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           email: email.toLowerCase().trim(),
@@ -249,17 +247,17 @@ export default function RegisterPage() {
 
       if (!response.ok) {
         if (result.errors && result.errors.length > 0) {
-          setSubmitError(result.errors.join(' '));
+          setSubmitError(result.errors.join(" "));
         } else {
-          setSubmitError(result.error || 'Gagal memeriksa ketersediaan data');
+          setSubmitError(result.error || "Gagal memeriksa ketersediaan data");
         }
         return false;
       }
 
       return true;
     } catch (error) {
-      console.error('Availability check error:', error);
-      setSubmitError('Gagal memeriksa ketersediaan data. Silakan coba lagi.');
+      console.error("Availability check error:", error);
+      setSubmitError("Gagal memeriksa ketersediaan data. Silakan coba lagi.");
       return false;
     } finally {
       setIsCheckingAvailability(false);
@@ -267,7 +265,7 @@ export default function RegisterPage() {
   };
 
   const handleNextStep = async () => {
-    setSubmitError('');
+    setSubmitError("");
 
     if (currentStep === 1) {
       // Mark that user has attempted to submit (to show errors)
@@ -275,10 +273,20 @@ export default function RegisterPage() {
 
       // Trigger validation for step 1 fields
       const fieldsToValidate: any = [
-        'fullName', 'dateOfBirth', 'email', 'phoneNumber',
-        'occupation', 'address', 'village', 'city',
-        'province', 'postalCode', 'password', 'confirmPassword',
-        'agreeToTerms', 'agreeToPrivacy'
+        "fullName",
+        "dateOfBirth",
+        "email",
+        "phoneNumber",
+        "occupation",
+        "address",
+        "village",
+        "city",
+        "province",
+        "postalCode",
+        "password",
+        "confirmPassword",
+        "agreeToTerms",
+        "agreeToPrivacy",
       ];
 
       const isFormValid = await trigger(fieldsToValidate);
@@ -289,7 +297,10 @@ export default function RegisterPage() {
 
       // Check email and phone availability before proceeding
       const formValues = watch();
-      const isAvailable = await checkAvailability(formValues.email, formValues.phoneNumber);
+      const isAvailable = await checkAvailability(
+        formValues.email,
+        formValues.phoneNumber
+      );
 
       if (isAvailable) {
         setCurrentStep(2);
@@ -310,7 +321,7 @@ export default function RegisterPage() {
   };
 
   const handlePrevStep = () => {
-    setSubmitError('');
+    setSubmitError("");
     setHasAttemptedSubmit(false); // Reset error display when going back
     if (currentStep > 1) {
       setCurrentStep(currentStep - 1);
@@ -324,13 +335,13 @@ export default function RegisterPage() {
     }
 
     setIsLoading(true);
-    setSubmitError('');
+    setSubmitError("");
 
     try {
-      const response = await fetch('/api/auth/register', {
-        method: 'POST',
+      const response = await fetch("/api/auth/register", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           fullName: data.fullName.trim(),
@@ -352,13 +363,15 @@ export default function RegisterPage() {
       const responseData = await response.json();
 
       if (!response.ok) {
-        setSubmitError(responseData.error || 'Terjadi kesalahan saat mendaftar');
+        setSubmitError(
+          responseData.error || "Terjadi kesalahan saat mendaftar"
+        );
         return;
       }
 
       // Registration successful, show success message and redirect
       setIsSuccess(true);
-      setSuccessMessage('Akun berhasil dibuat. Silakan login.');
+      setSuccessMessage("Akun berhasil dibuat. Silakan login.");
 
       // Start countdown and redirect
       let countdown = 3;
@@ -373,12 +386,12 @@ export default function RegisterPage() {
             clearInterval(countdownIntervalRef.current);
             countdownIntervalRef.current = null;
           }
-          router.push('/login');
+          router.push("/login");
         }
       }, 1000);
     } catch (error: unknown) {
       console.error(error);
-      setSubmitError('Terjadi kesalahan jaringan. Silakan coba lagi.');
+      setSubmitError("Terjadi kesalahan jaringan. Silakan coba lagi.");
     } finally {
       setIsLoading(false);
     }
@@ -388,7 +401,7 @@ export default function RegisterPage() {
     <div
       className="min-h-screen bg-cover bg-center bg-no-repeat font-[family-name:var(--font-poppins)]"
       style={{
-        backgroundImage: 'url(/landing/hero-bg.png)',
+        backgroundImage: "url(/landing/hero-bg.png)",
       }}
     >
       {/* Background overlay */}
@@ -399,8 +412,12 @@ export default function RegisterPage() {
         {/* Header */}
         <div className="text-center mb-8">
           <div className="space-y-2">
-            <h2 className="text-3xl font-bold text-white font-[family-name:var(--font-poppins)]">Buat Akun Baru</h2>
-            <p className="text-white/80">Daftar untuk mulai berinvestasi tanaman</p>
+            <h2 className="text-3xl font-bold text-white font-[family-name:var(--font-poppins)]">
+              Buat Akun Baru
+            </h2>
+            <p className="text-white/80">
+              Daftar untuk mulai berinvestasi tanaman
+            </p>
           </div>
         </div>
 
@@ -408,45 +425,95 @@ export default function RegisterPage() {
         <div className="mb-8">
           <div className="flex items-center justify-center">
             {[
-              { step: 1, label: 'Data Diri', active: currentStep >= 1, completed: currentStep > 1 },
-              { step: 2, label: 'Verifikasi KTP', active: currentStep >= 2, completed: currentStep > 2 },
-              { step: 3, label: 'Verifikasi Wajah', active: currentStep >= 3, completed: currentStep > 3 },
-              { step: 4, label: 'Pembayaran', active: currentStep >= 4, completed: currentStep > 4 },
-              { step: 5, label: 'Selesai', active: currentStep >= 5, completed: false }
+              {
+                step: 1,
+                label: "Data Diri",
+                active: currentStep >= 1,
+                completed: currentStep > 1,
+              },
+              {
+                step: 2,
+                label: "Verifikasi KTP",
+                active: currentStep >= 2,
+                completed: currentStep > 2,
+              },
+              {
+                step: 3,
+                label: "Verifikasi Wajah",
+                active: currentStep >= 3,
+                completed: currentStep > 3,
+              },
+              {
+                step: 4,
+                label: "Pembayaran",
+                active: currentStep >= 4,
+                completed: currentStep > 4,
+              },
+              {
+                step: 5,
+                label: "Selesai",
+                active: currentStep >= 5,
+                completed: false,
+              },
             ].map((item, index) => (
               <div key={item.step} className="flex items-center">
-                <div className={`relative w-10 h-10 rounded-full flex items-center justify-center text-sm font-medium ${item.completed
-                  ? 'bg-[#324D3E] text-white'
-                  : item.active
-                    ? 'bg-[#324D3E] text-white'
-                    : 'bg-gray-300 text-gray-600'
-                  }`}>
+                <div
+                  className={`relative w-10 h-10 rounded-full flex items-center justify-center text-sm font-medium ${
+                    item.completed
+                      ? "bg-[#324D3E] text-white"
+                      : item.active
+                      ? "bg-[#324D3E] text-white"
+                      : "bg-gray-300 text-gray-600"
+                  }`}
+                >
                   {item.completed ? (
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    <svg
+                      className="w-5 h-5"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M5 13l4 4L19 7"
+                      />
                     </svg>
                   ) : (
                     item.step
                   )}
                 </div>
                 {index < 4 && (
-                  <div className={`w-16 h-1 mx-2 ${item.completed || (item.active && currentStep > item.step) ? 'bg-[#324D3E]' : 'bg-gray-300'
-                    }`} />
+                  <div
+                    className={`w-16 h-1 mx-2 ${
+                      item.completed || (item.active && currentStep > item.step)
+                        ? "bg-[#324D3E]"
+                        : "bg-gray-300"
+                    }`}
+                  />
                 )}
               </div>
             ))}
           </div>
           <div className="flex justify-around mt-4 max-w-md mx-auto">
             {[
-              { label: 'Data Diri', step: 1 },
-              { label: 'Verifikasi KTP', step: 2 },
-              { label: 'Verifikasi Wajah', step: 3 },
-              { label: 'Pembayaran', step: 4 },
-              { label: 'Selesai', step: 5 }
+              { label: "Data Diri", step: 1 },
+              { label: "Verifikasi KTP", step: 2 },
+              { label: "Verifikasi Wajah", step: 3 },
+              { label: "Pembayaran", step: 4 },
+              { label: "Selesai", step: 5 },
             ].map((item, index) => (
               <div key={index} className="text-center">
-                <p className={`text-xs font-medium ${currentStep === item.step ? 'text-white' : currentStep > item.step ? 'text-white/80' : 'text-white/60'
-                  }`}>
+                <p
+                  className={`text-xs font-medium ${
+                    currentStep === item.step
+                      ? "text-white"
+                      : currentStep > item.step
+                      ? "text-white/80"
+                      : "text-white/60"
+                  }`}
+                >
                   {item.label}
                 </p>
               </div>
@@ -458,18 +525,23 @@ export default function RegisterPage() {
         <div className="bg-white/95 backdrop-blur-sm rounded-3xl shadow-2xl border border-white/20">
           <div className="text-center p-6 pb-6">
             <h3 className="text-2xl text-[#4C3D19] font-bold font-[family-name:var(--font-poppins)]">
-              {currentStep === 1 && 'Pendaftaran - Data Diri'}
-              {currentStep === 2 && 'Verifikasi KTP'}
-              {currentStep === 3 && 'Verifikasi Wajah'}
-              {currentStep === 4 && 'Pembayaran'}
-              {currentStep === 5 && 'Konfirmasi Pendaftaran'}
+              {currentStep === 1 && "Pendaftaran - Data Diri"}
+              {currentStep === 2 && "Verifikasi KTP"}
+              {currentStep === 3 && "Verifikasi Wajah"}
+              {currentStep === 4 && "Pembayaran"}
+              {currentStep === 5 && "Konfirmasi Pendaftaran"}
             </h3>
             <p className="text-gray-600 mt-2">
-              {currentStep === 1 && 'Isi data diri Anda dengan lengkap dan benar'}
-              {currentStep === 2 && 'Upload foto KTP Anda yang jelas dan terbaca'}
-              {currentStep === 3 && 'Ambil foto selfie Anda menggunakan kamera untuk verifikasi'}
-              {currentStep === 4 && 'Lakukan pembayaran untuk menyelesaikan pendaftaran'}
-              {currentStep === 5 && 'Periksa kembali data Anda dan selesaikan pendaftaran'}
+              {currentStep === 1 &&
+                "Isi data diri Anda dengan lengkap dan benar"}
+              {currentStep === 2 &&
+                "Upload foto KTP Anda yang jelas dan terbaca"}
+              {currentStep === 3 &&
+                "Ambil foto selfie Anda menggunakan kamera untuk verifikasi"}
+              {currentStep === 4 &&
+                "Lakukan pembayaran untuk menyelesaikan pendaftaran"}
+              {currentStep === 5 &&
+                "Periksa kembali data Anda dan selesaikan pendaftaran"}
             </p>
           </div>
 
@@ -487,7 +559,7 @@ export default function RegisterPage() {
                       <FormRow cols={2}>
                         <ValidationInput
                           label="Nama Lengkap"
-                          {...register('fullName')}
+                          {...register("fullName")}
                           placeholder="Masukkan nama lengkap Anda"
                           required
                           autoComplete="name"
@@ -497,7 +569,7 @@ export default function RegisterPage() {
                         <ValidationInput
                           label="Tanggal Lahir"
                           type="date"
-                          {...register('dateOfBirth')}
+                          {...register("dateOfBirth")}
                           required
                           error={errors.dateOfBirth?.message}
                           showValidation={false}
@@ -508,7 +580,7 @@ export default function RegisterPage() {
                         <ValidationInput
                           label="Alamat Email"
                           type="email"
-                          {...register('email')}
+                          {...register("email")}
                           placeholder="nama@email.com"
                           required
                           autoComplete="email"
@@ -518,7 +590,7 @@ export default function RegisterPage() {
                         <ValidationInput
                           label="Nomor Telepon"
                           type="tel"
-                          {...register('phoneNumber')}
+                          {...register("phoneNumber")}
                           placeholder="08123456789"
                           required
                           autoComplete="tel"
@@ -531,12 +603,14 @@ export default function RegisterPage() {
                         <div>
                           <Select
                             label="Pekerjaan"
-                            {...register('occupation')}
+                            {...register("occupation")}
                             options={occupationOptions}
                             required
                           />
                           {errors.occupation && (
-                            <p className="mt-1 text-sm text-red-600">{errors.occupation.message}</p>
+                            <p className="mt-1 text-sm text-red-600">
+                              {errors.occupation.message}
+                            </p>
                           )}
                         </div>
                         <div className="form-group">
@@ -551,7 +625,9 @@ export default function RegisterPage() {
                             disabled
                             readOnly
                           />
-                          <p className="text-xs text-gray-500 mt-1">Kode akan muncul setelah memilih pekerjaan</p>
+                          <p className="text-xs text-gray-500 mt-1">
+                            Kode akan muncul setelah memilih pekerjaan
+                          </p>
                         </div>
                       </FormRow>
                     </div>
@@ -566,7 +642,7 @@ export default function RegisterPage() {
                       <FormField>
                         <ValidationInput
                           label="Alamat Lengkap"
-                          {...register('address')}
+                          {...register("address")}
                           placeholder="Jalan, RT/RW, Nomor Rumah"
                           required
                           error={errors.address?.message}
@@ -577,7 +653,7 @@ export default function RegisterPage() {
                       <FormRow cols={2}>
                         <ValidationInput
                           label="Desa/Kelurahan"
-                          {...register('village')}
+                          {...register("village")}
                           placeholder="Nama desa/kelurahan"
                           required
                           error={errors.village?.message}
@@ -585,7 +661,7 @@ export default function RegisterPage() {
                         />
                         <ValidationInput
                           label="Kota/Kabupaten"
-                          {...register('city')}
+                          {...register("city")}
                           placeholder="Nama kota/kabupaten"
                           required
                           error={errors.city?.message}
@@ -597,17 +673,19 @@ export default function RegisterPage() {
                         <div>
                           <Select
                             label="Provinsi"
-                            {...register('province')}
+                            {...register("province")}
                             options={provinceOptions}
                             required
                           />
                           {errors.province && (
-                            <p className="mt-1 text-sm text-red-600">{errors.province.message}</p>
+                            <p className="mt-1 text-sm text-red-600">
+                              {errors.province.message}
+                            </p>
                           )}
                         </div>
                         <ValidationInput
                           label="Kode Pos"
-                          {...register('postalCode')}
+                          {...register("postalCode")}
                           placeholder="12345"
                           required
                           error={errors.postalCode?.message}
@@ -627,7 +705,7 @@ export default function RegisterPage() {
                         <ValidationInput
                           label="Password"
                           type="password"
-                          {...register('password')}
+                          {...register("password")}
                           placeholder="Buat password yang kuat"
                           required
                           autoComplete="new-password"
@@ -637,7 +715,7 @@ export default function RegisterPage() {
                         <ValidationInput
                           label="Konfirmasi Password"
                           type="password"
-                          {...register('confirmPassword')}
+                          {...register("confirmPassword")}
                           placeholder="Ulangi password Anda"
                           required
                           autoComplete="new-password"
@@ -654,23 +732,25 @@ export default function RegisterPage() {
                       <label className="flex items-start gap-3 cursor-pointer group">
                         <input
                           type="checkbox"
-                          {...register('agreeToTerms')}
+                          {...register("agreeToTerms")}
                           className="w-5 h-5 text-[#324D3E] border-2 border-gray-300 rounded focus:ring-[#324D3E] focus:ring-2 mt-0.5"
                           required
                         />
                         <span className="text-sm text-gray-700 group-hover:text-gray-900">
-                          Saya menyetujui{' '}
+                          Saya menyetujui{" "}
                           <LegalModal
                             triggerText="Syarat dan Ketentuan"
                             title="Syarat dan Ketentuan"
                           >
                             <SyaratDanKetentuanContent />
-                          </LegalModal>
-                          {' '}yang berlaku
+                          </LegalModal>{" "}
+                          yang berlaku
                         </span>
                       </label>
                       {errors.agreeToTerms && (
-                        <p className="mt-1 text-sm text-red-600">{errors.agreeToTerms.message}</p>
+                        <p className="mt-1 text-sm text-red-600">
+                          {errors.agreeToTerms.message}
+                        </p>
                       )}
                     </div>
 
@@ -678,23 +758,25 @@ export default function RegisterPage() {
                       <label className="flex items-start gap-3 cursor-pointer group">
                         <input
                           type="checkbox"
-                          {...register('agreeToPrivacy')}
+                          {...register("agreeToPrivacy")}
                           className="w-5 h-5 text-[#324D3E] border-2 border-gray-300 rounded focus:ring-[#324D3E] focus:ring-2 mt-0.5"
                           required
                         />
                         <span className="text-sm text-gray-700 group-hover:text-gray-900">
-                          Saya menyetujui{' '}
+                          Saya menyetujui{" "}
                           <LegalModal
                             triggerText="Kebijakan Privasi"
                             title="Kebijakan Privasi"
                           >
                             <KebijakanPrivasiContent />
-                          </LegalModal>
-                          {' '}yang berlaku
+                          </LegalModal>{" "}
+                          yang berlaku
                         </span>
                       </label>
                       {errors.agreeToPrivacy && (
-                        <p className="mt-1 text-sm text-red-600">{errors.agreeToPrivacy.message}</p>
+                        <p className="mt-1 text-sm text-red-600">
+                          {errors.agreeToPrivacy.message}
+                        </p>
                       )}
                     </div>
                   </div>
@@ -725,16 +807,28 @@ export default function RegisterPage() {
                           className="w-full max-w-sm mx-auto rounded-lg border border-gray-300 shadow-sm"
                         />
                         <div className="flex items-center justify-center text-green-600 space-x-2">
-                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          <svg
+                            className="w-5 h-5"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M5 13l4 4L19 7"
+                            />
                           </svg>
-                          <span className="text-sm font-medium">KTP berhasil diupload</span>
+                          <span className="text-sm font-medium">
+                            KTP berhasil diupload
+                          </span>
                         </div>
                         <button
                           type="button"
                           onClick={() => {
                             setKtpImage(null);
-                            setKtpImageUrl('');
+                            setKtpImageUrl("");
                           }}
                           className="px-6 py-2 border-2 border-[#324D3E] text-[#324D3E] rounded-full font-semibold hover:bg-[#324D3E] hover:text-white transition-all duration-300 font-[family-name:var(--font-poppins)]"
                         >
@@ -757,16 +851,30 @@ export default function RegisterPage() {
                               {uploadingKtp ? (
                                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600"></div>
                               ) : (
-                                <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                                <svg
+                                  className="w-8 h-8 text-gray-400"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  viewBox="0 0 24 24"
+                                >
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={2}
+                                    d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+                                  />
                                 </svg>
                               )}
                             </div>
                             <div>
                               <p className="text-gray-600 font-medium">
-                                {uploadingKtp ? 'Mengupload...' : 'Klik untuk upload foto KTP'}
+                                {uploadingKtp
+                                  ? "Mengupload..."
+                                  : "Klik untuk upload foto KTP"}
                               </p>
-                              <p className="text-sm text-gray-500">PNG, JPG hingga 5MB</p>
+                              <p className="text-sm text-gray-500">
+                                PNG, JPG hingga 5MB
+                              </p>
                             </div>
                           </div>
                         </label>
@@ -803,24 +911,45 @@ export default function RegisterPage() {
                   <div className="max-w-md mx-auto">
                     <div className="bg-gray-50 rounded-lg p-6 text-center">
                       <div className="mb-4">
-                        <h4 className="text-lg font-semibold text-gray-800">Total Pembayaran</h4>
-                        <p className="text-3xl font-bold text-green-600">Rp 1</p>
-                        <p className="text-sm text-gray-500">Biaya Pendaftaran</p>
+                        <h4 className="text-lg font-semibold text-gray-800">
+                          Total Pembayaran
+                        </h4>
+                        <p className="text-3xl font-bold text-green-600">
+                          Rp 1
+                        </p>
+                        <p className="text-sm text-gray-500">
+                          Biaya Pendaftaran
+                        </p>
                       </div>
 
                       {orderId && (
                         <div className="mb-4">
-                          <p className="text-sm text-gray-600">Order ID: <span className="font-mono">{orderId}</span></p>
+                          <p className="text-sm text-gray-600">
+                            Order ID:{" "}
+                            <span className="font-mono">{orderId}</span>
+                          </p>
                         </div>
                       )}
 
                       {paymentUrl ? (
                         <div className="space-y-4">
                           <div className="flex items-center justify-center text-green-600 space-x-2">
-                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                            <svg
+                              className="w-5 h-5"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M5 13l4 4L19 7"
+                              />
                             </svg>
-                            <span className="text-sm font-medium">Payment link berhasil dibuat</span>
+                            <span className="text-sm font-medium">
+                              Payment link berhasil dibuat
+                            </span>
                           </div>
 
                           <button
@@ -831,10 +960,16 @@ export default function RegisterPage() {
 
                               // Store email for post-payment success page
                               const formValues = watch();
-                              console.log('Storing email in localStorage before payment:', formValues.email);
-                              localStorage.setItem('registrationEmail', formValues.email);
+                              console.log(
+                                "Storing email in localStorage before payment:",
+                                formValues.email
+                              );
+                              localStorage.setItem(
+                                "registrationEmail",
+                                formValues.email
+                              );
 
-                              window.open(paymentUrl, '_blank');
+                              window.open(paymentUrl, "_blank");
                             }}
                             className="w-full bg-gradient-to-r from-[#364D32] to-[#889063] text-white px-8 py-3 rounded-full font-semibold hover:from-[#889063] hover:to-[#364D32] transition-all duration-300 shadow-lg font-[family-name:var(--font-poppins)]"
                           >
@@ -842,7 +977,8 @@ export default function RegisterPage() {
                           </button>
 
                           <p className="text-xs text-gray-500">
-                            Klik &quot;Lanjutkan&quot; di bawah setelah menyelesaikan pembayaran
+                            Klik &quot;Lanjutkan&quot; di bawah setelah
+                            menyelesaikan pembayaran
                           </p>
                         </div>
                       ) : (
@@ -850,10 +986,15 @@ export default function RegisterPage() {
                           {isProcessingPayment ? (
                             <div className="flex items-center justify-center space-x-2">
                               <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
-                              <span className="text-blue-600">Membuat link pembayaran...</span>
+                              <span className="text-blue-600">
+                                Membuat link pembayaran...
+                              </span>
                             </div>
                           ) : (
-                            <p className="text-gray-600">Klik &quot;Lanjutkan&quot; untuk membuat link pembayaran</p>
+                            <p className="text-gray-600">
+                              Klik &quot;Lanjutkan&quot; untuk membuat link
+                              pembayaran
+                            </p>
                           )}
                         </div>
                       )}
@@ -867,32 +1008,75 @@ export default function RegisterPage() {
                 <div className="space-y-6">
                   <div className="space-y-6">
                     <div className="bg-gray-50 rounded-lg p-6">
-                      <h4 className="font-semibold text-gray-800 mb-4">Informasi Pribadi</h4>
+                      <h4 className="font-semibold text-gray-800 mb-4">
+                        Informasi Pribadi
+                      </h4>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                        <div><span className="text-gray-600">Nama Lengkap:</span> {watchedValues.fullName}</div>
-                        <div><span className="text-gray-600">Tanggal Lahir:</span> {watchedValues.dateOfBirth}</div>
-                        <div><span className="text-gray-600">Email:</span> {watchedValues.email}</div>
-                        <div><span className="text-gray-600">Nomor Telepon:</span> {watchedValues.phoneNumber}</div>
-                        <div><span className="text-gray-600">Pekerjaan:</span> {watchedValues.occupation}</div>
-                        <div><span className="text-gray-600">Kode Pekerjaan:</span> {getOccupationCode(watchedValues.occupation)}</div>
-                      </div>
-                    </div>
-
-                    <div className="bg-gray-50 rounded-lg p-6">
-                      <h4 className="font-semibold text-gray-800 mb-4">Informasi Alamat</h4>
-                      <div className="space-y-3 text-sm">
-                        <div><span className="text-gray-600">Alamat Lengkap:</span> {watchedValues.address}</div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <div><span className="text-gray-600">Desa/Kelurahan:</span> {watchedValues.village}</div>
-                          <div><span className="text-gray-600">Kota/Kabupaten:</span> {watchedValues.city}</div>
-                          <div><span className="text-gray-600">Provinsi:</span> {watchedValues.province}</div>
-                          <div><span className="text-gray-600">Kode Pos:</span> {watchedValues.postalCode}</div>
+                        <div>
+                          <span className="text-gray-600">Nama Lengkap:</span>{" "}
+                          {watchedValues.fullName}
+                        </div>
+                        <div>
+                          <span className="text-gray-600">Tanggal Lahir:</span>{" "}
+                          {watchedValues.dateOfBirth}
+                        </div>
+                        <div>
+                          <span className="text-gray-600">Email:</span>{" "}
+                          {watchedValues.email}
+                        </div>
+                        <div>
+                          <span className="text-gray-600">Nomor Telepon:</span>{" "}
+                          {watchedValues.phoneNumber}
+                        </div>
+                        <div>
+                          <span className="text-gray-600">Pekerjaan:</span>{" "}
+                          {watchedValues.occupation}
+                        </div>
+                        <div>
+                          <span className="text-gray-600">Kode Pekerjaan:</span>{" "}
+                          {getOccupationCode(watchedValues.occupation)}
                         </div>
                       </div>
                     </div>
 
                     <div className="bg-gray-50 rounded-lg p-6">
-                      <h4 className="font-semibold text-gray-800 mb-4">Verifikasi</h4>
+                      <h4 className="font-semibold text-gray-800 mb-4">
+                        Informasi Alamat
+                      </h4>
+                      <div className="space-y-3 text-sm">
+                        <div>
+                          <span className="text-gray-600">Alamat Lengkap:</span>{" "}
+                          {watchedValues.address}
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div>
+                            <span className="text-gray-600">
+                              Desa/Kelurahan:
+                            </span>{" "}
+                            {watchedValues.village}
+                          </div>
+                          <div>
+                            <span className="text-gray-600">
+                              Kota/Kabupaten:
+                            </span>{" "}
+                            {watchedValues.city}
+                          </div>
+                          <div>
+                            <span className="text-gray-600">Provinsi:</span>{" "}
+                            {watchedValues.province}
+                          </div>
+                          <div>
+                            <span className="text-gray-600">Kode Pos:</span>{" "}
+                            {watchedValues.postalCode}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="bg-gray-50 rounded-lg p-6">
+                      <h4 className="font-semibold text-gray-800 mb-4">
+                        Verifikasi
+                      </h4>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
                           <p className="text-sm text-gray-600 mb-2">KTP</p>
@@ -907,7 +1091,9 @@ export default function RegisterPage() {
                           )}
                         </div>
                         <div>
-                          <p className="text-sm text-gray-600 mb-2">Foto Wajah</p>
+                          <p className="text-sm text-gray-600 mb-2">
+                            Foto Wajah
+                          </p>
                           {faceImageUrl && (
                             <Image
                               width={100}
@@ -925,16 +1111,29 @@ export default function RegisterPage() {
               )}
 
               {/* Submit Error and Validation Errors */}
-              {(submitError || (hasAttemptedSubmit && Object.keys(errors).length > 0)) && (
+              {(submitError ||
+                (hasAttemptedSubmit && Object.keys(errors).length > 0)) && (
                 <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
                   <div className="space-y-2">
                     {/* API/Submit Error */}
                     {submitError && (
                       <div className="flex items-center gap-2">
-                        <svg className="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        <svg
+                          className="w-5 h-5 text-red-500"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                          />
                         </svg>
-                        <p className="text-sm text-red-700 font-medium">{submitError}</p>
+                        <p className="text-sm text-red-700 font-medium">
+                          {submitError}
+                        </p>
                       </div>
                     )}
 
@@ -942,10 +1141,22 @@ export default function RegisterPage() {
                     {hasAttemptedSubmit && Object.keys(errors).length > 0 && (
                       <div>
                         <div className="flex items-center gap-2 mb-2">
-                          <svg className="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          <svg
+                            className="w-5 h-5 text-red-500"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                            />
                           </svg>
-                          <p className="text-sm text-red-700 font-medium">Mohon perbaiki kesalahan berikut:</p>
+                          <p className="text-sm text-red-700 font-medium">
+                            Mohon perbaiki kesalahan berikut:
+                          </p>
                         </div>
                         <ul className="list-disc list-inside space-y-1 ml-7">
                           {Object.entries(errors).map(([field, error]) => (
@@ -959,7 +1170,6 @@ export default function RegisterPage() {
                   </div>
                 </div>
               )}
-
 
               {/* Navigation Buttons */}
               <FormActions align="center">
@@ -979,25 +1189,34 @@ export default function RegisterPage() {
                       (currentStep === 1 && isCheckingAvailability) ||
                       (currentStep === 2 && !ktpImageUrl) ||
                       (currentStep === 3 && !faceImageUrl) ||
-                      (currentStep === 4 && (!paymentUrl || isProcessingPayment)) ||
+                      (currentStep === 4 &&
+                        (!paymentUrl || isProcessingPayment)) ||
                       uploadingKtp ||
                       uploadingFace ||
                       isProcessingPayment ||
                       isCheckingAvailability ||
                       isLoading
                     }
-                    className={`${currentStep === 1 ? 'w-full' : 'flex-1'} py-3 text-base font-semibold bg-gradient-to-r from-[#364D32] to-[#889063] text-white rounded-full hover:from-[#889063] hover:to-[#364D32] transition-all duration-300 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed font-[family-name:var(--font-poppins)]`}
+                    className={`${
+                      currentStep === 1 ? "w-full" : "flex-1"
+                    } py-3 text-base font-semibold bg-gradient-to-r from-[#364D32] to-[#889063] text-white rounded-full hover:from-[#889063] hover:to-[#364D32] transition-all duration-300 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed font-[family-name:var(--font-poppins)]`}
                   >
-                    {isLoading ? 'Sedang mendaftar...' :
-                      isProcessingPayment ? 'Membuat Pembayaran...' :
-                        isCheckingAvailability ? 'Memeriksa ketersediaan...' :
-                          uploadingFace ? 'Mengupload foto...' :
-                            uploadingKtp ? 'Mengupload KTP...' :
-                              currentStep === 5 ? 'Daftar Sekarang' : 'Lanjutkan'}
+                    {isLoading
+                      ? "Sedang mendaftar..."
+                      : isProcessingPayment
+                      ? "Membuat Pembayaran..."
+                      : isCheckingAvailability
+                      ? "Memeriksa ketersediaan..."
+                      : uploadingFace
+                      ? "Mengupload foto..."
+                      : uploadingKtp
+                      ? "Mengupload KTP..."
+                      : currentStep === 5
+                      ? "Daftar Sekarang"
+                      : "Lanjutkan"}
                   </button>
                 </div>
               </FormActions>
-
             </form>
           </div>
         </div>
@@ -1020,7 +1239,11 @@ export default function RegisterPage() {
               {/* Content */}
               <div className="p-6">
                 <div className="text-center text-gray-600 mb-4">
-                  Anda akan dialihkan ke halaman login dalam <span className="font-bold text-green-700">{redirectCountdown}</span> detik...
+                  Anda akan dialihkan ke halaman login dalam{" "}
+                  <span className="font-bold text-green-700">
+                    {redirectCountdown}
+                  </span>{" "}
+                  detik...
                 </div>
 
                 <button
@@ -1029,7 +1252,7 @@ export default function RegisterPage() {
                       clearInterval(countdownIntervalRef.current);
                       countdownIntervalRef.current = null;
                     }
-                    router.push('/login');
+                    router.push("/login");
                   }}
                   className="w-full bg-gradient-to-r from-[#364D32] to-[#889063] text-white px-8 py-3 rounded-full font-semibold hover:from-[#889063] hover:to-[#364D32] transition-all duration-300 shadow-lg font-[family-name:var(--font-poppins)]"
                 >
@@ -1043,7 +1266,7 @@ export default function RegisterPage() {
         {/* Login Link */}
         <div className="text-center mt-8">
           <p className="text-white/90">
-            Sudah punya akun?{' '}
+            Sudah punya akun?{" "}
             <Link
               href="/login"
               className="text-white font-semibold hover:text-white/80 hover:underline font-[family-name:var(--font-poppins)]"
@@ -1059,8 +1282,18 @@ export default function RegisterPage() {
             href="/"
             className="text-sm text-white/70 hover:text-white hover:underline inline-flex items-center gap-1 font-[family-name:var(--font-poppins)]"
           >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            <svg
+              className="w-4 h-4"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M15 19l-7-7 7-7"
+              />
             </svg>
             Kembali ke beranda
           </Link>
