@@ -43,6 +43,7 @@ export default function ContractPage() {
   const investmentId = params.investmentId as string;
   const [contractData, setContractData] = useState<ContractData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadingMessage, setLoadingMessage] = useState("Loading contract data...");
   const [signing, setSigning] = useState(false);
   const [signed, setSigned] = useState(false);
   const sigCanvas = useRef<any>(null);
@@ -55,7 +56,7 @@ export default function ContractPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [investmentId]);
 
-  const fetchContractData = async () => {
+  const fetchContractData = async (retryCount = 0) => {
     try {
       setLoading(true);
       const response = await fetch(`/api/contract/${investmentId}`);
@@ -63,11 +64,26 @@ export default function ContractPage() {
       if (response.ok) {
         const result = await response.json();
         setContractData(result.data);
+      } else if (response.status === 404 && retryCount < 10) {
+        // Contract data not ready yet, webhook might still be processing
+        setLoadingMessage(`Processing your payment... Please wait (${retryCount + 1}/10)`);
+        console.log(`Contract data not ready, retrying in 2 seconds... (attempt ${retryCount + 1}/10)`);
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        return fetchContractData(retryCount + 1);
       } else {
         console.error("Failed to fetch contract data");
+        showError("Error", "Failed to load contract data. Please refresh the page.");
       }
     } catch (error) {
       console.error("Error fetching contract data:", error);
+      if (retryCount < 10) {
+        setLoadingMessage(`Connecting... Please wait (${retryCount + 1}/10)`);
+        console.log(`Network error, retrying in 2 seconds... (attempt ${retryCount + 1}/10)`);
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        return fetchContractData(retryCount + 1);
+      } else {
+        showError("Error", "Failed to load contract data after multiple attempts. Please refresh the page.");
+      }
     } finally {
       setLoading(false);
     }
@@ -418,7 +434,7 @@ export default function ContractPage() {
       <div className="min-h-screen bg-gradient-to-br from-[#324D3E]/10 via-white to-[#4C3D19]/10 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-[#324D3E] mx-auto"></div>
-          <p className="text-[#324D3E] mt-4 text-lg">Memuat data kontrak...</p>
+          <p className="text-[#324D3E] mt-4 text-lg">{loadingMessage}</p>
         </div>
       </div>
     );

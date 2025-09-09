@@ -104,7 +104,7 @@ export default function InvoiceControls({
             <button
               onClick={() => canPrev && pushParams({ page: page - 1 })}
               disabled={!canPrev}
-              className="p-2 rounded-xl border border-[#324D3E]/20 dark:border-gray-600 disabled:opacity-40 hover:bg-[#324D3E]/5 dark:hover:bg-gray-700 transition-all duration-300 flex-shrink-0"
+              className="p-2 rounded-xl border border-[#324D3E]/20 dark:border-gray-600 disabled:opacity-40 hover:bg-[#324D3E]/5 dark:hover:bg-gray-700 transition-all duration-300 flex-shrink-0 cursor-pointer disabled:cursor-not-allowed"
               aria-label="Sebelumnya"
             >
               <ChevronLeft size={16} />
@@ -114,7 +114,7 @@ export default function InvoiceControls({
                 <button
                   key={p}
                   onClick={() => pushParams({ page: p })}
-                  className={`px-2 sm:px-3 py-2 rounded-xl border text-sm font-medium transition-all duration-300 flex-shrink-0 min-w-[36px] ${
+                  className={`px-2 sm:px-3 py-2 rounded-xl border text-sm font-medium transition-all duration-300 flex-shrink-0 min-w-[36px] cursor-pointer ${
                     p === page 
                       ? "bg-gradient-to-r from-[#324D3E] to-[#4C3D19] text-white border-[#324D3E] shadow-lg" 
                       : "bg-white/80 dark:bg-gray-700/80 text-[#324D3E] dark:text-white border-[#324D3E]/20 dark:border-gray-600 hover:bg-[#324D3E]/5 dark:hover:bg-gray-700"
@@ -127,7 +127,7 @@ export default function InvoiceControls({
             <button
               onClick={() => canNext && pushParams({ page: page + 1 })}
               disabled={!canNext}
-              className="p-2 rounded-xl border border-[#324D3E]/20 dark:border-gray-600 disabled:opacity-40 hover:bg-[#324D3E]/5 dark:hover:bg-gray-700 transition-all duration-300 flex-shrink-0"
+              className="p-2 rounded-xl border border-[#324D3E]/20 dark:border-gray-600 disabled:opacity-40 hover:bg-[#324D3E]/5 dark:hover:bg-gray-700 transition-all duration-300 flex-shrink-0 cursor-pointer disabled:cursor-not-allowed"
               aria-label="Berikutnya"
             >
               <ChevronRight size={16} />

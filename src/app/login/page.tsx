@@ -108,14 +108,17 @@ export default function LoginPage() {
 
         setErrors({ submit: errorMessage });
       } else if (result?.ok) {
-        // Get fresh session after successful login
+        // Get session data after successful login
         const { getSession } = await import("next-auth/react");
 
-        // Try multiple times with increasing delays to catch session update
-        const attemptRedirect = async (attempt = 1, maxAttempts = 5) => {
+        try {
+          // Wait a moment for session to be established
+          await new Promise((resolve) => setTimeout(resolve, 100));
+
           const session = await getSession();
 
           if (session?.user?.role) {
+            // Determine redirect path based on user role
             let redirectPath = "/";
             switch (session.user.role) {
               case "admin":
@@ -132,24 +135,23 @@ export default function LoginPage() {
                 redirectPath = "/";
             }
 
-            window.location.replace(redirectPath); // Use replace instead of href
+            console.log(
+              `✅ Login successful, redirecting ${session.user.role} to: ${redirectPath}`
+            );
+
+            // Use window.location.href for all redirects to ensure they work properly
+            window.location.href = redirectPath;
             return;
           }
 
-          if (attempt < maxAttempts) {
-            setTimeout(
-              () => attemptRedirect(attempt + 1, maxAttempts),
-              attempt * 100
-            );
-          } else {
-            console.error(
-              "❌ Failed to get session after all attempts, forcing refresh"
-            );
-            window.location.reload();
-          }
-        };
-
-        attemptRedirect();
+          // Fallback: if no role found, redirect to home
+          console.log("⚠️ No user role found, redirecting to home");
+          window.location.href = "/";
+        } catch (error) {
+          console.error("Error during redirect:", error);
+          // Fallback: reload the page to ensure fresh session
+          window.location.reload();
+        }
       }
     } catch (error: unknown) {
       console.error("Login error:", error);
@@ -241,12 +243,6 @@ export default function LoginPage() {
                 />
                 <span className="text-sm text-gray-600">Ingat saya</span>
               </label>
-              <Link
-                href="/forgot-password"
-                className="text-sm text-[#324D3E] hover:text-[#4C3D19] hover:underline"
-              >
-                Lupa password?
-              </Link>
             </div>
 
             {errors.submit && (

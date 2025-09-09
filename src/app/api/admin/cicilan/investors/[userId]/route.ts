@@ -44,21 +44,25 @@ export async function GET(
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    // Get all payments for this user's cicilan investments
+    // Get all payments for this user (both cicilan and full payments)
     const payments = await Payment.find({
       userId: investor.userId,
-      paymentType: "cicilan-installment",
+      paymentType: { $in: ["cicilan-installment", "full-investment"] },
     });
 
-    // Create a map of payments by cicilanOrderId and installmentNumber for quick lookup
+    // Separate cicilan and full payments
+    const cicilanPayments = payments.filter(p => p.paymentType === "cicilan-installment");
+    const fullPayments = payments.filter(p => p.paymentType === "full-investment");
+
+    // Create a map of cicilan payments by cicilanOrderId and installmentNumber for quick lookup
     const paymentsMap = new Map();
-    payments.forEach((payment) => {
+    cicilanPayments.forEach((payment) => {
       const key = `${payment.cicilanOrderId}-${payment.installmentNumber}`;
       paymentsMap.set(key, payment);
     });
 
-    // Process investments and merge with payment data
-    const cicilanGroups = investor.investments.map((investment: any) => {
+    // Process cicilan investments and merge with payment data
+    const cicilanGroups = investor.investments.filter((inv: any) => inv.paymentType === 'cicilan').map((investment: any) => {
       const installmentsWithPayments =
         investment.installments?.map((installment: any) => {
           const paymentKey = `${investment.investmentId}-${installment.installmentNumber}`;
@@ -106,17 +110,54 @@ export async function GET(
       };
     });
 
+    // Process full payment investments
+    const fullPaymentGroups = investor.investments.filter((inv: any) => inv.paymentType === 'full').map((investment: any) => {
+      // Find matching full payment
+      const fullPayment = fullPayments.find(p => p.productName === investment.productName && p.amount === investment.totalAmount);
+      
+      return {
+        cicilanOrderId: investment.investmentId,
+        productName: investment.productName,
+        productId: investment.productId || "unknown",
+        totalAmount: investment.totalAmount,
+        totalInstallments: 1, // Full payment is always 1 installment
+        installmentAmount: investment.totalAmount,
+        paymentTerm: 'full' as any, // Mark as full payment
+        installments: [{
+          _id: fullPayment?._id?.toString() || investment._id.toString(),
+          orderId: fullPayment?.orderId || investment.investmentId,
+          installmentNumber: 1,
+          amount: investment.totalAmount,
+          dueDate: investment.investmentDate,
+          status: 'approved', // Full payments are always approved since they go through Midtrans confirmation
+          adminStatus: 'approved', // Full payments don't need admin approval
+          proofImageUrl: fullPayment?.proofImageUrl || null,
+          proofDescription: fullPayment?.proofDescription || null,
+          adminNotes: 'Pembayaran lunas - tidak perlu review admin',
+          paidDate: investment.investmentDate,
+          submissionDate: fullPayment?.createdAt || investment.investmentDate,
+          exists: true,
+        }],
+        status: 'completed' as any, // Full payments are always completed
+        createdAt: investment.investmentDate,
+        isFullPayment: true, // Flag to identify full payments
+      };
+    });
+
+    // Combine cicilan and full payment groups
+    const allGroups = [...cicilanGroups, ...fullPaymentGroups];
+
     // Calculate statistics
     const totalInvestments = investor.investments.length;
     const totalAmount = investor.totalInvestasi;
     const totalPaid = investor.totalPaid;
 
-    // Count pending reviews (payments with proofImageUrl but adminStatus pending)
-    const pendingReviews = payments.filter(
+    // Count pending reviews (only cicilan payments need reviews)
+    const pendingReviews = cicilanPayments.filter(
       (p) => p.proofImageUrl && p.adminStatus === "pending"
     ).length;
 
-    // Count overdue installments
+    // Count overdue installments (only cicilan payments can be overdue)
     const now = new Date();
     const overdueCount = cicilanGroups.reduce((count: number, group: any) => {
       return (
@@ -143,7 +184,7 @@ export async function GET(
       totalPaid,
       pendingReviews,
       overdueCount,
-      cicilanGroups,
+      cicilanGroups: allGroups,
     };
 
     return NextResponse.json({ investor: investorDetail });

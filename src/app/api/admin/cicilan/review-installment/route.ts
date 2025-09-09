@@ -1,5 +1,6 @@
 import { authOptions } from "@/lib/auth";
 import dbConnect from "@/lib/mongodb";
+import { getFirstAdminId } from "@/lib/utils/admin";
 import Investor from "@/models/Investor";
 import Payment from "@/models/Payment";
 import PlantInstance from "@/models/PlantInstance";
@@ -153,7 +154,7 @@ export async function POST(request: NextRequest) {
                 baseAnnualROI: getBaseROI(plantType),
                 operationalCosts: [],
                 incomeRecords: [],
-                qrCode: `QR-${plantInstanceId}`,
+                qrCode: `QR-${productName}`,
                 owner: user.fullName,
                 fotoGambar: null,
                 memberId: user._id.toString(),
@@ -179,7 +180,7 @@ export async function POST(request: NextRequest) {
                     }),
 
                     description: `Tanaman baru dibuat dengan cicilan untuk user ${user.fullName}`,
-                    addedBy: session.user.id,
+                    addedBy: await getFirstAdminId(),
                   },
                 ],
               });

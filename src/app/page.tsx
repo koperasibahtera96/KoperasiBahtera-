@@ -8,11 +8,11 @@ import LandingHeader from "@/components/landing/LandingHeader";
 import LandingHero from "@/components/landing/LandingHero";
 import PlantShowcaseSection from "@/components/landing/PlantShowcaseSection";
 import ReviewSection from "@/components/landing/ReviewSection";
-import WhyInvestAndRulesSection from "@/components/landing/WhyInvestAndRulesSection";
 import WhatsAppIcon from "@/components/landing/WhatsAppIcon";
+import WhyInvestAndRulesSection from "@/components/landing/WhyInvestAndRulesSection";
 import { useAlert } from "@/components/ui/Alert";
 import { useSearchParams } from "next/navigation";
-import { useEffect, Suspense } from "react";
+import { Suspense, useEffect } from "react";
 
 function LandingPageContent() {
   const searchParams = useSearchParams();
@@ -55,11 +55,11 @@ function LandingPageContent() {
       <section id="beranda">
         <LandingHero />
       </section>
-      <section id="produk">
+      <section id="investasi">
         <WhyInvestAndRulesSection />
       </section>
       <CTASection />
-      <section id="investasi">
+      <section id="produk">
         <PlantShowcaseSection />
       </section>
       {/* <section id="tentang-kami">

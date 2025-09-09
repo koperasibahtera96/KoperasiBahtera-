@@ -1,6 +1,7 @@
 import dbConnect from '@/lib/mongodb';
 import Investor from '@/models/Investor';
-import Plant from '@/models/Plant';
+import PlantInstance from '@/models/PlantInstance';
+import User from '@/models/User';
 import { NextRequest, NextResponse } from 'next/server';
 
 // GET /api/admin/dashboard - Get dashboard data
@@ -8,10 +9,11 @@ export async function GET(_request: NextRequest) {
   try {
     await dbConnect();
 
-    // Get all investors and plants
-    const [investors, plants] = await Promise.all([
+    // Get all investors, plant instances, and users
+    const [investors, plantInstances, users] = await Promise.all([
       Investor.find({}),
-      Plant.find({})
+      PlantInstance.find({}),
+      User.countDocuments({})
     ]);
 
     // Calculate investor statistics
@@ -21,15 +23,15 @@ export async function GET(_request: NextRequest) {
     const totalInvestment = investors.reduce((sum, inv) => sum + inv.totalInvestasi, 0);
 
     // Calculate plant statistics
-    const totalPlants = plants.length;
+    const totalPlants = plantInstances.length;
     const plantsByStatus = {
-      active: plants.filter(p => p.status === 'Tanam Bibit' || p.status === 'Tumbuh Sehat').length,
-      maintenance: plants.filter(p => p.status === 'Perlu Perawatan').length,
-      problem: plants.filter(p => p.status === 'Bermasalah' || p.status === 'Sakit').length
+      active: plantInstances.filter(p => p.status === 'Tanam Bibit' || p.status === 'Tumbuh Sehat').length,
+      maintenance: plantInstances.filter(p => p.status === 'Perlu Perawatan').length,
+      problem: plantInstances.filter(p => p.status === 'Bermasalah' || p.status === 'Sakit').length
     };
 
     // Group plants by type (get top 3)
-    const plantsByType = plants.reduce((acc, plant) => {
+    const plantsByType = plantInstances.reduce((acc: Record<string, number>, plant) => {
       const type = plant.plantType;
       if (!acc[type]) {
         acc[type] = 0;
@@ -60,9 +62,12 @@ export async function GET(_request: NextRequest) {
         status: investor.status
       }));
 
-    // Calculate average plant age and height
-    const avgPlantAge = plants.length > 0 ? Math.round(plants.reduce((sum, plant) => sum + plant.age, 0) / plants.length) : 0;
-    const avgPlantHeight = plants.length > 0 ? Math.round(plants.reduce((sum, plant) => sum + plant.height, 0) / plants.length) : 0;
+    // Calculate average plant age - using months since creation
+    const avgPlantAge = plantInstances.length > 0 ? 
+      Math.round(plantInstances.reduce((sum, plant) => {
+        const monthsSincePlanting = Math.round((Date.now() - new Date(plant.createdAt).getTime()) / (1000 * 60 * 60 * 24 * 30));
+        return sum + Math.max(0, monthsSincePlanting);
+      }, 0) / plantInstances.length) : 0;
 
     // Format total investment
     const formattedTotalInvestment = totalInvestment >= 1000000000
@@ -105,7 +110,7 @@ export async function GET(_request: NextRequest) {
         totalInvestment,
         activeInvestors,
         avgTreeAge: avgPlantAge,
-        avgTreeHeight: avgPlantHeight
+        totalUsers: users
       }
     };
 

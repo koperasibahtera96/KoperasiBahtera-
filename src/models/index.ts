@@ -9,6 +9,9 @@ export type { IUser } from "./User"
 export { default as Investor } from "./Investor"
 export type { IInvestor, IInvestmentRecord, IInstallmentSummary } from "./Investor"
 
+export { default as AdminLog } from "./AdminLog"
+export type { IAdminLog } from "./AdminLog"
+
 export type { IPlantInstance, IOperationalCost, IIncomeRecord } from "./PlantInstance"
 export type { IMember, IMemberInvestment } from "./Member"
 export type { IPlantType } from "./PlantType"

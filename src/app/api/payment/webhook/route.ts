@@ -1,6 +1,7 @@
 import { occupationOptions } from "@/constant/OCCUPATION";
 import { midtransService } from "@/lib/midtrans";
 import dbConnect from "@/lib/mongodb";
+import { getFirstAdminId } from "@/lib/utils/admin";
 import Investor from "@/models/Investor";
 import Payment from "@/models/Payment";
 import PlantInstance from "@/models/PlantInstance";
@@ -244,10 +245,8 @@ export async function POST(request: NextRequest) {
           return roiMap[plantType] || 0.12;
         };
 
-        // Create PlantInstance for this cicilan investment
-        const plantInstanceId = `PLANT-${Date.now()}-${Math.random()
-          .toString(36)
-          .substring(2, 9)}`;
+        // Create new PlantInstance
+        const plantInstanceId = `PLANT-${payment.orderId}-${Date.now()}`;
 
         const productName = payment.productName || "gaharu";
         const plantType = getPlantType(productName);
@@ -287,7 +286,7 @@ export async function POST(request: NextRequest) {
                 year: "numeric",
               }),
               description: `Tanaman baru dibuat dengan pembayaran full untuk user ${user.fullName}`,
-              addedBy: "system",
+              addedBy: await getFirstAdminId(),
             },
           ],
         });

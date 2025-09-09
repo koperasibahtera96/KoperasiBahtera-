@@ -1,7 +1,14 @@
 "use client";
 
+import { formatIDRCurrency } from "@/lib/utils/currency";
 import { useSession } from "next-auth/react";
 import { useState } from "react";
+
+interface InstallmentOption {
+  period: string;
+  amount: number;
+  perTree: number;
+}
 
 interface CicilanModalProps {
   isOpen: boolean;
@@ -19,32 +26,43 @@ export function CicilanModal({
   onError,
 }: CicilanModalProps) {
   const { data: session } = useSession();
-  const [selectedTerm, setSelectedTerm] = useState<
-    "monthly" | "quarterly" | "semiannual" | "annual"
-  >("monthly");
+  const [selectedTerm, setSelectedTerm] = useState<number>(0);
   const [selectedQuantity, setSelectedQuantity] = useState<1 | 10>(10);
   const [isLoading, setIsLoading] = useState(false);
 
-  const paymentTerms = [
-    { value: "monthly", label: "Bulanan", months: 1, installments: 24 },
-    { value: "quarterly", label: "Per 3 Bulan", months: 3, installments: 8 },
-    { value: "semiannual", label: "Per 6 Bulan", months: 6, installments: 4 },
-    { value: "annual", label: "Per Tahun", months: 12, installments: 2 },
-  ];
+  // Use installmentOptions from plan data - no fallback to prevent wrong data
+  const paymentTerms: InstallmentOption[] = plan?.installmentOptions || [];
 
-  const selectedTermDetails = paymentTerms.find(
-    (term) => term.value === selectedTerm
-  );
+  const selectedTermDetails = paymentTerms[selectedTerm];
 
-  // Calculate price based on quantity selection
-  const currentPrice = plan
+  // Calculate price based on quantity selection using installmentOptions
+  const currentPrice = selectedTermDetails
     ? selectedQuantity === 1
-      ? Math.ceil(plan.price / 10)
-      : plan.price
+      ? selectedTermDetails.perTree
+      : selectedTermDetails.amount
     : 0;
+
+  // Calculate installment count based on period (5 years total)
+  const getInstallmentCount = (period: string) => {
+    switch (period) {
+      case "Per Bulan":
+        return 60; // 60 monthly installments (5 years)
+      case "Per 3 Bulan":
+        return 20; // 20 quarterly installments (5 years)
+      case "Per 6 Bulan":
+        return 10; // 10 semi-annual installments (5 years)
+      case "Per Tahun":
+        return 5; // 5 annual installments (5 years)
+      default:
+        return 60; // fallback to monthly
+    }
+  };
+
   const installmentAmount =
     selectedTermDetails && currentPrice
-      ? Math.ceil(currentPrice / selectedTermDetails.installments)
+      ? Math.ceil(
+          currentPrice / getInstallmentCount(selectedTermDetails.period)
+        )
       : 0;
 
   const handleCreateCicilan = async () => {
@@ -61,7 +79,7 @@ export function CicilanModal({
           productId: plan.name.toLowerCase().replace(/\s+/g, "-"),
           productName: `${plan.name} (${selectedQuantity} Pohon)`,
           totalAmount: currentPrice,
-          paymentTerm: selectedTerm,
+          paymentTerm: selectedTermDetails.period,
         }),
       });
 
@@ -77,7 +95,7 @@ export function CicilanModal({
           }\nJumlah Angsuran: Rp ${installmentAmount.toLocaleString(
             "id-ID"
           )}\nTerm: ${
-            selectedTermDetails?.label
+            selectedTermDetails?.period
           }\nAnda dapat melakukan pembayaran pertama sekarang.`
         );
         onClose();
@@ -95,7 +113,7 @@ export function CicilanModal({
     }
   };
 
-  if (!isOpen || !plan) return null;
+  if (!isOpen || !plan || !paymentTerms || paymentTerms.length === 0) return null;
 
   return (
     <div
@@ -161,8 +179,8 @@ export function CicilanModal({
                 </div>
                 <div className="font-bold text-[#324D3E] text-lg mt-2">
                   Rp{" "}
-                  {plan
-                    ? Math.ceil(plan.price / 10).toLocaleString("id-ID")
+                  {selectedTermDetails?.perTree
+                    ? selectedTermDetails.perTree.toLocaleString("id-ID")
                     : "0"}
                 </div>
               </label>
@@ -190,7 +208,10 @@ export function CicilanModal({
                   Paket Lengkap
                 </div>
                 <div className="font-bold text-[#324D3E] text-lg mt-2">
-                  Rp {plan?.price?.toLocaleString("id-ID") || "0"}
+                  Rp{" "}
+                  {selectedTermDetails?.amount
+                    ? selectedTermDetails.amount.toLocaleString("id-ID")
+                    : "0"}
                 </div>
               </label>
             </div>
@@ -224,8 +245,14 @@ export function CicilanModal({
                   </span>
                   <span className="font-bold text-emerald-600 text-lg">
                     {selectedQuantity === 1
-                      ? `${plan?.returns || "-"} (per pohon)`
-                      : plan?.returns || "-"}
+                      ? plan?.returns
+                        ? `Rp ${formatIDRCurrency(
+                            Math.ceil(plan.returns / 10)
+                          )} (per pohon)`
+                        : "-"
+                      : plan?.returns
+                      ? `Rp ${formatIDRCurrency(plan.returns)}`
+                      : "-"}
                   </span>
                 </div>
               </div>
@@ -237,15 +264,18 @@ export function CicilanModal({
               Pilih Jangka Waktu Cicilan
             </h4>
             <div className="space-y-3">
-              {paymentTerms.map((term) => {
-                const termInstallmentAmount = currentPrice
-                  ? Math.ceil(currentPrice / term.installments)
+              {paymentTerms.map((term, termIndex) => {
+                const termPrice =
+                  selectedQuantity === 1 ? term.perTree : term.amount;
+                const termInstallmentCount = getInstallmentCount(term.period);
+                const termInstallmentAmount = termPrice
+                  ? Math.ceil(termPrice / termInstallmentCount)
                   : 0;
                 return (
                   <label
-                    key={term.value}
+                    key={termIndex}
                     className={`flex items-center justify-between p-4 border-2 rounded-2xl cursor-pointer transition-all duration-300 hover:shadow-lg ${
-                      selectedTerm === term.value
+                      selectedTerm === termIndex
                         ? "border-[#324D3E] bg-gradient-to-r from-[#324D3E]/10 to-[#4C3D19]/10 shadow-lg"
                         : "border-[#324D3E]/20 hover:border-[#324D3E]/40 bg-white/80"
                     }`}
@@ -254,19 +284,17 @@ export function CicilanModal({
                       <input
                         type="radio"
                         name="paymentTerm"
-                        value={term.value}
-                        checked={selectedTerm === term.value}
-                        onChange={() =>
-                          setSelectedTerm(term.value as typeof selectedTerm)
-                        }
+                        value={termIndex}
+                        checked={selectedTerm === termIndex}
+                        onChange={() => setSelectedTerm(termIndex)}
                         className="w-5 h-5 text-[#324D3E] mr-4 accent-[#324D3E]"
                       />
                       <div>
                         <div className="font-bold text-[#324D3E] font-[family-name:var(--font-poppins)]">
-                          {term.label}
+                          {term.period}
                         </div>
                         <div className="text-sm text-[#324D3E]/70 font-medium">
-                          {term.installments} kali bayar
+                          {termInstallmentCount} kali bayar
                         </div>
                       </div>
                     </div>

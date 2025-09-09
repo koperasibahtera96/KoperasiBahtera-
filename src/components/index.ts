@@ -23,5 +23,4 @@ export { ValidationInput } from "./forms/ValidationInput";
 // Landing Page Components
 export { ContactSection, Footer } from "./landing/ContactFooter";
 export { HeroCarousel } from "./landing/HeroCarousel";
-export { InvestmentPlans } from "./landing/InvestmentPlans";
 export { PlantDetail } from "./landing/PlantDetail";

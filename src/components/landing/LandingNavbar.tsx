@@ -209,10 +209,10 @@ export default function LandingNavbar({
             >
               {[
                 "Beranda",
-                "Produk",
-                "Tentang Kami",
-                "Review",
                 "Investasi",
+                "Produk",
+                "Review",
+                "Tentang Kami",
                 "FAQ",
               ].map((item) => (
                 <motion.button

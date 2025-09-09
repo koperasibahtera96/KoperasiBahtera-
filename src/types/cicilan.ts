@@ -115,7 +115,7 @@ export interface CicilanGroup {
     totalAmount: number;
     totalInstallments: number;
     installmentAmount: number;
-    paymentTerm: 'monthly' | 'quarterly' | 'semiannual' | 'annual';
+    paymentTerm: 'monthly' | 'quarterly' | 'semiannual' | 'annual' | 'full';
     installments: CicilanInstallmentWithPayment[];
     status: 'active' | 'completed' | 'overdue';
     createdAt: Date | string;
@@ -123,6 +123,7 @@ export interface CicilanGroup {
     contractSignedDate?: Date;
     contractDownloaded?: boolean;
     contractDownloadedDate?: Date;
+    isFullPayment?: boolean; // Flag to identify full payments
 }
 
 export interface InvestorDetail {

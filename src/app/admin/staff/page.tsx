@@ -186,7 +186,9 @@ export default function StaffPage() {
       fullName: staff.fullName,
       phoneNumber: staff.phoneNumber,
       email: staff.email,
-      role: staff.role === "spv_staff" ? "SPV Staff" : "Staff",
+      role: staff.role === "spv_staff" ? "SPV Staff" : 
+            staff.role === "admin" ? "Admin" :
+            staff.role === "finance" ? "Finance" : "Staff",
       password: "",
     });
     setShowEditModal(true);
@@ -322,11 +324,11 @@ export default function StaffPage() {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
           <div className="min-w-0 flex-1">
             <h1 className="text-2xl sm:text-3xl font-bold text-[#324D3E] dark:text-white font-[family-name:var(--font-poppins)] truncate">
-              {activeTab === "staff" ? "Data Staff" : "Permintaan SPV Staff"}
+              {activeTab === "staff" ? "Manajemen Pengguna" : "Permintaan SPV Staff"}
             </h1>
             <p className="text-[#889063] dark:text-gray-300 text-sm sm:text-base">
               {activeTab === "staff"
-                ? "Kelola data staff lapangan"
+                ? "Kelola data staff, admin, dan finance"
                 : "Review permintaan dari SPV Staff"}
             </p>
           </div>
@@ -335,8 +337,8 @@ export default function StaffPage() {
               onClick={() => setShowAddModal(true)}
               className="bg-gradient-to-r from-[#324D3E] to-[#4C3D19] hover:from-[#4C3D19] hover:to-[#324D3E] text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 whitespace-nowrap px-4 sm:px-6 py-2 sm:py-3 text-sm sm:text-base"
             >
-              <span className="sm:hidden">+ Staff</span>
-              <span className="hidden sm:inline">Tambah Staff</span>
+              <span className="sm:hidden">+ User</span>
+              <span className="hidden sm:inline">Tambah Pengguna</span>
             </Button>
           )}
         </div>
@@ -352,7 +354,7 @@ export default function StaffPage() {
                   : "bg-transparent text-[#324D3E] dark:text-gray-300 hover:bg-[#324D3E]/10 dark:hover:bg-gray-700"
               }`}
             >
-              Data Staff
+              Manajemen Pengguna
             </Button>
             <Button
               onClick={() => setActiveTab("requests")}
@@ -515,10 +517,16 @@ export default function StaffPage() {
                                 className={`text-xs ${
                                   staff.role === "spv_staff"
                                     ? "bg-[#4C3D19]/10 text-[#4C3D19] border-[#4C3D19]/20 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-700/50"
+                                    : staff.role === "admin"
+                                    ? "bg-red-100 text-red-800 border-red-300 dark:bg-red-900/30 dark:text-red-300 dark:border-red-700/50"
+                                    : staff.role === "finance"
+                                    ? "bg-blue-100 text-blue-800 border-blue-300 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-700/50"
                                     : "bg-[#324D3E]/10 text-[#324D3E] border-[#324D3E]/20 dark:bg-gray-700 dark:text-white dark:border-gray-600"
                                 }`}
                               >
-                                {staff.role}
+                                {staff.role === "spv_staff" ? "SPV Staff" :
+                                 staff.role === "admin" ? "Admin" :
+                                 staff.role === "finance" ? "Finance" : "Staff"}
                               </Badge>
                             </td>
                             <td className="py-3 px-3 sm:px-4">
@@ -619,7 +627,7 @@ export default function StaffPage() {
           <div className="fixed inset-0 bg-black/20 backdrop-blur-sm flex items-center justify-center z-50 p-4">
             <div className="bg-white/95 dark:bg-gray-800 backdrop-blur-lg rounded-2xl p-6 w-full max-w-md mx-4 shadow-2xl border border-[#324D3E]/10 dark:border-gray-700">
               <h2 className="text-xl font-bold mb-4 text-[#324D3E] dark:text-white font-[family-name:var(--font-poppins)]">
-                Tambah Staff Baru
+                Tambah Pengguna Baru
               </h2>
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
@@ -688,7 +696,7 @@ export default function StaffPage() {
                     onChange={(e) =>
                       setFormData((prev) => ({
                         ...prev,
-                        role: e.target.value as "Staff" | "SPV Staff",
+                        role: e.target.value as "Staff" | "SPV Staff" | "Admin" | "Finance",
                       }))
                     }
                     className="w-full px-3 py-2 border border-[#324D3E]/20 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#324D3E]/20 focus:border-[#324D3E] text-[#324D3E] dark:text-white bg-white dark:bg-gray-700"
@@ -696,6 +704,8 @@ export default function StaffPage() {
                   >
                     <option value="Staff">Staff</option>
                     <option value="SPV Staff">SPV Staff</option>
+                    <option value="Admin">Admin</option>
+                    <option value="Finance">Finance</option>
                   </select>
                 </div>
 
@@ -743,7 +753,7 @@ export default function StaffPage() {
                     disabled={submitting}
                     className="flex-1 bg-gradient-to-r from-[#324D3E] to-[#4C3D19] hover:from-[#4C3D19] hover:to-[#324D3E] text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300"
                   >
-                    {submitting ? "Membuat..." : "Buat Staff"}
+                    {submitting ? "Membuat..." : "Buat Pengguna"}
                   </Button>
                 </div>
               </form>
@@ -756,7 +766,7 @@ export default function StaffPage() {
           <div className="fixed inset-0 bg-black/20 backdrop-blur-sm flex items-center justify-center z-50 p-4">
             <div className="bg-white/95 dark:bg-gray-800 backdrop-blur-lg rounded-2xl p-6 w-full max-w-md mx-4 shadow-2xl border border-[#324D3E]/10 dark:border-gray-700">
               <h2 className="text-xl font-bold mb-4 text-[#324D3E] dark:text-white font-[family-name:var(--font-poppins)]">
-                Edit Staff
+                Edit Pengguna
               </h2>
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
@@ -825,7 +835,7 @@ export default function StaffPage() {
                     onChange={(e) =>
                       setFormData((prev) => ({
                         ...prev,
-                        role: e.target.value as "Staff" | "SPV Staff",
+                        role: e.target.value as "Staff" | "SPV Staff" | "Admin" | "Finance",
                       }))
                     }
                     className="w-full px-3 py-2 border border-[#324D3E]/20 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#324D3E]/20 focus:border-[#324D3E] text-[#324D3E] dark:text-white bg-white dark:bg-gray-700"
@@ -833,6 +843,8 @@ export default function StaffPage() {
                   >
                     <option value="Staff">Staff</option>
                     <option value="SPV Staff">SPV Staff</option>
+                    <option value="Admin">Admin</option>
+                    <option value="Finance">Finance</option>
                   </select>
                 </div>
 
@@ -889,7 +901,7 @@ export default function StaffPage() {
                     disabled={submitting}
                     className="flex-1 bg-gradient-to-r from-[#324D3E] to-[#4C3D19] hover:from-[#4C3D19] hover:to-[#324D3E] text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300"
                   >
-                    {submitting ? "Memperbarui..." : "Update Staff"}
+                    {submitting ? "Memperbarui..." : "Update Pengguna"}
                   </Button>
                 </div>
               </form>

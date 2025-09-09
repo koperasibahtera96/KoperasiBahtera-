@@ -1,5 +1,6 @@
 import { ensureConnection } from "@/lib/utils/database";
 import { PlantInstance, User } from "@/models";
+import { Types } from "mongoose";
 import { type NextRequest, NextResponse } from "next/server";
 
 export async function GET(
@@ -8,7 +9,8 @@ export async function GET(
 ) {
   try {
     await ensureConnection();
-    const plant = await PlantInstance.findOne({ id: (await params).id });
+    const { id } = await params;
+    const plant = await PlantInstance.findOne({ id });
     if (!plant) {
       return NextResponse.json({ error: "Plant not found" }, { status: 404 });
     }
@@ -20,10 +22,12 @@ export async function GET(
       ),
     ] as string[];
 
+    console.log(userIds, "user id unique");
+
     // Fetch user data for all user IDs
-    const users = await User.find({ _id: { $in: userIds } }).select(
-      "_id fullName name"
-    );
+    const users = await User.find({
+      _id: { $in: userIds.map((id) => new Types.ObjectId(id)) },
+    }).select("_id fullName name");
     const userMap = new Map(
       users.map((user) => [
         user._id.toString(),
@@ -41,6 +45,7 @@ export async function GET(
 
     return NextResponse.json(plant);
   } catch (error) {
+    console.log(error, "fetching plant detail");
     console.error("Error fetching plant:", error);
     return NextResponse.json(
       { error: "Failed to fetch plant" },

@@ -4,90 +4,98 @@ import { NextResponse } from "next/server";
 
 export default async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
+
+  // Get JWT token with explicit cookie name (fixes development issues)
   const token = await getToken({
     req,
     secret: process.env.NEXTAUTH_SECRET,
-    secureCookie: process.env.NODE_ENV === "production",
+    cookieName: "__Secure-next-auth.session-token",
   });
 
-  // === PUBLIC: /checker dan /checker/plant/[id] (bahkan semua turunan /checker) ===
-  if (pathname === "/checker" || pathname.startsWith("/checker/")) {
-    // lewati semua cek role dan jangan redirect
+  // If no token, redirect to login for protected routes only
+  if (!token) {
+    console.log(`❌ No token found for ${pathname}, redirecting to login`);
+    return NextResponse.redirect(new URL("/login", req.url));
+  }
+
+  console.log(`🔍 User ${token.email} (${token.role}) accessing ${pathname}`);
+  console.log(
+    `🔍 Token data: canPurchase=${token.canPurchase}, verificationStatus=${token.verificationStatus}`
+  );
+
+  const userRole = token.role as string;
+
+  // === ADMIN ACCESS ===
+  // Admin can access everything
+  if (userRole === "admin") {
+    console.log(`✅ Admin access granted to ${pathname}`);
     return NextResponse.next();
   }
 
-  // === PROTECTED: role-based untuk route lain ===
-  const roleRoutes: Record<string, string[]> = {
-    "/admin": ["admin"],
-    "/finance": ["finance", "admin"],
-  };
-
-  for (const [route, roles] of Object.entries(roleRoutes)) {
-    if (pathname.startsWith(route)) {
-      if (!token) {
-        return NextResponse.redirect(new URL("/login", req.url));
-      }
-      // If user is logged in but doesn't have the right role, sign them out
-      if (!roles.includes(token.role)) {
-        const response = NextResponse.redirect(new URL("/login", req.url));
-        // Clear the NextAuth session cookie to force logout
-        response.cookies.set("next-auth.session-token", "", {
-          expires: new Date(0),
-          path: "/",
-        });
-        response.cookies.set("__Secure-next-auth.session-token", "", {
-          expires: new Date(0),
-          path: "/",
-          secure: true,
-        });
-        return response;
-      }
+  // === FINANCE ACCESS ===
+  if (
+    pathname.startsWith("/finance") ||
+    pathname.startsWith("/semua-investasi") ||
+    pathname.startsWith("/invoice") ||
+    pathname.startsWith("/laporan-pengeluaran") ||
+    pathname.startsWith("/laporan-harian") ||
+    pathname.startsWith("/laporan-pemasukan") ||
+    pathname.startsWith("/manajemen-anggota") ||
+    pathname.startsWith("/anggota")
+  ) {
+    if (userRole === "finance") {
+      console.log(`✅ Finance access granted to ${pathname}`);
+      return NextResponse.next();
+    } else {
+      console.log(`❌ User role '${userRole}' denied access to ${pathname}`);
+      return NextResponse.redirect(new URL("/", req.url));
     }
   }
 
-  // === USER VERIFICATION CHECK ===
-  // Routes that require user verification
-  const verificationRequiredRoutes = ["/investasi", "/cicilan"];
-
-  if (verificationRequiredRoutes.some((route) => pathname.startsWith(route))) {
-    if (!token) {
-      return NextResponse.redirect(new URL("/login", req.url));
-    }
-
-    // If logged in but not a user role, sign them out
-    if (token.role !== "user") {
-      const response = NextResponse.redirect(new URL("/login", req.url));
-      // Clear the NextAuth session cookie to force logout
-      response.cookies.set("next-auth.session-token", "", {
-        expires: new Date(0),
-        path: "/",
-      });
-      response.cookies.set("__Secure-next-auth.session-token", "", {
-        expires: new Date(0),
-        path: "/",
-        secure: true,
-      });
-      return response;
-    }
-
-    // Check if user role is 'user' and not verified
-    if (token.role === "user" && !token.canPurchase) {
-      return NextResponse.redirect(new URL("/verification-pending", req.url));
+  // === CHECKER ACCESS ===
+  if (pathname.startsWith("/checker")) {
+    const allowedRoles = ["staff", "spv_staff", "finance"];
+    if (allowedRoles.includes(userRole)) {
+      console.log(`✅ ${userRole} access granted to ${pathname}`);
+      return NextResponse.next();
+    } else {
+      console.log(`❌ User role '${userRole}' denied access to ${pathname}`);
+      return NextResponse.redirect(new URL("/", req.url));
     }
   }
 
+  // === USER INVESTMENT ACCESS ===
+  if (pathname.startsWith("/investasi") || pathname.startsWith("/cicilan")) {
+    if (userRole === "user") {
+      // Check if user can purchase and is approved
+      if (token.canPurchase && token.verificationStatus === "approved") {
+        console.log(`✅ Verified user access granted to ${pathname}`);
+        return NextResponse.next();
+      } else {
+        console.log(
+          `❌ User not verified: canPurchase=${token.canPurchase}, status=${token.verificationStatus}`
+        );
+        return NextResponse.redirect(new URL("/verification-pending", req.url));
+      }
+    } else {
+      console.log(
+        `❌ Non-user role '${userRole}' denied access to user routes ${pathname}`
+      );
+      return NextResponse.redirect(new URL("/", req.url));
+    }
+  }
+
+  // === DEFAULT: Allow access to other routes ===
+  console.log(`✅ Default access granted to ${pathname}`);
   return NextResponse.next();
 }
 
-// Middleware cukup dipasang untuk rute yang memang mau diproteksi.
-// (jangan tambahkan /checker ke matcher)
 export const config = {
   matcher: [
     "/admin/:path*",
     "/finance/:path*",
+    "/checker/:path*",
     "/investasi/:path*",
     "/cicilan/:path*",
-    "/semua-investasi/:path*",
-    "/tanaman/:path*",
   ],
 };

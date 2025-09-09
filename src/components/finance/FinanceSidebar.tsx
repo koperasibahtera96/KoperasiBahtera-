@@ -117,12 +117,12 @@ export function FinanceSidebar({ children }: FinanceSidebarProps) {
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-emerald-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 flex font-[family-name:var(--font-poppins)] transition-colors duration-300">
       {/* Desktop Sidebar */}
       <motion.div
-        className="hidden lg:flex lg:w-80 lg:fixed lg:inset-y-0 lg:z-50"
+        className="hidden lg:flex lg:w-80 lg:fixed lg:inset-y-0 lg:z-30"
         initial="hidden"
         animate="visible"
         variants={sidebarVariants}
       >
-        <div className="flex grow flex-col bg-white/90 dark:bg-gray-900/90 backdrop-blur-xl border-r border-[#324D3E]/10 dark:border-gray-700 shadow-xl transition-colors duration-300">
+        <div className="flex grow flex-col bg-white/90 dark:bg-gray-900/90 border-r border-[#324D3E]/10 dark:border-gray-700 shadow-xl transition-colors duration-300">
           <div className="flex flex-col h-full p-6">
             {/* Logo */}
             <motion.div
@@ -156,7 +156,7 @@ export function FinanceSidebar({ children }: FinanceSidebarProps) {
                   <motion.div key={item.name} variants={itemVariants}>
                     <Link
                       href={item.href}
-                      className={`group flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium transition-all duration-300 ${
+                      className={`group flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium transition-all duration-300 relative z-10 cursor-pointer ${
                         isActive
                           ? "bg-gradient-to-r from-[#324D3E] to-[#4C3D19] text-white shadow-lg scale-105"
                           : "text-[#324D3E] dark:text-gray-200 hover:bg-[#324D3E]/5 dark:hover:bg-gray-700 hover:scale-105"
@@ -191,7 +191,7 @@ export function FinanceSidebar({ children }: FinanceSidebarProps) {
 
             {/* User info at bottom */}
             <motion.div
-              className="absolute bottom-0 left-0 right-0 p-2 sm:p-4 border-t border-[#324D3E]/10 dark:border-gray-700 transition-colors duration-300"
+              className="mt-auto pt-4 border-t border-[#324D3E]/10 dark:border-gray-700 transition-colors duration-300"
               variants={itemVariants}
             >
               <motion.div className="flex items-center gap-2 sm:gap-3 p-2 sm:p-3 rounded-xl hover:bg-[#324D3E]/5 dark:hover:bg-gray-700 transition-colors mb-1 sm:mb-2">
@@ -250,17 +250,17 @@ export function FinanceSidebar({ children }: FinanceSidebarProps) {
         {sidebarOpen && (
           <>
             <motion.div
-              className="fixed inset-0 z-50 lg:hidden"
+              className="fixed inset-0 z-40 lg:hidden"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
             >
               <div
-                className="fixed inset-0 bg-black/60 backdrop-blur-sm"
+                className="fixed inset-0 bg-black/60"
                 onClick={() => setSidebarOpen(false)}
               />
               <motion.div
-                className="fixed inset-y-0 right-0 z-50 w-full overflow-y-auto bg-white/95 dark:bg-gray-900/95 backdrop-blur-xl px-6 py-6 sm:max-w-sm sm:ring-1 sm:ring-[#324D3E]/10 dark:sm:ring-gray-700 transition-colors duration-300"
+                className="fixed inset-y-0 right-0 z-50 w-full overflow-y-auto bg-white/95 dark:bg-gray-900/95 px-6 py-6 sm:max-w-sm sm:ring-1 sm:ring-[#324D3E]/10 dark:sm:ring-gray-700 transition-colors duration-300"
                 initial={{ x: "100%" }}
                 animate={{ x: 0 }}
                 exit={{ x: "100%" }}
@@ -297,7 +297,7 @@ export function FinanceSidebar({ children }: FinanceSidebarProps) {
                           <Link
                             key={item.name}
                             href={item.href}
-                            className={`group flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium ${
+                            className={`group flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium relative z-10 cursor-pointer ${
                               isActive
                                 ? "bg-gradient-to-r from-[#324D3E] to-[#4C3D19] text-white"
                                 : "text-[#324D3E] dark:text-gray-200 hover:bg-[#324D3E]/5 dark:hover:bg-gray-700"
@@ -351,7 +351,7 @@ export function FinanceSidebar({ children }: FinanceSidebarProps) {
       {/* Main Content */}
       <div className="lg:pl-80 w-full">
         {/* Mobile header */}
-        <div className="sticky top-0 z-40 flex h-16 shrink-0 items-center gap-x-4 border-b border-[#324D3E]/10 dark:border-gray-700 bg-white/90 dark:bg-gray-900/90 backdrop-blur-xl px-4 shadow-sm sm:gap-x-6 sm:px-6 lg:hidden transition-colors duration-300">
+        <div className="sticky top-0 z-20 flex h-16 shrink-0 items-center gap-x-4 border-b border-[#324D3E]/10 dark:border-gray-700 bg-white/90 dark:bg-gray-900/90 px-4 shadow-sm sm:gap-x-6 sm:px-6 lg:hidden transition-colors duration-300">
           <button
             type="button"
             className="rounded-xl p-2 text-[#324D3E] dark:text-gray-200 hover:bg-[#324D3E]/5 dark:hover:bg-gray-700 transition-colors duration-300"

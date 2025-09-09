@@ -330,6 +330,30 @@ export default function AdminDashboard() {
           </motion.div>
         </motion.div>
 
+        {/* Management Tools */}
+        <motion.div
+          className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg rounded-2xl shadow-lg border border-[#324D3E]/10 dark:border-gray-700 p-6 transition-colors duration-300 mb-6"
+          variants={itemVariants}
+        >
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 sm:mb-6 gap-3">
+            <h2 className="text-lg sm:text-xl font-bold text-[#324D3E] dark:text-white font-[family-name:var(--font-poppins)] transition-colors duration-300">Tools Manajemen</h2>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+            <button
+              onClick={() => window.location.href = '/admin/plant-showcase'}
+              className="flex items-center gap-3 p-4 border-2 border-dashed border-[#4C3D19]/20 rounded-xl hover:border-[#4C3D19] hover:bg-[#4C3D19]/5 transition-all group"
+            >
+              <div className="w-10 h-10 bg-[#4C3D19]/10 group-hover:bg-[#4C3D19]/20 rounded-xl flex items-center justify-center transition-colors">
+                <span className="text-[#4C3D19]">🌿</span>
+              </div>
+              <div className="text-left">
+                <p className="font-medium text-[#324D3E]">Edit Harga Tanaman</p>
+                <p className="text-sm text-[#889063]">Kelola harga showcase landing page</p>
+              </div>
+            </button>
+          </div>
+        </motion.div>
+
         {/* Quick Actions */}
         <motion.div
           className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg rounded-2xl shadow-lg border border-[#324D3E]/10 dark:border-gray-700 p-6 transition-colors duration-300"
@@ -384,6 +408,7 @@ export default function AdminDashboard() {
                 <p className="text-sm text-[#889063]">Lihat dan kelola data pohon</p>
               </div>
             </button>
+
 
             <button
               onClick={fetchDashboardData}

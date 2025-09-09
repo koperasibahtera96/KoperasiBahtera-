@@ -4,6 +4,7 @@ import {
   handleMongooseError,
   isMongooseError,
 } from "@/lib/mongooseErrorHandler";
+import { logAdminAction } from "@/lib/utils/admin";
 import User from "@/models/User";
 import bcrypt from "bcryptjs";
 import { getServerSession } from "next-auth/next";
@@ -55,9 +56,26 @@ export async function POST(request: NextRequest) {
     const currentYear = new Date().getFullYear().toString().slice(-2);
 
     // Determine prefix based on role
-    const prefix = role === "SPV Staff" ? "SPV" : "ST";
-
-    const dbRole = role === "SPV Staff" ? "spv_staff" : "staff";
+    let prefix = "ST"; // Default for Staff
+    let dbRole = "staff"; // Default for Staff
+    
+    switch (role) {
+      case "SPV Staff":
+        prefix = "SPV";
+        dbRole = "spv_staff";
+        break;
+      case "Admin":
+        prefix = "ADM";
+        dbRole = "admin";
+        break;
+      case "Finance":
+        prefix = "FIN";
+        dbRole = "finance";
+        break;
+      default:
+        prefix = "ST";
+        dbRole = "staff";
+    }
 
     const lastStaffUser = await User.findOne({
       role: dbRole,
@@ -86,7 +104,9 @@ export async function POST(request: NextRequest) {
       city: "Kota belum diisi",
       province: "Provinsi belum diisi",
       postalCode: "00000",
-      occupation: role === "SPV Staff" ? "SPV Staff" : "Staff Lapangan",
+      occupation: role === "SPV Staff" ? "SPV Staff" : 
+                  role === "Admin" ? "Administrator" :
+                  role === "Finance" ? "Staff Keuangan" : "Staff Lapangan",
       occupationCode: prefix,
       userCode: userCode,
       role: dbRole,
@@ -99,6 +119,29 @@ export async function POST(request: NextRequest) {
     });
 
     await user.save();
+
+    // Log admin action
+    if (session?.user) {
+      await logAdminAction({
+        adminId: session.user.id,
+        adminName: session.user.name || 'Unknown',
+        adminEmail: session.user.email || 'Unknown',
+        action: 'create_staff',
+        description: `Created new staff: ${user.fullName} (${user.userCode}) with role ${user.role}`,
+        targetType: 'staff',
+        targetId: user._id.toString(),
+        targetName: user.fullName,
+        newData: {
+          fullName: user.fullName,
+          email: user.email,
+          phoneNumber: user.phoneNumber,
+          userCode: user.userCode,
+          role: user.role,
+          occupation: user.occupation
+        },
+        request
+      });
+    }
 
     return NextResponse.json(
       {
@@ -170,7 +213,7 @@ export async function GET(request: NextRequest) {
     const searchQuery = search
       ? {
           $and: [
-            { $or: [{ role: "staff" }, { role: "spv_staff" }] },
+            { $or: [{ role: "staff" }, { role: "spv_staff" }, { role: "admin" }, { role: "finance" }] },
             {
               $or: [
                 { fullName: { $regex: search, $options: "i" } },
@@ -181,7 +224,7 @@ export async function GET(request: NextRequest) {
             },
           ],
         }
-      : { $or: [{ role: "staff" }, { role: "spv_staff" }] };
+      : { $or: [{ role: "staff" }, { role: "spv_staff" }, { role: "admin" }, { role: "finance" }] };
 
     // Get total count
     const total = await User.countDocuments(searchQuery);
@@ -239,6 +282,7 @@ export async function GET(request: NextRequest) {
 
 export async function PUT(request: NextRequest) {
   try {
+    const session = await getServerSession(authOptions);
     const body = await request.json();
     const { id, fullName, phoneNumber, email, role, password } = body;
 
@@ -261,6 +305,15 @@ export async function PUT(request: NextRequest) {
         { status: 404 }
       );
     }
+
+    // Store old data for logging
+    const oldData = {
+      fullName: staffUser.fullName,
+      email: staffUser.email,
+      phoneNumber: staffUser.phoneNumber,
+      role: staffUser.role,
+      occupation: staffUser.occupation
+    };
 
     // Check for existing phone number (excluding current user)
     const existingPhoneUser = await User.findOne({
@@ -289,14 +342,39 @@ export async function PUT(request: NextRequest) {
     }
 
     // Update user fields
-    const updateDbRole = role === "SPV Staff" ? "spv_staff" : "staff";
+    let updateDbRole = "staff";
+    let updatePrefix = "ST";
+    let updateOccupation = "Staff Lapangan";
+    
+    switch (role) {
+      case "SPV Staff":
+        updateDbRole = "spv_staff";
+        updatePrefix = "SPV";
+        updateOccupation = "SPV Staff";
+        break;
+      case "Admin":
+        updateDbRole = "admin";
+        updatePrefix = "ADM";
+        updateOccupation = "Administrator";
+        break;
+      case "Finance":
+        updateDbRole = "finance";
+        updatePrefix = "FIN";
+        updateOccupation = "Staff Keuangan";
+        break;
+      default:
+        updateDbRole = "staff";
+        updatePrefix = "ST";
+        updateOccupation = "Staff Lapangan";
+    }
+    
     const updateData: any = {
       fullName: fullName.trim(),
       phoneNumber: phoneNumber.trim(),
       email: email.trim().toLowerCase(),
       role: updateDbRole,
-      occupation: role === "SPV Staff" ? "SPV Staff" : "Staff Lapangan",
-      occupationCode: role === "SPV Staff" ? "SPV" : "ST",
+      occupation: updateOccupation,
+      occupationCode: updatePrefix,
     };
 
     // If password is provided, hash and update it
@@ -307,6 +385,31 @@ export async function PUT(request: NextRequest) {
     const updatedUser = await User.findByIdAndUpdate(id, updateData, {
       new: true,
     });
+
+    // Log admin action
+    if (session?.user && updatedUser) {
+      const newData = {
+        fullName: updatedUser.fullName,
+        email: updatedUser.email,
+        phoneNumber: updatedUser.phoneNumber,
+        role: updatedUser.role,
+        occupation: updatedUser.occupation
+      };
+
+      await logAdminAction({
+        adminId: session.user.id,
+        adminName: session.user.name || 'Unknown',
+        adminEmail: session.user.email || 'Unknown',
+        action: 'update_staff',
+        description: `Updated staff: ${updatedUser.fullName} (${updatedUser.userCode})`,
+        targetType: 'staff',
+        targetId: updatedUser._id.toString(),
+        targetName: updatedUser.fullName,
+        oldData,
+        newData,
+        request
+      });
+    }
 
     return NextResponse.json(
       {

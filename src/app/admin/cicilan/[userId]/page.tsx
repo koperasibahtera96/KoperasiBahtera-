@@ -381,8 +381,13 @@ export default function InvestorDetailPage({
                 {/* Group Header */}
                 <div className="flex flex-col lg:flex-row lg:justify-between lg:items-start gap-4 mb-6">
                   <div className="flex-1">
-                    <h3 className="text-lg sm:text-xl font-bold text-[#324D3E] dark:text-white font-[family-name:var(--font-poppins)]">
+                    <h3 className="text-lg sm:text-xl font-bold text-[#324D3E] dark:text-white font-[family-name:var(--font-poppins)] flex items-center gap-2">
                       {group.productName}
+                      {group.isFullPayment && (
+                        <span className="text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-2 py-1 rounded-full font-medium">
+                          LUNAS
+                        </span>
+                      )}
                     </h3>
                     <p className="text-xs sm:text-sm text-[#889063] dark:text-gray-300 break-all">
                       Order ID: {group.cicilanOrderId}
@@ -393,13 +398,18 @@ export default function InvestorDetailPage({
                       </span>
                       <span>
                         📅{" "}
-                        {group.paymentTerm === "monthly"
+                        {group.isFullPayment
+                          ? "Pembayaran Lunas"
+                          : group.paymentTerm === "monthly"
                           ? "Bulanan"
                           : group.paymentTerm === "quarterly"
                           ? "Triwulan"
                           : "Tahunan"}
                       </span>
-                      <span>🔢 {group.totalInstallments} angsuran</span>
+                      <span>
+                        🔢 {group.totalInstallments}{" "}
+                        {group.isFullPayment ? "pembayaran" : "angsuran"}
+                      </span>
                     </div>
                   </div>
                   <div className="lg:text-right">
@@ -412,23 +422,26 @@ export default function InvestorDetailPage({
                     </span>
                     <div className="text-xs sm:text-sm text-[#889063] dark:text-gray-300 mt-2 font-[family-name:var(--font-poppins)]">
                       Progress:{" "}
-                      {
-                        group.installments.filter(
-                          (i) => i.status === "approved"
-                        ).length
-                      }
-                      /{group.installments.length}
+                      {group.isFullPayment
+                        ? "1/1"
+                        : `${
+                            group.installments.filter(
+                              (i) => i.status === "approved"
+                            ).length
+                          }/${group.installments.length}`}
                     </div>
                     <div className="w-full lg:w-32 bg-[#324D3E]/10 dark:bg-gray-700 rounded-full h-2 sm:h-3 mt-1">
                       <div
                         className="bg-gradient-to-r from-[#4C3D19] to-[#889063] h-2 sm:h-3 rounded-full transition-all duration-500"
                         style={{
                           width: `${
-                            (group.installments.filter(
-                              (i) => i.status === "approved"
-                            ).length /
-                              group.installments.length) *
-                            100
+                            group.isFullPayment
+                              ? 100
+                              : (group.installments.filter(
+                                  (i) => i.status === "approved"
+                                ).length /
+                                  group.installments.length) *
+                                100
                           }%`,
                         }}
                       />
@@ -441,7 +454,9 @@ export default function InvestorDetailPage({
                   {group.installments
                     .sort((a, b) => a.installmentNumber - b.installmentNumber)
                     .map((installment) => {
-                      const overdue = installment.dueDate ? isOverdue(installment.dueDate) : false;
+                      const overdue = installment.dueDate
+                        ? isOverdue(installment.dueDate)
+                        : false;
                       const effectiveStatus =
                         overdue && installment.status === "pending"
                           ? "overdue"
@@ -468,7 +483,9 @@ export default function InvestorDetailPage({
                                 Angsuran #{installment.installmentNumber}
                               </div>
                               <div className="text-xs sm:text-sm text-[#889063] dark:text-gray-300">
-                                {installment.dueDate ? formatDate(installment.dueDate) : "Belum ditentukan"}
+                                {installment.dueDate
+                                  ? formatDate(installment.dueDate)
+                                  : "Belum ditentukan"}
                               </div>
                             </div>
                             <span
@@ -515,8 +532,9 @@ export default function InvestorDetailPage({
                             </div>
                           )}
 
-                          {/* Review Button */}
-                          {installment.adminStatus === "pending" &&
+                          {/* Review Button - Only for Cicilan */}
+                          {!group.isFullPayment &&
+                            installment.adminStatus === "pending" &&
                             installment.proofImageUrl && (
                               <button
                                 onClick={() =>
@@ -528,20 +546,21 @@ export default function InvestorDetailPage({
                               </button>
                             )}
 
-                          {/* WhatsApp Button */}
-                          {(effectiveStatus === "pending" ||
-                            effectiveStatus === "overdue") && (
-                            <button
-                              onClick={() => handleSendWhatsApp(installment)}
-                              disabled={whatsappLoading[installment._id!]}
-                              className="w-full mt-2 flex items-center justify-center gap-2 px-3 sm:px-4 py-2 sm:py-3 bg-green-600 text-white text-xs sm:text-sm rounded-xl hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-semibold font-[family-name:var(--font-poppins)]"
-                            >
-                              <MessageCircle className="w-4 h-4" />
-                              {whatsappLoading[installment._id!]
-                                ? "Mengirim..."
-                                : "Kirim Pengingat"}
-                            </button>
-                          )}
+                          {/* WhatsApp Button - Only for Cicilan */}
+                          {!group.isFullPayment &&
+                            (effectiveStatus === "pending" ||
+                              effectiveStatus === "overdue") && (
+                              <button
+                                onClick={() => handleSendWhatsApp(installment)}
+                                disabled={whatsappLoading[installment._id!]}
+                                className="w-full mt-2 flex items-center justify-center gap-2 px-3 sm:px-4 py-2 sm:py-3 bg-green-600 text-white text-xs sm:text-sm rounded-xl hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-semibold font-[family-name:var(--font-poppins)]"
+                              >
+                                <MessageCircle className="w-4 h-4" />
+                                {whatsappLoading[installment._id!]
+                                  ? "Mengirim..."
+                                  : "Kirim Pengingat"}
+                              </button>
+                            )}
                         </div>
                       );
                     })}
@@ -651,7 +670,9 @@ function ReviewModal({
                   Jatuh Tempo:
                 </span>
                 <div className="font-semibold text-[#324D3E] dark:text-white font-poppins text-sm">
-                  {installment.dueDate ? formatDate(installment.dueDate) : "Belum ditentukan"}
+                  {installment.dueDate
+                    ? formatDate(installment.dueDate)
+                    : "Belum ditentukan"}
                 </div>
               </div>
               <div>
