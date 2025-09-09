@@ -57,10 +57,14 @@ const pulseAnimation = {
   }
 };
 
-export default function CTASection() {
+interface CTASectionProps {
+  className?: string;
+}
+
+export default function CTASection({ className = '' }: CTASectionProps) {
   return (
     <motion.section 
-      className="py-8 sm:py-10 lg:py-12 px-4 sm:px-6 bg-[#E5D7C4]"
+      className={`py-8 sm:py-10 lg:py-12 px-4 sm:px-6 bg-[#E5D7C4] ${className}`}
       initial="hidden"
       whileInView="visible"
       viewport={{ once: true, amount: 0.3 }}
@@ -86,11 +90,12 @@ export default function CTASection() {
               }}
             >
               <Image
-                src="/landing/light.png"
+                src="/landing/light.webp"
                 alt="Light bulb"
                 width={50}
                 height={50}
                 className="object-contain sm:w-[60px] sm:h-[60px]"
+                loading="lazy"
               />
             </motion.div>
 
@@ -101,7 +106,7 @@ export default function CTASection() {
               transition={{ delay: 0.5, duration: 0.6 }}
             >
               <motion.h3 
-                className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold text-[#4C3D19] mb-1 sm:mb-2 font-[family-name:var(--font-poppins)]"
+                className="text-lg sm:text-xl md:text-2xl lg:text-3xl xl:text-4xl font-bold text-[#4C3D19] mb-1 sm:mb-2 md:mb-3 font-[family-name:var(--font-poppins)]"
                 whileHover={{ 
                   scale: 1.02,
                   color: "#364D32",
@@ -111,7 +116,7 @@ export default function CTASection() {
                 Investasi Hijau, Hijaukan Bumi Sejahterakan Hati
               </motion.h3>
               <motion.p 
-                className="text-gray-600 text-sm sm:text-base lg:text-lg"
+                className="text-gray-600 text-sm sm:text-base md:text-lg lg:text-xl"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.7, duration: 0.6 }}
@@ -127,7 +132,7 @@ export default function CTASection() {
             variants={slideInFromRight}
           >
             <motion.button 
-              className="w-full lg:w-auto bg-[#4C3D19] text-white px-8 sm:px-10 lg:px-12 py-4 sm:py-5 lg:py-6 rounded-full text-base sm:text-lg lg:text-xl font-semibold hover:bg-[#344C3D] transition-colors shadow-lg font-[family-name:var(--font-poppins)] lg:min-w-[240px]"
+              className="w-full lg:w-auto bg-[#4C3D19] text-white px-8 sm:px-10 md:px-11 lg:px-12 py-4 sm:py-5 md:py-5.5 lg:py-6 rounded-full text-base sm:text-lg md:text-xl lg:text-2xl font-semibold hover:bg-[#344C3D] transition-colors shadow-lg font-[family-name:var(--font-poppins)] lg:min-w-[280px]"
               onClick={() => {
                 const investasiSection = document.getElementById('investasi');
                 if (investasiSection) {

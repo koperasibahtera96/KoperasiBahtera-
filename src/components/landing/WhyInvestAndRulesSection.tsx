@@ -134,9 +134,12 @@ const iconVariants: any = {
 export default function WhyInvestAndRulesSection() {
   return (
     <motion.section
-      className="py-8 sm:py-12 lg:py-16 px-4 sm:px-6 bg-cover bg-center bg-no-repeat"
+      className="py-8 sm:py-12 lg:py-16 px-4 sm:px-6 bg-cover bg-center bg-no-repeat -mt-1"
       style={{
-        backgroundImage: "url(/landing/kenapa-perlu-investasi-bg.png)",
+        backgroundImage: "url(/landing/kenapa-perlu-investasi-bg.webp)",
+        backgroundSize: "cover",
+        backgroundPosition: "center top",
+        backgroundRepeat: "no-repeat",
       }}
       initial="hidden"
       whileInView="visible"
@@ -151,7 +154,7 @@ export default function WhyInvestAndRulesSection() {
         >
           {/* Section Title */}
           <motion.h2
-            className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-center text-[#4C3D19] mb-6 sm:mb-8 lg:mb-12 font-[family-name:var(--font-poppins)]"
+            className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-bold text-center text-[#4C3D19] mb-6 sm:mb-8 md:mb-10 lg:mb-12 font-[family-name:var(--font-poppins)]"
             variants={titleVariants}
             whileHover={{
               scale: 1.05,
@@ -164,13 +167,13 @@ export default function WhyInvestAndRulesSection() {
 
           {/* Benefits Grid - First Row (3 cards) */}
           <motion.div
-            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8"
+            className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-4 sm:gap-6 md:gap-7 mb-6 sm:mb-8 md:mb-10"
             variants={containerVariants}
           >
             {benefits.slice(0, 3).map((benefit, index) => (
               <motion.div
                 key={index}
-                className="bg-[#FFFCE3] rounded-2xl p-4 sm:p-6 shadow-sm"
+                className="bg-[#FFFCE3] rounded-2xl p-4 sm:p-6 md:p-7 lg:p-8 shadow-sm"
                 variants={cardVariants}
                 whileHover={{
                   scale: 1.05,
@@ -190,16 +193,17 @@ export default function WhyInvestAndRulesSection() {
                       }}
                     >
                       <Image
-                        src={benefit.icon}
+                        src={benefit.icon.replace('.png', '.webp')}
                         alt={benefit.title}
                         width={100}
                         height={100}
                         className="object-contain sm:w-[120px] sm:h-[120px]"
+                        loading="lazy"
                       />
                     </motion.div>
                   </motion.div>
                   <motion.h3
-                    className="text-lg sm:text-xl font-bold text-[#4C3D19] mb-2 sm:mb-3 font-[family-name:var(--font-poppins)]"
+                    className="text-lg sm:text-xl md:text-2xl font-bold text-[#4C3D19] mb-2 sm:mb-3 md:mb-4 font-[family-name:var(--font-poppins)]"
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.3, duration: 0.5 }}
@@ -207,7 +211,7 @@ export default function WhyInvestAndRulesSection() {
                     {benefit.title}
                   </motion.h3>
                   <motion.p
-                    className="text-gray-600 text-xs sm:text-sm leading-relaxed"
+                    className="text-gray-600 text-xs sm:text-sm md:text-base leading-relaxed"
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ delay: 0.5, duration: 0.5 }}
@@ -224,11 +228,11 @@ export default function WhyInvestAndRulesSection() {
             className="flex justify-center"
             variants={containerVariants}
           >
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 max-w-4xl">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 gap-4 sm:gap-6 md:gap-8 max-w-5xl">
               {benefits.slice(3, 5).map((benefit, index) => (
                 <motion.div
                   key={index + 3}
-                  className="bg-[#FFFCE3] rounded-2xl p-4 sm:p-6 shadow-sm"
+                  className="bg-[#FFFCE3] rounded-2xl p-4 sm:p-6 md:p-8 shadow-sm"
                   variants={cardVariants}
                   whileHover={{
                     scale: 1.05,
@@ -251,16 +255,17 @@ export default function WhyInvestAndRulesSection() {
                         }}
                       >
                         <Image
-                          src={benefit.icon}
+                          src={benefit.icon.replace('.png', '.webp')}
                           alt={benefit.title}
                           width={100}
                           height={100}
                           className="object-contain sm:w-[120px] sm:h-[120px]"
+                          loading="lazy"
                         />
                       </motion.div>
                     </motion.div>
                     <motion.h3
-                      className="text-lg sm:text-xl font-bold text-[#4C3D19] mb-2 sm:mb-3 font-[family-name:var(--font-poppins)]"
+                      className="text-lg sm:text-xl md:text-2xl font-bold text-[#4C3D19] mb-2 sm:mb-3 md:mb-4 font-[family-name:var(--font-poppins)]"
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: 0.3, duration: 0.5 }}
@@ -268,7 +273,7 @@ export default function WhyInvestAndRulesSection() {
                       {benefit.title}
                     </motion.h3>
                     <motion.p
-                      className="text-gray-600 text-xs sm:text-sm leading-relaxed"
+                      className="text-gray-600 text-xs sm:text-sm md:text-base leading-relaxed"
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
                       transition={{ delay: 0.5, duration: 0.5 }}
@@ -286,7 +291,7 @@ export default function WhyInvestAndRulesSection() {
         <motion.div variants={containerVariants}>
           {/* Section Title */}
           <motion.h2
-            className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-center text-[#4C3D19] mb-6 sm:mb-8 lg:mb-12 font-[family-name:var(--font-poppins)]"
+            className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-bold text-center text-[#4C3D19] mb-6 sm:mb-8 md:mb-10 lg:mb-12 font-[family-name:var(--font-poppins)]"
             variants={titleVariants}
             whileHover={{
               scale: 1.05,
@@ -299,7 +304,7 @@ export default function WhyInvestAndRulesSection() {
 
           {/* Rules Container */}
           <motion.div
-            className="bg-[#FFFCE3] rounded-2xl p-4 sm:p-6 lg:p-8 shadow-sm"
+            className="bg-[#FFFCE3] rounded-2xl p-4 sm:p-6 md:p-7 lg:p-8 shadow-sm"
             variants={cardVariants}
             whileHover={{
               scale: 1.02,
@@ -308,7 +313,7 @@ export default function WhyInvestAndRulesSection() {
             }}
           >
             <motion.div
-              className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 sm:gap-6 lg:gap-8"
+              className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 sm:gap-6 md:gap-7 lg:gap-8"
               variants={containerVariants}
             >
               {rules.map((rule, index) => (
@@ -323,7 +328,7 @@ export default function WhyInvestAndRulesSection() {
                   }}
                 >
                   <motion.h3
-                    className="text-base sm:text-lg font-bold text-[#4C3D19] mb-2 sm:mb-3 lg:mb-4 font-[family-name:var(--font-poppins)]"
+                    className="text-base sm:text-lg md:text-xl font-bold text-[#4C3D19] mb-2 sm:mb-3 md:mb-3 lg:mb-4 font-[family-name:var(--font-poppins)]"
                     whileHover={{
                       color: "#364D32",
                       transition: { duration: 0.2 },
@@ -332,7 +337,7 @@ export default function WhyInvestAndRulesSection() {
                     {rule.title}
                   </motion.h3>
                   <motion.p
-                    className="text-gray-600 text-xs sm:text-sm leading-relaxed"
+                    className="text-gray-600 text-xs sm:text-sm md:text-base lg:text-sm leading-relaxed"
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ delay: 0.2 * index, duration: 0.5 }}

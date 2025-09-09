@@ -1,9 +1,9 @@
-'use client';
+"use client";
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 interface AlertProps {
-  type: 'success' | 'error' | 'warning' | 'info';
+  type: "success" | "error" | "warning" | "info";
   title: string;
   message: string;
   isOpen: boolean;
@@ -11,14 +11,21 @@ interface AlertProps {
   duration?: number; // Auto close after duration (ms)
 }
 
-export function Alert({ type, title, message, isOpen, onClose, duration = 3000 }: AlertProps) {
-  console.log('🔔 Alert component rendered:', { type, title, message, isOpen });
+export function Alert({
+  type,
+  title,
+  message,
+  isOpen,
+  onClose,
+  duration = 3000,
+}: AlertProps) {
+  console.log("🔔 Alert component rendered:", { type, title, message, isOpen });
 
   useEffect(() => {
-    console.log('🔔 Alert useEffect triggered:', { isOpen, duration });
+    console.log("🔔 Alert useEffect triggered:", { isOpen, duration });
     if (isOpen && duration > 0) {
       const timer = setTimeout(() => {
-        console.log('🔔 Alert auto-closing after timeout');
+        console.log("🔔 Alert auto-closing after timeout");
         onClose();
       }, duration);
 
@@ -30,31 +37,31 @@ export function Alert({ type, title, message, isOpen, onClose, duration = 3000 }
 
   const getIcon = () => {
     switch (type) {
-      case 'success':
-        return '✅';
-      case 'error':
-        return '❌';
-      case 'warning':
-        return '⚠️';
-      case 'info':
-        return 'ℹ️';
+      case "success":
+        return "✅";
+      case "error":
+        return "❌";
+      case "warning":
+        return "⚠️";
+      case "info":
+        return "ℹ️";
       default:
-        return 'ℹ️';
+        return "ℹ️";
     }
   };
 
   const getColorClasses = () => {
     switch (type) {
-      case 'success':
-        return 'border-green-500 bg-green-50 text-green-800';
-      case 'error':
-        return 'border-red-500 bg-red-50 text-red-800';
-      case 'warning':
-        return 'border-yellow-500 bg-yellow-50 text-yellow-800';
-      case 'info':
-        return 'border-blue-500 bg-blue-50 text-blue-800';
+      case "success":
+        return "border-green-500 bg-green-50 text-green-800";
+      case "error":
+        return "border-red-500 bg-red-50 text-red-800";
+      case "warning":
+        return "border-yellow-500 bg-yellow-50 text-yellow-800";
+      case "info":
+        return "border-blue-500 bg-blue-50 text-blue-800";
       default:
-        return 'border-gray-500 bg-gray-50 text-gray-800';
+        return "border-gray-500 bg-gray-50 text-gray-800";
     }
   };
 
@@ -95,67 +102,71 @@ interface ConfirmationModalProps {
   cancelText?: string;
   onConfirm: () => void;
   onCancel: () => void;
-  type?: 'danger' | 'warning' | 'info';
+  type?: "danger" | "warning" | "info";
 }
 
 export function ConfirmationModal({
   isOpen,
   title,
   message,
-  confirmText = 'Ya',
-  cancelText = 'Batal',
+  confirmText = "Ya",
+  cancelText = "Batal",
   onConfirm,
   onCancel,
-  type = 'warning'
+  type = "warning",
 }: ConfirmationModalProps) {
   if (!isOpen) return null;
 
   const getColorClasses = () => {
     switch (type) {
-      case 'danger':
+      case "danger":
         return {
-          border: 'border-red-500',
-          bg: 'bg-red-50',
-          text: 'text-red-800',
-          confirmButton: 'bg-red-500 hover:bg-red-600 text-white'
+          border: "border-red-500",
+          bg: "bg-red-50",
+          text: "text-red-800",
+          confirmButton: "bg-red-500 hover:bg-red-600 text-white",
         };
-      case 'warning':
+      case "warning":
         return {
-          border: 'border-yellow-500',
-          bg: 'bg-yellow-50',
-          text: 'text-yellow-800',
-          confirmButton: 'bg-yellow-500 hover:bg-yellow-600 text-white'
+          border: "border-yellow-500",
+          bg: "bg-yellow-50",
+          text: "text-yellow-800",
+          confirmButton: "bg-yellow-500 hover:bg-yellow-600 text-white",
         };
-      case 'info':
+      case "info":
         return {
-          border: 'border-blue-500',
-          bg: 'bg-blue-50',
-          text: 'text-blue-800',
-          confirmButton: 'bg-blue-500 hover:bg-blue-600 text-white'
+          border: "border-blue-500",
+          bg: "bg-blue-50",
+          text: "text-blue-800",
+          confirmButton: "bg-blue-500 hover:bg-blue-600 text-white",
         };
       default:
         return {
-          border: 'border-yellow-500',
-          bg: 'bg-yellow-50',
-          text: 'text-yellow-800',
-          confirmButton: 'bg-yellow-500 hover:bg-yellow-600 text-white'
+          border: "border-yellow-500",
+          bg: "bg-yellow-50",
+          text: "text-yellow-800",
+          confirmButton: "bg-yellow-500 hover:bg-yellow-600 text-white",
         };
     }
   };
 
   const colors = getColorClasses();
-  const icon = type === 'danger' ? '⚠️' : type === 'warning' ? '⚠️' : 'ℹ️';
+  const icon = type === "danger" ? "⚠️" : type === "warning" ? "⚠️" : "ℹ️";
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-[60]">
       <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full transform animate-in zoom-in duration-200">
         {/* Header */}
-        <div className={`p-6 border-l-4 ${colors.border} ${colors.bg} rounded-t-2xl`}>
+        <div
+          className={`p-6 border-l-4 ${colors.border} ${colors.bg} rounded-t-2xl`}
+        >
           <div className="flex items-center gap-3">
             <div className="text-3xl">{icon}</div>
             <div>
               <h3 className={`text-xl font-bold ${colors.text}`}>{title}</h3>
-              <p className={`text-sm opacity-80 mt-1 ${colors.text}`}>{message}</p>
+              <p className={`text-sm opacity-80 mt-1 ${colors.text}`}>
+                {message}
+              </p>
             </div>
           </div>
         </div>
@@ -184,13 +195,15 @@ export function ConfirmationModal({
 
 // Hook for using alerts
 export function useAlert() {
-  const [alerts, setAlerts] = useState<Array<{
-    type: 'success' | 'error' | 'warning' | 'info';
-    title: string;
-    message: string;
-    id: number;
-  }>>([]);
-  
+  const [alerts, setAlerts] = useState<
+    Array<{
+      type: "success" | "error" | "warning" | "info";
+      title: string;
+      message: string;
+      id: number;
+    }>
+  >([]);
+
   const [confirmation, setConfirmation] = useState<{
     isOpen: boolean;
     title: string;
@@ -199,83 +212,105 @@ export function useAlert() {
     cancelText?: string;
     onConfirm: () => void;
     onCancel: () => void;
-    type?: 'danger' | 'warning' | 'info';
+    type?: "danger" | "warning" | "info";
   }>({
     isOpen: false,
-    title: '',
-    message: '',
+    title: "",
+    message: "",
     onConfirm: () => {},
-    onCancel: () => {}
+    onCancel: () => {},
   });
 
-  const showAlert = useCallback((type: 'success' | 'error' | 'warning' | 'info', title: string, message: string) => {
-    console.log('🚨 showAlert called with:', { type, title, message });
-    console.trace('Call stack:');
+  const showAlert = useCallback(
+    (
+      type: "success" | "error" | "warning" | "info",
+      title: string,
+      message: string
+    ) => {
+      console.log("🚨 showAlert called with:", { type, title, message });
+      console.trace("Call stack:");
 
-    const newId = Date.now();
-    const newAlert = {
-      type,
-      title,
-      message,
-      id: newId
-    };
-
-    setAlerts(prev => [...prev, newAlert]);
-
-    // Auto remove after 3 seconds
-    setTimeout(() => {
-      setAlerts(prev => prev.filter(alert => alert.id !== newId));
-    }, 3000);
-  }, []);
-
-  const hideAlert = (id: number) => {
-    setAlerts(prev => prev.filter(alert => alert.id !== id));
-  };
-
-  const showSuccess = useCallback((title: string, message: string = '') => {
-    showAlert('success', title, message);
-  }, [showAlert]);
-
-  const showError = useCallback((title: string, message: string = '') => {
-    showAlert('error', title, message);
-  }, [showAlert]);
-
-  const showWarning = useCallback((title: string, message: string = '') => {
-    showAlert('warning', title, message);
-  }, [showAlert]);
-
-  const showInfo = useCallback((title: string, message: string = '') => {
-    showAlert('info', title, message);
-  }, [showAlert]);
-
-  const showConfirmation = useCallback((
-    title: string,
-    message: string,
-    options: {
-      confirmText?: string;
-      cancelText?: string;
-      type?: 'danger' | 'warning' | 'info';
-    } = {}
-  ): Promise<boolean> => {
-    return new Promise((resolve) => {
-      setConfirmation({
-        isOpen: true,
+      const newId = Date.now();
+      const newAlert = {
+        type,
         title,
         message,
-        confirmText: options.confirmText,
-        cancelText: options.cancelText,
-        type: options.type,
-        onConfirm: () => {
-          setConfirmation(prev => ({ ...prev, isOpen: false }));
-          resolve(true);
-        },
-        onCancel: () => {
-          setConfirmation(prev => ({ ...prev, isOpen: false }));
-          resolve(false);
-        }
+        id: newId,
+      };
+
+      setAlerts((prev) => [...prev, newAlert]);
+
+      // Auto remove after 3 seconds
+      setTimeout(() => {
+        setAlerts((prev) => prev.filter((alert) => alert.id !== newId));
+      }, 3000);
+    },
+    []
+  );
+
+  const hideAlert = (id: number) => {
+    setAlerts((prev) => prev.filter((alert) => alert.id !== id));
+  };
+
+  const showSuccess = useCallback(
+    (title: string, message: string = "") => {
+      showAlert("success", title, message);
+    },
+    [showAlert]
+  );
+
+  const showError = useCallback(
+    (title: string, message: string = "") => {
+      showAlert("error", title, message);
+    },
+    [showAlert]
+  );
+
+  const showWarning = useCallback(
+    (title: string, message: string = "") => {
+      showAlert("warning", title, message);
+    },
+    [showAlert]
+  );
+
+  const showInfo = useCallback(
+    (title: string, message: string = "") => {
+      showAlert("info", title, message);
+    },
+    [showAlert]
+  );
+
+  const showConfirmation = useCallback(
+    (
+      title: string,
+      message: string,
+      options: {
+        confirmText?: string;
+        cancelText?: string;
+        type?: "danger" | "warning" | "info";
+      } = {}
+    ): Promise<boolean> => {
+      return new Promise((resolve) => {
+        setConfirmation({
+          isOpen: true,
+          title,
+          message,
+          confirmText: options.confirmText,
+          cancelText: options.cancelText,
+          type: options.type,
+          onConfirm: () => {
+            setConfirmation((prev) => ({ ...prev, isOpen: false }));
+            resolve(true);
+          },
+          onCancel: () => {
+            setConfirmation((prev) => ({ ...prev, isOpen: false }));
+            resolve(false);
+          },
+        });
       });
-    });
-  }, []);
+    },
+    []
+  );
 
   return {
     alerts,
@@ -288,7 +323,6 @@ export function useAlert() {
     showConfirmation,
     AlertComponent: useMemo(() => {
       return function AlertContainer() {
-        console.log('🎨 AlertContainer rendering with alerts:', alerts.length);
         return (
           <>
             {alerts.map((alert, index) => {
@@ -317,6 +351,6 @@ export function useAlert() {
           </>
         );
       };
-    }, [alerts, confirmation])
+    }, [alerts, confirmation]),
   };
 }

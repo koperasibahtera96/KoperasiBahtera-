@@ -1,41 +1,46 @@
-'use client';
+"use client";
 
-import Image from 'next/image';
+import Image from "next/image";
 
 const benefits = [
   {
     title: "Keuntungan Finansial",
-    description: "Tanaman produktif yang memberikan hasil bernilai tinggi setelah masa permanen",
-    icon: "/landing/Keuntungan Finansial.png"
+    description:
+      "Tanaman produktif yang memberikan hasil bernilai tinggi setelah masa permanen",
+    icon: "/landing/Keuntungan Finansial.png",
   },
   {
     title: "Aset Jangka Panjang",
-    description: "Nilai Tanaman bertambah seiring usia, cocok untuk tabungan masa depan",
-    icon: "/landing/Asset Jangka Panjang.png"
+    description:
+      "Nilai Tanaman bertambah seiring usia, cocok untuk tabungan masa depan",
+    icon: "/landing/Asset Jangka Panjang.png",
   },
   {
     title: "Kontribusi Lingkungan",
-    description: "Menjaga keseimbangan alam, mengurangi polusi, dan mendukung penghijauan",
-    icon: "/landing/Kontribusi Lingkungan.png"
+    description:
+      "Menjaga keseimbangan alam, mengurangi polusi, dan mendukung penghijauan",
+    icon: "/landing/Kontribusi Lingkungan.png",
   },
   {
     title: "Dampak Sosial",
-    description: "Membantu ekonomi petani dan masyarakat sekitar lokasi investasi",
-    icon: "/landing/Dampak Sosial.png"
+    description:
+      "Membantu ekonomi petani dan masyarakat sekitar lokasi investasi",
+    icon: "/landing/Dampak Sosial.png",
   },
   {
     title: "Warisan Masa Depan",
-    description: "Tanaman yang bisa menjadi aset dan dapat diwariskan untuk generasi berikutnya",
-    icon: "/landing/Warisan Masa Depan.png"
-  }
+    description:
+      "Tanaman yang bisa menjadi aset dan dapat diwariskan untuk generasi berikutnya",
+    icon: "/landing/Warisan Masa Depan.png",
+  },
 ];
 
 export default function WhyInvestSection() {
   return (
-    <section 
+    <section
       className="py-16 px-6 bg-cover bg-center bg-no-repeat"
       style={{
-        backgroundImage: 'url(/landing/kenapa-perlu-investasi-bg.png)',
+        backgroundImage: "url(/landing/kenapa-perlu-investasi-bg.png)",
       }}
     >
       <div className="max-w-7xl mx-auto">
@@ -73,7 +78,10 @@ export default function WhyInvestSection() {
         <div className="flex justify-center">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl">
             {benefits.slice(3, 5).map((benefit, index) => (
-              <div key={index + 3} className="bg-[#FFFCE3] rounded-2xl p-6 shadow-sm">
+              <div
+                key={index + 3}
+                className="bg-[#FFFCE3] rounded-2xl p-6 shadow-sm"
+              >
                 <div className="flex flex-col items-center text-center">
                   <div className="mb-4">
                     <Image

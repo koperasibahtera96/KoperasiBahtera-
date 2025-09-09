@@ -51,7 +51,7 @@ const socialIconVariants = {
 export default function LandingFooter() {
   return (
     <motion.footer 
-      className="bg-[#2D3B30] text-white py-12 sm:py-16 px-4 sm:px-6"
+      className="bg-[#2D3B30] text-white py-12 sm:py-16 md:py-18 px-4 sm:px-6"
       initial="hidden"
       whileInView="visible"
       viewport={{ once: true, amount: 0.2 }}
@@ -59,12 +59,12 @@ export default function LandingFooter() {
     >
       <div className="max-w-7xl mx-auto">
         <motion.div 
-          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 lg:gap-12"
+          className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8 md:gap-10 lg:gap-12"
           variants={containerVariants}
         >
           {/* Company Info */}
           <motion.div 
-            className="lg:col-span-2"
+            className="sm:col-span-2 lg:col-span-2"
             variants={itemVariants as any}
           >
             <motion.div 
@@ -76,7 +76,7 @@ export default function LandingFooter() {
                 transition={{ duration: 0.6 }}
               >
                 <Image
-                  src="/images/koperasi-logo.jpg"
+                  src="/images/koperasi-logo.webp"
                   alt="Koperasi Logo"
                   width={60}
                   height={60}
@@ -85,16 +85,16 @@ export default function LandingFooter() {
               </motion.div>
               <div>
                 <motion.h3 
-                  className="text-xl font-bold font-[family-name:var(--font-poppins)]"
+                  className="text-lg md:text-xl lg:text-2xl font-bold font-[family-name:var(--font-poppins)]"
                   whileHover={{ color: "#E5D7C4" }}
                 >
                   Koperasi Bintang Merah Sejahtera
                 </motion.h3>
-                <p className="text-sm text-gray-300">(BAHTERA)</p>
+                <p className="text-sm md:text-base text-gray-300">(BAHTERA)</p>
               </div>
             </motion.div>
             <motion.p 
-              className="text-gray-300 leading-relaxed mb-6 max-w-md"
+              className="text-sm md:text-base text-gray-300 leading-relaxed mb-6 max-w-md lg:max-w-lg"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.3, duration: 0.6 }}

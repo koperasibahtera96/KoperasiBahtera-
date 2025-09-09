@@ -32,6 +32,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="id" suppressHydrationWarning>
+      <head>
+        {/* Preload critical images for better LCP */}
+        <link rel="preload" href="/landing/hero-bg.webp" as="image" type="image/webp" />
+      </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} ${poppins.variable} antialiased`}
       >

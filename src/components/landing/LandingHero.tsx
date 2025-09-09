@@ -1,14 +1,16 @@
 "use client";
 
 import { motion } from "framer-motion";
+import Image from "next/image";
+import { useEffect, useState } from "react";
 
 const containerVariants = {
   hidden: { opacity: 0 },
   visible: {
     opacity: 1,
     transition: {
-      staggerChildren: 0.3,
-      delayChildren: 0.2,
+      staggerChildren: 0.1,
+      delayChildren: 0,
     },
   },
 };
@@ -16,17 +18,15 @@ const containerVariants = {
 const slideInFromLeft = {
   hidden: {
     opacity: 0,
-    x: -100,
-    y: 50,
+    x: -50,
   },
   visible: {
     opacity: 1,
     x: 0,
-    y: 0,
     transition: {
-      type: "spring" as const,
-      stiffness: 100,
-      damping: 15,
+      type: "tween",
+      duration: 0.3,
+      ease: "easeOut",
     },
   },
 };
@@ -34,15 +34,15 @@ const slideInFromLeft = {
 const fadeInUp = {
   hidden: {
     opacity: 0,
-    y: 60,
+    y: 20,
   },
   visible: {
     opacity: 1,
     y: 0,
     transition: {
-      type: "spring" as const,
-      stiffness: 120,
-      damping: 20,
+      type: "tween",
+      duration: 0.3,
+      ease: "easeOut",
     },
   },
 };
@@ -50,47 +50,54 @@ const fadeInUp = {
 const scaleIn = {
   hidden: {
     opacity: 0,
-    scale: 0.8,
+    scale: 0.95,
   },
   visible: {
     opacity: 1,
     scale: 1,
     transition: {
-      type: "spring" as const,
-      stiffness: 150,
-      damping: 20,
+      type: "tween",
+      duration: 0.2,
+      ease: "easeOut",
     },
   },
 };
 
 export default function LandingHero() {
+  const [imageLoaded, setImageLoaded] = useState(false);
+
   return (
     <motion.section
-      className="relative min-h-screen flex items-center justify-start w-full pt-20"
+      className="relative h-screen flex items-center justify-start w-full pt-20"
       initial="hidden"
       animate="visible"
       variants={containerVariants}
     >
-      {/* Background Image */}
-      <motion.div
-        className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-50"
-        style={{
-          backgroundImage: "url(/landing/hero-bg.png)",
-        }}
-        initial={{ opacity: 0, scale: 1.1 }}
-        animate={{ opacity: 0.5, scale: 1 }}
-        transition={{ duration: 1.5, ease: "easeOut" }}
-      ></motion.div>
+      {/* Background Image - Optimized with Next.js Image */}
+      <div className="absolute inset-0 opacity-50">
+        <Image
+          src="/landing/hero-bg.webp"
+          alt="Hero background - sustainable agriculture investment"
+          fill
+          priority
+          quality={85}
+          sizes="100vw"
+          className="object-cover object-center"
+          onLoad={() => setImageLoaded(true)}
+          placeholder="blur"
+          blurDataURL="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAAIAAoDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAhEAACAQMDBQAAAAAAAAAAAAABAgMABAUGIWGRkqGx0f/EABUBAQEAAAAAAAAAAAAAAAAAAAMF/8QAGhEAAgIDAAAAAAAAAAAAAAAAAAECEgMRkf/aAAwDAQACEQMRAD8AltJagyeH0AthI5xdrLcNM91BF5pX2HaH9bcfaSXWGaRmknyJckliyjqTzSlT54b6bk+h0R//2Q=="
+        />
+      </div>
 
       {/* Content */}
       <motion.div
-        className="relative z-10 ml-4 sm:ml-8 md:ml-16 lg:ml-24 max-w-4xl px-3 md:px-4 lg:px-6 text-left"
+        className="relative z-10 ml-4 sm:ml-8 md:ml-12 lg:ml-16 xl:ml-24 max-w-4xl px-3 md:px-5 lg:px-6 text-left"
         variants={containerVariants}
       >
         <div>
           {/* Subtitle */}
           <motion.p
-            className="text-base sm:text-lg md:text-xl mb-3 sm:mb-4 italic font-medium text-[#4C3D19] block"
+            className="text-base sm:text-lg md:text-xl lg:text-2xl mb-3 sm:mb-4 md:mb-5 italic font-medium text-[#4C3D19] block"
             variants={slideInFromLeft}
           >
             Untuk Masa Depan
@@ -98,7 +105,7 @@ export default function LandingHero() {
 
           {/* Main Title */}
           <motion.h1
-            className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl max-w-[1052px] font-bold leading-tight mb-4 sm:mb-6 font-[family-name:var(--font-poppins)]"
+            className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl max-w-[1052px] font-bold leading-tight mb-4 sm:mb-6 md:mb-7 font-[family-name:var(--font-poppins)]"
             variants={containerVariants}
           >
             <motion.span
@@ -127,7 +134,7 @@ export default function LandingHero() {
 
           {/* Description */}
           <motion.p
-            className="text-sm sm:text-base lg:text-lg xl:text-xl leading-relaxed mb-6 sm:mb-8 max-w-[50rem] text-[#4C3D19]"
+            className="text-sm sm:text-base md:text-lg lg:text-xl xl:text-2xl leading-relaxed mb-6 sm:mb-8 md:mb-10 max-w-[50rem] text-[#4C3D19]"
             variants={fadeInUp}
           >
             Solusi tepat bagi Anda yang ingin meraih keuntungan sekaligus
@@ -138,7 +145,7 @@ export default function LandingHero() {
 
           {/* CTA Button */}
           <motion.button
-            className="bg-gradient-to-r from-[#364D32] to-[#889063] text-white px-6 sm:px-8 py-3 sm:py-4 rounded-full text-base sm:text-lg font-semibold hover:from-[#889063] hover:to-[#364D32] transition-all duration-300 shadow-lg"
+            className="bg-gradient-to-r from-[#364D32] to-[#889063] text-white px-6 sm:px-8 md:px-10 py-3 sm:py-4 md:py-5 rounded-full text-base sm:text-lg md:text-xl font-semibold hover:from-[#889063] hover:to-[#364D32] transition-all duration-300 shadow-lg"
             variants={scaleIn}
             onClick={() => {
               const investasiSection = document.getElementById("investasi");
@@ -147,23 +154,22 @@ export default function LandingHero() {
               }
             }}
             whileHover={{
-              scale: 1.05,
-              boxShadow: "0 10px 25px rgba(54, 77, 50, 0.3)",
-              y: -2,
+              scale: 1.02,
+              transition: { duration: 0.1 },
             }}
-            whileTap={{ scale: 0.95 }}
+            whileTap={{ scale: 0.98 }}
           >
             Mulai Investasi
           </motion.button>
         </div>
       </motion.div>
 
-      {/* Scroll indicator */}
+      {/* Scroll indicator - Simplified */}
       <motion.div
         className="absolute bottom-8 left-1/2 transform -translate-x-1/2 text-gray-700 cursor-pointer"
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 2, duration: 0.8 }}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 1, duration: 0.3 }}
         onClick={() => {
           const investasiSection = document.getElementById("investasi");
           if (investasiSection) {
@@ -174,28 +180,19 @@ export default function LandingHero() {
         <motion.div
           className="flex flex-col items-center"
           animate={{
-            y: [0, -10, 0],
+            y: [0, -5, 0],
             transition: {
-              duration: 2,
+              duration: 1.5,
               repeat: Infinity,
               ease: "easeInOut",
             },
           }}
-          whileHover={{ scale: 1.1 }}
         >
-          <motion.svg
+          <svg
             className="w-6 h-6 mb-2"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
-            animate={{
-              rotate: [0, 5, -5, 0],
-              transition: {
-                duration: 3,
-                repeat: Infinity,
-                ease: "easeInOut",
-              },
-            }}
           >
             <path
               strokeLinecap="round"
@@ -203,7 +200,7 @@ export default function LandingHero() {
               strokeWidth={2}
               d="M19 14l-7 7m0 0l-7-7m7 7V3"
             />
-          </motion.svg>
+          </svg>
           <span className="text-sm text-[#324D3E] font-bold">Selengkapnya</span>
         </motion.div>
       </motion.div>

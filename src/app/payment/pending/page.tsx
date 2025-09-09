@@ -15,16 +15,44 @@ function PaymentPendingContent() {
   const orderId = searchParams.get("order_id");
 
   useEffect(() => {
-    if (orderId) {
-      fetchTransactionStatus(orderId);
+    if (!orderId) return;
 
-      // Poll for status updates every 10 seconds
-      const interval = setInterval(() => {
+    let interval: NodeJS.Timeout | null = null;
+
+    const startPolling = () => {
+      fetchTransactionStatus(orderId);
+      interval = setInterval(() => {
         fetchTransactionStatus(orderId);
       }, 10000);
+    };
 
-      return () => clearInterval(interval);
-    }
+    const stopPolling = () => {
+      if (interval) {
+        clearInterval(interval);
+        interval = null;
+      }
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        stopPolling();
+      } else {
+        startPolling();
+      }
+    };
+
+    // BFCache-friendly polling
+    startPolling();
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    document.addEventListener('freeze', stopPolling);
+    document.addEventListener('resume', startPolling);
+
+    return () => {
+      stopPolling();
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      document.removeEventListener('freeze', stopPolling);
+      document.removeEventListener('resume', startPolling);
+    };
   }, [orderId]);
 
   const fetchTransactionStatus = async (orderId: string) => {

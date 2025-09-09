@@ -2,7 +2,7 @@
 
 import { useAlert } from "@/components/ui/Alert";
 import { formatIDRCurrency } from "@/lib/utils/currency";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, motion, LazyMotion, domAnimation } from "framer-motion";
 import { useSession } from "next-auth/react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
@@ -253,15 +253,16 @@ export default function PlantShowcaseSection() {
   };
 
   return (
-    <motion.section
-      className="bg-[#4A5C57] min-h-screen w-full overflow-hidden relative flex flex-col"
-      style={{
-        backgroundImage: "url(/landing/product-bg.png)",
-        backgroundSize: "cover",
-        backgroundPosition: "center",
-        backgroundRepeat: "no-repeat",
-      }}
-    >
+    <LazyMotion features={domAnimation}>
+      <motion.section
+        className="bg-[#4A5C57] min-h-screen w-full overflow-hidden relative flex flex-col"
+        style={{
+          backgroundImage: "url(/landing/product-bg.webp)",
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+          backgroundRepeat: "no-repeat",
+        }}
+      >
       <AlertComponent />
 
       <motion.div
@@ -270,10 +271,10 @@ export default function PlantShowcaseSection() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
       >
-        <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-white font-[family-name:var(--font-poppins)]">
+        <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-white font-[family-name:var(--font-poppins)]">
           Pilihan Investasi Jangka Panjang
         </h2>
-        <p className="text-sm sm:text-base lg:text-lg text-white/80 mt-2 sm:mt-4 max-w-3xl mx-auto px-4">
+        <p className="text-sm sm:text-base md:text-lg lg:text-xl text-white/80 mt-2 sm:mt-4 md:mt-5 max-w-4xl mx-auto px-4">
           Temukan tanaman yang paling sesuai dengan tujuan investasi Anda, baik
           untuk pemula maupun investor berpengalaman.
         </p>
@@ -371,7 +372,7 @@ export default function PlantShowcaseSection() {
               >
                 <div className="flex flex-col">
                   <motion.div
-                    className={`w-full grid grid-cols-1 md:grid-cols-2 ${
+                    className={`w-full grid grid-cols-1 lg:grid-cols-2 ${
                       session?.user?.verificationStatus === "approved"
                         ? "xl:grid-cols-[500px_1fr_350px]"
                         : "xl:grid-cols-[500px_1fr]"
@@ -392,7 +393,7 @@ export default function PlantShowcaseSection() {
                         whileTap={{ scale: 0.95 }}
                       >
                         <motion.h3
-                          className="text-2xl sm:text-3xl lg:text-4xl xl:text-5xl font-bold font-[family-name:var(--font-poppins)] capitalize"
+                          className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-bold font-[family-name:var(--font-poppins)] capitalize"
                           initial={{ opacity: 0, y: 20 }}
                           animate={{ opacity: 1, y: 0 }}
                           transition={{ delay: 0.5, duration: 0.6 }}
@@ -401,7 +402,7 @@ export default function PlantShowcaseSection() {
                         </motion.h3>
                       </motion.div>
                       <motion.div
-                        className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 lg:gap-4 text-xs sm:text-sm font-medium text-gray-700 pl-2"
+                        className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 md:gap-3 lg:gap-4 text-xs sm:text-sm md:text-base font-medium text-gray-700 pl-2"
                         variants={fadeInUp}
                       >
                         <motion.span
@@ -426,11 +427,11 @@ export default function PlantShowcaseSection() {
                         </motion.span>
                       </motion.div>
                       <motion.div
-                        className="hidden lg:block"
+                        className="hidden md:block"
                         variants={fadeInUp}
                       >
                         <motion.p
-                          className="text-sm lg:text-base leading-relaxed text-gray-700 font-medium"
+                          className="text-sm md:text-base lg:text-lg leading-relaxed text-gray-700 font-medium"
                           initial={{ opacity: 0 }}
                           animate={{ opacity: 1 }}
                           transition={{ delay: 0.8, duration: 0.8 }}
@@ -443,13 +444,13 @@ export default function PlantShowcaseSection() {
                         variants={fadeInUp}
                       >
                         <motion.h4
-                          className="text-base lg:text-lg font-bold text-[#4A5C57] mb-3 font-[family-name:var(--font-poppins)]"
+                          className="text-base md:text-lg lg:text-xl font-bold text-[#4A5C57] mb-3 font-[family-name:var(--font-poppins)]"
                           whileHover={{ scale: 1.05 }}
                         >
                           Produk Olahan dari {plant.name}:
                         </motion.h4>
                         <motion.ul
-                          className="space-y-2 text-xs lg:text-sm"
+                          className="space-y-2 text-xs md:text-sm lg:text-base"
                           variants={containerVariants}
                         >
                           {plant.productOlahan.map(
@@ -478,7 +479,7 @@ export default function PlantShowcaseSection() {
                       </motion.div>
                     </motion.div>
                     <motion.div
-                      className="flex justify-center items-center h-full xl:col-span-1 order-first md:order-none"
+                      className="flex justify-center items-center h-full xl:col-span-1 order-first lg:order-none"
                       variants={scaleIn}
                     >
                       <motion.div
@@ -491,11 +492,14 @@ export default function PlantShowcaseSection() {
                         whileTap={{ scale: 0.95 }}
                       >
                         <Image
-                          src={`/landing/${plant.name}.png`}
+                          src={`/landing/${plant.name}.webp`}
                           alt={`Tanaman ${plant.name}`}
                           width={250}
                           height={350}
                           className="object-contain max-h-[250px] sm:max-h-[300px] lg:max-h-[400px] w-auto drop-shadow-2xl"
+                          loading="lazy"
+                          placeholder="blur"
+                          blurDataURL="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAhEAACAQMDBQAAAAAAAAAAAAABAgMABAUGIWGBkbHB0f/EABUBAQEAAAAAAAAAAAAAAAAAAAMF/8QAGhEAAgIDAAAAAAAAAAAAAAAAAAECEgMRkf/aAAwDAQACEQMRAD8AltJagyeH0AthI5xdrLcNM91BF5pX2HaH9bcfaSXWGaRmknyydw3Vm7nksNvEMEuzgxW1vfG+nW9n1YrWb04m0xYnlVTsrLuA9O48/PbwgIm2eaWcA3DRTJrvkv8Ab7pF0pXyUMjhqBQgp1fT8/1u7j6b+fQpH4k3VFsWJb1m3W/G65qJ7bAKsRAmKjLJoGhgJCf0YdkODBrNNNnPrG0l16LTcKU5PpKl+T2rQ7VJKgAA=="
                         />
                       </motion.div>
                     </motion.div>
@@ -505,7 +509,7 @@ export default function PlantShowcaseSection() {
                         variants={slideInFromRight}
                       >
                         <motion.div
-                          className="bg-gradient-to-r from-[#324D3E] via-[#507863] via-[#669D7E] to-[#748390] rounded-2xl p-3 sm:p-4 text-white shadow-md relative z-10"
+                          className="bg-gradient-to-r from-[#324D3E] via-[#507863] via-[#669D7E] to-[#748390] rounded-2xl p-3 sm:p-4 md:p-5 text-white shadow-md relative z-10"
                           whileHover={{
                             scale: 1.05,
                             y: -5,
@@ -516,7 +520,7 @@ export default function PlantShowcaseSection() {
                           whileTap={{ scale: 0.98 }}
                         >
                           <motion.h4
-                            className="text-base sm:text-lg font-bold mb-2 font-[family-name:var(--font-poppins)]"
+                            className="text-base sm:text-lg md:text-xl font-bold mb-2 font-[family-name:var(--font-poppins)]"
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: 0.6, duration: 0.5 }}
@@ -524,7 +528,7 @@ export default function PlantShowcaseSection() {
                             Simulasi Cicilan Per 10 Pohon
                           </motion.h4>
                           <motion.p
-                            className="text-xs sm:text-sm mb-2"
+                            className="text-xs sm:text-sm md:text-base mb-2"
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
                             transition={{ delay: 0.8, duration: 0.5 }}
@@ -532,7 +536,7 @@ export default function PlantShowcaseSection() {
                             Mulai Dari
                           </motion.p>
                           <motion.div
-                            className="text-xl sm:text-2xl font-bold mb-3 sm:mb-4"
+                            className="text-xl sm:text-2xl md:text-3xl font-bold mb-3 sm:mb-4"
                             initial={{ opacity: 0, scale: 0.5 }}
                             animate={{ opacity: 1, scale: 1 }}
                             transition={{
@@ -547,7 +551,7 @@ export default function PlantShowcaseSection() {
                             </span>
                           </motion.div>
                           <motion.button
-                            className="w-full bg-white text-[#4A5C57] py-2 px-4 rounded-full font-bold text-xs sm:text-sm hover:bg-gray-100 transition-colors disabled:opacity-50"
+                            className="w-full bg-white text-[#4A5C57] py-2 px-4 rounded-full font-bold text-xs sm:text-sm md:text-base hover:bg-gray-100 transition-colors disabled:opacity-50"
                             onClick={() => handleInvestment(plant)}
                             disabled={isLoading === plant.name}
                             whileHover={{
@@ -961,6 +965,7 @@ export default function PlantShowcaseSection() {
           </motion.div>
         )}
       </AnimatePresence>
-    </motion.section>
+      </motion.section>
+    </LazyMotion>
   );
 }

@@ -1,6 +1,6 @@
 'use client';
 
-import { motion } from 'framer-motion';
+import { motion, LazyMotion, domAnimation } from 'framer-motion';
 import Image from 'next/image';
 import { useEffect, useState } from 'react';
 import { useAlert } from '@/components/ui/Alert';
@@ -19,6 +19,25 @@ const ReviewSection = () => {
   const [reviews, setReviews] = useState<Review[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [isClient, setIsClient] = useState(false);
+  const [screenType, setScreenType] = useState<'mobile' | 'tablet' | 'desktop'>('desktop');
+
+  useEffect(() => {
+    setIsClient(true);
+    const checkScreen = () => {
+      const width = window.innerWidth;
+      if (width < 768) {
+        setScreenType('mobile'); // 1 card vertically
+      } else if (width >= 768 && width < 1280) {
+        setScreenType('tablet'); // 2 cards for iPad sizes
+      } else {
+        setScreenType('desktop'); // 3 cards for desktop
+      }
+    };
+    checkScreen();
+    window.addEventListener('resize', checkScreen);
+    return () => window.removeEventListener('resize', checkScreen);
+  }, []);
   const [uploading, setUploading] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
@@ -145,7 +164,7 @@ const ReviewSection = () => {
 
   const renderStars = (rating: number) => {
     return Array.from({ length: 5 }, (_, i) => (
-      <span key={i} className={`text-xl ${i < Math.floor(rating) ? 'text-yellow-400' : 'text-gray-300'}`}>
+      <span key={i} className={`text-base md:text-lg lg:text-xl ${i < Math.floor(rating) ? 'text-yellow-400' : 'text-gray-300'}`}>
         ★
       </span>
     ));
@@ -186,12 +205,17 @@ const ReviewSection = () => {
   };
 
   return (
-    <section className="py-16 sm:py-20 bg-gradient-to-br from-[#F8FAF9] to-[#E8F5E8]">
-      <div className="max-w-screen mx-auto px-4 sm:px-6 lg:px-8">
+    <LazyMotion features={domAnimation}>
+      <section className="py-16 sm:py-20 bg-gradient-to-br from-[#F8FAF9] to-[#E8F5E8]">
+        <div className="max-w-screen mx-auto px-4 sm:px-6 lg:px-8">
         {/* Reviews Grid - Above Header */}
         <div className="mb-12">
           {loading ? (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className={`grid gap-4 sm:gap-8 md:gap-12 ${
+              screenType === 'mobile' ? 'grid-cols-1 max-w-md' : 
+              screenType === 'tablet' ? 'grid-cols-2 max-w-4xl' : 
+              'grid-cols-3 max-w-7xl'
+            } mx-auto`}>
               {[1, 2, 3].map((i) => (
                 <div key={i} className="bg-white rounded-2xl p-6 shadow-lg animate-pulse">
                   <div className="flex items-center gap-4 mb-4">
@@ -213,9 +237,17 @@ const ReviewSection = () => {
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              className="grid grid-cols-1 md:grid-cols-3 gap-6"
+              className={`grid gap-6 md:gap-12 ${
+                screenType === 'mobile' ? 'grid-cols-1 max-w-md' : 
+                screenType === 'tablet' ? 'grid-cols-2 max-w-4xl' : 
+                'grid-cols-3 max-w-7xl'
+              } mx-auto`}
             >
-              {reviews.slice(0, 3).map((review, index) => (
+              {reviews.slice(0, isClient ? (
+                screenType === 'mobile' ? 3 : 
+                screenType === 'tablet' ? 2 : 
+                3
+              ) : 3).map((review, index) => (
                 <motion.div
                   key={review._id}
                   initial={{ opacity: 0, y: 30 }}
@@ -257,11 +289,11 @@ const ReviewSection = () => {
                   {/* Review Card */}
                   <div className="bg-[#324D3E] text-white p-4 rounded-xl">
                     <div className="flex items-center justify-between mb-3">
-                      <div>
-                        <h3 className="font-semibold text-lg">{review.name}</h3>
+                      <div className="flex-1 min-w-0 mr-2">
+                        <h3 className="font-semibold text-base md:text-lg truncate">{review.name}</h3>
                         <p className="text-[#B8D4A8] text-sm">{review.city}</p>
                       </div>
-                      <div className="flex">
+                      <div className="flex flex-shrink-0">
                         {renderStars(review.rating)}
                       </div>
                     </div>
@@ -277,13 +309,21 @@ const ReviewSection = () => {
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              className="grid grid-cols-1 md:grid-cols-3 gap-6"
+              className={`grid gap-6 md:gap-12 ${
+                screenType === 'mobile' ? 'grid-cols-1 max-w-md' : 
+                screenType === 'tablet' ? 'grid-cols-2 max-w-4xl' : 
+                'grid-cols-3 max-w-7xl'
+              } mx-auto`}
             >
               {[
                 { name: "Timothy Krysiek", city: "Jakarta", rating: 4, description: "Awalnya Saya Ragu Untuk Mencoba Investasi Ini. Tapi Setelah Bergabung Beberapa Saat Dan Merasakan Keuntungan Yang Stabil, Saya Terima Rutin Setiap Bulan Sangat Membantu Sebagai Tambahan Pemasukan. Yang Saya Suka, Sistemnya Jelas Dan Transparan. Sehingga Saya Tidak Merasa Khawatir Soal Pengelolaan Investasi ini Memberikan Keuntungan Finansial Yang Stabil." },
                 { name: "Timothy Krysiek", city: "Jakarta", rating: 5, description: "Awalnya Saya Ragu Untuk Mencoba Investasi Ini. Tapi Setelah Bergabung Beberapa Saat Dan Merasakan Keuntungan Yang Stabil, Saya Terima Rutin Setiap Bulan Sangat Membantu Sebagai Tambahan Pemasukan. Yang Saya Suka, Sistemnya Jelas Dan Transparan. Sehingga Saya Tidak Merasa Khawatir Soal Pengelolaan Investasi ini Memberikan Keuntungan Finansial Yang Stabil." },
                 { name: "Timothy Krysiek", city: "Jakarta", rating: 4, description: "Awalnya Saya Ragu Untuk Mencoba Investasi Ini. Tapi Setelah Bergabung Beberapa Saat Dan Merasakan Keuntungan Yang Stabil, Saya Terima Rutin Setiap Bulan Sangat Membantu Sebagai Tambahan Pemasukan. Yang Saya Suka, Sistemnya Jelas Dan Transparan. Sehingga Saya Tidak Merasa Khawatir Soal Pengelolaan Investasi ini Memberikan Keuntungan Finansial Yang Stabil." }
-              ].map((placeholder, index) => (
+              ].slice(0, isClient ? (
+                screenType === 'mobile' ? 3 : 
+                screenType === 'tablet' ? 2 : 
+                3
+              ) : 3).map((placeholder, index) => (
                 <motion.div
                   key={index}
                   initial={{ opacity: 0, y: 30 }}
@@ -337,10 +377,10 @@ const ReviewSection = () => {
           transition={{ duration: 0.6 }}
           className="text-center mb-12"
         >
-          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-[#324D3E] mb-4 font-[family-name:var(--font-poppins)]">
+          <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-[#324D3E] mb-4 md:mb-5 font-[family-name:var(--font-poppins)]">
             Review Investor
           </h2>
-          <p className="text-lg text-[#889063] max-w-3xl mx-auto">
+          <p className="text-base md:text-lg lg:text-xl text-[#889063] max-w-4xl mx-auto">
             Apa kata para investor tentang pengalaman investasi mereka bersama kami
           </p>
         </motion.div>
@@ -356,14 +396,14 @@ const ReviewSection = () => {
           <div className="flex flex-col lg:flex-row gap-8 lg:gap-0 lg:divide-x lg:divide-[#324D3E]/20">
             {/* Rating Summary - Smaller Width */}
             <div className="lg:pr-8 lg:w-80 lg:flex-shrink-0">
-              <h3 className="text-2xl font-bold text-[#324D3E] mb-6 font-[family-name:var(--font-poppins)]">
+              <h3 className="text-xl md:text-2xl lg:text-3xl font-bold text-[#324D3E] mb-4 md:mb-6 font-[family-name:var(--font-poppins)]">
                 Rating Kami
               </h3>
 
               {/* Overall Rating */}
               <div className="text-center mb-6">
-                <div className="text-4xl lg:text-5xl font-bold text-[#324D3E] mb-2">
-                  {ratingData.averageRating}<span className="text-lg lg:text-xl text-gray-500">/5</span>
+                <div className="text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-bold text-[#324D3E] mb-2">
+                  {ratingData.averageRating}<span className="text-base md:text-lg lg:text-xl text-gray-500">/5</span>
                 </div>
                 <div className="flex justify-center mb-2">
                   {renderStars(ratingData.averageRating)}
@@ -391,15 +431,15 @@ const ReviewSection = () => {
 
             {/* Review Form - Expanded */}
             <div className="lg:pl-8 flex-1">
-              <h3 className="text-2xl font-bold text-[#324D3E] mb-6 font-[family-name:var(--font-poppins)]">
+              <h3 className="text-xl md:text-2xl lg:text-3xl font-bold text-[#324D3E] mb-4 md:mb-6 font-[family-name:var(--font-poppins)]">
                 Bagikan Pengalaman Anda
               </h3>
 
               <motion.form onSubmit={handleSubmit}>
                 {/* Form Content Grid */}
-                <div className="grid grid-cols-1 lg:grid-cols-5 gap-4 relative">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 relative">
                   {/* Left Column - Rating, Name and City - Larger Width */}
-                  <div className="lg:col-span-2 space-y-4">
+                  <div className="md:col-span-1 lg:col-span-2 space-y-4">
                     {/* Rating Stars (Display Only) */}
                     <div>
                       <label className="block text-sm font-medium text-[#324D3E] mb-2">
@@ -455,7 +495,7 @@ const ReviewSection = () => {
                   </div>
 
                   {/* Middle Column - Email and Description - Aligned with Rating */}
-                  <div className="lg:col-span-2 space-y-4">
+                  <div className="md:col-span-1 lg:col-span-2 space-y-4">
                     {/* Email */}
                     <div>
                       <label className="block text-sm font-medium text-[#324D3E] mb-2">
@@ -494,7 +534,7 @@ const ReviewSection = () => {
                   </div>
 
                   {/* Right Column - Photo Upload and Submit Button */}
-                  <div className="lg:col-span-1 flex flex-col">
+                  <div className="md:col-span-2 lg:col-span-1 flex flex-col">
                     <div className="flex-1">
                       <label className="block text-sm font-medium text-[#324D3E] mb-2">
                         Upload Foto
@@ -512,11 +552,12 @@ const ReviewSection = () => {
                           <div className="space-y-2">
                             <div className="w-10 h-10 mx-auto bg-[#889063] rounded-xl flex items-center justify-center">
                               <Image
-                                src="/landing/icon-upload-review.png"
+                                src="/landing/icon-upload-review.webp"
                                 alt="Upload"
                                 width={20}
                                 height={20}
                                 className="opacity-80"
+                                loading="lazy"
                               />
                             </div>
                             <div>
@@ -551,9 +592,10 @@ const ReviewSection = () => {
             </div>
           </div>
         </motion.div>
-      </div>
-      <AlertComponent />
-    </section>
+        </div>
+        <AlertComponent />
+      </section>
+    </LazyMotion>
   );
 };
 

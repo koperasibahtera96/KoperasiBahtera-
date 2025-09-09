@@ -69,7 +69,7 @@ export default function AboutSection() {
     <motion.section
       className="bg-cover bg-center bg-no-repeat relative"
       style={{
-        backgroundImage: 'url(/landing/tentang-kami.jpg)',
+        backgroundImage: 'url(/landing/tentang-kami.webp)',
       }}
       initial="hidden"
       whileInView="visible"
@@ -82,14 +82,14 @@ export default function AboutSection() {
       >
         {/* Top 75% height with white transparent background for text */}
         <motion.div 
-          className="h-3/4 bg-white/75 p-4 sm:p-6 md:p-8 lg:p-12 w-full"
+          className="h-3/4 bg-white/75 p-4 sm:p-6 md:p-8 lg:p-10 xl:p-12 w-full"
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 1, ease: "easeOut" }}
         >
           {/* Section Title */}
           <motion.h2 
-            className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-black text-center text-[#2D3B30] mb-6 sm:mb-8 lg:mb-12 font-[family-name:var(--font-poppins)] drop-shadow-sm"
+            className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-black text-center text-[#2D3B30] mb-6 sm:mb-8 md:mb-10 lg:mb-12 font-[family-name:var(--font-poppins)] drop-shadow-sm"
             variants={fadeInUp}
             whileHover={{ 
               scale: 1.05,
@@ -102,11 +102,11 @@ export default function AboutSection() {
 
           {/* Main content */}
           <motion.div 
-            className="mb-6 sm:mb-8 lg:mb-12"
+            className="mb-6 sm:mb-8 md:mb-10 lg:mb-12"
             variants={containerVariants}
           >
             <motion.p 
-              className="text-sm sm:text-base lg:text-lg xl:text-xl leading-relaxed text-gray-900 mb-4 sm:mb-6 font-medium"
+              className="text-sm sm:text-base md:text-lg lg:text-xl xl:text-2xl leading-relaxed text-gray-900 mb-4 sm:mb-6 md:mb-7 font-medium"
               variants={fadeInUp}
             >
               <motion.span 
@@ -123,7 +123,7 @@ export default function AboutSection() {
             </motion.p>
 
             <motion.p 
-              className="text-sm sm:text-base lg:text-lg xl:text-xl leading-relaxed text-gray-900 mb-12 sm:mb-24 lg:mb-36 font-medium"
+              className="text-sm sm:text-base md:text-lg lg:text-xl xl:text-2xl leading-relaxed text-gray-900 mb-12 sm:mb-18 md:mb-24 lg:mb-32 xl:mb-36 font-medium"
               variants={fadeInUp}
             >
               Sebagian upaya pelestarian lingkungan yang selaras dengan peningkatan kesejahteraan masyarakat, kami
@@ -135,7 +135,7 @@ export default function AboutSection() {
 
           {/* Vision and Mission */}
           <motion.div 
-            className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8 lg:gap-12"
+            className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8 md:gap-10 lg:gap-12"
             variants={containerVariants}
           >
             {/* Vision */}

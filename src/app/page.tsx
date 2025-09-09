@@ -50,12 +50,10 @@ function LandingPageContent() {
     <div className="min-h-screen bg-white font-[family-name:var(--font-poppins)]">
       <AlertComponent />
       <LandingHeader />
-      {/* Spacer for fixed navbar */}
-      <div className="h-20"></div>
-      <section id="beranda">
+      <section id="beranda" className="relative">
         <LandingHero />
       </section>
-      <section id="investasi">
+      <section id="investasi" className="relative -mt-px">
         <WhyInvestAndRulesSection />
       </section>
       <CTASection />

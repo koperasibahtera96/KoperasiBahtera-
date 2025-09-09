@@ -6,42 +6,65 @@ export function useVerificationStatus() {
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
-    // Only check for users who are pending verification
-    if (session?.user && (session.user as any).verificationStatus === 'pending') {
-      // Check every 10 seconds for more responsive updates
-      intervalRef.current = setInterval(async () => {
-        try {
-          const response = await fetch('/api/user/refresh-session', {
-            method: 'POST',
-          });
-          
-          if (response.ok) {
-            const data = await response.json();
+    const startInterval = () => {
+      if (session?.user && (session.user as any).verificationStatus === 'pending') {
+        intervalRef.current = setInterval(async () => {
+          try {
+            const response = await fetch('/api/user/refresh-session', {
+              method: 'POST',
+            });
             
-            // If verification status changed, update the session
-            if (data.success && data.user && data.user.verificationStatus !== (session.user as any).verificationStatus) {
-              // Trigger NextAuth session update
-              await update();
+            if (response.ok) {
+              const data = await response.json();
               
-              // Stop checking once approved or rejected
-              if (data.user.verificationStatus !== 'pending' && intervalRef.current) {
-                clearInterval(intervalRef.current);
-                intervalRef.current = null;
+              if (data.success && data.user && data.user.verificationStatus !== (session.user as any).verificationStatus) {
+                await update();
+                
+                if (data.user.verificationStatus !== 'pending' && intervalRef.current) {
+                  clearInterval(intervalRef.current);
+                  intervalRef.current = null;
+                }
               }
             }
+          } catch (error) {
+            console.error('Error checking verification status:', error);
           }
-        } catch (error) {
-          console.error('Error checking verification status:', error);
-        }
-      }, 10000); // Check every 10 seconds for faster updates
-    }
+        }, 10000);
+      }
+    };
 
-    // Cleanup interval on unmount or when session changes
-    return () => {
+    const stopInterval = () => {
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
         intervalRef.current = null;
       }
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        stopInterval();
+      } else {
+        startInterval();
+      }
+    };
+
+    // Handle page freeze/unfreeze events for BFCache
+    const handlePageFreeze = () => stopInterval();
+    const handlePageResume = () => startInterval();
+
+    // Start initial interval
+    startInterval();
+
+    // BFCache-friendly event listeners
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    document.addEventListener('freeze', handlePageFreeze);
+    document.addEventListener('resume', handlePageResume);
+
+    return () => {
+      stopInterval();
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      document.removeEventListener('freeze', handlePageFreeze);
+      document.removeEventListener('resume', handlePageResume);
     };
   }, [session, update]);
 
