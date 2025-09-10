@@ -375,7 +375,7 @@ export default function InvestorDetailPage({
             )
             .map((group) => (
               <div
-                key={group.cicilanOrderId}
+                key={`${group.cicilanOrderId}-${group.createdAt}`}
                 className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg rounded-2xl shadow-lg border border-[#324D3E]/10 dark:border-gray-700 p-4 sm:p-6"
               >
                 {/* Group Header */}
