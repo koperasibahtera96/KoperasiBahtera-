@@ -1,0 +1,72 @@
+[{
+  "_id": {
+    "$oid": "68c143370dd353d85c2d3bbe"
+  },
+  "id": "PLANT-INV-1757496115071-htyg6y19y-tyg6y19y",
+  "plantType": "alpukat",
+  "instanceName": "Alpukat - ben",
+  "baseAnnualROI": 0.12,
+  "operationalCosts": [],
+  "incomeRecords": [],
+  "qrCode": "QR-Paket 10 Pohon Alpukat - 10 Pohon",
+  "owner": "ben",
+  "fotoGambar": null,
+  "memberId": "68b90e8843a2b457523eef65",
+  "contractNumber": "CONTRACT-INV-1757496115071-htyg6y19y",
+  "location": "TBD",
+  "status": "active",
+  "lastUpdate": "10/09/2025",
+  "history": [
+    {
+      "id": "HISTORY-1757496119682-0hm5hdk",
+      "action": "Kontrak Baru",
+      "type": "Kontrak Baru",
+      "date": "10/09/2025",
+      "description": "Tanaman baru dibuat dengan pembayaran full untuk user ben",
+      "addedBy": "68a83537a175f5d751a9d6cf"
+    }
+  ],
+  "createdAt": {
+    "$date": "2025-09-10T09:21:59.683Z"
+  },
+  "updatedAt": {
+    "$date": "2025-09-10T09:21:59.683Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "68c14338515a180ce130914b"
+  },
+  "id": "PLANT-INV-1757496115071-htyg6y19y-1757496120123",
+  "plantType": "alpukat",
+  "instanceName": "Alpukat - ben",
+  "baseAnnualROI": 0.12,
+  "operationalCosts": [],
+  "incomeRecords": [],
+  "qrCode": "QR-Paket 10 Pohon Alpukat - 10 Pohon",
+  "owner": "ben",
+  "fotoGambar": null,
+  "memberId": "68b90e8843a2b457523eef65",
+  "contractNumber": "CONTRACT-INV-1757496115071-htyg6y19y",
+  "location": "TBD",
+  "status": "active",
+  "lastUpdate": "10/09/2025",
+  "history": [
+    {
+      "id": "HISTORY-1757496120124-94qxij6",
+      "action": "Kontrak Baru",
+      "type": "Kontrak Baru",
+      "date": "10/09/2025",
+      "description": "Tanaman baru dibuat dengan pembayaran full untuk user ben",
+      "addedBy": "68a83537a175f5d751a9d6cf"
+    }
+  ],
+  "createdAt": {
+    "$date": "2025-09-10T09:22:00.351Z"
+  },
+  "updatedAt": {
+    "$date": "2025-09-10T09:22:00.351Z"
+  },
+  "__v": 0
+}]

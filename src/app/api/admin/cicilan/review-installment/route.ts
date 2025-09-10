@@ -146,6 +146,7 @@ export async function POST(request: NextRequest) {
               const instanceName = `${
                 plantType.charAt(0).toUpperCase() + plantType.slice(1)
               } - ${user.fullName}`;
+              const adminId = await getFirstAdminId();
 
               const plantInstance = new PlantInstance({
                 id: plantInstanceId,
@@ -180,7 +181,7 @@ export async function POST(request: NextRequest) {
                     }),
 
                     description: `Tanaman baru dibuat dengan cicilan untuk user ${user.fullName}`,
-                    addedBy: await getFirstAdminId(),
+                    addedBy: adminId,
                   },
                 ],
               });

@@ -1,6 +1,5 @@
 import { ensureConnection } from "@/lib/utils/database";
-import { PlantInstance, User } from "@/models";
-import { Types } from "mongoose";
+import { PlantInstance } from "@/models";
 import { type NextRequest, NextResponse } from "next/server";
 
 export async function GET(
@@ -15,34 +14,7 @@ export async function GET(
       return NextResponse.json({ error: "Plant not found" }, { status: 404 });
     }
 
-    // Get all unique user IDs from history entries
-    const userIds = [
-      ...new Set(
-        plant.history?.map((item: any) => item.addedBy).filter((id: any) => id)
-      ),
-    ] as string[];
-
-    console.log(userIds, "user id unique");
-
-    // Fetch user data for all user IDs
-    const users = await User.find({
-      _id: { $in: userIds.map((id) => new Types.ObjectId(id)) },
-    }).select("_id fullName name");
-    const userMap = new Map(
-      users.map((user) => [
-        user._id.toString(),
-        user.fullName || user.name || "Unknown User",
-      ])
-    );
-
-    // Replace addedBy UUIDs with user names in history
-    if (plant.history) {
-      plant.history = plant.history.map((item: any) => ({
-        ...item,
-        addedBy: userMap.get(item.addedBy) || item.addedBy || "Unknown User",
-      }));
-    }
-
+    // Since addedBy now stores names directly, just return the plant data
     return NextResponse.json(plant);
   } catch (error) {
     console.log(error, "fetching plant detail");

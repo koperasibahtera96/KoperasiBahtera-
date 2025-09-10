@@ -398,14 +398,18 @@ export default function RegisterPage() {
   };
 
   return (
-    <div
-      className="min-h-screen bg-cover bg-center bg-no-repeat font-[family-name:var(--font-poppins)]"
-      style={{
-        backgroundImage: "url(/landing/hero-bg.png)",
-      }}
-    >
+    <div className="min-h-screen relative font-[family-name:var(--font-poppins)]">
+      {/* Blurred background image */}
+      <div 
+        className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+        style={{
+          backgroundImage: "url(/landing/hero-bg.png)",
+          filter: "blur(8px)",
+          transform: "scale(1.1)" // Prevent blur edge artifacts
+        }}
+      ></div>
       {/* Background overlay */}
-      <div className="absolute inset-0 bg-black/20"></div>
+      <div className="absolute inset-0 bg-black/30"></div>
 
       <LandingHeader />
       <div className="container max-w-6xl mx-auto px-4 py-12 relative z-10">

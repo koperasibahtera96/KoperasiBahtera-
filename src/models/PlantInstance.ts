@@ -63,7 +63,7 @@ const PlantInstanceSchema = new Schema(
     owner: { type: String },
     fotoGambar: { type: String },
     memberId: { type: String },
-    contractNumber: { type: String },
+    contractNumber: { type: String, unique: true, sparse: true },
     location: { type: String },
     status: { type: String },
     lastUpdate: { type: String },

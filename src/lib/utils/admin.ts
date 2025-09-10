@@ -14,6 +14,17 @@ export async function getFirstAdminId(): Promise<string> {
   }
 }
 
+export async function getFirstAdminName(): Promise<string> {
+  try {
+    await dbConnect();
+    const admin = await User.findOne({ role: "admin" }).select("fullName name");
+    return admin?.fullName || admin?.name || "Admin";
+  } catch (error) {
+    console.error("Failed to find admin user:", error);
+    return "Admin";
+  }
+}
+
 export interface LogAdminActionParams {
   adminId: string;
   adminName: string;

@@ -18,12 +18,12 @@ import {
 } from "@/components/ui-staff/select";
 import { Textarea } from "@/components/ui-staff/textarea";
 import { useAlert } from "@/components/ui/Alert";
+import type { PlantRequestFormData } from "@/types/admin";
 import type {
   PlantHistory,
   PlantInstance,
   StatusOption,
 } from "@/types/checker";
-import type { PlantRequestFormData } from "@/types/admin";
 import jsPDF from "jspdf";
 import {
   ArrowLeft,
@@ -88,11 +88,11 @@ export default function PlantDetail({
   const [editNotes, setEditNotes] = useState("");
   const [showRequestModal, setShowRequestModal] = useState(false);
   const [requestFormData, setRequestFormData] = useState<PlantRequestFormData>({
-    requestType: 'delete',
-    deleteReason: '',
+    requestType: "delete",
+    deleteReason: "",
     historyId: undefined,
-    originalDescription: '',
-    newDescription: ''
+    originalDescription: "",
+    newDescription: "",
   });
   const [submittingRequest, setSubmittingRequest] = useState(false);
   const { showError, showSuccess, showConfirmation, AlertComponent } =
@@ -168,8 +168,11 @@ export default function PlantDetail({
         }
       }
 
-      const finalStatus = reportStatus === "lainnya" ? customStatus : 
-        (statusOptions.find((s) => s.value === reportStatus)?.label || reportStatus);
+      const finalStatus =
+        reportStatus === "lainnya"
+          ? customStatus
+          : statusOptions.find((s) => s.value === reportStatus)?.label ||
+            reportStatus;
 
       const newHistoryEntry: any = {
         id: Date.now(),
@@ -183,7 +186,7 @@ export default function PlantDetail({
         description: notes,
         hasImage: !!selectedFile,
         imageUrl: imageUrl || undefined,
-        addedBy: session?.user?.name || "system",
+        addedBy: session?.user?.name || "Unknown User",
         addedAt: new Date().toLocaleDateString("id-ID", {
           day: "2-digit",
           month: "2-digit",
@@ -311,11 +314,11 @@ export default function PlantDetail({
     } else if (session?.user.role === "spv_staff") {
       // SPV staff needs to request approval
       setRequestFormData({
-        requestType: 'delete_history',
-        deleteReason: '',
+        requestType: "delete_history",
+        deleteReason: "",
         historyId,
-        originalDescription: '',
-        newDescription: ''
+        originalDescription: "",
+        newDescription: "",
       });
       setShowRequestModal(true);
     }
@@ -351,16 +354,19 @@ export default function PlantDetail({
         console.error("Error deleting plant:", error);
         const errorMessage =
           error instanceof Error ? error.message : "Unknown error occurred";
-        showError("Gagal menghapus", `Gagal menghapus tanaman: ${errorMessage}`);
+        showError(
+          "Gagal menghapus",
+          `Gagal menghapus tanaman: ${errorMessage}`
+        );
       }
     } else if (session?.user.role === "spv_staff") {
       // SPV staff needs to request approval
       setRequestFormData({
-        requestType: 'delete',
-        deleteReason: '',
+        requestType: "delete",
+        deleteReason: "",
         historyId: undefined,
-        originalDescription: '',
-        newDescription: ''
+        originalDescription: "",
+        newDescription: "",
       });
       setShowRequestModal(true);
     }
@@ -385,12 +391,18 @@ export default function PlantDetail({
       return;
     }
 
-    if (requestFormData.requestType === 'delete' && !requestFormData.deleteReason?.trim()) {
+    if (
+      requestFormData.requestType === "delete" &&
+      !requestFormData.deleteReason?.trim()
+    ) {
       showError("Error", "Alasan penghapusan harus diisi");
       return;
     }
 
-    if (requestFormData.requestType === 'update_history' && !requestFormData.newDescription?.trim()) {
+    if (
+      requestFormData.requestType === "update_history" &&
+      !requestFormData.newDescription?.trim()
+    ) {
       showError("Error", "Deskripsi baru harus diisi");
       return;
     }
@@ -398,10 +410,10 @@ export default function PlantDetail({
     setSubmittingRequest(true);
 
     try {
-      const response = await fetch('/api/admin/plant-requests', {
-        method: 'POST',
+      const response = await fetch("/api/admin/plant-requests", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           plantId: id,
@@ -410,14 +422,17 @@ export default function PlantDetail({
       });
 
       if (response.ok) {
-        showSuccess("Berhasil!", "Permintaan berhasil diajukan dan akan direview oleh admin");
+        showSuccess(
+          "Berhasil!",
+          "Permintaan berhasil diajukan dan akan direview oleh admin"
+        );
         setShowRequestModal(false);
         setRequestFormData({
-          requestType: 'delete',
-          deleteReason: '',
+          requestType: "delete",
+          deleteReason: "",
           historyId: undefined,
-          originalDescription: '',
-          newDescription: ''
+          originalDescription: "",
+          newDescription: "",
         });
       } else {
         const errorData = await response.json();
@@ -427,7 +442,10 @@ export default function PlantDetail({
       console.error("Error submitting request:", error);
       const errorMessage =
         error instanceof Error ? error.message : "Unknown error occurred";
-      showError("Gagal mengajukan", `Gagal mengajukan permintaan: ${errorMessage}`);
+      showError(
+        "Gagal mengajukan",
+        `Gagal mengajukan permintaan: ${errorMessage}`
+      );
     } finally {
       setSubmittingRequest(false);
     }
@@ -435,11 +453,11 @@ export default function PlantDetail({
 
   const handleRequestHistoryUpdate = (historyItem: PlantHistory) => {
     setRequestFormData({
-      requestType: 'update_history',
-      deleteReason: '',
+      requestType: "update_history",
+      deleteReason: "",
       historyId: historyItem.id,
       originalDescription: historyItem.description,
-      newDescription: historyItem.description
+      newDescription: historyItem.description,
     });
     setShowRequestModal(true);
   };
@@ -847,8 +865,8 @@ export default function PlantDetail({
                   <label className="block text-sm font-medium text-[#324D3E] mb-3">
                     Status Laporan
                   </label>
-                  <Select 
-                    value={reportStatus} 
+                  <Select
+                    value={reportStatus}
                     onValueChange={(value) => {
                       setReportStatus(value);
                       if (value !== "lainnya") {
@@ -927,14 +945,17 @@ export default function PlantDetail({
                     <Download className="w-4 h-4 mr-2" />
                     Download PDF
                   </Button>
-                  {(session?.user.role === "admin" || session?.user.role === "spv_staff") && (
+                  {(session?.user.role === "admin" ||
+                    session?.user.role === "spv_staff") && (
                     <Button
                       onClick={() => handleDeletePlant()}
                       className="bg-gradient-to-r from-red-500 to-red-600 hover:shadow-lg text-white rounded-xl"
                       size="sm"
                     >
                       <Trash2 className="w-4 h-4 mr-2" />
-                      {session?.user.role === "admin" ? "Delete Plant" : "Request Delete"}
+                      {session?.user.role === "admin"
+                        ? "Delete Plant"
+                        : "Request Delete"}
                     </Button>
                   )}
                 </div>
@@ -998,7 +1019,8 @@ export default function PlantDetail({
                               <Eye className="w-3 h-3 mr-1" />
                               Detail
                             </Button>
-                            {(session?.user.role === "admin" || session?.user.role === "spv_staff") && (
+                            {(session?.user.role === "admin" ||
+                              session?.user.role === "spv_staff") && (
                               <Button
                                 size="sm"
                                 variant="outline"
@@ -1015,17 +1037,24 @@ export default function PlantDetail({
                                 className="bg-yellow-500 hover:bg-yellow-600 text-white border-yellow-500 rounded-xl"
                               >
                                 <Edit className="w-3 h-3 mr-1" />
-                                {session?.user.role === "admin" ? "Update" : "Request Update"}
+                                {session?.user.role === "admin"
+                                  ? "Update"
+                                  : "Request Update"}
                               </Button>
                             )}
                           </div>
-                          {(session?.user.role === "admin" || session?.user.role === "spv_staff") && (
+                          {(session?.user.role === "admin" ||
+                            session?.user.role === "spv_staff") && (
                             <Button
                               size="sm"
                               variant="outline"
                               onClick={() => handleDeleteHistoryItem(item.id)}
                               className="bg-red-500 hover:bg-red-600 text-white border-red-500 p-2 min-w-0 rounded-xl"
-                              title={session?.user.role === "admin" ? "Delete" : "Request Delete"}
+                              title={
+                                session?.user.role === "admin"
+                                  ? "Delete"
+                                  : "Request Delete"
+                              }
                             >
                               <Trash2 className="w-3 h-3" />
                             </Button>
@@ -1190,15 +1219,26 @@ export default function PlantDetail({
                     </Button>
                   </div>
 
-                  <form onSubmit={(e) => { e.preventDefault(); handleRequestAction(); }} className="space-y-4">
-                    {requestFormData.requestType === 'delete' && (
+                  <form
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      handleRequestAction();
+                    }}
+                    className="space-y-4"
+                  >
+                    {requestFormData.requestType === "delete" && (
                       <div>
                         <label className="block text-sm font-medium text-[#324D3E] mb-2">
                           Alasan Penghapusan Tanaman
                         </label>
                         <Textarea
-                          value={requestFormData.deleteReason || ''}
-                          onChange={(e) => setRequestFormData(prev => ({ ...prev, deleteReason: e.target.value }))}
+                          value={requestFormData.deleteReason || ""}
+                          onChange={(e) =>
+                            setRequestFormData((prev) => ({
+                              ...prev,
+                              deleteReason: e.target.value,
+                            }))
+                          }
                           placeholder="Jelaskan alasan mengapa tanaman perlu dihapus..."
                           className="bg-white border-[#324D3E]/20 min-h-[100px] text-[#324D3E] placeholder:text-[#889063] rounded-xl focus:ring-2 focus:ring-[#324D3E]/20"
                           required
@@ -1206,14 +1246,14 @@ export default function PlantDetail({
                       </div>
                     )}
 
-                    {requestFormData.requestType === 'update_history' && (
+                    {requestFormData.requestType === "update_history" && (
                       <>
                         <div>
                           <label className="block text-sm font-medium text-[#324D3E] mb-2">
                             Catatan Asli
                           </label>
                           <Textarea
-                            value={requestFormData.originalDescription || ''}
+                            value={requestFormData.originalDescription || ""}
                             readOnly
                             className="bg-gray-50 border-[#324D3E]/20 min-h-[80px] text-[#324D3E] rounded-xl"
                           />
@@ -1223,8 +1263,13 @@ export default function PlantDetail({
                             Catatan Baru
                           </label>
                           <Textarea
-                            value={requestFormData.newDescription || ''}
-                            onChange={(e) => setRequestFormData(prev => ({ ...prev, newDescription: e.target.value }))}
+                            value={requestFormData.newDescription || ""}
+                            onChange={(e) =>
+                              setRequestFormData((prev) => ({
+                                ...prev,
+                                newDescription: e.target.value,
+                              }))
+                            }
                             placeholder="Masukkan catatan yang baru..."
                             className="bg-white border-[#324D3E]/20 min-h-[100px] text-[#324D3E] placeholder:text-[#889063] rounded-xl focus:ring-2 focus:ring-[#324D3E]/20"
                             required
@@ -1233,11 +1278,12 @@ export default function PlantDetail({
                       </>
                     )}
 
-                    {requestFormData.requestType === 'delete_history' && (
+                    {requestFormData.requestType === "delete_history" && (
                       <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4">
                         <p className="text-sm text-yellow-800">
-                          Anda akan mengajukan permintaan untuk menghapus riwayat tanaman ini. 
-                          Admin akan meninjau permintaan Anda sebelum menghapus riwayat.
+                          Anda akan mengajukan permintaan untuk menghapus
+                          riwayat tanaman ini. Admin akan meninjau permintaan
+                          Anda sebelum menghapus riwayat.
                         </p>
                       </div>
                     )}
@@ -1257,7 +1303,9 @@ export default function PlantDetail({
                         disabled={submittingRequest}
                         className="flex-1 bg-gradient-to-r from-[#324D3E] to-[#4C3D19] hover:from-[#4C3D19] hover:to-[#324D3E] text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300"
                       >
-                        {submittingRequest ? 'Mengajukan...' : 'Ajukan Permintaan'}
+                        {submittingRequest
+                          ? "Mengajukan..."
+                          : "Ajukan Permintaan"}
                       </Button>
                     </div>
                   </form>

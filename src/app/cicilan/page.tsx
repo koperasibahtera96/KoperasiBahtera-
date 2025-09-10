@@ -308,11 +308,19 @@ export default function CicilanPage() {
     <>
       <AlertComponent />
       <LandingHeader />
-      <div
-        className="min-h-screen bg-cover bg-center bg-no-repeat py-16"
-        style={{ backgroundImage: "url(/landing/hero-bg.png)" }}
-      >
-        <div className="max-w-7xl mx-auto px-4 mt-12">
+      <div className="min-h-screen relative py-16">
+        {/* Blurred background image */}
+        <div 
+          className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+          style={{
+            backgroundImage: "url(/landing/hero-bg.png)",
+            filter: "blur(8px)",
+            transform: "scale(1.1)" // Prevent blur edge artifacts
+          }}
+        ></div>
+        {/* Background overlay */}
+        <div className="absolute inset-0 bg-black/30"></div>
+        <div className="max-w-7xl mx-auto px-4 mt-12 relative z-10">
           {/* Dashboard Overview */}
           {groupedInstallments.length > 0 && (
             <div className="mb-8">
