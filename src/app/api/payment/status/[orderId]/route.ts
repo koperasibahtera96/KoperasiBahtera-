@@ -1,4 +1,6 @@
 import { midtransService } from '@/lib/midtrans';
+import dbConnect from '@/lib/mongodb';
+import Payment from '@/models/Payment';
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(
@@ -15,13 +17,36 @@ export async function GET(
       );
     }
 
-      const status = await midtransService.getTransactionStatus(orderId);
+    // Get both Midtrans status and database payment record
+    const [midtransStatus, payment] = await Promise.all([
+      midtransService.getTransactionStatus(orderId),
+      (async () => {
+        try {
+          await dbConnect();
+          return await Payment.findOne({ orderId }).lean();
+        } catch (dbError) {
+          console.warn('Failed to get payment from database:', dbError);
+          return null;
+        }
+      })()
+    ]);
 
-      return NextResponse.json({
-        success: true,
-        data: status,
-      });
+    // Combine both sources of data
+    const responseData = {
+      ...midtransStatus,
+      // Add database-specific fields if payment record exists
+      ...(payment && {
+        contractRedirectUrl: payment.contractRedirectUrl,
+        paymentType: payment.paymentType,
+        isProcessed: payment.isProcessed,
+        processingError: payment.processingError
+      })
+    };
 
+    return NextResponse.json({
+      success: true,
+      data: responseData,
+    });
 
   } catch (error) {
     console.error('Payment status error:', error);

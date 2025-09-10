@@ -529,7 +529,7 @@ export default function InvestasiPage() {
             >
               {data.investments.map((investment, index) => (
                 <motion.div
-                  key={investment.investmentId}
+                  key={`${investment.investmentId}-${index}`}
                   variants={cardVariants}
                   whileHover={{
                     scale: 1.02,

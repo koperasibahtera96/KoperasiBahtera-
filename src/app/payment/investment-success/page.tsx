@@ -28,16 +28,25 @@ function InvestmentSuccessContent() {
           transactionStatus: status,
         });
 
-                // Redirect to landing page with parameters for alert
+        // Check if this is an investment payment with contract redirect URL
+        if (data.data.contractRedirectUrl) {
+          console.log('🔄 Redirecting to contract page:', data.data.contractRedirectUrl);
+          router.push(data.data.contractRedirectUrl);
+          return;
+        }
+
+        // Otherwise redirect to landing page with parameters for alert
         router.push(`/?orderId=${orderId}&paymentType=investment`);
       } else {
-        // Fallback if API fails - redirect to landing page
-        router.push(`/?orderId=${orderId}&paymentType=investment`);
+        // Fallback if API fails - try contract page for investment payments
+        console.log('🔄 API failed, trying contract page as fallback for investment payment');
+        router.push(`/contract/${orderId}`);
       }
     } catch (error) {
       console.error('Error fetching payment status:', error);
-      // Fallback on error - redirect to landing page
-      router.push(`/?orderId=${orderId}&paymentType=investment`);
+      // Fallback on error - try contract page for investment payments
+      console.log('🔄 Error occurred, trying contract page as fallback for investment payment');
+      router.push(`/contract/${orderId}`);
     } finally {
       setLoading(false);
     }

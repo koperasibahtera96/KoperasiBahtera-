@@ -492,14 +492,12 @@ export default function PlantShowcaseSection() {
                         whileTap={{ scale: 0.95 }}
                       >
                         <Image
-                          src={`/landing/${plant.name}.webp`}
+                          src={`/landing/${plant.name.toLowerCase()}.png`}
                           alt={`Tanaman ${plant.name}`}
                           width={250}
                           height={350}
                           className="object-contain max-h-[250px] sm:max-h-[300px] lg:max-h-[400px] w-auto drop-shadow-2xl"
                           loading="lazy"
-                          placeholder="blur"
-                          blurDataURL="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAhEAACAQMDBQAAAAAAAAAAAAABAgMABAUGIWGBkbHB0f/EABUBAQEAAAAAAAAAAAAAAAAAAAMF/8QAGhEAAgIDAAAAAAAAAAAAAAAAAAECEgMRkf/aAAwDAQACEQMRAD8AltJagyeH0AthI5xdrLcNM91BF5pX2HaH9bcfaSXWGaRmknyydw3Vm7nksNvEMEuzgxW1vfG+nW9n1YrWb04m0xYnlVTsrLuA9O48/PbwgIm2eaWcA3DRTJrvkv8Ab7pF0pXyUMjhqBQgp1fT8/1u7j6b+fQpH4k3VFsWJb1m3W/G65qJ7bAKsRAmKjLJoGhgJCf0YdkODBrNNNnPrG0l16LTcKU5PpKl+T2rQ7VJKgAA=="
                         />
                       </motion.div>
                     </motion.div>

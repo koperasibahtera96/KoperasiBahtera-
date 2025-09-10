@@ -65,6 +65,22 @@ export function CicilanModal({
         )
       : 0;
 
+  // Convert Indonesian payment terms to English for API
+  const convertPaymentTerm = (period: string): string => {
+    switch (period) {
+      case "Per Bulan":
+        return "monthly";
+      case "Per 3 Bulan":
+        return "quarterly";
+      case "Per 6 Bulan":
+        return "semiannual";
+      case "Per Tahun":
+        return "annual";
+      default:
+        return "monthly"; // fallback
+    }
+  };
+
   const handleCreateCicilan = async () => {
     if (!session?.user?.email || !plan) return;
 
@@ -79,7 +95,7 @@ export function CicilanModal({
           productId: plan.name.toLowerCase().replace(/\s+/g, "-"),
           productName: `${plan.name} (${selectedQuantity} Pohon)`,
           totalAmount: currentPrice,
-          paymentTerm: selectedTermDetails.period,
+          paymentTerm: convertPaymentTerm(selectedTermDetails.period),
         }),
       });
 
