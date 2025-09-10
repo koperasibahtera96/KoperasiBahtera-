@@ -63,7 +63,7 @@ export async function POST(req: NextRequest) {
 
       const paymentTermMonths =
         termToMonths[paymentTerm as keyof typeof termToMonths];
-      const totalInstallments = Math.ceil(24 / paymentTermMonths); // Default 2 years
+      const totalInstallments = Math.ceil(60 / paymentTermMonths); // 5 years
       const installmentAmount = Math.ceil(totalAmount / totalInstallments);
 
       // First payment is due 24 hours from creation

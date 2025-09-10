@@ -1,6 +1,6 @@
 import { authOptions } from "@/lib/auth";
 import dbConnect from "@/lib/mongodb";
-import { sendWhatsAppMessage, whatsappTemplate } from "@/lib/whatsapp";
+import { sendWhatsAppMessage, whatsappTemplate } from "@/lib/whatsapp-client";
 import Payment from "@/models/Payment";
 import { getServerSession } from "next-auth/next";
 import { NextRequest, NextResponse } from "next/server";

@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
-import dbConnect from "@/lib/mongodb";
-import WhatsAppSession from "@/models/WhatsAppSession";
+import { getWhatsAppConnectionStatus } from "@/lib/whatsapp-client";
 
 export async function GET(req: NextRequest) {
   try {
@@ -25,17 +24,19 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    await dbConnect();
+    const result = await getWhatsAppConnectionStatus(number);
     
-    const whatsappSession = await WhatsAppSession.findOne({ 
-      whatsappNumber: number,
-      isActive: true 
-    });
-    
-    return NextResponse.json({
-      hasSession: !!whatsappSession && Object.keys(whatsappSession.authData || {}).length > 0,
-      status: whatsappSession?.connectionStatus || 'disconnected'
-    });
+    if (result.success) {
+      return NextResponse.json({
+        hasSession: result.status?.isActive || false,
+        status: result.status?.state || 'disconnected'
+      });
+    } else {
+      return NextResponse.json(
+        { error: result.error || "Failed to get connection status" },
+        { status: 500 }
+      );
+    }
   } catch (error) {
     console.error("Error checking WhatsApp session:", error);
     return NextResponse.json(

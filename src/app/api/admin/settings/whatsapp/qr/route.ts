@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
-import { getQRCode } from "@/lib/whatsapp";
+import { getWhatsAppQR } from "@/lib/whatsapp-client";
 
 export async function GET(req: NextRequest) {
   try {
@@ -24,11 +24,18 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    const qrCode = await getQRCode(whatsappNumber);
+    const result = await getWhatsAppQR(whatsappNumber);
     
-    return NextResponse.json({
-      qrCode: qrCode || null
-    });
+    if (result.success) {
+      return NextResponse.json({
+        qrCode: result.qrCode || null
+      });
+    } else {
+      return NextResponse.json(
+        { error: result.error || "Failed to get QR code" },
+        { status: 500 }
+      );
+    }
   } catch (error) {
     console.error("Error fetching QR code:", error);
     return NextResponse.json(

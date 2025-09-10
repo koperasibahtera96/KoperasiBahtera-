@@ -51,8 +51,12 @@ export async function GET(
     });
 
     // Separate cicilan and full payments
-    const cicilanPayments = payments.filter(p => p.paymentType === "cicilan-installment");
-    const fullPayments = payments.filter(p => p.paymentType === "full-investment");
+    const cicilanPayments = payments.filter(
+      (p) => p.paymentType === "cicilan-installment"
+    );
+    const fullPayments = payments.filter(
+      (p) => p.paymentType === "full-investment"
+    );
 
     // Create a map of cicilan payments by cicilanOrderId and installmentNumber for quick lookup
     const paymentsMap = new Map();
@@ -62,87 +66,105 @@ export async function GET(
     });
 
     // Process cicilan investments and merge with payment data
-    const cicilanGroups = investor.investments.filter((inv: any) => inv.paymentType === 'cicilan').map((investment: any) => {
-      const installmentsWithPayments =
-        investment.installments?.map((installment: any) => {
-          const paymentKey = `${investment.investmentId}-${installment.installmentNumber}`;
-          const payment = paymentsMap.get(paymentKey);
+    const cicilanGroups = investor.investments
+      .filter((inv: any) => inv.paymentType === "cicilan")
+      .map((investment: any) => {
+        const installmentsWithPayments =
+          investment.installments?.map((installment: any) => {
+            const paymentKey = `${investment.investmentId}-${installment.installmentNumber}`;
+            const payment = paymentsMap.get(paymentKey);
 
-          // Merge installment data with payment data
-          return {
-            ...installment.toObject(),
-            // Payment-specific fields
-            orderId: payment?.orderId || null,
-            paymentId: payment?._id?.toString() || null,
-            proofImageUrl:
-              payment?.proofImageUrl || installment.proofImageUrl || null,
-            proofDescription: payment?.proofDescription || null,
-            adminStatus: payment?.adminStatus || "pending",
-            adminNotes: payment?.adminNotes || null,
-            adminReviewBy: payment?.adminReviewBy || null,
-            adminReviewDate: payment?.adminReviewDate || null,
-            submissionDate: payment?.createdAt || null,
-            status:
-              payment?.status || (installment.isPaid ? "approved" : "pending"),
-            // Use payment ID for _id (needed for review functionality)
-            _id: payment?._id?.toString() || installment._id.toString(),
-            installmentNumber: installment.installmentNumber,
-            amount: installment.amount,
-            dueDate: installment.dueDate,
-            isPaid: installment.isPaid,
-            paidDate: installment.paidDate,
-          };
-        }) || [];
+            // Merge installment data with payment data
+            return {
+              ...installment.toObject(),
+              // Payment-specific fields
+              orderId: payment?.orderId || null,
+              paymentId: payment?._id?.toString() || null,
+              proofImageUrl:
+                payment?.proofImageUrl || installment.proofImageUrl || null,
+              proofDescription: payment?.proofDescription || null,
+              adminStatus: payment?.adminStatus || "pending",
+              adminNotes: payment?.adminNotes || null,
+              adminReviewBy: payment?.adminReviewBy || null,
+              adminReviewDate: payment?.adminReviewDate || null,
+              submissionDate: payment?.createdAt || null,
+              status:
+                payment?.status ||
+                (installment.isPaid ? "approved" : "pending"),
+              // Use payment ID for _id (needed for review functionality)
+              _id: payment?._id?.toString() || installment._id.toString(),
+              installmentNumber: installment.installmentNumber,
+              amount: installment.amount,
+              dueDate: installment.dueDate,
+              isPaid: installment.isPaid,
+              paidDate: installment.paidDate,
+              totalInstallments: payment.totalInstallments,
+            };
+          }) || [];
 
-      return {
-        cicilanOrderId: investment.investmentId,
-        productName: investment.productName,
-        productId: investment.productId || "unknown",
-        totalAmount: investment.totalAmount,
-        totalInstallments: investment.installments?.length || 0,
-        installmentAmount: investment.installments?.[0]?.amount || 0,
-        paymentTerm: getPaymentTermFromInstallments(
-          investment.installments?.length || 0
-        ),
-        installments: installmentsWithPayments,
-        status: getInvestmentStatus(installmentsWithPayments),
-        createdAt: investment.investmentDate,
-      };
-    });
+        // Find the first payment for this cicilan group to get totalInstallments
+        const firstPayment = cicilanPayments.find(
+          (p) => p.cicilanOrderId === investment.investmentId
+        );
+
+        return {
+          cicilanOrderId: investment.investmentId,
+          productName: investment.productName,
+          productId: investment.productId || "unknown",
+          totalAmount: investment.totalAmount,
+          totalInstallments: firstPayment?.totalInstallments || 0,
+          installmentAmount: investment.installments?.[0]?.amount || 0,
+          paymentTerm: getPaymentTermFromInstallments(
+            investment.installments?.length || 0
+          ),
+          installments: installmentsWithPayments,
+          status: getInvestmentStatus(installmentsWithPayments),
+          createdAt: investment.investmentDate,
+        };
+      });
 
     // Process full payment investments
-    const fullPaymentGroups = investor.investments.filter((inv: any) => inv.paymentType === 'full').map((investment: any) => {
-      // Find matching full payment
-      const fullPayment = fullPayments.find(p => p.productName === investment.productName && p.amount === investment.totalAmount);
-      
-      return {
-        cicilanOrderId: investment.investmentId,
-        productName: investment.productName,
-        productId: investment.productId || "unknown",
-        totalAmount: investment.totalAmount,
-        totalInstallments: 1, // Full payment is always 1 installment
-        installmentAmount: investment.totalAmount,
-        paymentTerm: 'full' as any, // Mark as full payment
-        installments: [{
-          _id: fullPayment?._id?.toString() || investment._id.toString(),
-          orderId: fullPayment?.orderId || investment.investmentId,
-          installmentNumber: 1,
-          amount: investment.totalAmount,
-          dueDate: investment.investmentDate,
-          status: 'approved', // Full payments are always approved since they go through Midtrans confirmation
-          adminStatus: 'approved', // Full payments don't need admin approval
-          proofImageUrl: fullPayment?.proofImageUrl || null,
-          proofDescription: fullPayment?.proofDescription || null,
-          adminNotes: 'Pembayaran lunas - tidak perlu review admin',
-          paidDate: investment.investmentDate,
-          submissionDate: fullPayment?.createdAt || investment.investmentDate,
-          exists: true,
-        }],
-        status: 'completed' as any, // Full payments are always completed
-        createdAt: investment.investmentDate,
-        isFullPayment: true, // Flag to identify full payments
-      };
-    });
+    const fullPaymentGroups = investor.investments
+      .filter((inv: any) => inv.paymentType === "full")
+      .map((investment: any) => {
+        // Find matching full payment
+        const fullPayment = fullPayments.find(
+          (p) =>
+            p.productName === investment.productName &&
+            p.amount === investment.totalAmount
+        );
+
+        return {
+          cicilanOrderId: investment.investmentId,
+          productName: investment.productName,
+          productId: investment.productId || "unknown",
+          totalAmount: investment.totalAmount,
+          totalInstallments: 1, // Full payment is always 1 installment
+          installmentAmount: investment.totalAmount,
+          paymentTerm: "full" as any, // Mark as full payment
+          installments: [
+            {
+              _id: fullPayment?._id?.toString() || investment._id.toString(),
+              orderId: fullPayment?.orderId || investment.investmentId,
+              installmentNumber: 1,
+              amount: investment.totalAmount,
+              dueDate: investment.investmentDate,
+              status: "approved", // Full payments are always approved since they go through Midtrans confirmation
+              adminStatus: "approved", // Full payments don't need admin approval
+              proofImageUrl: fullPayment?.proofImageUrl || null,
+              proofDescription: fullPayment?.proofDescription || null,
+              adminNotes: "Pembayaran lunas - tidak perlu review admin",
+              paidDate: investment.investmentDate,
+              submissionDate:
+                fullPayment?.createdAt || investment.investmentDate,
+              exists: true,
+            },
+          ],
+          status: "completed" as any, // Full payments are always completed
+          createdAt: investment.investmentDate,
+          isFullPayment: true, // Flag to identify full payments
+        };
+      });
 
     // Combine cicilan and full payment groups
     const allGroups = [...cicilanGroups, ...fullPaymentGroups];

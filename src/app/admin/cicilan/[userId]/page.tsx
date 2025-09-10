@@ -400,11 +400,13 @@ export default function InvestorDetailPage({
                         📅{" "}
                         {group.isFullPayment
                           ? "Pembayaran Lunas"
-                          : group.paymentTerm === "monthly"
-                          ? "Bulanan"
+                          : group.paymentTerm === "annual"
+                          ? "Per Tahun"
+                          : group.paymentTerm === "semiannual"
+                          ? "Per 6 Bulan"
                           : group.paymentTerm === "quarterly"
-                          ? "Triwulan"
-                          : "Tahunan"}
+                          ? "Per 3 Bulan"
+                          : "Per Bulan"}
                       </span>
                       <span>
                         🔢 {group.totalInstallments}{" "}
@@ -428,7 +430,7 @@ export default function InvestorDetailPage({
                             group.installments.filter(
                               (i) => i.status === "approved"
                             ).length
-                          }/${group.installments.length}`}
+                          }/${group.totalInstallments}`}
                     </div>
                     <div className="w-full lg:w-32 bg-[#324D3E]/10 dark:bg-gray-700 rounded-full h-2 sm:h-3 mt-1">
                       <div

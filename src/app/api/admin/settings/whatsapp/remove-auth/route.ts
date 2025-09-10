@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
-import { removeWhatsAppAuth } from "@/lib/whatsapp";
+import { removeWhatsAppAuth } from "@/lib/whatsapp-client";
 
 export async function POST(req: NextRequest) {
   try {
@@ -23,15 +23,15 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const success = await removeWhatsAppAuth(whatsappNumber);
+    const result = await removeWhatsAppAuth(whatsappNumber);
     
-    if (success) {
+    if (result.success) {
       return NextResponse.json({
         message: "WhatsApp authentication removed successfully. You can now generate a new QR code."
       });
     } else {
       return NextResponse.json(
-        { error: "Failed to remove WhatsApp authentication" },
+        { error: result.error || "Failed to remove WhatsApp authentication" },
         { status: 500 }
       );
     }

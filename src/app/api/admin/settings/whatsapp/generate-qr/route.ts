@@ -1,5 +1,5 @@
 import { authOptions } from "@/lib/auth";
-import { createWhatsAppConnection } from "@/lib/whatsapp";
+import { generateWhatsAppQR, removeWhatsAppAuth } from "@/lib/whatsapp-client";
 import { getServerSession } from "next-auth/next";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -28,29 +28,20 @@ export async function POST(req: NextRequest) {
       whatsappNumber
     );
 
-    // Initialize WhatsApp connection
-    try {
-      const { getWhatsAppConfig, hasWhatsAppAuth, removeWhatsAppAuth } = await import("@/lib/whatsapp");
-      await getWhatsAppConfig(whatsappNumber);
-      
-      // Always remove existing auth to ensure fresh QR generation
-      const authExists = await hasWhatsAppAuth(whatsappNumber);
-      if (authExists) {
-        console.log("Removing existing auth to generate fresh QR code");
-        await removeWhatsAppAuth(whatsappNumber);
-      }
-      
-      await createWhatsAppConnection(whatsappNumber);
-      console.log("WhatsApp connection creation initiated successfully");
-    } catch (connectionError) {
-      console.error("Error in createWhatsAppConnection:", connectionError);
-      throw connectionError;
+    // Remove existing auth to ensure fresh QR generation
+    console.log("Removing existing auth to generate fresh QR code");
+    await removeWhatsAppAuth(whatsappNumber);
+    
+    // Generate new QR code
+    const result = await generateWhatsAppQR(whatsappNumber);
+    
+    if (result.success) {
+      return NextResponse.json({
+        message: "WhatsApp connection initiated. QR code will be available shortly.",
+      });
+    } else {
+      throw new Error(result.error || "Failed to generate QR code");
     }
-
-    return NextResponse.json({
-      message:
-        "WhatsApp connection initiated. QR code will be available shortly.",
-    });
   } catch (error) {
     console.error("Error generating WhatsApp QR:", error);
     return NextResponse.json(

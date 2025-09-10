@@ -1,6 +1,8 @@
-import { InputHTMLAttributes, forwardRef, useId, useState } from 'react';
-import { cn } from '@/lib/utils';
-import { Eye, EyeOff } from 'lucide-react';
+"use client";
+
+import { cn } from "@/lib/utils";
+import { Eye, EyeOff } from "lucide-react";
+import { InputHTMLAttributes, forwardRef, useId, useState } from "react";
 
 interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   label?: string;
@@ -13,10 +15,14 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
     const generatedId = useId();
     const inputId = id || generatedId;
     const [showPassword, setShowPassword] = useState(false);
-    
-    const isPasswordField = type === 'password';
-    const inputType = isPasswordField ? (showPassword ? 'text' : 'password') : type;
-    
+
+    const isPasswordField = type === "password";
+    const inputType = isPasswordField
+      ? showPassword
+        ? "text"
+        : "password"
+      : type;
+
     return (
       <div className="form-group">
         {label && (
@@ -30,9 +36,9 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
             id={inputId}
             type={inputType}
             className={cn(
-              'form-input',
-              isPasswordField && 'pr-10', // Add padding for the eye icon
-              error && 'border-red-500 focus:border-red-500 focus:ring-red-500',
+              "form-input",
+              isPasswordField && "pr-10", // Add padding for the eye icon
+              error && "border-red-500 focus:border-red-500 focus:ring-red-500",
               className
             )}
             ref={ref}
@@ -53,9 +59,7 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
             </button>
           )}
         </div>
-        {error && (
-          <p className="text-sm text-red-600 mt-1">{error}</p>
-        )}
+        {error && <p className="text-sm text-red-600 mt-1">{error}</p>}
         {helperText && !error && (
           <p className="text-sm text-gray-500 mt-1">{helperText}</p>
         )}
@@ -64,6 +68,6 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
   }
 );
 
-Input.displayName = 'Input';
+Input.displayName = "Input";
 
 export { Input };
