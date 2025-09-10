@@ -1,7 +1,7 @@
-import { midtransService } from '@/lib/midtrans';
-import dbConnect from '@/lib/mongodb';
-import Payment from '@/models/Payment';
-import { NextRequest, NextResponse } from 'next/server';
+import { midtransService } from "@/lib/midtrans";
+import dbConnect from "@/lib/mongodb";
+import Payment from "@/models/Payment";
+import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(
   request: NextRequest,
@@ -12,7 +12,7 @@ export async function GET(
 
     if (!orderId) {
       return NextResponse.json(
-        { error: 'Order ID is required' },
+        { error: "Order ID is required" },
         { status: 400 }
       );
     }
@@ -23,12 +23,12 @@ export async function GET(
       (async () => {
         try {
           await dbConnect();
-          return await Payment.findOne({ orderId }).lean();
+          return await Payment.findOne({ orderId });
         } catch (dbError) {
-          console.warn('Failed to get payment from database:', dbError);
+          console.warn("Failed to get payment from database:", dbError);
           return null;
         }
-      })()
+      })(),
     ]);
 
     // Combine both sources of data
@@ -39,22 +39,21 @@ export async function GET(
         contractRedirectUrl: payment.contractRedirectUrl,
         paymentType: payment.paymentType,
         isProcessed: payment.isProcessed,
-        processingError: payment.processingError
-      })
+        processingError: payment.processingError,
+      }),
     };
 
     return NextResponse.json({
       success: true,
       data: responseData,
     });
-
   } catch (error) {
-    console.error('Payment status error:', error);
+    console.error("Payment status error:", error);
 
     return NextResponse.json(
       {
-        error: 'Failed to get payment status',
-        details: error instanceof Error ? error.message : 'Unknown error',
+        error: "Failed to get payment status",
+        details: error instanceof Error ? error.message : "Unknown error",
       },
       { status: 500 }
     );

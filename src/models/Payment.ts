@@ -66,6 +66,9 @@ export interface IPayment extends Document {
   // Status tracking
   isProcessed: boolean;
   processingError?: string;
+  
+  // Contract redirect URL (for investment payments after successful processing)
+  contractRedirectUrl?: string;
 
   // General status (for all payment types)
   status: "pending" | "approved" | "rejected" | "completed" | "cancelled";
@@ -220,6 +223,13 @@ const PaymentSchema: Schema = new Schema(
     processingError: {
       type: String,
     },
+    
+    // Contract redirect URL (for investment payments after successful processing)
+    contractRedirectUrl: {
+      type: String,
+      trim: true,
+    },
+    
     status: {
       type: String,
       required: true,
