@@ -1,224 +1,163 @@
+"use client";
+
 import InvoiceCard from "@/components/invoice/InvoiceCard";
 import InvoiceControls from "@/components/invoice/InvoiceControls";
 import { InvoiceLayout } from "@/components/invoice/InvoiceLayout";
-import { ensureConnection } from "@/lib/utils/database";
-import { User } from "@/models";
-import Payment from "@/models/Payment";
-import { Types } from "mongoose";
+import { Loader2 } from "lucide-react";
+import { useSearchParams } from "next/navigation";
+import { Suspense, useEffect, useState } from "react";
 
-export const dynamic = "force-dynamic";
-
-type JSONish =
-  | string
-  | number
-  | boolean
-  | null
-  | JSONish[]
-  | { [k: string]: JSONish };
-
-// ---- helpers ----
-function toPlain(value: any): JSONish {
-  if (value === null || value === undefined) return null;
-  if (
-    typeof value === "object" &&
-    (value._bsontype === "ObjectID" || value._bsontype === "ObjectId")
-  ) {
-    return (value.toHexString?.() ??
-      value.toString?.() ??
-      String(value)) as string;
-  }
-  if (value instanceof Date) return value.toISOString();
-  if (Array.isArray(value)) return value.map(toPlain) as JSONish;
-  if (typeof value === "object") {
-    const out: Record<string, JSONish> = {};
-    for (const [k, v] of Object.entries(value))
-      if (v !== undefined) out[k] = toPlain(v);
-    return out;
-  }
-  if (["string", "number", "boolean"].includes(typeof value))
-    return value as JSONish;
-  return String(value);
+interface PaymentData {
+  ref: string;
+  _id: string;
+  orderId: string;
+  amount: number;
+  currency: string;
+  paymentType: string;
+  status: string;
+  createdAt: string;
+  userName: string;
+  userImage?: string;
+  [key: string]: any;
 }
 
-function parseDateFromQuery(q: string): { start: Date; end: Date } | null {
-  const t = q.trim();
-
-  // YYYY-MM-DD
-  let m = t.match(/^(\d{4})-(\d{2})-(\d{2})$/);
-  if (m) {
-    const d = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
-    const start = new Date(
-      d.getFullYear(),
-      d.getMonth(),
-      d.getDate(),
-      0,
-      0,
-      0,
-      0
-    );
-    const end = new Date(
-      d.getFullYear(),
-      d.getMonth(),
-      d.getDate(),
-      23,
-      59,
-      59,
-      999
-    );
-    return { start, end };
-  }
-  // DD/MM/YYYY atau DD-MM-YYYY
-  m = t.match(/^(\d{2})[\/-](\d{2})[\/-](\d{4})$/);
-  if (m) {
-    const d = new Date(Number(m[3]), Number(m[2]) - 1, Number(m[1]));
-    const start = new Date(
-      d.getFullYear(),
-      d.getMonth(),
-      d.getDate(),
-      0,
-      0,
-      0,
-      0
-    );
-    const end = new Date(
-      d.getFullYear(),
-      d.getMonth(),
-      d.getDate(),
-      23,
-      59,
-      59,
-      999
-    );
-    return { start, end };
-  }
-  // fallback Date.parse
-  const d2 = new Date(t);
-  if (!isNaN(d2.getTime())) {
-    const start = new Date(
-      d2.getFullYear(),
-      d2.getMonth(),
-      d2.getDate(),
-      0,
-      0,
-      0,
-      0
-    );
-    const end = new Date(
-      d2.getFullYear(),
-      d2.getMonth(),
-      d2.getDate(),
-      23,
-      59,
-      59,
-      999
-    );
-    return { start, end };
-  }
-  return null;
-}
-
-function isHex24(s: string) {
-  return /^[a-fA-F0-9]{24}$/.test(s);
+interface InvoiceResponse {
+  payments: PaymentData[];
+  total: number;
+  totalPages: number;
+  currentPage: number;
+  perPage: number;
 }
 
 const PER_PAGE = 9;
 
-export default async function InvoicePage({
-  searchParams,
-}: {
-  searchParams: Record<string, string | string[] | undefined>;
-}) {
-  await ensureConnection();
+function InvoicePageContent() {
+  const searchParams = useSearchParams();
+  const [data, setData] = useState<InvoiceResponse | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  // ---- read URL params ----
-  const q = (searchParams.q as string)?.trim() || "";
-  const sortParam = (searchParams.sort as string) === "asc" ? "asc" : "desc";
-  const page = Math.max(1, parseInt((searchParams.page as string) || "1", 10));
+  // Get search params
+  const q = searchParams.get("q") || "";
+  const sort = (searchParams.get("sort") as "asc" | "desc") || "desc";
+  const page = Math.max(1, parseInt(searchParams.get("page") || "1", 10));
 
-  // ---- build filter ----
-  const filter: any = {};
-  const or: any[] = [];
+  // Fetch data function
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      setError(null);
 
-  if (q) {
-    // orderId (regex)
-    or.push({ orderId: { $regex: q, $options: "i" } });
+      const params = new URLSearchParams();
+      if (q) params.set("q", q);
+      params.set("sort", sort);
+      params.set("page", page.toString());
 
-    // _id exact (24 hex)
-    if (isHex24(q)) {
-      or.push({ _id: new Types.ObjectId(q) });
+      const response = await fetch(`/api/invoice?${params.toString()}`);
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch invoices");
+      }
+
+      const result = await response.json();
+      setData(result);
+    } catch (err) {
+      console.error("Error fetching invoices:", err);
+      setError(err instanceof Error ? err.message : "An error occurred");
+    } finally {
+      setLoading(false);
     }
+  };
 
-    // tanggal createdAt
-    const d = parseDateFromQuery(q);
-    if (d) {
-      or.push({ createdAt: { $gte: d.start, $lte: d.end } });
-    }
+  // Fetch data when search params change
+  useEffect(() => {
+    fetchData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [q, sort, page]);
+
+  // Loading state
+  if (loading) {
+    return (
+      <InvoiceLayout>
+        <div className="p-4 sm:p-6 space-y-6 sm:space-y-8 font-[family-name:var(--font-poppins)]">
+          <header>
+            <div className="mb-6 sm:mb-8">
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-[#324D3E] dark:text-white mb-2 sm:mb-4 transition-colors duration-300">
+                Invoice
+              </h1>
+              <p className="text-[#889063] dark:text-gray-200 text-base sm:text-lg transition-colors duration-300">
+                {new Date().toLocaleDateString("id-ID", {
+                  weekday: "long",
+                  day: "numeric",
+                  month: "long",
+                  year: "numeric",
+                })}
+              </p>
+            </div>
+
+            <div className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl rounded-3xl p-4 sm:p-6 lg:p-8 border border-[#324D3E]/10 dark:border-gray-700 shadow-xl transition-colors duration-300">
+              {/* Loading skeleton for controls */}
+              <div className="animate-pulse">
+                <div className="h-20 bg-gray-200 dark:bg-gray-700 rounded-2xl mb-6"></div>
+              </div>
+
+              {/* Loading skeleton for cards */}
+              <div className="grid grid-cols-1 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4 sm:gap-6 mt-6 sm:mt-8">
+                {[...Array(6)].map((_, i) => (
+                  <div key={i} className="animate-pulse">
+                    <div className="h-48 bg-gray-200 dark:bg-gray-700 rounded-2xl"></div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Loading indicator */}
+              <div className="flex items-center justify-center py-12">
+                <Loader2 className="w-8 h-8 animate-spin text-[#324D3E]" />
+                <span className="ml-2 text-[#889063] dark:text-gray-200">
+                  Memuat data invoice...
+                </span>
+              </div>
+            </div>
+          </header>
+        </div>
+      </InvoiceLayout>
+    );
   }
-  if (or.length) filter.$or = or;
 
-  const total = await Payment.countDocuments(filter);
-  const totalPages = Math.max(1, Math.ceil(total / PER_PAGE));
-  const skip = (page - 1) * PER_PAGE;
-
-  const sortDir = sortParam === "asc" ? 1 : -1;
-
-  const raw = await Payment.find(filter)
-    .sort({ createdAt: sortDir })
-    .skip(skip)
-    .limit(PER_PAGE)
-    .lean();
-
-  // user lookup
-  const userIds = Array.from(
-    new Set(
-      raw
-        .map((p: any) => {
-          const u = p.userId;
-          if (!u) return null;
-          if (
-            typeof u === "object" &&
-            (u._bsontype === "ObjectID" || u._bsontype === "ObjectId")
-          ) {
-            return u.toHexString?.() ?? u.toString?.() ?? String(u);
-          }
-          return String(u);
-        })
-        .filter(Boolean) as string[]
-    )
-  );
-  const usersById = new Map<
-    string,
-    {
-      name?: string;
-      username?: string;
-      email?: string;
-      profileImageUrl?: string;
-    }
-  >();
-  if (userIds.length) {
-    const users = await User.find({ _id: { $in: userIds } })
-      .select({ _id: 1, name: 1, username: 1, email: 1, profileImageUrl: 1 })
-      .lean();
-    for (const u of users) {
-      usersById.set(String(u._id), {
-        name: (u as any).name,
-        username: (u as any).username,
-        email: (u as any).email,
-        profileImageUrl: (u as any).profileImageUrl,
-      });
-    }
+  // Error state
+  if (error) {
+    return (
+      <InvoiceLayout>
+        <div className="p-4 sm:p-6 space-y-6 sm:space-y-8 font-[family-name:var(--font-poppins)]">
+          <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-2xl p-6 text-center">
+            <h2 className="text-xl font-semibold text-red-600 dark:text-red-400 mb-2">
+              Terjadi Kesalahan
+            </h2>
+            <p className="text-red-500 dark:text-red-300 mb-4">{error}</p>
+            <button
+              onClick={fetchData}
+              className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition-colors"
+            >
+              Coba Lagi
+            </button>
+          </div>
+        </div>
+      </InvoiceLayout>
+    );
   }
 
-  // sanitize + inject ref + userName
-  const payments = raw.map((p: any) => {
-    const plain = toPlain(p) as Record<string, JSONish>;
-    const ref = String(plain._id ?? "");
-    const userIdStr = plain.userId ? String(plain.userId) : "";
-    const u = usersById.get(userIdStr);
-    const userName = u?.name || u?.username || u?.email || userIdStr || "—";
-    const userImage = u?.profileImageUrl || undefined;
-    return { ...plain, ref, userName, userImage };
-  });
+  // No data state
+  if (!data) {
+    return (
+      <InvoiceLayout>
+        <div className="p-4 sm:p-6 space-y-6 sm:space-y-8 font-[family-name:var(--font-poppins)]">
+          <div className="text-center text-[#889063] dark:text-gray-200 py-12">
+            <p>Tidak ada data yang tersedia</p>
+          </div>
+        </div>
+      </InvoiceLayout>
+    );
+  }
 
   return (
     <InvoiceLayout>
@@ -242,21 +181,24 @@ export default async function InvoicePage({
             {/* Controls */}
             <InvoiceControls
               q={q}
-              sort={sortParam}
+              sort={sort}
               page={page}
-              totalPages={totalPages}
-              total={total}
+              totalPages={data.totalPages}
+              total={data.total}
               perPage={PER_PAGE}
             />
 
             {/* Grid - Responsive grid that adapts to all screen sizes */}
             <div className="grid grid-cols-1 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4 sm:gap-6 mt-6 sm:mt-8">
-              {payments.map((p: any) => (
-                <InvoiceCard key={String(p.ref || p._id)} payment={p} />
+              {data.payments.map((payment) => (
+                <InvoiceCard
+                  key={payment.ref || payment._id}
+                  payment={payment}
+                />
               ))}
             </div>
 
-            {payments.length === 0 && (
+            {data.payments.length === 0 && (
               <div className="text-center text-[#889063] dark:text-gray-200 py-8 sm:py-12 bg-white/60 dark:bg-gray-700/60 backdrop-blur-lg rounded-2xl border border-[#324D3E]/10 dark:border-gray-600 mt-6 sm:mt-8 transition-colors duration-300">
                 <div className="text-sm sm:text-base">
                   Tidak ada invoice yang cocok.
@@ -267,5 +209,42 @@ export default async function InvoicePage({
         </header>
       </div>
     </InvoiceLayout>
+  );
+}
+
+export default function InvoicePage() {
+  return (
+    <Suspense fallback={
+      <InvoiceLayout>
+        <div className="p-4 sm:p-6 space-y-6 sm:space-y-8 font-[family-name:var(--font-poppins)]">
+          <header>
+            <div className="mb-6 sm:mb-8">
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-[#324D3E] dark:text-white mb-2 sm:mb-4 transition-colors duration-300">
+                Invoice
+              </h1>
+              <p className="text-[#889063] dark:text-gray-200 text-base sm:text-lg transition-colors duration-300">
+                {new Date().toLocaleDateString("id-ID", {
+                  weekday: "long",
+                  day: "numeric",
+                  month: "long",
+                  year: "numeric",
+                })}
+              </p>
+            </div>
+
+            <div className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl rounded-3xl p-4 sm:p-6 lg:p-8 border border-[#324D3E]/10 dark:border-gray-700 shadow-xl transition-colors duration-300">
+              <div className="flex items-center justify-center py-12">
+                <Loader2 className="w-8 h-8 animate-spin text-[#324D3E]" />
+                <span className="ml-2 text-[#889063] dark:text-gray-200">
+                  Memuat halaman invoice...
+                </span>
+              </div>
+            </div>
+          </header>
+        </div>
+      </InvoiceLayout>
+    }>
+      <InvoicePageContent />
+    </Suspense>
   );
 }
