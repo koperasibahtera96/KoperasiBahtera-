@@ -30,14 +30,6 @@ const nextConfig: NextConfig = {
   },
   poweredByHeader: false,
   compress: true,
-  swcMinify: true,
-  // Performance optimizations
-  modularizeImports: {
-    'lucide-react': {
-      transform: 'lucide-react/dist/esm/icons/{{member}}',
-      preventFullImport: true,
-    },
-  },
   // Bundle analyzer in development
   ...(process.env.ANALYZE === 'true' && {
     webpack: (config: any) => {

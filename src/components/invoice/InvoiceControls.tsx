@@ -2,7 +2,7 @@
 
 import React, { useEffect, useMemo, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { Search, ArrowUpWideNarrow, ArrowDownNarrowWide, ChevronLeft, ChevronRight } from "lucide-react";
+import { Search, ArrowUpWideNarrow, ArrowDownWideNarrow, ChevronLeft, ChevronRight } from "lucide-react";
 
 export default function InvoiceControls({
   q,
@@ -90,7 +90,7 @@ export default function InvoiceControls({
             className="inline-flex items-center gap-2 px-4 py-3 rounded-2xl border border-[#324D3E]/20 dark:border-gray-600 bg-white/80 dark:bg-gray-700/80 text-sm hover:bg-[#324D3E]/5 dark:hover:bg-gray-700 transition-all duration-300 whitespace-nowrap"
             title={sort === "desc" ? "Urutkan: Terlama" : "Urutkan: Terbaru"}
           >
-            {sort === "desc" ? <ArrowUpWideNarrow size={16} /> : <ArrowDownNarrowWide size={16} />}
+            {sort === "desc" ? <ArrowUpWideNarrow size={16} /> : <ArrowDownWideNarrow size={16} />}
             <span className="text-[#324D3E] dark:text-white font-medium">{sort === "desc" ? "Terbaru" : "Terlama"}</span>
           </button>
 

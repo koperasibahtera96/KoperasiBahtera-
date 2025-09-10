@@ -2,9 +2,9 @@
 
 import { motion } from "framer-motion";
 import Image from "next/image";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
-const containerVariants = {
+const containerVariants: any = {
   hidden: { opacity: 0 },
   visible: {
     opacity: 1,
@@ -15,7 +15,7 @@ const containerVariants = {
   },
 };
 
-const slideInFromLeft = {
+const slideInFromLeft: any = {
   hidden: {
     opacity: 0,
     x: -50,
@@ -31,7 +31,7 @@ const slideInFromLeft = {
   },
 };
 
-const fadeInUp = {
+const fadeInUp: any = {
   hidden: {
     opacity: 0,
     y: 20,
@@ -47,7 +47,7 @@ const fadeInUp = {
   },
 };
 
-const scaleIn = {
+const scaleIn: any = {
   hidden: {
     opacity: 0,
     scale: 0.95,
@@ -64,7 +64,7 @@ const scaleIn = {
 };
 
 export default function LandingHero() {
-  const [imageLoaded, setImageLoaded] = useState(false);
+  const [_imageLoaded, setImageLoaded] = useState(false);
 
   return (
     <motion.section
