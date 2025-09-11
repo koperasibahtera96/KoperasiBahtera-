@@ -97,6 +97,13 @@ export function FinanceSidebar({ children }: FinanceSidebarProps) {
       gradient: "from-emerald-500 to-green-600",
     },
     {
+      name: "Daily Income Investor",
+      href: "/daily-incoming-investor",
+      icon: Receipt,
+      description: "Pendapatan dari investasi ",
+      gradient: "from-indigo-500 to-purple-600",
+    },
+    {
       name: "Pengaturan",
       href: "/finance/settings",
       icon: Settings,

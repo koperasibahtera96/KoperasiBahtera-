@@ -35,6 +35,7 @@ type Member = {
     profit: number;
     roi: number;
     investDate: string;
+    investmentId:string
   }[];
   totalInvestment: number;
   totalProfit: number;
@@ -491,7 +492,7 @@ function MemberCard({ member }: { member: Member }) {
             >
               <div className="flex items-center justify-between mb-2">
                 <span className="text-sm font-medium text-[#324D3E] dark:text-white transition-colors duration-300">
-                  {investment.plantName}
+                  {investment.investmentId} - {member.name}
                 </span>
                 <span className="text-xs text-blue-600 dark:text-blue-400 transition-colors duration-300">
                   {formatPercentage(investment.roi)}

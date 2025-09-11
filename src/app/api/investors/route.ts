@@ -27,6 +27,7 @@ export async function GET(req: NextRequest) {
           amount: amt(iv),
           profit: 0,
           roi: 0,
+          investmentId:String(iv.investmentId),
           investDate: String(
             iv?.investmentDate ?? iv?.createdAt ?? m?.createdAt ?? new Date()
           ),

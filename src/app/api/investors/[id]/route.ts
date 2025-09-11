@@ -1,5 +1,5 @@
 import { ensureConnection } from "@/lib/utils/database";
-import { Investor, PlantInstance } from "@/models";
+import { Investor, PlantInstance, User } from "@/models";
 import mongoose from "mongoose";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -53,6 +53,14 @@ export async function GET(
         { error: "Investor not found" },
         { status: 404 }
       );
+    }
+
+    // --- ambil user untuk userCode (No Anggota) dan optional data lain ---
+    let userDoc: any = null;
+    if (investor?.userId && mongoose.isValidObjectId(investor.userId)) {
+      userDoc = await User.findById(investor.userId)
+        .select({ userCode: 1, name: 1, username: 1, email: 1 })
+        .lean();
     }
 
     // Ambil semua investor & semua plant untuk bagi hasil proporsional
@@ -142,6 +150,8 @@ export async function GET(
       const share = totalInst > 0 ? amount / totalInst : 0;
       const profit = net * share;
       totalProfit += profit;
+
+      // ⬇️ tambahkan field yang dibutuhkan XLSX (tanpa mengubah perhitungan lama)
       return {
         plantId: pid,
         plantName: p?.instanceName ?? iv?.productName ?? iv?.plantName ?? "—",
@@ -149,6 +159,12 @@ export async function GET(
         profit,
         roi: amount > 0 ? (profit / amount) * 100 : 0,
         investDate: String(iv?.investmentDate ?? iv?.createdAt ?? ""),
+        // field tambahan untuk layout XLSX:
+        productName: iv?.productName ?? "",           // Kode Blok/Paket
+        investmentId: iv?.investmentId ?? "",         // Invoice
+        investmentDate: String(iv?.investmentDate ?? iv?.createdAt ?? ""), // Tanggal (dd/mm/yyyy diproses di client)
+        status: iv?.status ?? "Aktif",
+        plantInstanceId: pid,
       };
     });
 
@@ -229,6 +245,8 @@ export async function GET(
             amount: num(r?.amount),
             addedBy: r?.addedBy ?? "",
           })),
+        contractNumber: p?.contractNumber || "",       // sudah ada sebelumnya
+        plantType: p?.plantType || "",                 // ⬅️ penting untuk kolom "Tanaman/Produk"
       };
     });
 
@@ -243,6 +261,8 @@ export async function GET(
       totalProfit: Math.round(totalProfit),
       overallROI:
         totalInvestment > 0 ? (totalProfit / totalInvestment) * 100 : 0,
+      // ⬇️ disediakan untuk XLSX (No Anggota)
+      userCode: userDoc?.userCode || "",
     };
 
     return NextResponse.json({

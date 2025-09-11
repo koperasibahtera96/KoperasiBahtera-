@@ -2,6 +2,8 @@
 
 import Image from 'next/image';
 import { motion } from 'framer-motion';
+import { useRouter } from 'next/navigation';
+
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -62,6 +64,7 @@ interface CTASectionProps {
 }
 
 export default function CTASection({ className = '' }: CTASectionProps) {
+  const router = useRouter()
   return (
     <motion.section 
       className={`py-8 sm:py-10 lg:py-12 px-4 sm:px-6 bg-[#E5D7C4] ${className}`}
@@ -134,10 +137,12 @@ export default function CTASection({ className = '' }: CTASectionProps) {
             <motion.button 
               className="w-full lg:w-auto bg-[#4C3D19] text-white px-8 sm:px-10 md:px-11 lg:px-12 py-4 sm:py-5 md:py-5.5 lg:py-6 rounded-full text-base sm:text-lg md:text-xl lg:text-2xl font-semibold hover:bg-[#344C3D] transition-colors shadow-lg font-[family-name:var(--font-poppins)] lg:min-w-[280px]"
               onClick={() => {
-                const investasiSection = document.getElementById('investasi');
-                if (investasiSection) {
-                  investasiSection.scrollIntoView({ behavior: 'smooth' });
-                }
+                // const investasiSection = document.getElementById('investasi');
+                // if (investasiSection) {
+                //   investasiSection.scrollIntoView({ behavior: 'smooth' });
+                // }   
+                // Code yang lama sudah tidak dipakai (karena ingin pada saat gabung sekarang akan mengarah ke login) tolong jangan diubah kembali 
+                router.push("/login")
               }}
               whileHover={{ 
                 scale: 1.05,

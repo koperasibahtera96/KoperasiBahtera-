@@ -20,6 +20,7 @@ import {
   Download,
   Filter,
   TrendingDown,
+  TrendingUp, // <-- tambahan icon untuk mode pendapatan
 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
@@ -66,6 +67,9 @@ export default function LaporanPengeluaranPage() {
   const { theme, systemTheme } = useTheme();
   const isDark = (theme === "system" ? systemTheme : theme) === "dark";
 
+  // === Toggle Laporan ===
+  const [mode, setMode] = useState<"expense" | "income">("expense");
+
   useEffect(() => {
     loadData();
   }, []);
@@ -74,7 +78,7 @@ export default function LaporanPengeluaranPage() {
     try {
       setLoading(true);
 
-      // Fetch plant instances for expense data
+      // Fetch plant instances for expense/income data
       const plantsResponse = await fetch("/api/plants");
       if (!plantsResponse.ok) throw new Error("Failed to fetch plants");
       const instances = await plantsResponse.json();
@@ -129,12 +133,13 @@ export default function LaporanPengeluaranPage() {
       .replace("IDR", "Rp");
   };
 
+  // ===================== EXPENSE (existing) =====================
   const filteredExpenses = plantInstances
     .filter(
       (plant) => selectedPlant === "all" || plant.plantType === selectedPlant
     )
     .flatMap((plant) =>
-      plant.operationalCosts
+      (plant.operationalCosts || [])
         .filter((cost) => {
           const costDate = new Date(cost.date);
           const yearMatch = costDate.getFullYear() === selectedYear;
@@ -157,7 +162,7 @@ export default function LaporanPengeluaranPage() {
   const expensesByPlant = plantTypes.map((plantType) => {
     const typeExpenses = plantInstances
       .filter((plant) => plant.plantType === plantType.name)
-      .flatMap((plant) => plant.operationalCosts)
+      .flatMap((plant) => plant.operationalCosts || [])
       .filter((cost) => {
         const costDate = new Date(cost.date);
         return costDate.getFullYear() === selectedYear;
@@ -191,61 +196,119 @@ export default function LaporanPengeluaranPage() {
     };
   });
 
+  // ===================== INCOME (baru, mirror) =====================
+  const filteredIncome = plantInstances
+    .filter(
+      (plant) => selectedPlant === "all" || plant.plantType === selectedPlant
+    )
+    .flatMap((plant) =>
+      (plant.incomeRecords || [])
+        .filter((inc) => {
+          const d = new Date(inc.date);
+          const yearMatch = d.getFullYear() === selectedYear;
+          const monthMatch =
+            selectedMonth === null || d.getMonth() + 1 === selectedMonth;
+          return yearMatch && monthMatch;
+        })
+        .map((inc) => ({
+          ...inc,
+          plantName: plant.instanceName,
+          plantType: plant.plantType,
+        }))
+    );
+
+  const totalIncome = filteredIncome.reduce(
+    (sum, income) => sum + income.amount,
+    0
+  );
+
+  const incomeByPlant = plantTypes.map((plantType) => {
+    const typeIncome = plantInstances
+      .filter((plant) => plant.plantType === plantType.name)
+      .flatMap((plant) => plant.incomeRecords || [])
+      .filter((inc) => {
+        const d = new Date(inc.date);
+        return d.getFullYear() === selectedYear;
+      })
+      .reduce((sum, inc) => sum + inc.amount, 0);
+
+    return {
+      name: plantType.displayName,
+      value: typeIncome,
+      color:
+        BRUTALIST_COLORS[
+          plantTypes.indexOf(plantType) % BRUTALIST_COLORS.length
+        ],
+    };
+  });
+
+  const monthlyTrendsIncome = Array.from({ length: 12 }, (_, i) => {
+    const month = i + 1;
+    const monthIncome = filteredIncome
+      .filter((inc) => {
+        const d = new Date(inc.date);
+        return d.getMonth() + 1 === month;
+      })
+      .reduce((sum, inc) => sum + inc.amount, 0);
+
+    // gunakan key "expenses" agar chart lama tetap jalan tanpa ubah prop
+    return {
+      month: new Date(selectedYear, i, 1).toLocaleDateString("id-ID", {
+        month: "short",
+      }),
+      expenses: monthIncome,
+    };
+  });
+
+  // ===================== EXPORT (switch by mode) =====================
   const handleExportCSV = async () => {
     try {
       const allPlantsResponse = await fetch("/api/plants");
-      const allPlants = await allPlantsResponse.json();
+      const allPlants: PlantInstance[] = await allPlantsResponse.json();
 
-      // Filter plants based on selected criteria
       const relevantPlants =
         selectedPlant === "all"
           ? allPlants
-          : allPlants.filter(
-              (plant: PlantInstance) => plant.plantType === selectedPlant
-            );
+          : allPlants.filter((plant) => plant.plantType === selectedPlant);
 
-      // Calculate expense-only statistics
-      const totalExpenses = relevantPlants.reduce(
-        (sum: number, plant: PlantInstance) => {
-          return (
-            sum +
-            (plant.operationalCosts
-              ?.filter((cost) => {
-                const costDate = new Date(cost.date);
-                const yearMatch = costDate.getFullYear() === selectedYear;
-                const monthMatch =
-                  selectedMonth === null ||
-                  costDate.getMonth() + 1 === selectedMonth;
-                return yearMatch && monthMatch;
-              })
-              .reduce((costSum, cost) => costSum + cost.amount, 0) || 0)
-          );
-        },
-        0
-      );
+      const isExpense = mode === "expense";
 
-      const totalTransactions = relevantPlants.reduce(
-        (sum: number, plant: PlantInstance) => {
-          return (
-            sum +
-            (plant.operationalCosts?.filter((cost) => {
-              const costDate = new Date(cost.date);
-              const yearMatch = costDate.getFullYear() === selectedYear;
-              const monthMatch =
-                selectedMonth === null ||
-                costDate.getMonth() + 1 === selectedMonth;
-              return yearMatch && monthMatch;
-            }).length || 0)
-          );
-        },
-        0
-      );
+      // totals & transactions
+      const total = relevantPlants.reduce((sum, plant) => {
+        const arr = isExpense
+          ? plant.operationalCosts || []
+          : plant.incomeRecords || [];
+        const subtotal = arr
+          .filter((it) => {
+            const d = new Date(it.date);
+            const yearMatch = d.getFullYear() === selectedYear;
+            const monthMatch =
+              selectedMonth === null || d.getMonth() + 1 === selectedMonth;
+            return yearMatch && monthMatch;
+          })
+          .reduce((s, it) => s + (it.amount || 0), 0);
+        return sum + subtotal;
+      }, 0);
 
-      const averageExpense =
-        totalTransactions > 0 ? totalExpenses / totalTransactions : 0;
+      const totalTransactions = relevantPlants.reduce((sum, plant) => {
+        const arr = isExpense
+          ? plant.operationalCosts || []
+          : plant.incomeRecords || [];
+        const count = arr.filter((it) => {
+          const d = new Date(it.date);
+          const yearMatch = d.getFullYear() === selectedYear;
+          const monthMatch =
+            selectedMonth === null || d.getMonth() + 1 === selectedMonth;
+          return yearMatch && monthMatch;
+        }).length;
+        return sum + count;
+      }, 0);
 
-      // Generate monthly expense data
-      const monthlyExpenseData = Array.from({ length: 12 }, (_, monthIndex) => {
+      const average =
+        totalTransactions > 0 ? total / totalTransactions : 0;
+
+      // monthly rows
+      const monthlyRows = Array.from({ length: 12 }, (_, monthIndex) => {
         const month = monthIndex + 1;
         const monthName = new Date(
           selectedYear,
@@ -256,61 +319,57 @@ export default function LaporanPengeluaranPage() {
           year: "numeric",
         });
 
-        const monthlyExpenses = relevantPlants.reduce(
-          (sum: number, plant: PlantInstance) => {
-            return (
-              sum +
-              (plant.operationalCosts
-                ?.filter((cost) => {
-                  const costDate = new Date(cost.date);
-                  return (
-                    costDate.getFullYear() === selectedYear &&
-                    costDate.getMonth() + 1 === month
-                  );
-                })
-                .reduce((costSum, cost) => costSum + cost.amount, 0) || 0)
-            );
-          },
-          0
-        );
+        const mTotal = relevantPlants.reduce((sum, plant) => {
+          const arr = isExpense
+            ? plant.operationalCosts || []
+            : plant.incomeRecords || [];
+          const subtotal = arr
+            .filter((it) => {
+              const d = new Date(it.date);
+              return (
+                d.getFullYear() === selectedYear && d.getMonth() + 1 === month
+              );
+            })
+            .reduce((s, it) => s + (it.amount || 0), 0);
+        return sum + subtotal;
+        }, 0);
 
-        const monthlyTransactions = relevantPlants.reduce(
-          (sum: number, plant: PlantInstance) => {
+        const mCount = relevantPlants.reduce((sum, plant) => {
+          const arr = isExpense
+            ? plant.operationalCosts || []
+            : plant.incomeRecords || [];
+          const count = arr.filter((it) => {
+            const d = new Date(it.date);
             return (
-              sum +
-              (plant.operationalCosts?.filter((cost) => {
-                const costDate = new Date(cost.date);
-                return (
-                  costDate.getFullYear() === selectedYear &&
-                  costDate.getMonth() + 1 === month
-                );
-              }).length || 0)
+              d.getFullYear() === selectedYear && d.getMonth() + 1 === month
             );
-          },
-          0
-        );
+          }).length;
+          return sum + count;
+        }, 0);
 
         return {
           monthName,
-          expenses: monthlyExpenses,
-          transactions: monthlyTransactions,
+          expenses: mTotal,
+          transactions: mCount,
         };
       });
 
-      // Get all expense transactions for detail section
-      const allExpenseTransactions = relevantPlants
-        .flatMap((plant: PlantInstance) =>
-          (plant.operationalCosts || [])
-            .filter((cost) => {
-              const costDate = new Date(cost.date);
-              const yearMatch = costDate.getFullYear() === selectedYear;
+      // detail rows
+      const allRows = relevantPlants
+        .flatMap((plant) =>
+          (isExpense
+            ? plant.operationalCosts || []
+            : plant.incomeRecords || []
+          )
+            .filter((it) => {
+              const d = new Date(it.date);
+              const yearMatch = d.getFullYear() === selectedYear;
               const monthMatch =
-                selectedMonth === null ||
-                costDate.getMonth() + 1 === selectedMonth;
+                selectedMonth === null || d.getMonth() + 1 === selectedMonth;
               return yearMatch && monthMatch;
             })
-            .map((cost) => ({
-              ...cost,
+            .map((it) => ({
+              ...it,
               plantName: plant.instanceName,
               plantType: plant.plantType,
             }))
@@ -319,6 +378,9 @@ export default function LaporanPengeluaranPage() {
           (a: any, b: any) =>
             new Date(b.date).getTime() - new Date(a.date).getTime()
         );
+
+      const title = isExpense ? "Laporan Pengeluaran" : "Laporan Pendapatan";
+      const labelValue = isExpense ? "Pengeluaran" : "Pendapatan";
 
       let html = `
         <html>
@@ -337,7 +399,7 @@ export default function LaporanPengeluaranPage() {
         <body>
       `;
 
-      html += `<div class="title">Laporan Pengeluaran - ${
+      html += `<div class="title">${title} - ${
         selectedPlant === "all"
           ? "Semua Tanaman"
           : selectedPlant.charAt(0).toUpperCase() + selectedPlant.slice(1)
@@ -351,15 +413,15 @@ export default function LaporanPengeluaranPage() {
           : ""
       }${selectedYear}</div>`;
 
-      // RINGKASAN PENGELUARAN Section
-      html += `<div class="header">RINGKASAN PENGELUARAN</div>`;
+      // RINGKASAN
+      html += `<div class="header">RINGKASAN ${labelValue.toUpperCase()}</div>`;
       html += `<table>`;
       html += `<tr><th>Keterangan</th><th>Nilai</th></tr>`;
-      html += `<tr><td>Total Pengeluaran</td><td>Rp ${totalExpenses.toLocaleString(
+      html += `<tr><td>Total ${labelValue}</td><td>Rp ${total.toLocaleString(
         "id-ID"
       )}</td></tr>`;
       html += `<tr><td>Jumlah Transaksi</td><td>${totalTransactions}</td></tr>`;
-      html += `<tr><td>Rata-rata per Transaksi</td><td>Rp ${averageExpense.toLocaleString(
+      html += `<tr><td>Rata-rata per Transaksi</td><td>Rp ${average.toLocaleString(
         "id-ID"
       )}</td></tr>`;
       html += `<tr><td>Periode</td><td>${
@@ -372,11 +434,11 @@ export default function LaporanPengeluaranPage() {
       }</td></tr>`;
       html += `</table>`;
 
-      // PENGELUARAN BULANAN Section
-      html += `<div class="header">PENGELUARAN BULANAN ${selectedYear}</div>`;
+      // BULANAN
+      html += `<div class="header">${labelValue.toUpperCase()} BULANAN ${selectedYear}</div>`;
       html += `<table>`;
-      html += `<tr><th>Bulan</th><th>Total Pengeluaran</th><th>Jumlah Transaksi</th><th>Rata-rata per Transaksi</th></tr>`;
-      monthlyExpenseData.forEach((data) => {
+      html += `<tr><th>Bulan</th><th>Total ${labelValue}</th><th>Jumlah Transaksi</th><th>Rata-rata per Transaksi</th></tr>`;
+      monthlyRows.forEach((data) => {
         const avgPerTransaction =
           data.transactions > 0 ? data.expenses / data.transactions : 0;
         html += `<tr><td>${
@@ -387,40 +449,35 @@ export default function LaporanPengeluaranPage() {
       });
       html += `</table>`;
 
-      // DETAIL TRANSAKSI PENGELUARAN Section
-      html += `<div class="header">DETAIL TRANSAKSI PENGELUARAN</div>`;
+      // DETAIL
+      html += `<div class="header">DETAIL TRANSAKSI ${labelValue.toUpperCase()}</div>`;
       html += `<table>`;
       html += `<tr><th>Tanggal</th><th>Deskripsi</th><th>Jumlah</th><th>Input Oleh</th></tr>`;
-      allExpenseTransactions.forEach((expense: any) => {
-        html += `<tr><td>${new Date(expense.date).toLocaleDateString(
+      allRows.forEach((row: any) => {
+        html += `<tr><td>${new Date(row.date).toLocaleDateString(
           "id-ID"
-        )}</td><td>${
-          expense.description
-        }</td><td>Rp ${expense.amount.toLocaleString("id-ID")}</td><td>${
-          expense.addedBy
-        }</td></tr>`;
+        )}</td><td>${row.description}</td><td>Rp ${row.amount.toLocaleString(
+          "id-ID"
+        )}</td><td>${row.addedBy}</td></tr>`;
       });
       html += `</table>`;
 
       html += `</body></html>`;
 
-      // Create and download file using browser APIs
+      // download
       const blob = new Blob([html], {
         type: "application/vnd.ms-excel;charset=utf-8;",
       });
       const link = document.createElement("a");
       const url = URL.createObjectURL(blob);
-
-      const excelFilename = filename.replace(".csv", ".xls");
+      const excelFilename =
+        (isExpense ? "laporan-pengeluaran" : "laporan-pendapatan") + ".xls";
       link.setAttribute("href", url);
       link.setAttribute("download", excelFilename);
       link.style.visibility = "hidden";
-
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-
-      // Clean up the URL object
       URL.revokeObjectURL(url);
     } catch (error) {
       console.error("Failed to export data:", error);
@@ -442,6 +499,13 @@ export default function LaporanPengeluaranPage() {
       </FinanceSidebar>
     );
   }
+
+  // ===== Helper pembalik data & label berdasar mode (UI tetap) =====
+  const isExpense = mode === "expense";
+  const totalPrimary = isExpense ? totalExpenses : totalIncome;
+  const listPrimary = isExpense ? filteredExpenses : filteredIncome;
+  const piePrimary = isExpense ? expensesByPlant : incomeByPlant;
+  const trendPrimary = isExpense ? monthlyTrends : monthlyTrendsIncome;
 
   return (
     <FinanceSidebar>
@@ -466,14 +530,39 @@ export default function LaporanPengeluaranPage() {
             </Link>
             <div>
               <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-[#324D3E] dark:text-white transition-colors duration-300">
-                Laporan Pengeluaran
+                {isExpense ? "Laporan Pengeluaran" : "Laporan Pendapatan"}
               </h1>
               <p className="text-[#889063] dark:text-gray-200 mt-1 text-sm sm:text-base lg:text-lg transition-colors duration-300">
-                Analisis dan manajemen pengeluaran operasional
+                {isExpense
+                  ? "Analisis dan manajemen pengeluaran operasional"
+                  : "Analisis dan manajemen pendapatan per tanaman"}
               </p>
             </div>
           </div>
-          <div className="flex gap-3">
+
+          <div className="flex gap-3 items-center">
+            {/* Toggle kecil – tidak mengubah layout utama */}
+            <div className="inline-flex rounded-2xl overflow-hidden border border-black/60">
+              <button
+                className={`px-3 py-1 text-xs font-bold ${
+                  isExpense ? "bg-[#FFEAA7]" : "bg-white"
+                }`}
+                onClick={() => setMode("expense")}
+                title="Lihat Pengeluaran"
+              >
+                Pengeluaran
+              </button>
+              <button
+                className={`px-3 py-1 text-xs font-bold ${
+                  !isExpense ? "bg-[#C2F5C0]" : "bg-white"
+                }`}
+                onClick={() => setMode("income")}
+                title="Lihat Pendapatan"
+              >
+                Pendapatan
+              </button>
+            </div>
+
             <motion.button
               onClick={handleExportCSV}
               className="inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-green-500 to-[#324D3E] hover:from-green-600 hover:to-[#4C3D19] px-4 py-2 text-sm font-medium text-white transition-all duration-300 shadow-lg hover:shadow-xl"
@@ -583,14 +672,14 @@ export default function LaporanPengeluaranPage() {
               <CardContent className="p-6">
                 <div className="flex items-center justify-between mb-4">
                   <div className="text-sm text-[#889063] dark:text-gray-200 transition-colors duration-300">
-                    Total Pengeluaran
+                    {isExpense ? "Total Pengeluaran" : "Total Pendapatan"}
                   </div>
-                  <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-red-500/10 text-red-600">
-                    <TrendingDown className="h-5 w-5" />
+                  <div className={`flex h-10 w-10 items-center justify-center rounded-2xl ${isExpense ? "bg-red-500/10 text-red-600" : "bg-green-500/10 text-green-600"}`}>
+                    {isExpense ? <TrendingDown className="h-5 w-5" /> : <TrendingUp className="h-5 w-5" />}
                   </div>
                 </div>
-                <div className="text-2xl font-bold text-red-600 dark:text-red-400 transition-colors duration-300">
-                  {formatCurrency(totalExpenses)}
+                <div className={`text-2xl font-bold ${isExpense ? "text-red-600 dark:text-red-400" : "text-green-600 dark:text-emerald-400"} transition-colors duration-300`}>
+                  {formatCurrency(totalPrimary)}
                 </div>
               </CardContent>
             </Card>
@@ -610,7 +699,7 @@ export default function LaporanPengeluaranPage() {
                   </div>
                 </div>
                 <div className="text-2xl font-bold text-blue-600 dark:text-blue-400 transition-colors duration-300">
-                  {filteredExpenses.length}
+                  {listPrimary.length}
                 </div>
               </CardContent>
             </Card>
@@ -632,8 +721,8 @@ export default function LaporanPengeluaranPage() {
                   </div>
                 </div>
                 <div className="text-2xl font-bold text-yellow-600 dark:text-yellow-400 transition-colors duration-300">
-                  {filteredExpenses.length > 0
-                    ? formatCurrency(totalExpenses / filteredExpenses.length)
+                  {listPrimary.length > 0
+                    ? formatCurrency(totalPrimary / listPrimary.length)
                     : "Rp 0"}
                 </div>
               </CardContent>
@@ -678,7 +767,7 @@ export default function LaporanPengeluaranPage() {
             <Card className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl border-[#324D3E]/10 dark:border-gray-700 shadow-lg transition-colors duration-300">
               <CardHeader>
                 <CardTitle className="text-[#324D3E] dark:text-white transition-colors duration-300">
-                  Pengeluaran per Tanaman
+                  {isExpense ? "Pengeluaran per Tanaman" : "Pendapatan per Tanaman"}
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -686,7 +775,7 @@ export default function LaporanPengeluaranPage() {
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                       <Pie
-                        data={expensesByPlant.filter(
+                        data={(isExpense ? piePrimary : piePrimary).filter(
                           (plant) => plant.value > 0
                         )}
                         cx="50%"
@@ -701,14 +790,14 @@ export default function LaporanPengeluaranPage() {
                         stroke="#000"
                         strokeWidth={3}
                       >
-                        {expensesByPlant.map((entry, index) => (
+                        {(isExpense ? piePrimary : piePrimary).map((entry, index) => (
                           <Cell key={`cell-${index}`} fill={entry.color} />
                         ))}
                       </Pie>
                       <Tooltip
                         formatter={(value: number) => [
                           formatCurrency(value),
-                          "Pengeluaran",
+                          isExpense ? "Pengeluaran" : "Pendapatan",
                         ]}
                         contentStyle={{
                           backgroundColor: isDark ? "#111827" : "#ffffff",
@@ -734,13 +823,15 @@ export default function LaporanPengeluaranPage() {
             <Card className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl border-[#324D3E]/10 dark:border-gray-700 shadow-lg transition-colors duration-300">
               <CardHeader>
                 <CardTitle className="text-[#324D3E] dark:text-white transition-colors duration-300">
-                  Tren Pengeluaran Bulanan {selectedYear}
+                  {isExpense
+                    ? `Tren Pengeluaran Bulanan ${selectedYear}`
+                    : `Tren Pendapatan Bulanan ${selectedYear}`}
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="h-80">
                   <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={monthlyTrends}>
+                    <LineChart data={trendPrimary}>
                       <CartesianGrid strokeDasharray="3 3" stroke={isDark ? "#4b5563" : "#374151"} />
                       <XAxis
                         dataKey="month"
@@ -757,7 +848,7 @@ export default function LaporanPengeluaranPage() {
                       <Tooltip
                         formatter={(value: number) => [
                           formatCurrency(value),
-                          "Pengeluaran",
+                          isExpense ? "Pengeluaran" : "Pendapatan",
                         ]}
                         contentStyle={{
                           backgroundColor: isDark ? "#111827" : "#ffffff",
@@ -771,10 +862,10 @@ export default function LaporanPengeluaranPage() {
                       <Line
                         type="monotone"
                         dataKey="expenses"
-                        stroke={isDark ? "#f87171" : "#ef4444"}
+                        stroke={isExpense ? (isDark ? "#f87171" : "#ef4444") : (isDark ? "#34d399" : "#10b981")}
                         strokeWidth={4}
                         dot={{
-                          fill: isDark ? "#f87171" : "#ef4444",
+                          fill: isExpense ? (isDark ? "#f87171" : "#ef4444") : (isDark ? "#34d399" : "#10b981"),
                           strokeWidth: 3,
                           stroke: isDark ? "#d1d5db" : "#000",
                           r: 6,
@@ -796,11 +887,11 @@ export default function LaporanPengeluaranPage() {
           <Card className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl border-[#324D3E]/10 dark:border-gray-700 shadow-lg transition-colors duration-300">
             <CardHeader>
               <CardTitle className="text-[#324D3E] dark:text-white transition-colors duration-300">
-                Detail Pengeluaran
+                {isExpense ? "Detail Pengeluaran" : "Detail Pendapatan"}
               </CardTitle>
             </CardHeader>
             <CardContent>
-              {filteredExpenses.length > 0 ? (
+              {listPrimary.length > 0 ? (
                 <div className="overflow-x-auto">
                   <table className="w-full">
                     <thead>
@@ -820,13 +911,13 @@ export default function LaporanPengeluaranPage() {
                       </tr>
                     </thead>
                     <tbody>
-                      {filteredExpenses
+                      {listPrimary
                         .sort(
                           (a, b) =>
                             new Date(b.date).getTime() -
                             new Date(a.date).getTime()
                         )
-                        .map((expense, index) => (
+                        .map((row, index) => (
                           <tr
                             key={index}
                             className={`border-b border-[#324D3E]/5 dark:border-gray-700 ${
@@ -836,18 +927,16 @@ export default function LaporanPengeluaranPage() {
                             } hover:bg-[#324D3E]/10 dark:hover:bg-gray-700 transition-colors duration-200`}
                           >
                             <td className="py-3 px-4 text-[#324D3E] dark:text-white transition-colors duration-300">
-                              {new Date(expense.date).toLocaleDateString(
-                                "id-ID"
-                              )}
+                              {new Date(row.date).toLocaleDateString("id-ID")}
                             </td>
                             <td className="py-3 px-4 text-[#324D3E] dark:text-white transition-colors duration-300">
-                              {expense.description}
+                              {row.description}
                             </td>
-                            <td className="py-3 px-4 text-right text-red-600 dark:text-red-400 font-medium transition-colors duration-300">
-                              {formatCurrency(expense.amount)}
+                            <td className={`py-3 px-4 text-right font-medium transition-colors duration-300 ${isExpense ? "text-red-600 dark:text-red-400" : "text-green-600 dark:text-emerald-400"}`}>
+                              {formatCurrency(row.amount)}
                             </td>
                             <td className="py-3 px-4 text-[#889063] dark:text-gray-200 transition-colors duration-300">
-                              {expense.addedBy}
+                              {row.addedBy}
                             </td>
                           </tr>
                         ))}
@@ -856,9 +945,15 @@ export default function LaporanPengeluaranPage() {
                 </div>
               ) : (
                 <div className="text-center py-8 text-[#889063] dark:text-gray-200 transition-colors duration-300">
-                  <TrendingDown className="h-12 w-12 mx-auto mb-4 opacity-50 text-[#324D3E] dark:text-white transition-colors duration-300" />
+                  {(isExpense ? (
+                    <TrendingDown className="h-12 w-12 mx-auto mb-4 opacity-50 text-[#324D3E] dark:text-white transition-colors duration-300" />
+                  ) : (
+                    <TrendingUp className="h-12 w-12 mx-auto mb-4 opacity-50 text-[#324D3E] dark:text-white transition-colors duration-300" />
+                  ))}
                   <p>
-                    Tidak ada pengeluaran ditemukan untuk filter yang dipilih
+                    {isExpense
+                      ? "Tidak ada pengeluaran ditemukan untuk filter yang dipilih"
+                      : "Tidak ada pendapatan ditemukan untuk filter yang dipilih"}
                   </p>
                 </div>
               )}

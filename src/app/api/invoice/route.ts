@@ -47,19 +47,13 @@ function parseDateFromQuery(q: string): { start: Date; end: Date } | null {
       d.getFullYear(),
       d.getMonth(),
       d.getDate(),
-      0,
-      0,
-      0,
-      0
+      0, 0, 0, 0
     );
     const end = new Date(
       d.getFullYear(),
       d.getMonth(),
       d.getDate(),
-      23,
-      59,
-      59,
-      999
+      23, 59, 59, 999
     );
     return { start, end };
   }
@@ -71,19 +65,13 @@ function parseDateFromQuery(q: string): { start: Date; end: Date } | null {
       d.getFullYear(),
       d.getMonth(),
       d.getDate(),
-      0,
-      0,
-      0,
-      0
+      0, 0, 0, 0
     );
     const end = new Date(
       d.getFullYear(),
       d.getMonth(),
       d.getDate(),
-      23,
-      59,
-      59,
-      999
+      23, 59, 59, 999
     );
     return { start, end };
   }
@@ -94,19 +82,13 @@ function parseDateFromQuery(q: string): { start: Date; end: Date } | null {
       d2.getFullYear(),
       d2.getMonth(),
       d2.getDate(),
-      0,
-      0,
-      0,
-      0
+      0, 0, 0, 0
     );
     const end = new Date(
       d2.getFullYear(),
       d2.getMonth(),
       d2.getDate(),
-      23,
-      59,
-      59,
-      999
+      23, 59, 59, 999
     );
     return { start, end };
   }
@@ -124,15 +106,17 @@ export async function GET(request: NextRequest) {
     await ensureConnection();
 
     const { searchParams } = new URL(request.url);
-    
+
     // ---- read URL params ----
     const q = searchParams.get("q")?.trim() || "";
     const sortParam = searchParams.get("sort") === "asc" ? "asc" : "desc";
     const page = Math.max(1, parseInt(searchParams.get("page") || "1", 10));
+    const category = (searchParams.get("category") || "").trim().toLowerCase();
 
     // ---- build filter ----
     const filter: any = {};
     const or: any[] = [];
+    const and: any[] = [];
 
     if (q) {
       // orderId (regex)
@@ -150,6 +134,30 @@ export async function GET(request: NextRequest) {
       }
     }
     if (or.length) filter.$or = or;
+
+    // ---- category filter (tambahan sesuai permintaan) ----
+    // registration => paymentType === "registration"
+    // cicilan => paymentType salah satu dari ["cicilan-installment","installment","cicilan"] DAN adminStatus === "Approved"
+    // full => paymentType yang mengandung "full" (full / full investment)
+    if (category === "registration") {
+      and.push({ paymentType: "registration" });
+    } else if (category === "cicilan") {
+      and.push({
+        paymentType: { $in: ["cicilan-installment", "installment", "cicilan"] },
+      });
+      and.push({ adminStatus: "approved" });
+    } else if (category === "full") {
+      and.push({
+        $or: [
+          { paymentType: "full" },
+          { paymentType: "full investment" },
+          { paymentType: { $regex: "^full", $options: "i" } },
+        ],
+      });
+    }
+    if (and.length) {
+      filter.$and = filter.$and ? [...filter.$and, ...and] : and;
+    }
 
     const total = await Payment.countDocuments(filter);
     const totalPages = Math.max(1, Math.ceil(total / PER_PAGE));
@@ -181,7 +189,7 @@ export async function GET(request: NextRequest) {
           .filter(Boolean) as string[]
       )
     );
-    
+
     const usersById = new Map<
       string,
       {
@@ -191,7 +199,7 @@ export async function GET(request: NextRequest) {
         profileImageUrl?: string;
       }
     >();
-    
+
     if (userIds.length) {
       const users = await User.find({ _id: { $in: userIds } })
         .select({ _id: 1, name: 1, username: 1, email: 1, profileImageUrl: 1 })
@@ -224,7 +232,6 @@ export async function GET(request: NextRequest) {
       currentPage: page,
       perPage: PER_PAGE,
     });
-
   } catch (error) {
     console.error("GET /api/invoice error:", error);
     return NextResponse.json(
