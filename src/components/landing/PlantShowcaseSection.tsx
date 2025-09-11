@@ -84,11 +84,11 @@ export default function PlantShowcaseSection() {
   const [treeSelectionModal, setTreeSelectionModal] = useState<{
     isOpen: boolean;
     plant: any;
-    selectedTreeCount: number | null;
+    selectedPackage: any | null;
   }>({
     isOpen: false,
     plant: null,
-    selectedTreeCount: null,
+    selectedPackage: null,
   });
   const { showSuccess, showError, AlertComponent } = useAlert();
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -113,6 +113,7 @@ export default function PlantShowcaseSection() {
               productOlahan: plant.productOlahan || [],
               pricing: plant.pricing,
               investmentPlan: plant.investmentPlan,
+              treePackages: plant.treePackages || [],
             }));
             setPlantsData(transformedData);
             console.log(
@@ -171,41 +172,37 @@ export default function PlantShowcaseSection() {
     setTreeSelectionModal({
       isOpen: true,
       plant: plant,
-      selectedTreeCount: null,
+      selectedPackage: null,
     });
   };
 
-  const handleTreeCountSelect = (treeCount: number) => {
+  const handlePackageSelect = (packageInfo: any) => {
     setTreeSelectionModal((prev) => ({
       ...prev,
-      selectedTreeCount: treeCount,
+      selectedPackage: packageInfo,
     }));
   };
 
   const handleConfirmTreeSelection = async () => {
-    if (!treeSelectionModal.plant || !treeSelectionModal.selectedTreeCount)
+    if (!treeSelectionModal.plant || !treeSelectionModal.selectedPackage)
       return;
 
     const plant = treeSelectionModal.plant;
-    const treeCount = treeSelectionModal.selectedTreeCount;
+    const selectedPackage = treeSelectionModal.selectedPackage;
 
     setTreeSelectionModal({
       isOpen: false,
       plant: null,
-      selectedTreeCount: null,
+      selectedPackage: null,
     });
     setIsLoading(plant.name);
 
     try {
-      const adjustedPrice =
-        treeCount === 1
-          ? Math.round(plant.investmentPlan.price / 10)
-          : plant.investmentPlan.price;
       const adjustedPlan = {
         ...plant.investmentPlan,
-        name: `${plant.investmentPlan.name} - ${treeCount} Pohon`,
-        price: adjustedPrice,
-        treeCount: treeCount,
+        name: `${plant.investmentPlan.name} - ${selectedPackage.name}`,
+        price: selectedPackage.price,
+        treeCount: selectedPackage.treeCount,
       };
 
       const response = await fetch("/api/payment/create-investment", {
@@ -249,7 +246,7 @@ export default function PlantShowcaseSection() {
       router.push("/login");
       return;
     }
-    setCicilanModal({ isOpen: true, plant: plant.investmentPlan });
+    setCicilanModal({ isOpen: true, plant: plant });
   };
 
   return (
@@ -772,7 +769,7 @@ export default function PlantShowcaseSection() {
               setTreeSelectionModal({
                 isOpen: false,
                 plant: null,
-                selectedTreeCount: null,
+                selectedPackage: null,
               })
             }
           >
@@ -793,7 +790,7 @@ export default function PlantShowcaseSection() {
                       setTreeSelectionModal({
                         isOpen: false,
                         plant: null,
-                        selectedTreeCount: null,
+                        selectedPackage: null,
                       })
                     }
                     className="text-[#324D3E]/60 hover:text-[#324D3E] transition-colors p-2 rounded-full hover:bg-[#324D3E]/10"
@@ -815,60 +812,44 @@ export default function PlantShowcaseSection() {
                 </div>
                 <div className="mb-6">
                   <h4 className="font-bold mb-4 text-[#324D3E] font-[family-name:var(--font-poppins)]">
-                    Pilih Jumlah Pohon
+                    Pilih Paket Investasi
                   </h4>
-                  <div className="grid grid-cols-2 gap-3">
-                    <motion.button
-                      className={`flex flex-col items-center p-4 border-2 rounded-2xl transition-all duration-300 hover:shadow-lg ${
-                        treeSelectionModal.selectedTreeCount === 1
-                          ? "border-[#324D3E] bg-gradient-to-r from-[#324D3E]/10 to-[#4C3D19]/10 shadow-lg"
-                          : "border-[#324D3E]/20 hover:border-[#324D3E]/40 bg-white/80"
-                      }`}
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
-                      onClick={() => handleTreeCountSelect(1)}
-                    >
-                      <div className="text-3xl mb-2">🌱</div>
-                      <div className="font-bold text-[#324D3E] font-[family-name:var(--font-poppins)]">
-                        1 Pohon
-                      </div>
-                      <div className="text-sm text-[#324D3E]/70 font-medium text-center">
-                        Investasi Kecil
-                      </div>
-                      <div className="font-bold text-[#324D3E] text-lg mt-2">
-                        Rp{" "}
-                        {formatIDRCurrency(
-                          Math.round(
-                            treeSelectionModal.plant.investmentPlan.price / 10
-                          )
-                        )}
-                      </div>
-                    </motion.button>
-                    <motion.button
-                      className={`flex flex-col items-center p-4 border-2 rounded-2xl transition-all duration-300 hover:shadow-lg ${
-                        treeSelectionModal.selectedTreeCount === 10
-                          ? "border-[#324D3E] bg-gradient-to-r from-[#324D3E]/10 to-[#4C3D19]/10 shadow-lg"
-                          : "border-[#324D3E]/20 hover:border-[#324D3E]/40 bg-white/80"
-                      }`}
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
-                      onClick={() => handleTreeCountSelect(10)}
-                    >
-                      <div className="text-3xl mb-2">🌳</div>
-                      <div className="font-bold text-[#324D3E] font-[family-name:var(--font-poppins)]">
-                        10 Pohon
-                      </div>
-                      <div className="text-sm text-[#324D3E]/70 font-medium text-center">
-                        Paket Lengkap
-                      </div>
-                      <div className="font-bold text-[#324D3E] text-lg mt-2">
-                        Rp{" "}
-                        {formatIDRCurrency(
-                          treeSelectionModal.plant.investmentPlan.price
-                        )}
-                      </div>
-                    </motion.button>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {(treeSelectionModal.plant?.treePackages || [])
+                      .filter((pkg: any) => pkg.enabled)
+                      .map((treePackage: any, index: number) => (
+                        <motion.button
+                          key={index}
+                          className={`flex flex-col items-center p-4 border-2 rounded-2xl transition-all duration-300 hover:shadow-lg ${
+                            treeSelectionModal.selectedPackage?.treeCount === treePackage.treeCount
+                              ? "border-[#324D3E] bg-gradient-to-r from-[#324D3E]/10 to-[#4C3D19]/10 shadow-lg"
+                              : "border-[#324D3E]/20 hover:border-[#324D3E]/40 bg-white/80"
+                          }`}
+                          whileHover={{ scale: 1.02 }}
+                          whileTap={{ scale: 0.98 }}
+                          onClick={() => handlePackageSelect(treePackage)}
+                        >
+                          <div className="text-3xl mb-2">
+                            {treePackage.treeCount === 1 ? "🌱" : "🌳"}
+                          </div>
+                          <div className="font-bold text-[#324D3E] font-[family-name:var(--font-poppins)]">
+                            {treePackage.name}
+                          </div>
+                          <div className="text-sm text-[#324D3E]/70 font-medium text-center">
+                            {treePackage.description}
+                          </div>
+                          <div className="font-bold text-[#324D3E] text-lg mt-2">
+                            Rp {formatIDRCurrency(treePackage.price)}
+                          </div>
+                        </motion.button>
+                      ))}
                   </div>
+                  {(!treeSelectionModal.plant?.treePackages || 
+                    treeSelectionModal.plant.treePackages.filter((pkg: any) => pkg.enabled).length === 0) && (
+                    <div className="text-center py-6">
+                      <p className="text-[#324D3E]/60">Belum ada paket investasi yang tersedia</p>
+                    </div>
+                  )}
                 </div>
                 <div className="mb-6">
                   <div className="bg-gradient-to-r from-[#324D3E]/10 to-[#4C3D19]/10 p-6 rounded-2xl border border-[#324D3E]/20">
@@ -890,6 +871,22 @@ export default function PlantShowcaseSection() {
                         </span>
                         <span className="font-bold text-[#324D3E]">
                           {treeSelectionModal.plant.investmentPlan.duration}
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-[#324D3E]/80 font-medium">
+                          Jumlah Pohon:
+                        </span>
+                        <span className="font-bold text-[#324D3E]">
+                          {treeSelectionModal.selectedPackage?.treeCount || "-"} Pohon
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-[#324D3E]/80 font-medium">
+                          Total Harga:
+                        </span>
+                        <span className="font-bold text-[#324D3E]">
+                          Rp {formatIDRCurrency(treeSelectionModal.selectedPackage?.price || 0)}
                         </span>
                       </div>
                       <div className="flex justify-between items-center">
@@ -917,27 +914,27 @@ export default function PlantShowcaseSection() {
                 <div className="space-y-3">
                   <motion.button
                     className={`w-full px-4 py-3 rounded-2xl font-medium transition-all duration-300 ${
-                      treeSelectionModal.selectedTreeCount
+                      treeSelectionModal.selectedPackage
                         ? "bg-[#324D3E] text-white hover:bg-[#4C3D19] shadow-lg hover:shadow-xl"
                         : "bg-[#324D3E]/20 text-[#324D3E]/50 cursor-not-allowed"
                     }`}
                     whileHover={
-                      treeSelectionModal.selectedTreeCount
+                      treeSelectionModal.selectedPackage
                         ? { scale: 1.02 }
                         : {}
                     }
                     whileTap={
-                      treeSelectionModal.selectedTreeCount
+                      treeSelectionModal.selectedPackage
                         ? { scale: 0.98 }
                         : {}
                     }
                     onClick={
-                      treeSelectionModal.selectedTreeCount
+                      treeSelectionModal.selectedPackage
                         ? handleConfirmTreeSelection
                         : undefined
                     }
                     disabled={
-                      (!treeSelectionModal.selectedTreeCount as any) ||
+                      !treeSelectionModal.selectedPackage ||
                       !!isLoading
                     }
                   >
@@ -951,7 +948,7 @@ export default function PlantShowcaseSection() {
                       setTreeSelectionModal({
                         isOpen: false,
                         plant: null,
-                        selectedTreeCount: null,
+                        selectedPackage: null,
                       })
                     }
                   >

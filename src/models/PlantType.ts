@@ -24,6 +24,15 @@ export interface IInstallmentOption {
   perTree: number
 }
 
+export interface ITreePackage {
+  treeCount: number
+  name: string
+  description: string
+  price: number
+  installmentPrice: number
+  enabled: boolean
+}
+
 export interface IInvestmentPlan {
   name: string
   price: number
@@ -49,6 +58,7 @@ export interface IPlantType extends Document {
   productOlahan: IProductOlahan[]
   pricing: IPricing
   investmentPlan: IInvestmentPlan
+  treePackages: ITreePackage[]
   createdAt: Date
   updatedAt: Date
 }
@@ -79,6 +89,15 @@ const InstallmentOptionSchema = new Schema({
   perTree: { type: Number, required: true },
 }, { _id: false });
 
+const TreePackageSchema = new Schema({
+  treeCount: { type: Number, required: true, min: 1 },
+  name: { type: String, required: true },
+  description: { type: String, required: true },
+  price: { type: Number, required: true, min: 0 },
+  installmentPrice: { type: Number, required: true, min: 0 },
+  enabled: { type: Boolean, required: true, default: true },
+}, { _id: false });
+
 const InvestmentPlanSchema = new Schema({
   name: { type: String, required: true },
   price: { type: Number, required: true },
@@ -105,6 +124,7 @@ const PlantTypeSchema = new Schema(
     productOlahan: [ProductOlahanSchema],
     pricing: PricingSchema,
     investmentPlan: InvestmentPlanSchema,
+    treePackages: { type: [TreePackageSchema], default: [] },
   },
   {
     timestamps: true,

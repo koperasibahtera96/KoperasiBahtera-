@@ -11,6 +11,12 @@ interface DashboardData {
     totalTrees: number;
     activeInvestment: string;
     averageTreeAge: string;
+    monthlyGrowth: {
+      investors: string;
+      trees: string;
+      investment: string;
+      roi: string;
+    };
   };
   recentInvestors: Array<{
     id: string;
@@ -99,32 +105,32 @@ export default function AdminDashboard() {
     {
       name: 'Total Investor',
       value: dashboardData.stats.totalInvestors.toLocaleString('id-ID'),
-      change: '+0%',
-      changeType: 'positive',
+      change: dashboardData.stats.monthlyGrowth.investors,
+      changeType: dashboardData.stats.monthlyGrowth.investors.startsWith('+') || dashboardData.stats.monthlyGrowth.investors === '0%' ? 'positive' : 'negative',
       icon: '👥',
       color: 'emerald'
     },
     {
       name: 'Total Pohon',
       value: dashboardData.stats.totalTrees.toLocaleString('id-ID'),
-      change: '+0%',
-      changeType: 'positive',
+      change: dashboardData.stats.monthlyGrowth.trees,
+      changeType: dashboardData.stats.monthlyGrowth.trees.startsWith('+') || dashboardData.stats.monthlyGrowth.trees === '0%' ? 'positive' : 'negative',
       icon: '🌳',
       color: 'green'
     },
     {
       name: 'Investasi Aktif',
       value: dashboardData.stats.activeInvestment,
-      change: '+0%',
-      changeType: 'positive',
+      change: dashboardData.stats.monthlyGrowth.investment,
+      changeType: dashboardData.stats.monthlyGrowth.investment.startsWith('+') || dashboardData.stats.monthlyGrowth.investment === '0%' ? 'positive' : 'negative',
       icon: '💰',
       color: 'yellow'
     },
     {
       name: 'Umur Rata-rata Pohon',
       value: dashboardData.stats.averageTreeAge,
-      change: '+0%',
-      changeType: 'positive',
+      change: dashboardData.stats.monthlyGrowth.roi,
+      changeType: dashboardData.stats.monthlyGrowth.roi.startsWith('+') || dashboardData.stats.monthlyGrowth.roi === '0%' ? 'positive' : 'negative',
       icon: '📈',
       color: 'blue'
     }
@@ -302,7 +308,11 @@ export default function AdminDashboard() {
                       </div>
                       <div className="text-right">
                         <p className="font-medium text-[#324D3E] dark:text-white transition-colors duration-300">{tree.value}</p>
-                        <p className="text-sm text-[#4C3D19] dark:text-[#4C3D19] transition-colors duration-300">{tree.growth}</p>
+                        <p className={`text-sm transition-colors duration-300 ${
+                          tree.growth.startsWith('+') || tree.growth === '0%' 
+                            ? 'text-[#4C3D19] dark:text-[#4C3D19]' 
+                            : 'text-red-600 dark:text-red-400'
+                        }`}>{tree.growth}</p>
                       </div>
                     </div>
                   ))

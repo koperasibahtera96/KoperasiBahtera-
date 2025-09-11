@@ -63,6 +63,7 @@ const statusOptions: StatusOption[] = [
   { value: "penyiraman", label: "Penyiraman" },
   { value: "pemangkasan", label: "Pemangkasan" },
   { value: "panen", label: "Panen" },
+  { value: "sakit", label: "Sakit" },
   { value: "lainnya", label: "Lainnya" },
 ];
 

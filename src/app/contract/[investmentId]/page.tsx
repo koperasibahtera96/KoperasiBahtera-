@@ -43,7 +43,9 @@ export default function ContractPage() {
   const investmentId = params.investmentId as string;
   const [contractData, setContractData] = useState<ContractData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [loadingMessage, setLoadingMessage] = useState("Loading contract data...");
+  const [loadingMessage, setLoadingMessage] = useState(
+    "Loading contract data..."
+  );
   const [signing, setSigning] = useState(false);
   const [signed, setSigned] = useState(false);
   const sigCanvas = useRef<any>(null);
@@ -66,23 +68,39 @@ export default function ContractPage() {
         setContractData(result.data);
       } else if (response.status === 404 && retryCount < 10) {
         // Contract data not ready yet, webhook might still be processing
-        setLoadingMessage(`Processing your payment... Please wait (${retryCount + 1}/10)`);
-        console.log(`Contract data not ready, retrying in 2 seconds... (attempt ${retryCount + 1}/10)`);
-        await new Promise(resolve => setTimeout(resolve, 2000));
+        setLoadingMessage(
+          `Processing your payment... Please wait (${retryCount + 1}/10)`
+        );
+        console.log(
+          `Contract data not ready, retrying in 2 seconds... (attempt ${
+            retryCount + 1
+          }/10)`
+        );
+        await new Promise((resolve) => setTimeout(resolve, 2000));
         return fetchContractData(retryCount + 1);
       } else {
         console.error("Failed to fetch contract data");
-        showError("Error", "Failed to load contract data. Please refresh the page.");
+        showError(
+          "Error",
+          "Failed to load contract data. Please refresh the page."
+        );
       }
     } catch (error) {
       console.error("Error fetching contract data:", error);
       if (retryCount < 10) {
         setLoadingMessage(`Connecting... Please wait (${retryCount + 1}/10)`);
-        console.log(`Network error, retrying in 2 seconds... (attempt ${retryCount + 1}/10)`);
-        await new Promise(resolve => setTimeout(resolve, 2000));
+        console.log(
+          `Network error, retrying in 2 seconds... (attempt ${
+            retryCount + 1
+          }/10)`
+        );
+        await new Promise((resolve) => setTimeout(resolve, 2000));
         return fetchContractData(retryCount + 1);
       } else {
-        showError("Error", "Failed to load contract data after multiple attempts. Please refresh the page.");
+        showError(
+          "Error",
+          "Failed to load contract data after multiple attempts. Please refresh the page."
+        );
       }
     } finally {
       setLoading(false);
@@ -403,9 +421,9 @@ export default function ContractPage() {
 
       // Call API to mark contract as signed in database
       const response = await fetch(`/api/contract/${investmentId}`, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           signatureData: signatureDataURL,
@@ -416,7 +434,7 @@ export default function ContractPage() {
       if (response.ok) {
         setSigned(true);
       } else {
-        throw new Error('Failed to save contract signing status');
+        throw new Error("Failed to save contract signing status");
       }
     } catch (error) {
       console.error("Error generating PDF:", error);
@@ -593,7 +611,7 @@ export default function ContractPage() {
                   <p>
                     <span className="text-[#889063]">ROI:</span>{" "}
                     <span className="font-medium">
-                      {contractData.plantInstance.baseAnnualROI}%/tahun
+                      {contractData.plantInstance.baseAnnualROI * 100}%/tahun
                     </span>
                   </p>
                 </div>

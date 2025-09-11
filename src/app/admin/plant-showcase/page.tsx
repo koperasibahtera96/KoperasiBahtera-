@@ -11,18 +11,23 @@ import { motion } from "framer-motion";
 import { DollarSign, RefreshCw, Save } from "lucide-react";
 import { useEffect, useState } from "react";
 
+interface TreePackage {
+  treeCount: number;
+  name: string;
+  description: string;
+  price: number;
+  installmentPrice: number;
+  enabled: boolean;
+}
+
 interface Plant {
   name: string;
   nameEn: string;
   years: string;
   location: string;
   description: string;
-  // Simplified pricing structure
+  // Profit projections per tree
   pricing: {
-    price10Trees: number; // Harga 10 pohon
-    price1Tree: number; // Harga 1 pohon
-    installmentPrice10Trees: number; // Harga cicilan 10 pohon
-    installmentPrice1Tree: number; // Harga cicilan 1 pohon
     profit: {
       daily: number; // per pohon
       weekly: number; // per pohon
@@ -31,6 +36,7 @@ interface Plant {
     };
   };
   estimatedReturn: number; // Total return untuk 10 pohon
+  treePackages: TreePackage[];
 }
 
 export default function PlantShowcasePage() {
@@ -41,6 +47,28 @@ export default function PlantShowcasePage() {
 
   // Transform old database structure to new simplified structure
   const transformOldToNew = (oldPlant: any): Plant => {
+    // Generate default tree packages if none exist
+    const defaultTreePackages: TreePackage[] = [
+      {
+        treeCount: 1,
+        name: "1 Pohon",
+        description: "Investasi Kecil",
+        price: Math.ceil((oldPlant.investmentPlan?.price || 0) / 10),
+        installmentPrice:
+          oldPlant.investmentPlan?.installmentOptions?.[0]?.perTree || 0,
+        enabled: true,
+      },
+      {
+        treeCount: 10,
+        name: "10 Pohon",
+        description: "Paket Lengkap",
+        price: oldPlant.investmentPlan?.price || 0,
+        installmentPrice:
+          oldPlant.investmentPlan?.installmentOptions?.[0]?.amount || 0,
+        enabled: true,
+      },
+    ];
+
     return {
       name: oldPlant.name,
       nameEn: oldPlant.nameEn,
@@ -48,10 +76,6 @@ export default function PlantShowcasePage() {
       location: oldPlant.location,
       description: oldPlant.description,
       pricing: {
-        price10Trees: oldPlant.investmentPlan?.price || 0,
-        price1Tree: Math.ceil((oldPlant.investmentPlan?.price || 0) / 10),
-        installmentPrice10Trees: oldPlant.investmentPlan?.installmentOptions?.[0]?.amount || 0,
-        installmentPrice1Tree: oldPlant.investmentPlan?.installmentOptions?.[0]?.perTree || 0,
         profit: {
           daily: parseInt(oldPlant.pricing?.profit?.daily || "0"),
           weekly: parseInt(oldPlant.pricing?.profit?.weekly || "0"),
@@ -59,7 +83,13 @@ export default function PlantShowcasePage() {
           yearly: parseInt(oldPlant.pricing?.profit?.yearly || "0"),
         },
       },
-      estimatedReturn: parseInt(oldPlant.investmentPlan?.returns?.toString().replace(/\D/g, "") || "0"),
+      estimatedReturn: parseInt(
+        oldPlant.investmentPlan?.returns?.toString().replace(/\D/g, "") || "0"
+      ),
+      treePackages:
+        oldPlant.treePackages && oldPlant.treePackages.length > 0
+          ? oldPlant.treePackages
+          : defaultTreePackages,
     };
   };
 
@@ -88,6 +118,67 @@ export default function PlantShowcasePage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  const handleTreePackageUpdate = (
+    plantIndex: number,
+    packageIndex: number,
+    field: string,
+    value: string | number | boolean
+  ) => {
+    setPlantsData((prev) => {
+      const updated = [...prev];
+
+      if (!updated[plantIndex].treePackages) {
+        updated[plantIndex].treePackages = [];
+      }
+
+      if (
+        field === "price" ||
+        field === "installmentPrice" ||
+        field === "treeCount"
+      ) {
+        const cleanValue =
+          typeof value === "string" ? parseIDRInput(value) : value;
+        (updated[plantIndex].treePackages[packageIndex] as any)[field] =
+          field === "treeCount"
+            ? parseInt(cleanValue as string) || 1
+            : parseInt(cleanValue as string) || 0;
+      } else {
+        (updated[plantIndex].treePackages[packageIndex] as any)[field] = value;
+      }
+
+      return updated;
+    });
+  };
+
+  const addTreePackage = (plantIndex: number) => {
+    setPlantsData((prev) => {
+      const updated = [...prev];
+      updated[plantIndex] = {
+        ...updated[plantIndex],
+        treePackages: [
+          ...(updated[plantIndex].treePackages || []),
+          {
+            treeCount: 5,
+            name: "5 Pohon",
+            description: "Paket Medium",
+            price: 0,
+            installmentPrice: 0,
+            enabled: true,
+          },
+        ],
+      };
+      return updated;
+    });
+  };
+
+  const removeTreePackage = (plantIndex: number, packageIndex: number) => {
+    setPlantsData((prev) => {
+      const updated = [...prev];
+      updated[plantIndex].treePackages.splice(packageIndex, 1);
+      return updated;
+    });
+  };
+
   const handlePriceUpdate = (
     plantIndex: number,
     field: string,
@@ -99,10 +190,6 @@ export default function PlantShowcasePage() {
       // Ensure the plant has the required structure
       if (!updated[plantIndex].pricing) {
         updated[plantIndex].pricing = {
-          price10Trees: 0,
-          price1Tree: 0,
-          installmentPrice10Trees: 0,
-          installmentPrice1Tree: 0,
           profit: {
             daily: 0,
             weekly: 0,
@@ -124,18 +211,7 @@ export default function PlantShowcasePage() {
       if (field.includes(".")) {
         const [parent, child] = field.split(".");
 
-        if (parent === "pricing") {
-          if (
-            child === "price10Trees" || 
-            child === "price1Tree" ||
-            child === "installmentPrice10Trees" ||
-            child === "installmentPrice1Tree"
-          ) {
-            const cleanValue = parseIDRInput(value as string);
-            (updated[plantIndex].pricing as any)[child] =
-              parseInt(cleanValue) || 0;
-          }
-        } else if (parent === "profit") {
+        if (parent === "profit") {
           const cleanValue = parseIDRInput(value as string);
           (updated[plantIndex].pricing.profit as any)[child] =
             parseInt(cleanValue) || 0;
@@ -161,7 +237,7 @@ export default function PlantShowcasePage() {
         monthly: newPlant.pricing.profit.monthly.toString(),
         yearly: newPlant.pricing.profit.yearly.toString(),
         fiveYears: (newPlant.pricing.profit.yearly * 5).toString(),
-        sellPrice: newPlant.pricing.price1Tree.toString(),
+        sellPrice: "1500000", // Default legacy value
         profit: {
           daily: newPlant.pricing.profit.daily.toString(),
           weekly: newPlant.pricing.profit.weekly.toString(),
@@ -171,7 +247,9 @@ export default function PlantShowcasePage() {
       },
       investmentPlan: {
         name: `Paket 10 Pohon ${newPlant.name}`,
-        price: newPlant.pricing.price10Trees,
+        price:
+          newPlant.treePackages.find((pkg) => pkg.treeCount === 10)?.price ||
+          15000000,
         duration: newPlant.years,
         returns: newPlant.estimatedReturn,
         plantType: `${newPlant.name} Premium`,
@@ -179,34 +257,56 @@ export default function PlantShowcasePage() {
         installmentOptions: [
           {
             period: "Per Bulan",
-            amount: newPlant.pricing.installmentPrice10Trees,
-            perTree: newPlant.pricing.installmentPrice1Tree,
+            amount:
+              newPlant.treePackages.find((pkg) => pkg.treeCount === 10)
+                ?.installmentPrice || 16500000,
+            perTree:
+              newPlant.treePackages.find((pkg) => pkg.treeCount === 1)
+                ?.installmentPrice || 1650000,
           },
           {
             period: "Per 3 Bulan",
-            amount: newPlant.pricing.installmentPrice10Trees,
-            perTree: newPlant.pricing.installmentPrice1Tree,
+            amount:
+              newPlant.treePackages.find((pkg) => pkg.treeCount === 10)
+                ?.installmentPrice || 16500000,
+            perTree:
+              newPlant.treePackages.find((pkg) => pkg.treeCount === 1)
+                ?.installmentPrice || 1650000,
           },
           {
             period: "Per 6 Bulan",
-            amount: newPlant.pricing.installmentPrice10Trees,
-            perTree: newPlant.pricing.installmentPrice1Tree,
+            amount:
+              newPlant.treePackages.find((pkg) => pkg.treeCount === 10)
+                ?.installmentPrice || 16500000,
+            perTree:
+              newPlant.treePackages.find((pkg) => pkg.treeCount === 1)
+                ?.installmentPrice || 1650000,
           },
           {
             period: "Per Tahun",
-            amount: newPlant.pricing.installmentPrice10Trees,
-            perTree: newPlant.pricing.installmentPrice1Tree,
+            amount:
+              newPlant.treePackages.find((pkg) => pkg.treeCount === 10)
+                ?.installmentPrice || 16500000,
+            perTree:
+              newPlant.treePackages.find((pkg) => pkg.treeCount === 1)
+                ?.installmentPrice || 1650000,
           },
         ],
         features: [
           `10 Pohon ${newPlant.name} Premium`,
-          `Proyeksi keuntungan hingga Rp ${newPlant.estimatedReturn.toLocaleString("id-ID")}`,
-          `Cicilan mulai Rp ${newPlant.pricing.installmentPrice1Tree.toLocaleString("id-ID")}/bulan per pohon`,
+          `Proyeksi keuntungan hingga Rp ${newPlant.estimatedReturn.toLocaleString(
+            "id-ID"
+          )}`,
+          `Cicilan mulai Rp ${(
+            newPlant.treePackages.find((pkg) => pkg.treeCount === 1)
+              ?.installmentPrice || 1650000
+          ).toLocaleString("id-ID")}/bulan per pohon`,
           "Monitoring profesional & laporan berkala",
           "Sertifikat kepemilikan pohon",
           "Perawatan dan pemeliharaan terjamin",
         ],
       },
+      treePackages: newPlant.treePackages,
     };
   };
 
@@ -215,7 +315,7 @@ export default function PlantShowcasePage() {
     try {
       // Transform new structure back to old format for database compatibility
       const transformedPlants = plants.map(transformNewToOld);
-      
+
       const response = await fetch("/api/admin/plant-showcase", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -320,143 +420,197 @@ export default function PlantShowcasePage() {
               </div>
 
               <div className="space-y-6">
-                {/* 1. Harga Dasar */}
+                {/* 1. Tree Packages Management */}
                 <div>
-                  <h4 className="text-lg font-semibold text-[#324D3E] dark:text-white mb-3 font-[family-name:var(--font-poppins)]">
-                    1. Harga Dasar
-                  </h4>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-[#324D3E] dark:text-gray-300 mb-1">
-                        Harga 10 Pohon
-                      </label>
-                      <div className="relative">
-                        <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#889063] text-sm">
-                          Rp
-                        </span>
-                        <input
-                          type="text"
-                          value={formatIDRCurrency(
-                            plant.pricing?.price10Trees || 0
-                          )}
-                          onChange={(e) => {
-                            const formattedValue = formatIDRInput(
-                              e.target.value
-                            );
-                            e.target.value = formattedValue;
-                            handlePriceUpdate(
-                              index,
-                              "pricing.price10Trees",
-                              formattedValue
-                            );
-                          }}
-                          className="w-full pl-10 pr-3 py-2 border border-[#324D3E]/20 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#324D3E]/20 focus:border-[#324D3E] text-[#324D3E] dark:text-white bg-white dark:bg-gray-700"
-                        />
+                  <div className="flex justify-between items-center mb-3">
+                    <h4 className="text-lg font-semibold text-[#324D3E] dark:text-white font-[family-name:var(--font-poppins)]">
+                      1. Paket Pohon
+                    </h4>
+                    <motion.button
+                      onClick={() => addTreePackage(index)}
+                      className="bg-[#324D3E] text-white px-3 py-1 rounded-lg text-sm hover:bg-[#4C3D19] transition-colors"
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                    >
+                      + Tambah Paket
+                    </motion.button>
+                  </div>
+                  <div className="space-y-4">
+                    {(plant.treePackages || []).map((pkg, pkgIndex) => (
+                      <motion.div
+                        key={pkgIndex}
+                        className="bg-gradient-to-r from-[#324D3E]/5 to-[#4C3D19]/5 p-4 rounded-xl border border-[#324D3E]/10"
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: pkgIndex * 0.1 }}
+                      >
+                        <div className="flex justify-between items-center mb-3">
+                          <h5 className="font-medium text-[#324D3E] dark:text-white">
+                            Paket {pkgIndex + 1}
+                          </h5>
+                          <div className="flex items-center gap-2">
+                            <label className="flex items-center gap-2">
+                              <input
+                                type="checkbox"
+                                checked={pkg.enabled}
+                                onChange={(e) =>
+                                  handleTreePackageUpdate(
+                                    index,
+                                    pkgIndex,
+                                    "enabled",
+                                    e.target.checked
+                                  )
+                                }
+                                className="w-4 h-4 text-[#324D3E] accent-[#324D3E]"
+                              />
+                              <span className="text-sm text-[#324D3E] dark:text-gray-300">
+                                Aktif
+                              </span>
+                            </label>
+                            <motion.button
+                              onClick={() => removeTreePackage(index, pkgIndex)}
+                              className="text-red-500 hover:text-red-700 p-1 rounded"
+                              whileHover={{ scale: 1.1 }}
+                              whileTap={{ scale: 0.9 }}
+                            >
+                              🗑️
+                            </motion.button>
+                          </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <label className="block text-xs font-medium text-[#324D3E] dark:text-gray-300 mb-1">
+                              Jumlah Pohon
+                            </label>
+                            <input
+                              type="number"
+                              min="1"
+                              value={pkg.treeCount}
+                              onChange={(e) =>
+                                handleTreePackageUpdate(
+                                  index,
+                                  pkgIndex,
+                                  "treeCount",
+                                  e.target.value
+                                )
+                              }
+                              className="w-full px-2 py-1 text-sm border border-[#324D3E]/20 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-1 focus:ring-[#324D3E]/20 focus:border-[#324D3E] text-[#324D3E] dark:text-white bg-white dark:bg-gray-700"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs font-medium text-[#324D3E] dark:text-gray-300 mb-1">
+                              Nama Paket
+                            </label>
+                            <input
+                              type="text"
+                              value={pkg.name}
+                              onChange={(e) =>
+                                handleTreePackageUpdate(
+                                  index,
+                                  pkgIndex,
+                                  "name",
+                                  e.target.value
+                                )
+                              }
+                              className="w-full px-2 py-1 text-sm border border-[#324D3E]/20 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-1 focus:ring-[#324D3E]/20 focus:border-[#324D3E] text-[#324D3E] dark:text-white bg-white dark:bg-gray-700"
+                            />
+                          </div>
+                          <div className="col-span-2">
+                            <label className="block text-xs font-medium text-[#324D3E] dark:text-gray-300 mb-1">
+                              Deskripsi
+                            </label>
+                            <input
+                              type="text"
+                              value={pkg.description}
+                              onChange={(e) =>
+                                handleTreePackageUpdate(
+                                  index,
+                                  pkgIndex,
+                                  "description",
+                                  e.target.value
+                                )
+                              }
+                              className="w-full px-2 py-1 text-sm border border-[#324D3E]/20 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-1 focus:ring-[#324D3E]/20 focus:border-[#324D3E] text-[#324D3E] dark:text-white bg-white dark:bg-gray-700"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs font-medium text-[#324D3E] dark:text-gray-300 mb-1">
+                              Harga Normal
+                            </label>
+                            <div className="relative">
+                              <span className="absolute left-2 top-1/2 transform -translate-y-1/2 text-[#889063] text-xs">
+                                Rp
+                              </span>
+                              <input
+                                type="text"
+                                value={formatIDRCurrency(pkg.price)}
+                                onChange={(e) => {
+                                  const formattedValue = formatIDRInput(
+                                    e.target.value
+                                  );
+                                  e.target.value = formattedValue;
+                                  handleTreePackageUpdate(
+                                    index,
+                                    pkgIndex,
+                                    "price",
+                                    formattedValue
+                                  );
+                                }}
+                                className="w-full pl-6 pr-2 py-1 text-sm border border-[#324D3E]/20 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-1 focus:ring-[#324D3E]/20 focus:border-[#324D3E] text-[#324D3E] dark:text-white bg-white dark:bg-gray-700"
+                              />
+                            </div>
+                          </div>
+                          <div>
+                            <label className="block text-xs font-medium text-[#324D3E] dark:text-gray-300 mb-1">
+                              Harga Cicilan
+                            </label>
+                            <div className="relative">
+                              <span className="absolute left-2 top-1/2 transform -translate-y-1/2 text-[#889063] text-xs">
+                                Rp
+                              </span>
+                              <input
+                                type="text"
+                                value={formatIDRCurrency(pkg.installmentPrice)}
+                                onChange={(e) => {
+                                  const formattedValue = formatIDRInput(
+                                    e.target.value
+                                  );
+                                  e.target.value = formattedValue;
+                                  handleTreePackageUpdate(
+                                    index,
+                                    pkgIndex,
+                                    "installmentPrice",
+                                    formattedValue
+                                  );
+                                }}
+                                className="w-full pl-6 pr-2 py-1 text-sm border border-[#324D3E]/20 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-1 focus:ring-[#324D3E]/20 focus:border-[#324D3E] text-[#324D3E] dark:text-white bg-white dark:bg-gray-700"
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      </motion.div>
+                    ))}
+                    {(!plant.treePackages ||
+                      plant.treePackages.length === 0) && (
+                      <div className="text-center py-6 text-[#889063] dark:text-gray-400">
+                        <p className="text-sm mb-2">Belum ada paket pohon</p>
+                        <motion.button
+                          onClick={() => addTreePackage(index)}
+                          className="bg-[#324D3E] text-white px-4 py-2 rounded-lg text-sm hover:bg-[#4C3D19] transition-colors"
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                        >
+                          + Tambah Paket Pertama
+                        </motion.button>
                       </div>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-[#324D3E] dark:text-gray-300 mb-1">
-                        Harga 1 Pohon
-                      </label>
-                      <div className="relative">
-                        <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#889063] text-sm">
-                          Rp
-                        </span>
-                        <input
-                          type="text"
-                          value={formatIDRCurrency(
-                            plant.pricing?.price1Tree || 0
-                          )}
-                          onChange={(e) => {
-                            const formattedValue = formatIDRInput(
-                              e.target.value
-                            );
-                            e.target.value = formattedValue;
-                            handlePriceUpdate(
-                              index,
-                              "pricing.price1Tree",
-                              formattedValue
-                            );
-                          }}
-                          className="w-full pl-10 pr-3 py-2 border border-[#324D3E]/20 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#324D3E]/20 focus:border-[#324D3E] text-[#324D3E] dark:text-white bg-white dark:bg-gray-700"
-                        />
-                      </div>
-                    </div>
+                    )}
                   </div>
                 </div>
 
-                {/* 2. Harga Cicilan */}
+                {/* 2. Proyeksi Keuntungan per Pohon */}
                 <div>
                   <h4 className="text-lg font-semibold text-[#324D3E] dark:text-white mb-3 font-[family-name:var(--font-poppins)]">
-                    2. Harga Cicilan
-                  </h4>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-[#324D3E] dark:text-gray-300 mb-1">
-                        Harga Cicilan 10 Pohon
-                      </label>
-                      <div className="relative">
-                        <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#889063] text-sm">
-                          Rp
-                        </span>
-                        <input
-                          type="text"
-                          value={formatIDRCurrency(
-                            plant.pricing?.installmentPrice10Trees || 0
-                          )}
-                          onChange={(e) => {
-                            const formattedValue = formatIDRInput(
-                              e.target.value
-                            );
-                            e.target.value = formattedValue;
-                            handlePriceUpdate(
-                              index,
-                              "pricing.installmentPrice10Trees",
-                              formattedValue
-                            );
-                          }}
-                          className="w-full pl-10 pr-3 py-2 border border-[#324D3E]/20 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#324D3E]/20 focus:border-[#324D3E] text-[#324D3E] dark:text-white bg-white dark:bg-gray-700"
-                        />
-                      </div>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-[#324D3E] dark:text-gray-300 mb-1">
-                        Harga Cicilan 1 Pohon
-                      </label>
-                      <div className="relative">
-                        <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#889063] text-sm">
-                          Rp
-                        </span>
-                        <input
-                          type="text"
-                          value={formatIDRCurrency(
-                            plant.pricing?.installmentPrice1Tree || 0
-                          )}
-                          onChange={(e) => {
-                            const formattedValue = formatIDRInput(
-                              e.target.value
-                            );
-                            e.target.value = formattedValue;
-                            handlePriceUpdate(
-                              index,
-                              "pricing.installmentPrice1Tree",
-                              formattedValue
-                            );
-                          }}
-                          className="w-full pl-10 pr-3 py-2 border border-[#324D3E]/20 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#324D3E]/20 focus:border-[#324D3E] text-[#324D3E] dark:text-white bg-white dark:bg-gray-700"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                  <p className="text-xs text-[#889063] mt-2">
-                    Harga yang akan digunakan untuk semua periode cicilan (bulanan, 3 bulanan, 6 bulanan, tahunan).
-                  </p>
-                </div>
-
-                {/* 3. Proyeksi Keuntungan per Pohon */}
-                <div>
-                  <h4 className="text-lg font-semibold text-[#324D3E] dark:text-white mb-3 font-[family-name:var(--font-poppins)]">
-                    3. Proyeksi Keuntungan (per pohon)
+                    2. Proyeksi Keuntungan (per pohon)
                   </h4>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
@@ -574,10 +728,10 @@ export default function PlantShowcasePage() {
                   </div>
                 </div>
 
-                {/* 4. Estimasi Return */}
+                {/* 3. Estimasi Return */}
                 <div>
                   <h4 className="text-lg font-semibold text-[#324D3E] dark:text-white mb-3 font-[family-name:var(--font-poppins)]">
-                    4. Estimasi Return (10 Pohon)
+                    3. Estimasi Return (10 Pohon)
                   </h4>
                   <div>
                     <label className="block text-sm font-medium text-[#324D3E] dark:text-gray-300 mb-1">

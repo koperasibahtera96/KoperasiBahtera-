@@ -27,20 +27,17 @@ export function CicilanModal({
 }: CicilanModalProps) {
   const { data: session } = useSession();
   const [selectedTerm, setSelectedTerm] = useState<number>(0);
-  const [selectedQuantity, setSelectedQuantity] = useState<1 | 10>(10);
+  const [selectedPackage, setSelectedPackage] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(false);
 
   // Use installmentOptions from plan data - no fallback to prevent wrong data
-  const paymentTerms: InstallmentOption[] = plan?.installmentOptions || [];
+  const paymentTerms: InstallmentOption[] =
+    plan?.investmentPlan?.installmentOptions || [];
 
   const selectedTermDetails = paymentTerms[selectedTerm];
 
-  // Calculate price based on quantity selection using installmentOptions
-  const currentPrice = selectedTermDetails
-    ? selectedQuantity === 1
-      ? selectedTermDetails.perTree
-      : selectedTermDetails.amount
-    : 0;
+  // Calculate price based on selected package using installmentOptions
+  const currentPrice = selectedPackage ? selectedPackage.installmentPrice : 0;
 
   // Calculate installment count based on period (5 years total)
   const getInstallmentCount = (period: string) => {
@@ -92,8 +89,12 @@ export function CicilanModal({
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          productId: plan.name.toLowerCase().replace(/\s+/g, "-"),
-          productName: `${plan.name} (${selectedQuantity} Pohon)`,
+          productId: (plan.investmentPlan?.name || plan.name || "paket")
+            .toLowerCase()
+            .replace(/\s+/g, "-"),
+          productName: `${plan.investmentPlan?.name || plan.name || "Paket"} (${
+            selectedPackage?.name || "Paket"
+          })`,
           totalAmount: currentPrice,
           paymentTerm: convertPaymentTerm(selectedTermDetails.period),
         }),
@@ -106,8 +107,8 @@ export function CicilanModal({
       if (data.success) {
         onSuccess?.(
           "Cicilan Berhasil Dibuat!",
-          `Order ID: ${
-            data.orderId
+          `Order ID: ${data.orderId}\nPaket: ${
+            selectedPackage?.name || "Paket"
           }\nJumlah Angsuran: Rp ${installmentAmount.toLocaleString(
             "id-ID"
           )}\nTerm: ${
@@ -129,7 +130,8 @@ export function CicilanModal({
     }
   };
 
-  if (!isOpen || !plan || !paymentTerms || paymentTerms.length === 0) return null;
+  if (!isOpen || !plan || !paymentTerms || paymentTerms.length === 0)
+    return null;
 
   return (
     <div
@@ -143,7 +145,7 @@ export function CicilanModal({
         <div className="p-6">
           <div className="flex justify-between items-center mb-6">
             <h3 className="text-2xl font-bold text-[#324D3E] font-[family-name:var(--font-poppins)]">
-              Cicilan {plan?.name || "Paket"}
+              Cicilan {plan?.investmentPlan?.name || plan?.name || "Paket"}
             </h3>
             <button
               onClick={onClose}
@@ -165,72 +167,57 @@ export function CicilanModal({
             </button>
           </div>
 
-          {/* Quantity Selection */}
+          {/* Package Selection */}
           <div className="mb-6">
             <h4 className="font-bold mb-4 text-[#324D3E] font-[family-name:var(--font-poppins)]">
-              Pilih Jumlah Pohon
+              Pilih Paket Investasi
             </h4>
-            <div className="grid grid-cols-2 gap-3">
-              <label
-                className={`flex flex-col items-center p-4 border-2 rounded-2xl cursor-pointer transition-all duration-300 hover:shadow-lg ${
-                  selectedQuantity === 1
-                    ? "border-[#324D3E] bg-gradient-to-r from-[#324D3E]/10 to-[#4C3D19]/10 shadow-lg"
-                    : "border-[#324D3E]/20 hover:border-[#324D3E]/40 bg-white/80"
-                }`}
-              >
-                <input
-                  type="radio"
-                  name="quantity"
-                  value={1}
-                  checked={selectedQuantity === 1}
-                  onChange={() => setSelectedQuantity(1)}
-                  className="sr-only"
-                />
-                <div className="text-3xl mb-2">🌱</div>
-                <div className="font-bold text-[#324D3E] font-[family-name:var(--font-poppins)]">
-                  1 Pohon
-                </div>
-                <div className="text-sm text-[#324D3E]/70 font-medium text-center">
-                  Investasi Kecil
-                </div>
-                <div className="font-bold text-[#324D3E] text-lg mt-2">
-                  Rp{" "}
-                  {selectedTermDetails?.perTree
-                    ? selectedTermDetails.perTree.toLocaleString("id-ID")
-                    : "0"}
-                </div>
-              </label>
-
-              <label
-                className={`flex flex-col items-center p-4 border-2 rounded-2xl cursor-pointer transition-all duration-300 hover:shadow-lg ${
-                  selectedQuantity === 10
-                    ? "border-[#324D3E] bg-gradient-to-r from-[#324D3E]/10 to-[#4C3D19]/10 shadow-lg"
-                    : "border-[#324D3E]/20 hover:border-[#324D3E]/40 bg-white/80"
-                }`}
-              >
-                <input
-                  type="radio"
-                  name="quantity"
-                  value={10}
-                  checked={selectedQuantity === 10}
-                  onChange={() => setSelectedQuantity(10)}
-                  className="sr-only"
-                />
-                <div className="text-3xl mb-2">🌳</div>
-                <div className="font-bold text-[#324D3E] font-[family-name:var(--font-poppins)]">
-                  10 Pohon
-                </div>
-                <div className="text-sm text-[#324D3E]/70 font-medium text-center">
-                  Paket Lengkap
-                </div>
-                <div className="font-bold text-[#324D3E] text-lg mt-2">
-                  Rp{" "}
-                  {selectedTermDetails?.amount
-                    ? selectedTermDetails.amount.toLocaleString("id-ID")
-                    : "0"}
-                </div>
-              </label>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {(plan?.treePackages || [])
+                .filter((pkg: any) => pkg.enabled)
+                .map((treePackage: any, index: number) => (
+                  <label
+                    key={index}
+                    className={`flex flex-col items-center p-4 border-2 rounded-2xl cursor-pointer transition-all duration-300 hover:shadow-lg ${
+                      selectedPackage?.treeCount === treePackage.treeCount
+                        ? "border-[#324D3E] bg-gradient-to-r from-[#324D3E]/10 to-[#4C3D19]/10 shadow-lg"
+                        : "border-[#324D3E]/20 hover:border-[#324D3E]/40 bg-white/80"
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="package"
+                      value={treePackage.treeCount}
+                      checked={
+                        selectedPackage?.treeCount === treePackage.treeCount
+                      }
+                      onChange={() => setSelectedPackage(treePackage)}
+                      className="sr-only"
+                    />
+                    <div className="text-3xl mb-2">
+                      {treePackage.treeCount === 1 ? "🌱" : "🌳"}
+                    </div>
+                    <div className="font-bold text-[#324D3E] font-[family-name:var(--font-poppins)]">
+                      {treePackage.name}
+                    </div>
+                    <div className="text-sm text-[#324D3E]/70 font-medium text-center">
+                      {treePackage.description}
+                    </div>
+                    <div className="font-bold text-[#324D3E] text-lg mt-2">
+                      Rp {treePackage.installmentPrice.toLocaleString("id-ID")}
+                    </div>
+                  </label>
+                ))}
             </div>
+            {(!plan?.treePackages ||
+              plan.treePackages.filter((pkg: any) => pkg.enabled).length ===
+                0) && (
+              <div className="text-center py-6">
+                <p className="text-[#324D3E]/60">
+                  Belum ada paket investasi yang tersedia
+                </p>
+              </div>
+            )}
           </div>
 
           <div className="mb-6">
@@ -241,10 +228,18 @@ export function CicilanModal({
               <div className="space-y-3 text-sm">
                 <div className="flex justify-between items-center">
                   <span className="text-[#324D3E]/80 font-medium">
+                    Paket Terpilih:
+                  </span>
+                  <span className="font-bold text-[#324D3E] text-lg">
+                    {selectedPackage?.name || "-"}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-[#324D3E]/80 font-medium">
                     Jumlah Pohon:
                   </span>
                   <span className="font-bold text-[#324D3E] text-lg">
-                    {selectedQuantity} Pohon
+                    {selectedPackage?.treeCount || "-"} Pohon
                   </span>
                 </div>
                 <div className="flex justify-between items-center">
@@ -260,14 +255,8 @@ export function CicilanModal({
                     Estimasi Return:
                   </span>
                   <span className="font-bold text-emerald-600 text-lg">
-                    {selectedQuantity === 1
-                      ? plan?.returns
-                        ? `Rp ${formatIDRCurrency(
-                            Math.ceil(plan.returns / 10)
-                          )} (per pohon)`
-                        : "-"
-                      : plan?.returns
-                      ? `Rp ${formatIDRCurrency(plan.returns)}`
+                    {plan?.investmentPlan?.returns
+                      ? `Rp ${formatIDRCurrency(plan.investmentPlan.returns)}`
                       : "-"}
                   </span>
                 </div>
@@ -281,8 +270,7 @@ export function CicilanModal({
             </h4>
             <div className="space-y-3">
               {paymentTerms.map((term, termIndex) => {
-                const termPrice =
-                  selectedQuantity === 1 ? term.perTree : term.amount;
+                const termPrice = selectedPackage?.installmentPrice || 0;
                 const termInstallmentCount = getInstallmentCount(term.period);
                 const termInstallmentAmount = termPrice
                   ? Math.ceil(termPrice / termInstallmentCount)
@@ -366,7 +354,7 @@ export function CicilanModal({
             </button>
             <button
               onClick={handleCreateCicilan}
-              disabled={isLoading}
+              disabled={isLoading || !selectedPackage}
               className="flex-1 px-6 py-3 bg-gradient-to-r from-[#324D3E] to-[#4C3D19] text-white rounded-full font-bold hover:shadow-lg transition-all duration-300 font-[family-name:var(--font-poppins)] disabled:opacity-50"
             >
               {isLoading ? "Memproses..." : "Buat Cicilan"}

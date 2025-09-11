@@ -345,27 +345,30 @@ export default function StaffPage() {
 
         {/* Tabs */}
         <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg rounded-2xl shadow-lg border border-[#324D3E]/10 dark:border-gray-700 p-2 mb-6">
-          <div className="flex gap-2">
+          <div className="flex flex-col sm:flex-row gap-2">
             <Button
               onClick={() => setActiveTab("staff")}
-              className={`flex-1 rounded-xl transition-all duration-300 ${
+              className={`flex-1 rounded-xl transition-all duration-300 px-3 py-2 text-sm sm:text-base ${
                 activeTab === "staff"
                   ? "bg-gradient-to-r from-[#324D3E] to-[#4C3D19] text-white shadow-lg"
                   : "bg-transparent text-[#324D3E] dark:text-gray-300 hover:bg-[#324D3E]/10 dark:hover:bg-gray-700"
               }`}
             >
-              Manajemen Pengguna
+              <span className="truncate">Manajemen Pengguna</span>
             </Button>
             <Button
               onClick={() => setActiveTab("requests")}
-              className={`flex-1 rounded-xl transition-all duration-300 ${
+              className={`flex-1 rounded-xl transition-all duration-300 px-3 py-2 text-sm sm:text-base ${
                 activeTab === "requests"
                   ? "bg-gradient-to-r from-[#324D3E] to-[#4C3D19] text-white shadow-lg"
                   : "bg-transparent text-[#324D3E] dark:text-gray-300 hover:bg-[#324D3E]/10 dark:hover:bg-gray-700"
               }`}
             >
-              Permintaan (
-              {requests.filter((r) => r.status === "pending").length})
+              <span className="truncate">
+                <span className="hidden sm:inline">Permintaan</span>
+                <span className="sm:hidden">Req</span>
+                {" "}({requests.filter((r) => r.status === "pending").length})
+              </span>
             </Button>
           </div>
         </div>

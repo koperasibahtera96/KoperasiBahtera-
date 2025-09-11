@@ -1,0 +1,396 @@
+[{
+  "_id": {
+    "$oid": "68bfd7e08c63dc65f6fa9c31"
+  },
+  "id": "Jengkol",
+  "name": "Jengkol",
+  "displayName": "Tanaman Jengkol",
+  "nameEn": "Archidendron pauciflorum",
+  "years": "5 - 8 tahun",
+  "location": "Tumbuh di daerah tropis Asia Tenggara",
+  "description": "Pohon jengkol adalah pohon khas Asia Tenggara yang terkenal dengan bijinya beraroma kuat namun disukai banyak orang. Berbuah jika ditanam dari biji, dan lebih cepat jika menggunakan cangkok/okulasi. Dengan perawatan baik, pohon ini dapat berproduksi puluhan tahun.",
+  "defaultAnnualROI": 0.15,
+  "icon": "🫘",
+  "color": "#FFD23F",
+  "productOlahan": [
+    {
+      "name": "Biji Jengkol",
+      "description": "menjadi keripik dan masakan khas jengkol balado, gulai jengkol, dan sebagainya."
+    }
+  ],
+  "pricing": {
+    "monthly": "125000",
+    "yearly": "1500000",
+    "fiveYears": "7500000",
+    "sellPrice": "1500000",
+    "profit": {
+      "yearly": "1500000",
+      "monthly": "125000",
+      "weekly": "28846",
+      "daily": "4310"
+    }
+  },
+  "investmentPlan": {
+    "name": "Paket 10 Pohon Jengkol",
+    "price": 15000000,
+    "duration": "5 - 8 tahun",
+    "returns": "25000000",
+    "plantType": "Jengkol Premium",
+    "riskLevel": "Bergantung Alam",
+    "installmentOptions": [
+      {
+        "period": "Per Bulan",
+        "amount": 16500000,
+        "perTree": 1650000
+      },
+      {
+        "period": "Per 3 Bulan",
+        "amount": 16500000,
+        "perTree": 1650000
+      },
+      {
+        "period": "Per 6 Bulan",
+        "amount": 16500000,
+        "perTree": 1650000
+      },
+      {
+        "period": "Per Tahun",
+        "amount": 16500000,
+        "perTree": 1650000
+      }
+    ],
+    "features": [
+      "10 Pohon Jengkol Premium",
+      "Proyeksi keuntungan hingga Rp 25.000.000",
+      "Cicilan mulai Rp 1.650.000/bulan per pohon",
+      "Monitoring profesional & laporan berkala",
+      "Sertifikat kepemilikan pohon",
+      "Perawatan dan pemeliharaan terjamin"
+    ]
+  },
+  "treePackages": [
+    {
+      "treeCount": 1,
+      "name": "1 Pohon",
+      "description": "Investasi Kecil",
+      "price": 1500000,
+      "installmentPrice": 1650000,
+      "enabled": true
+    },
+    {
+      "treeCount": 10,
+      "name": "10 Pohon",
+      "description": "Paket Lengkap",
+      "price": 15000000,
+      "installmentPrice": 16500000,
+      "enabled": true
+    }
+  ],
+  "updatedAt": {
+    "$date": "2025-09-09T09:51:24.798Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "68bfd7e08c63dc65f6fa9c32"
+  },
+  "id": "Alpukat",
+  "name": "Alpukat",
+  "displayName": "Tanaman Alpukat",
+  "nameEn": "Persea americana",
+  "years": "3 - 5 tahun",
+  "location": "Tumbuh di daerah beriklim sedang & tropis",
+  "description": "Pohon buah tropis yang banyak dibudidayakan karena rasanya lezat dan kaya gizi. Berbuah 3-5 tahun jika berasal dari bibit okulasi, atau 6-8 tahun bila dari biji. Setelah matang, pohon ini dapat berproduksi puluhan tahun dengan perawatan yang baik.",
+  "defaultAnnualROI": 0.15,
+  "icon": "🫘",
+  "color": "#FFD23F",
+  "productOlahan": [
+    {
+      "name": "Buah Alpukat",
+      "description": "Buah konsumsi yang mengandung daya serat tinggi."
+    },
+    {
+      "name": "Guacamole",
+      "description": "Saus khas Meksiko."
+    },
+    {
+      "name": "Minyak Alpukat",
+      "description": "TMasakan sehat dan perawatan kulit."
+    }
+  ],
+  "pricing": {
+    "monthly": "125000",
+    "yearly": "1500000",
+    "fiveYears": "7500000",
+    "sellPrice": "100000",
+    "profit": {
+      "yearly": "1500000",
+      "monthly": "125000",
+      "weekly": "28846",
+      "daily": "4110"
+    }
+  },
+  "investmentPlan": {
+    "name": "Paket 10 Pohon Alpukat",
+    "price": 1000000,
+    "duration": "3 - 5 tahun",
+    "returns": "2500000",
+    "plantType": "Alpukat Premium",
+    "riskLevel": "Bergantung Alam",
+    "installmentOptions": [
+      {
+        "period": "Per Bulan",
+        "amount": 1100000,
+        "perTree": 110000
+      },
+      {
+        "period": "Per 3 Bulan",
+        "amount": 1100000,
+        "perTree": 110000
+      },
+      {
+        "period": "Per 6 Bulan",
+        "amount": 1100000,
+        "perTree": 110000
+      },
+      {
+        "period": "Per Tahun",
+        "amount": 1100000,
+        "perTree": 110000
+      }
+    ],
+    "features": [
+      "10 Pohon Alpukat Premium",
+      "Proyeksi keuntungan hingga Rp 2.500.000",
+      "Cicilan mulai Rp 110.000/bulan per pohon",
+      "Monitoring profesional & laporan berkala",
+      "Sertifikat kepemilikan pohon",
+      "Perawatan dan pemeliharaan terjamin"
+    ]
+  },
+  "treePackages": [
+    {
+      "treeCount": 1,
+      "name": "1 Pohon",
+      "description": "Investasi Kecil",
+      "price": 100000,
+      "installmentPrice": 110000,
+      "enabled": true
+    },
+    {
+      "treeCount": 10,
+      "name": "10 Pohon",
+      "description": "Paket Lengkap",
+      "price": 1000000,
+      "installmentPrice": 1100000,
+      "enabled": true
+    }
+  ],
+  "updatedAt": {
+    "$date": "2025-09-09T09:51:24.798Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "68bfd7e08c63dc65f6fa9c30"
+  },
+  "id": "Gaharu",
+  "name": "Gaharu",
+  "displayName": "Tanaman Gaharu",
+  "nameEn": "Aquilaria",
+  "years": "15 - 20 tahun",
+  "location": "Tumbuh di hutan tropis & subtropis",
+  "description": "Pohon bernilai tinggi yang tumbuh di daerah tropis Asia. Pohon ini siap dipanen saat bagian kayunya mengandung resin wangi yang terbentuk secara alami. Resin inilah yang menjadi komoditas utama gaharu, terkenal karena aroma khasnya.",
+  "defaultAnnualROI": 0.125,
+  "icon": "🌱",
+  "color": "#FF6B35",
+  "productOlahan": [
+    {
+      "name": "Kayu & Serbuk Gaharu",
+      "description": "Dibakar untuk menghasilkan aroma harum pada ritual dan meditasi."
+    },
+    {
+      "name": "Minyak Atsiri Gaharu",
+      "description": "Digunakan dalam parfum mewah dan aromaterapi."
+    },
+    {
+      "name": "Kerajinan Kayu Gaharu",
+      "description": "seperti tasbih atau perhiasan bernuansa wangi."
+    }
+  ],
+  "pricing": {
+    "monthly": "708333",
+    "yearly": "8500000",
+    "fiveYears": "42500000",
+    "sellPrice": "500000",
+    "profit": {
+      "yearly": "8500000",
+      "monthly": "708333",
+      "weekly": "163462",
+      "daily": "23288"
+    }
+  },
+  "investmentPlan": {
+    "name": "Paket 10 Pohon Gaharu",
+    "price": 5000000,
+    "duration": "15 - 20 tahun",
+    "returns": "15000000",
+    "plantType": "Gaharu Premium",
+    "riskLevel": "Bergantung Alam",
+    "installmentOptions": [
+      {
+        "period": "Per Bulan",
+        "amount": 5500000,
+        "perTree": 550000
+      },
+      {
+        "period": "Per 3 Bulan",
+        "amount": 5500000,
+        "perTree": 550000
+      },
+      {
+        "period": "Per 6 Bulan",
+        "amount": 5500000,
+        "perTree": 550000
+      },
+      {
+        "period": "Per Tahun",
+        "amount": 5500000,
+        "perTree": 550000
+      }
+    ],
+    "features": [
+      "10 Pohon Gaharu Premium",
+      "Proyeksi keuntungan hingga Rp 15.000.000",
+      "Cicilan mulai Rp 550.000/bulan per pohon",
+      "Monitoring profesional & laporan berkala",
+      "Sertifikat kepemilikan pohon",
+      "Perawatan dan pemeliharaan terjamin"
+    ]
+  },
+  "treePackages": [
+    {
+      "treeCount": 1,
+      "name": "1 Pohon",
+      "description": "Investasi Kecil",
+      "price": 500000,
+      "installmentPrice": 550000,
+      "enabled": true
+    },
+    {
+      "treeCount": 10,
+      "name": "10 Pohon",
+      "description": "Paket Lengkap",
+      "price": 5000000,
+      "installmentPrice": 5500000,
+      "enabled": true
+    }
+  ],
+  "updatedAt": {
+    "$date": "2025-09-09T09:51:24.798Z"
+  }
+},
+{
+  "_id": {
+    "$oid": "68bfd7e08c63dc65f6fa9c33"
+  },
+  "id": "Aren",
+  "name": "Aren",
+  "displayName": "Tanaman Aren",
+  "nameEn": "Arenga pinnata",
+  "years": "7 - 12 tahun",
+  "location": "Tumbuh di pegunungan & perbukitan",
+  "description": "Tanaman aren mulai dapat disadap niranya saat memasuki usia produktif, dengan hasil yang sangat dipengaruhi oleh kondisi tanah dan iklim. Penyadapan dilakukan pada tandan bunga jantan, dan pohon dapat terus menghasilkan nira selama beberapa tahun sebelum akhirnya menua.",
+  "defaultAnnualROI": 0.18,
+  "icon": "🌴",
+  "color": "#06FFA5",
+  "productOlahan": [
+    {
+      "name": "Gula Aren / Gula Semut",
+      "description": "Pemanis alami berbentuk cetakan atau butiran."
+    },
+    {
+      "name": "Kolang-kaling",
+      "description": "Buah aren yang diolah menjadi manisan atau campuran minuman."
+    },
+    {
+      "name": "Sirup Aren",
+      "description": "Cairan kental manis untuk campuran minuman dan kue."
+    },
+    {
+      "name": "Bioetanol",
+      "description": "Energi terbarukan dari fermentasi nira aren menggunakan Saccharomyces cerevisiae."
+    }
+  ],
+  "pricing": {
+    "monthly": "375000",
+    "yearly": "4500000",
+    "fiveYears": "22500000",
+    "sellPrice": "200000",
+    "profit": {
+      "yearly": "4500000",
+      "monthly": "375000",
+      "weekly": "86538",
+      "daily": "12329"
+    }
+  },
+  "investmentPlan": {
+    "name": "Paket 10 Pohon Aren",
+    "price": 2000000,
+    "duration": "7 - 12 tahun",
+    "returns": "5000000",
+    "plantType": "Aren Premium",
+    "riskLevel": "Bergantung Alam",
+    "installmentOptions": [
+      {
+        "period": "Per Bulan",
+        "amount": 2200000,
+        "perTree": 220000
+      },
+      {
+        "period": "Per 3 Bulan",
+        "amount": 2200000,
+        "perTree": 220000
+      },
+      {
+        "period": "Per 6 Bulan",
+        "amount": 2200000,
+        "perTree": 220000
+      },
+      {
+        "period": "Per Tahun",
+        "amount": 2200000,
+        "perTree": 220000
+      }
+    ],
+    "features": [
+      "10 Pohon Aren Premium",
+      "Proyeksi keuntungan hingga Rp 5.000.000",
+      "Cicilan mulai Rp 220.000/bulan per pohon",
+      "Monitoring profesional & laporan berkala",
+      "Sertifikat kepemilikan pohon",
+      "Perawatan dan pemeliharaan terjamin"
+    ]
+  },
+  "treePackages": [
+    {
+      "treeCount": 1,
+      "name": "1 Pohon",
+      "description": "Investasi Kecil",
+      "price": 200000,
+      "installmentPrice": 220000,
+      "enabled": true
+    },
+    {
+      "treeCount": 10,
+      "name": "10 Pohon",
+      "description": "Paket Lengkap",
+      "price": 2000000,
+      "installmentPrice": 2200000,
+      "enabled": true
+    }
+  ],
+  "updatedAt": {
+    "$date": "2025-09-09T09:51:24.798Z"
+  }
+}]

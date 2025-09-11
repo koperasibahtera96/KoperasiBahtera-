@@ -17,6 +17,7 @@ export interface IUser extends Document {
   ktpImageUrl?: string; // KTP image URL from ImageKit
   faceImageUrl?: string; // Face verification image URL from ImageKit
   profileImageUrl?: string; // Profile image URL from ImageKit
+  kartuAnggotaUrl?: string; // Kartu Anggota PDF URL from ImageKit
   role: 'user' | 'staff' | 'spv_staff' | 'admin' | 'finance';
   isEmailVerified: boolean;
   isPhoneVerified: boolean;
@@ -115,6 +116,10 @@ const UserSchema: Schema = new Schema({
     trim: true,
   },
   profileImageUrl: {
+    type: String,
+    trim: true,
+  },
+  kartuAnggotaUrl: {
     type: String,
     trim: true,
   },
