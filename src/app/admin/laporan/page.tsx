@@ -3,6 +3,7 @@
 import { AdminLayout } from "@/components/admin/AdminLayout";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+import * as XLSX from "xlsx-js-style";
 import { RefreshCw } from "lucide-react";
 import { useEffect, useState } from "react";
 
@@ -59,6 +60,301 @@ interface ReportData {
 }
 
 export default function LaporanPage() {
+  // XLSX Export Functions
+  const downloadAllInvestorsXLSX = () => {
+    if (!reportData) return;
+    const wb = XLSX.utils.book_new();
+
+    // Add header information
+    const headerInfo = [
+      ["KOPERASI BINTANG MERAH SEJAHTERA"],
+      ["Jl. Green Investment No. 123, Jakarta"],
+      ["Tel: (021) 1234-5678 | Email: info@investasihijau.com"],
+      [""],
+      ["LAPORAN ADMIN - SEMUA INVESTOR"],
+      [`Dibuat pada: ${new Date().toLocaleDateString("id-ID", {
+        weekday: "long",
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      })}`],
+      [""],
+      ["RINGKASAN UMUM"],
+    ];
+
+    // Summary data matching PDF
+    const summarySheetData = [
+      ...headerInfo,
+      ["Metrik", "Jumlah"],
+      ["Total Investor", reportData.summary.totalInvestors.toString()],
+      ["Total Instansi Tanaman", reportData.summary.totalTrees.toString()],
+      ["Investor Aktif", reportData.summary.activeInvestors.toString()],
+      ["Investor Tidak Aktif", reportData.summary.inactiveInvestors.toString()],
+      [""],
+      ["DETAIL INVESTOR"],
+      [
+        "Nama",
+        "Email", 
+        "Status",
+        "Tanaman Terdaftar",
+        "Instansi Tanaman",
+        "Tanaman Sehat/Sakit",
+        "Tanggal Bergabung",
+      ],
+      ...reports.map((report) => [
+        report.investor.name,
+        report.investor.email,
+        report.investor.status === "active" ? "Aktif" : "Tidak Aktif",
+        report.investor.jumlahPohon.toString(),
+        report.statistics.total.toString(),
+        `Sehat: ${Object.entries(report.statistics.byCondition).reduce(
+          (total, [status, count]) =>
+            status.toLowerCase() !== "sakit" ? total + count : total,
+          0
+        )}, Sakit: ${report.statistics.byCondition.Sakit || 0}`,
+        new Date(report.investor.createdAt).toLocaleDateString("id-ID"),
+      ]),
+    ];
+    
+    const summarySheet = XLSX.utils.aoa_to_sheet(summarySheetData);
+    
+    // Auto-size columns based on content AND headers
+    const colWidths = [];
+    const maxCols = Math.max(...summarySheetData.map(row => row.length));
+    
+    for (let col = 0; col < maxCols; col++) {
+      let maxWidth = 0;
+      for (let row = 0; row < summarySheetData.length; row++) {
+        const cellValue = summarySheetData[row][col];
+        if (cellValue) {
+          const cellWidth = cellValue.toString().length;
+          maxWidth = Math.max(maxWidth, cellWidth);
+        }
+      }
+      // Ensure minimum width for readability and maximum for reasonable display
+      colWidths.push({ width: Math.min(Math.max(maxWidth + 3, 12), 60) });
+    }
+    summarySheet['!cols'] = colWidths;
+    
+    // Add borders and styling
+    const range = XLSX.utils.decode_range(summarySheet['!ref'] || 'A1');
+    for (let row = range.s.r; row <= range.e.r; row++) {
+      for (let col = range.s.c; col <= range.e.c; col++) {
+        const cellRef = XLSX.utils.encode_cell({ r: row, c: col });
+        if (!summarySheet[cellRef]) continue;
+        
+        // Initialize cell style
+        if (!summarySheet[cellRef].s) summarySheet[cellRef].s = {};
+        
+        // Add borders to all cells
+        summarySheet[cellRef].s.border = {
+          top: { style: 'thin', color: { rgb: '000000' } },
+          bottom: { style: 'thin', color: { rgb: '000000' } },
+          left: { style: 'thin', color: { rgb: '000000' } },
+          right: { style: 'thin', color: { rgb: '000000' } }
+        };
+        
+        // Company header styling
+        if (row === 0 || summarySheetData[row][0] === "KOPERASI BINTANG MERAH SEJAHTERA") {
+          summarySheet[cellRef].s.font = { bold: true, sz: 14 };
+          summarySheet[cellRef].s.alignment = { horizontal: 'center' };
+        }
+        
+        // Section headers with background color
+        if (summarySheetData[row][0] === "RINGKASAN UMUM" || 
+            summarySheetData[row][0] === "DETAIL INVESTOR" ||
+            summarySheetData[row][0] === "Metrik" ||
+            summarySheetData[row][0] === "Nama") {
+          summarySheet[cellRef].s.font = { bold: true, sz: 11 };
+          summarySheet[cellRef].s.fill = {
+            fgColor: { rgb: 'D3D3D3' }
+          };
+          summarySheet[cellRef].s.alignment = { horizontal: 'center' };
+        }
+        
+        // Data alignment
+        if (row > 0 && col > 0 && summarySheetData[row][col] && 
+            !isNaN(Number(summarySheetData[row][col]))) {
+          summarySheet[cellRef].s.alignment = { horizontal: 'right' };
+        }
+      }
+    }
+    
+    XLSX.utils.book_append_sheet(wb, summarySheet, "Laporan Admin Semua");
+
+    XLSX.writeFile(
+      wb,
+      `Laporan-Admin-Semua-Investor-${new Date()
+        .toISOString()
+        .split("T")[0]}.xlsx`
+    );
+  };
+
+  const downloadIndividualInvestorXLSX = async (report: InvestorReport) => {
+    const wb = XLSX.utils.book_new();
+
+    // Ensure we have detailed plant data for accurate age calculations
+    await fetchDetailedPlantAges(report.investor._id);
+
+    // Calculate average age matching PDF logic
+    let avgAge = 0;
+    if (report.trees.length > 0) {
+      const totalAgeInMonths = report.trees.reduce((sum, tree) => {
+        const ageInMonths = tree.umur || 0;
+        return sum + ageInMonths;
+      }, 0);
+      avgAge = Math.round(totalAgeInMonths / report.trees.length);
+    }
+
+    // Header information matching PDF
+    const headerInfo = [
+      ["KOPERASI BINTANG MERAH SEJAHTERA"],
+      ["Jl. Green Investment No. 123, Jakarta"],
+      ["Tel: (021) 1234-5678 | Email: info@investasihijau.com"],
+      [""],
+      [`LAPORAN INVESTOR - ${report.investor.name.toUpperCase()}`],
+      [`Dibuat pada: ${new Date().toLocaleDateString("id-ID", {
+        weekday: "long",
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      })}`],
+      [""],
+      ["INFORMASI INVESTOR"],
+    ];
+
+    // Investor Info Sheet matching PDF exactly
+    const investorInfo = [
+      ...headerInfo,
+      ["Bidang", "Nilai"],
+      ["Nama", report.investor.name],
+      ["Email", report.investor.email],
+      ["Status", report.investor.status === "active" ? "Aktif" : "Tidak Aktif"],
+      ["Tanggal Bergabung", new Date(report.investor.createdAt).toLocaleDateString("id-ID")],
+      ["Tanaman Terdaftar", report.investor.jumlahPohon.toString()],
+      ["Instansi Tanaman", report.statistics.total.toString()],
+      [""],
+      ["STATISTIK TANAMAN"],
+      ["Metrik", "Jumlah"],
+      ["Total Tanaman", report.statistics.total.toString()],
+      ...Object.entries(report.statistics.byCondition).map(
+        ([status, count]) => [`Tanaman ${status}`, count.toString()]
+      ),
+      ["Rata-rata Umur", `${avgAge} bulan`],
+      [""],
+      ["RINCIAN JENIS TANAMAN"],
+      ["Jenis Tanaman", "Jumlah"],
+      ...Object.entries(report.statistics.bySpecies).map(
+        ([type, count]) => [type.charAt(0).toUpperCase() + type.slice(1), count.toString()]
+      ),
+      [""],
+      ["INSTANSI TANAMAN INDIVIDUAL"],
+      ["Nomor Kontrak", "Nama Instansi", "Lokasi", "Umur", "Ditanam", "Status"],
+      ...report.trees.map((tree) => {
+        // Use the same age calculation logic as PDF
+        let ageDisplay = `${tree.umur} bulan`;
+        
+        // If we have detailed plant data (like in the expanded view), use that
+        const detailedData = detailedPlantData[report.investor._id];
+        if (detailedData) {
+          const detailedTree = detailedData.find(dt => dt._id === tree._id);
+          if (detailedTree && detailedTree.detailedAge) {
+            if (detailedTree.ageSource === "tanamBibit") {
+              ageDisplay = formatDetailedAge(detailedTree.detailedAge);
+            } else {
+              ageDisplay = "Belum Ditanam";
+            }
+          }
+        }
+        
+        return [
+          tree.nomorKontrak || "N/A",
+          tree.spesiesPohon,
+          tree.lokasi,
+          ageDisplay,
+          new Date(tree.tanggalTanam).toLocaleDateString("id-ID"),
+          tree.kondisi,
+        ];
+      }),
+    ];
+    
+    const infoSheet = XLSX.utils.aoa_to_sheet(investorInfo);
+    
+    // Auto-size columns based on content AND headers
+    const colWidths = [];
+    const maxCols = Math.max(...investorInfo.map(row => row.length));
+    
+    for (let col = 0; col < maxCols; col++) {
+      let maxWidth = 0;
+      for (let row = 0; row < investorInfo.length; row++) {
+        const cellValue = investorInfo[row][col];
+        if (cellValue) {
+          const cellWidth = cellValue.toString().length;
+          maxWidth = Math.max(maxWidth, cellWidth);
+        }
+      }
+      // Ensure minimum width for readability and maximum for reasonable display
+      colWidths.push({ width: Math.min(Math.max(maxWidth + 3, 12), 60) });
+    }
+    infoSheet['!cols'] = colWidths;
+    
+    // Add borders and styling
+    const range = XLSX.utils.decode_range(infoSheet['!ref'] || 'A1');
+    for (let row = range.s.r; row <= range.e.r; row++) {
+      for (let col = range.s.c; col <= range.e.c; col++) {
+        const cellRef = XLSX.utils.encode_cell({ r: row, c: col });
+        if (!infoSheet[cellRef]) continue;
+        
+        // Initialize cell style
+        if (!infoSheet[cellRef].s) infoSheet[cellRef].s = {};
+        
+        // Add borders to all cells
+        infoSheet[cellRef].s.border = {
+          top: { style: 'thin', color: { rgb: '000000' } },
+          bottom: { style: 'thin', color: { rgb: '000000' } },
+          left: { style: 'thin', color: { rgb: '000000' } },
+          right: { style: 'thin', color: { rgb: '000000' } }
+        };
+        
+        // Company header styling
+        if (row === 0 || investorInfo[row][0] === "KOPERASI BINTANG MERAH SEJAHTERA") {
+          infoSheet[cellRef].s.font = { bold: true, sz: 14 };
+          infoSheet[cellRef].s.alignment = { horizontal: 'center' };
+        }
+        
+        // Section headers with background color
+        if (investorInfo[row][0] === "INFORMASI INVESTOR" || 
+            investorInfo[row][0] === "STATISTIK TANAMAN" ||
+            investorInfo[row][0] === "RINCIAN JENIS TANAMAN" ||
+            investorInfo[row][0] === "INSTANSI TANAMAN INDIVIDUAL" ||
+            investorInfo[row][0] === "Bidang" ||
+            investorInfo[row][0] === "Metrik" ||
+            investorInfo[row][0] === "Jenis Tanaman" ||
+            investorInfo[row][0] === "Nomor Kontrak") {
+          infoSheet[cellRef].s.font = { bold: true, sz: 11 };
+          infoSheet[cellRef].s.fill = {
+            fgColor: { rgb: 'D3D3D3' }
+          };
+          infoSheet[cellRef].s.alignment = { horizontal: 'center' };
+        }
+        
+        // Data alignment
+        if (row > 0 && col > 0 && investorInfo[row][col] && 
+            !isNaN(Number(investorInfo[row][col]))) {
+          infoSheet[cellRef].s.alignment = { horizontal: 'right' };
+        }
+      }
+    }
+    
+    XLSX.utils.book_append_sheet(wb, infoSheet, "Laporan Investor");
+
+    XLSX.writeFile(
+      wb,
+      `Laporan-Investor-${report.investor.name.replace(/\s+/g, "-")}-${new Date()
+        .toISOString()
+        .split("T")[0]}.xlsx`
+    );
+  };
   const [reportData, setReportData] = useState<ReportData | null>(null);
   const [loading, setLoading] = useState(true);
   const [expandedInvestor, setExpandedInvestor] = useState<string | null>(null);
@@ -111,7 +407,7 @@ export default function LaporanPage() {
     // Company header
     doc.setFontSize(18);
     doc.setFont("helvetica", "bold");
-    doc.text("KOPERASI INVESTASI HIJAU", 55, 25);
+    doc.text("KOPERASI BINTANG MERAH SEJAHTERA", 55, 25);
 
     doc.setFontSize(12);
     doc.setFont("helvetica", "normal");
@@ -609,6 +905,14 @@ export default function LaporanPage() {
               <span className="sm:hidden">Unduh</span>
               <span className="hidden sm:inline">Unduh Semua PDF</span>
             </button>
+            <button
+              onClick={downloadAllInvestorsXLSX}
+              className="bg-gradient-to-r from-green-600 to-green-800 dark:from-green-700 dark:to-green-900 text-white px-3 sm:px-4 py-2 rounded-xl font-medium transition-all duration-200 flex items-center justify-center gap-2 text-sm sm:text-base whitespace-nowrap hover:shadow-lg hover:from-green-700 hover:to-green-900 dark:hover:from-green-800 dark:hover:to-green-950"
+            >
+              <span>📊</span>
+              <span className="sm:hidden">XLSX</span>
+              <span className="hidden sm:inline">Unduh Semua XLSX</span>
+            </button>
           </div>
         </div>
 
@@ -731,6 +1035,12 @@ export default function LaporanPage() {
                         className="bg-[#324D3E]/10 dark:bg-[#324D3E]/20 hover:bg-[#324D3E]/20 dark:hover:bg-[#324D3E]/30 text-[#324D3E] dark:text-white px-3 py-1 rounded-xl text-sm font-medium transition-colors hover:shadow-sm"
                       >
                         📥 Unduh PDF
+                      </button>
+                      <button
+                        onClick={() => downloadIndividualInvestorXLSX(report)}
+                        className="bg-green-600 hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-800 text-white px-3 py-1 rounded-xl text-sm font-medium transition-colors hover:shadow-sm"
+                      >
+                        📊 XLSX
                       </button>
                     </div>
                   </div>

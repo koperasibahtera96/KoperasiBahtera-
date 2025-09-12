@@ -74,6 +74,15 @@ export default function PlantDetail({
 }) {
   const { data: session } = useSession();
   const { id } = use(params);
+
+  // // Redirect unauthenticated users to login with callbackUrl
+  // useEffect(() => {
+  //   if (status === "loading") return; // Wait for session check
+  //   if (!session) {
+  //     const callbackUrl = `${window.location.origin}/checker/plant/${id}`;
+  //     window.location.href = `/login?callbackUrl=${encodeURIComponent(callbackUrl)}`;
+  //   }
+  // }, [session, status, id]);
   const [plantData, setPlantData] = useState<PlantInstance | null>(null);
   const [reportStatus, setReportStatus] = useState("");
   const [customStatus, setCustomStatus] = useState("");

@@ -53,17 +53,17 @@ export default async function middleware(req: NextRequest) {
     }
   }
 
-  // === CHECKER ACCESS ===
-  if (pathname.startsWith("/checker")) {
-    const allowedRoles = ["staff", "spv_staff", "finance"];
-    if (allowedRoles.includes(userRole)) {
-      console.log(`✅ ${userRole} access granted to ${pathname}`);
-      return NextResponse.next();
-    } else {
-      console.log(`❌ User role '${userRole}' denied access to ${pathname}`);
-      return NextResponse.redirect(new URL("/", req.url));
-    }
-  }
+  // // === CHECKER ACCESS ===
+  // if (pathname.startsWith("/checker")) {
+  //   const allowedRoles = ["staff", "spv_staff", "finance"];
+  //   if (allowedRoles.includes(userRole)) {
+  //     console.log(`✅ ${userRole} access granted to ${pathname}`);
+  //     return NextResponse.next();
+  //   } else {
+  //     console.log(`❌ User role '${userRole}' denied access to ${pathname}`);
+  //     return NextResponse.redirect(new URL("/", req.url));
+  //   }
+  // }
 
   if (pathname.startsWith("/investasi") || pathname.startsWith("/cicilan")) {
       if (token.canPurchase && token.verificationStatus === "approved") {
@@ -80,7 +80,7 @@ export const config = {
   matcher: [
     "/admin/:path*",
     "/finance/:path*",
-    "/checker/:path*",
+    // "/checker/:path*",
     "/investasi/:path*",
     "/cicilan/:path*",
   ],
