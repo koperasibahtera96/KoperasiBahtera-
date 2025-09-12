@@ -64,7 +64,7 @@ interface CTASectionProps {
 }
 
 export default function CTASection({ className = '' }: CTASectionProps) {
-  const router = useRouter()
+  const _router = useRouter()
   return (
     <motion.section 
       className={`py-8 sm:py-10 lg:py-12 px-4 sm:px-6 bg-[#E5D7C4] ${className}`}

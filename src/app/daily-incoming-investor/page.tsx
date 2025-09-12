@@ -9,7 +9,6 @@ import { motion } from "framer-motion";
 import {
   ArrowLeft,
   BarChart3,
-  Calendar,
   ChevronDown,
   DollarSign,
   Download,
@@ -618,7 +617,7 @@ export default function DailyIncomingInvestorPage() {
                 <div className="text-sm text-[#889063] dark:text-gray-300">
                   Periode: <span className="font-semibold">{periodLabel}</span>
                   {qApplied ? (
-                    <> • Pencarian: <span className="font-semibold">"{qApplied}"</span></>
+                    <> • Pencarian: <span className="font-semibold">&quot;{qApplied}&quot;</span></>
                   ) : null}
                 </div>
               </div>

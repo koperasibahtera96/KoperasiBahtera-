@@ -62,7 +62,7 @@ export default function LaporanPengeluaranPage() {
   const [selectedMonth, setSelectedMonth] = useState<number | null>(null);
   const [selectedPlant, setSelectedPlant] = useState<string>("all");
   const [loading, setLoading] = useState(true);
-  const filename = "laporan-pengeluaran.xls"; // Declare the filename variable
+  const _filename = "laporan-pengeluaran.xls"; // Declare the filename variable
   const { showError, AlertComponent } = useAlert();
   const { theme, systemTheme } = useTheme();
   const isDark = (theme === "system" ? systemTheme : theme) === "dark";

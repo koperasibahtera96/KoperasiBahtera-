@@ -3,7 +3,6 @@
 
 import { FinanceSidebar } from "@/components/finance/FinanceSidebar"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui-finance/card"
-import type { PlantInstance } from "@/lib/api" // tipenya opsional
 import { motion } from "framer-motion"
 import { Calendar, DollarSign, Download, TrendingDown, TrendingUp } from "lucide-react"
 import { useEffect, useMemo, useState } from "react"
