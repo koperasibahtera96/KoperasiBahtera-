@@ -5,10 +5,14 @@ import { Input } from "@/components/forms/Input";
 import { useTheme } from "next-themes";
 import Image from "next/image";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 
 export default function LoginPage() {
   const { theme, resolvedTheme, setTheme } = useTheme();
+  const searchParams = useSearchParams();
+  const callbackUrl = searchParams.get('callbackUrl') || '';
+  
   const [formData, setFormData] = useState({
     identifier: "",
     password: "",
@@ -118,22 +122,49 @@ export default function LoginPage() {
           const session = await getSession();
 
           if (session?.user?.role) {
-            // Determine redirect path based on user role
-            let redirectPath = "/";
-            switch (session.user.role) {
-              case "admin":
-                redirectPath = "/admin";
-                break;
-              case "staff":
-              case "spv_staff":
-                redirectPath = "/checker";
-                break;
-              case "finance":
-              case "staff_finance":
-                redirectPath = "/finance";
-                break;
-              default:
-                redirectPath = "/";
+            let redirectPath = "";
+            
+            // First, try to use callback URL if provided and valid
+            if (callbackUrl) {
+              // If it's a relative URL (starts with /), use it directly
+              if (callbackUrl.startsWith('/')) {
+                redirectPath = callbackUrl;
+                console.log(`🔗 Using callback URL: ${redirectPath}`);
+              } else {
+                // If it's an absolute URL, validate the domain
+                try {
+                  const url = new URL(callbackUrl);
+                  const currentUrl = new URL(window.location.href);
+                  if (url.hostname === currentUrl.hostname) {
+                    redirectPath = callbackUrl;
+                    console.log(`🔗 Using callback URL: ${redirectPath}`);
+                  } else {
+                    console.warn('⚠️ Invalid callback URL domain, using role-based redirect');
+                  }
+                } catch (error) {
+                  console.warn('⚠️ Invalid callback URL format, using role-based redirect', error);
+                }
+              }
+            }
+            
+            // If no valid callback URL, use role-based redirect
+            if (!redirectPath) {
+              switch (session.user.role) {
+                case "admin":
+                  redirectPath = "/admin";
+                  break;
+                case "staff":
+                case "spv_staff":
+                  redirectPath = "/checker";
+                  break;
+                case "finance":
+                case "staff_finance":
+                  redirectPath = "/finance";
+                  break;
+                default:
+                  redirectPath = "/";
+              }
+              console.log(`👤 Using role-based redirect for ${session.user.role}: ${redirectPath}`);
             }
 
             console.log(

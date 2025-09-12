@@ -14,7 +14,9 @@ export default async function middleware(req: NextRequest) {
   // If no token, redirect to login for protected routes only
   if (!token) {
     console.log(`❌ No token found for ${pathname}, redirecting to login`);
-    return NextResponse.redirect(new URL("/login", req.url));
+    // For mobile QR scans, preserve the URL path for redirect after login
+    const callbackUrl = encodeURIComponent(pathname + req.nextUrl.search);
+    return NextResponse.redirect(new URL(`/login?callbackUrl=${callbackUrl}`, req.url));
   }
 
   console.log(`🔍 User ${token.email} (${token.role}) accessing ${pathname}`);
@@ -53,17 +55,19 @@ export default async function middleware(req: NextRequest) {
     }
   }
 
-  // // === CHECKER ACCESS ===
-  // if (pathname.startsWith("/checker")) {
-  //   const allowedRoles = ["staff", "spv_staff", "finance"];
-  //   if (allowedRoles.includes(userRole)) {
-  //     console.log(`✅ ${userRole} access granted to ${pathname}`);
-  //     return NextResponse.next();
-  //   } else {
-  //     console.log(`❌ User role '${userRole}' denied access to ${pathname}`);
-  //     return NextResponse.redirect(new URL("/", req.url));
-  //   }
-  // }
+  // === CHECKER ACCESS ===
+  if (pathname.startsWith("/checker")) {
+    const allowedRoles = ["staff", "spv_staff", "finance", "admin"];
+    if (allowedRoles.includes(userRole)) {
+      console.log(`✅ ${userRole} access granted to ${pathname}`);
+      return NextResponse.next();
+    } else {
+      console.log(`❌ User role '${userRole}' denied access to ${pathname}`);
+      // For mobile QR scans, provide better UX by redirecting to login with callback
+      const callbackUrl = encodeURIComponent(pathname + req.nextUrl.search);
+      return NextResponse.redirect(new URL(`/login?callbackUrl=${callbackUrl}`, req.url));
+    }
+  }
 
   if (pathname.startsWith("/investasi") || pathname.startsWith("/cicilan")) {
       if (token.canPurchase && token.verificationStatus === "approved") {
@@ -80,7 +84,7 @@ export const config = {
   matcher: [
     "/admin/:path*",
     "/finance/:path*",
-    // "/checker/:path*",
+    "/checker/:path*",
     "/investasi/:path*",
     "/cicilan/:path*",
   ],
