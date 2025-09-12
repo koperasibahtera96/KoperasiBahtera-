@@ -139,10 +139,11 @@ export function CicilanModal({
       onClick={onClose}
     >
       <div
-        className="bg-[#FFFCE3] rounded-3xl shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto border-2 border-[#324D3E]/20"
+        className="bg-[#FFFCE3] rounded-3xl shadow-2xl max-w-md w-full h-[80vh] flex flex-col border-2 border-[#324D3E]/20"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="p-6">
+        {/* Fixed Header */}
+        <div className="flex-shrink-0 p-6 pb-0">
           <div className="flex justify-between items-center mb-6">
             <h3 className="text-2xl font-bold text-[#324D3E] font-[family-name:var(--font-poppins)]">
               Cicilan {plan?.investmentPlan?.name || plan?.name || "Paket"}
@@ -166,6 +167,11 @@ export function CicilanModal({
               </svg>
             </button>
           </div>
+        </div>
+        
+        {/* Scrollable Content */}
+        <div className="flex-1 overflow-y-auto px-6">
+          <div className="pb-6">
 
           {/* Package Selection */}
           <div className="mb-6">
@@ -359,6 +365,7 @@ export function CicilanModal({
             >
               {isLoading ? "Memproses..." : "Buat Cicilan"}
             </button>
+          </div>
           </div>
         </div>
       </div>

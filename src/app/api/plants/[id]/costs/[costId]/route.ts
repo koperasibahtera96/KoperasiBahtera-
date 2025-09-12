@@ -1,5 +1,7 @@
+import { authOptions } from "@/lib/auth";
 import { ensureConnection } from "@/lib/utils/database";
 import { PlantInstance } from "@/models";
+import { getServerSession } from "next-auth/next";
 import { type NextRequest, NextResponse } from "next/server";
 
 export async function DELETE(
@@ -7,6 +9,17 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string; costId: string }> }
 ) {
   try {
+    // Check session and authorization
+    const session = await getServerSession(authOptions);
+    if (!session?.user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // Prevent staff-finance from deleting costs
+    if (session.user.role === 'staff_finance') {
+      return NextResponse.json({ error: "Forbidden: Staff Finance cannot delete costs" }, { status: 403 });
+    }
+
     const { id, costId } = await params;
     console.log("[v0] DELETE cost API called with params:", params);
     console.log("[v0] Plant ID:", id, "Cost ID:", costId);
@@ -42,6 +55,17 @@ export async function PUT(
   { params }: { params: Promise<{ id: string; costId: string }> }
 ) {
   try {
+    // Check session and authorization
+    const session = await getServerSession(authOptions);
+    if (!session?.user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // Prevent staff-finance from updating costs
+    if (session.user.role === 'staff_finance') {
+      return NextResponse.json({ error: "Forbidden: Staff Finance cannot update costs" }, { status: 403 });
+    }
+
     const { id, costId } = await params;
     console.log("[v0] PUT cost API called with params:", params);
 

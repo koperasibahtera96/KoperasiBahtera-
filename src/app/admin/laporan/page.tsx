@@ -15,6 +15,7 @@ interface Tree {
   tanggalTanam: string;
   kondisi: string;
   createdAt: string;
+  nomorKontrak?: string;
 }
 
 interface InvestorReport {
@@ -32,7 +33,6 @@ interface InvestorReport {
     total: number;
     byCondition: Record<string, number>;
     bySpecies: Record<string, number>;
-    avgAge: number;
     avgHeight: number;
   };
 }
@@ -90,6 +90,7 @@ export default function LaporanPage() {
     if (detailedAge.days > 0) parts.push(`${detailedAge.days} hari`);
     return parts.length > 0 ? parts.join(", ") : "0 hari";
   };
+
 
   // PDF Generation Functions
   const addPDFHeader = async (doc: jsPDF, title: string) => {
@@ -241,6 +242,19 @@ export default function LaporanPage() {
       `LAPORAN INVESTOR - ${report.investor.name.toUpperCase()}`
     );
 
+    // Ensure we have detailed plant data for accurate age calculations
+    await fetchDetailedPlantAges(report.investor._id);
+
+    // Calculate average age for PDF only
+    let avgAge = 0;
+    if (report.trees.length > 0) {
+      const totalAgeInMonths = report.trees.reduce((sum, tree) => {
+        const ageInMonths = tree.umur || 0;
+        return sum + ageInMonths;
+      }, 0);
+      avgAge = Math.round(totalAgeInMonths / report.trees.length);
+    }
+
     // Investor info
     doc.setFontSize(14);
     doc.setFont("helvetica", "bold");
@@ -279,7 +293,7 @@ export default function LaporanPage() {
       ...Object.entries(report.statistics.byCondition).map(
         ([status, count]) => [`Tanaman ${status}`, count.toString()]
       ),
-      ["Rata-rata Umur", `${report.statistics.avgAge} bulan`],
+      ["Rata-rata Umur", `${avgAge} bulan`],
     ];
 
     autoTable(doc, {
@@ -334,28 +348,50 @@ export default function LaporanPage() {
         tableStartY = (afterTypes as number) + 8;
       }
 
-      const plantsData = report.trees.map((tree) => [
-        tree.spesiesPohon,
-        tree.lokasi,
-        `${tree.umur} bulan`,
-        new Date(tree.tanggalTanam).toLocaleDateString("id-ID"),
-        tree.kondisi,
-      ]);
+      const plantsData = report.trees.map((tree) => {
+        // Use the same age calculation logic as the expanded detail data
+        // This should match the API logic for consistent age display
+        let ageDisplay = `${tree.umur} bulan`;
+        
+        // If we have detailed plant data (like in the expanded view), use that
+        const detailedData = detailedPlantData[report.investor._id];
+        if (detailedData) {
+          const detailedTree = detailedData.find(dt => dt._id === tree._id);
+          if (detailedTree && detailedTree.detailedAge) {
+            if (detailedTree.ageSource === "tanamBibit") {
+              ageDisplay = formatDetailedAge(detailedTree.detailedAge);
+            } else {
+              ageDisplay = "Belum Ditanam";
+            }
+          }
+        }
+        
+        return [
+          tree.nomorKontrak || "N/A",
+          tree.spesiesPohon,
+          tree.lokasi,
+          ageDisplay,
+          new Date(tree.tanggalTanam).toLocaleDateString("id-ID"),
+          tree.kondisi,
+        ];
+      });
 
       autoTable(doc, {
         startY: tableStartY,
-        head: [["Nama Instansi", "Lokasi", "Umur", "Ditanam", "Status"]],
+        head: [["Nomor Kontrak", "Nama Instansi", "Lokasi", "Umur", "Ditanam", "Status"]],
         body: plantsData,
         theme: "striped",
         headStyles: { fillColor: [50, 77, 62] },
         margin: { left: 20, right: 20 },
         styles: { fontSize: 8 },
+        tableWidth: 'auto',
         columnStyles: {
-          0: { cellWidth: 40 },
-          1: { cellWidth: 35 },
-          2: { cellWidth: 25 },
-          3: { cellWidth: 30 },
-          4: { cellWidth: 25 },
+          0: { cellWidth: 40 }, // Nomor Kontrak - increased width
+          1: { cellWidth: 32 }, // Nama Instansi
+          2: { cellWidth: 28 }, // Lokasi
+          3: { cellWidth: 35 }, // Umur - for detailed age
+          4: { cellWidth: 22 }, // Ditanam
+          5: { cellWidth: 18 }, // Status
         },
       });
     }
@@ -702,7 +738,7 @@ export default function LaporanPage() {
 
                 {/* Administrative Summary */}
                 <div className="p-4 lg:p-6 bg-gradient-to-r from-[#324D3E]/5 to-[#4C3D19]/5 dark:from-gray-700/50 dark:to-gray-600/50 border-b border-[#324D3E]/10 dark:border-gray-600 transition-colors duration-300">
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     <div className="text-center">
                       <p className="text-2xl font-bold text-[#324D3E] dark:text-white transition-colors duration-300">
                         {report.investor.jumlahPohon || 0}
@@ -731,14 +767,6 @@ export default function LaporanPage() {
                       </p>
                       <p className="text-sm text-[#889063] dark:text-gray-200 transition-colors duration-300">
                         Tanaman Sehat
-                      </p>
-                    </div>
-                    <div className="text-center">
-                      <p className="text-2xl font-bold text-[#324D3E] dark:text-white transition-colors duration-300">
-                        {report.statistics.avgAge}
-                      </p>
-                      <p className="text-sm text-[#889063] dark:text-gray-200 transition-colors duration-300">
-                        Rata-rata Umur (bulan)
                       </p>
                     </div>
                   </div>
@@ -807,6 +835,9 @@ export default function LaporanPage() {
                                 <thead className="bg-[#324D3E]/5 dark:bg-gray-700/50 transition-colors duration-300">
                                   <tr>
                                     <th className="px-3 py-2 text-left font-medium text-[#324D3E] dark:text-white transition-colors duration-300">
+                                      Nomor Kontrak
+                                    </th>
+                                    <th className="px-3 py-2 text-left font-medium text-[#324D3E] dark:text-white transition-colors duration-300">
                                       Nama Instansi
                                     </th>
                                     <th className="px-3 py-2 text-left font-medium text-[#324D3E] dark:text-white hidden sm:table-cell transition-colors duration-300">
@@ -838,6 +869,11 @@ export default function LaporanPage() {
                                         key={tree._id}
                                         className="hover:bg-[#324D3E]/5 dark:hover:bg-gray-600/30 transition-colors"
                                       >
+                                        <td className="px-3 py-2">
+                                          <p className="font-medium text-[#324D3E] dark:text-white transition-colors duration-300">
+                                            {tree.nomorKontrak}
+                                          </p>
+                                        </td>
                                         <td className="px-3 py-2">
                                           <div>
                                             <p className="font-medium text-[#324D3E] dark:text-white transition-colors duration-300">

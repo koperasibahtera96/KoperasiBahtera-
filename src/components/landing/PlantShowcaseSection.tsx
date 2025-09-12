@@ -275,7 +275,8 @@ export default function PlantShowcaseSection() {
           Temukan tanaman yang paling sesuai dengan tujuan investasi Anda, baik
           untuk pemula maupun investor berpengalaman.
         </p>
-        <div className="flex justify-center items-center gap-4 mt-6">
+        {/* Mobile/Tablet Navigation - Above content */}
+        <div className="flex justify-center items-center gap-4 mt-6 xl:hidden">
           <motion.button
             onClick={prevPlant}
             className="p-3 rounded-full bg-white/10 hover:bg-white/20 transition-colors text-white"
@@ -336,7 +337,52 @@ export default function PlantShowcaseSection() {
         </div>
       </motion.div>
 
-      <div className="flex-grow w-full flex items-center py-8">
+      <div className="flex-grow w-full flex items-center py-8 relative">
+        {/* Desktop Navigation - Side buttons (xl and up) */}
+        <motion.button
+          onClick={prevPlant}
+          className="hidden xl:block absolute left-2 sm:left-4 md:left-8 top-1/2 -translate-y-1/2 z-10 p-3 sm:p-4 rounded-full bg-white/10 hover:bg-white/20 transition-colors text-white backdrop-blur-sm shadow-lg"
+          whileHover={{ scale: 1.1, x: -5 }}
+          whileTap={{ scale: 0.9 }}
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="h-6 w-6 sm:h-8 sm:w-8"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M15 19l-7-7 7-7"
+            />
+          </svg>
+        </motion.button>
+
+        {/* Desktop Navigation - Right button (xl and up) */}
+        <motion.button
+          onClick={nextPlant}
+          className="hidden xl:block absolute right-2 sm:right-4 md:right-8 top-1/2 -translate-y-1/2 z-10 p-3 sm:p-4 rounded-full bg-white/10 hover:bg-white/20 transition-colors text-white backdrop-blur-sm shadow-lg"
+          whileHover={{ scale: 1.1, x: 5 }}
+          whileTap={{ scale: 0.9 }}
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="h-6 w-6 sm:h-8 sm:w-8"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M9 5l7 7-7 7"
+            />
+          </svg>
+          </motion.button>
         <motion.div
           className="flex items-start"
           animate={{ x: `calc(-${currentIndex * 85}vw + 7.5vw)` }}
@@ -369,7 +415,7 @@ export default function PlantShowcaseSection() {
               >
                 <div className="flex flex-col">
                   <motion.div
-                    className={`w-full grid grid-cols-1 lg:grid-cols-2 ${
+                    className={`w-full grid grid-cols-1 ${
                       session?.user?.verificationStatus === "approved"
                         ? "xl:grid-cols-[500px_1fr_350px]"
                         : "xl:grid-cols-[500px_1fr]"
@@ -476,7 +522,7 @@ export default function PlantShowcaseSection() {
                       </motion.div>
                     </motion.div>
                     <motion.div
-                      className="flex justify-center items-center h-full xl:col-span-1 order-first lg:order-none"
+                      className="flex justify-center items-center h-full xl:col-span-1 order-first xl:order-none"
                       variants={scaleIn}
                     >
                       <motion.div

@@ -426,51 +426,19 @@ export default function RegisterPage() {
         </div>
 
         {/* Progress Steps */}
-        <div className="mb-8">
-          <div className="flex items-center justify-center">
-            {[
-              {
-                step: 1,
-                label: "Data Diri",
-                active: currentStep >= 1,
-                completed: currentStep > 1,
-              },
-              {
-                step: 2,
-                label: "Verifikasi KTP",
-                active: currentStep >= 2,
-                completed: currentStep > 2,
-              },
-              {
-                step: 3,
-                label: "Verifikasi Wajah",
-                active: currentStep >= 3,
-                completed: currentStep > 3,
-              },
-              {
-                step: 4,
-                label: "Pembayaran",
-                active: currentStep >= 4,
-                completed: currentStep > 4,
-              },
-              {
-                step: 5,
-                label: "Selesai",
-                active: currentStep >= 5,
-                completed: false,
-              },
-            ].map((item, index) => (
-              <div key={item.step} className="flex items-center">
+        <div className="mb-8 px-4">
+          <div className="max-w-4xl mx-auto">
+            {/* Mobile View - Show only current step */}
+            <div className="sm:hidden flex justify-center">
+              <div className="flex flex-col items-center">
                 <div
-                  className={`relative w-10 h-10 rounded-full flex items-center justify-center text-sm font-medium ${
-                    item.completed
-                      ? "bg-[#324D3E] text-white"
-                      : item.active
+                  className={`relative w-12 h-12 rounded-full flex items-center justify-center text-base font-medium ${
+                    currentStep > 0
                       ? "bg-[#324D3E] text-white"
                       : "bg-gray-300 text-gray-600"
                   }`}
                 >
-                  {item.completed ? (
+                  {currentStep > 5 ? (
                     <svg
                       className="w-5 h-5"
                       fill="none"
@@ -485,43 +453,124 @@ export default function RegisterPage() {
                       />
                     </svg>
                   ) : (
-                    item.step
+                    currentStep
                   )}
                 </div>
-                {index < 4 && (
-                  <div
-                    className={`w-16 h-1 mx-2 ${
-                      item.completed || (item.active && currentStep > item.step)
-                        ? "bg-[#324D3E]"
-                        : "bg-gray-300"
-                    }`}
-                  />
-                )}
-              </div>
-            ))}
-          </div>
-          <div className="flex justify-around mt-4 max-w-md mx-auto">
-            {[
-              { label: "Data Diri", step: 1 },
-              { label: "Verifikasi KTP", step: 2 },
-              { label: "Verifikasi Wajah", step: 3 },
-              { label: "Pembayaran", step: 4 },
-              { label: "Selesai", step: 5 },
-            ].map((item, index) => (
-              <div key={index} className="text-center">
-                <p
-                  className={`text-xs font-medium ${
-                    currentStep === item.step
-                      ? "text-white"
-                      : currentStep > item.step
-                      ? "text-white/80"
-                      : "text-white/60"
-                  }`}
-                >
-                  {item.label}
+                {/* Current Step Label */}
+                <p className="text-sm font-medium mt-2 text-center text-white">
+                  {currentStep === 1 && "Data Diri"}
+                  {currentStep === 2 && "Verifikasi KTP"}
+                  {currentStep === 3 && "Verifikasi Wajah"}
+                  {currentStep === 4 && "Pembayaran"}
+                  {currentStep === 5 && "Selesai"}
                 </p>
+                {/* Progress indicator */}
+                <div className="flex items-center mt-3 space-x-1">
+                  {[1, 2, 3, 4, 5].map((step) => (
+                    <div
+                      key={step}
+                      className={`w-2 h-2 rounded-full ${
+                        step <= currentStep
+                          ? "bg-white"
+                          : "bg-white/30"
+                      }`}
+                    />
+                  ))}
+                </div>
               </div>
-            ))}
+            </div>
+
+            {/* Desktop/Tablet View - Show all steps */}
+            <div className="hidden sm:flex items-center justify-center overflow-x-auto">
+              <div className="flex items-center min-w-max px-4">
+                {[
+                  {
+                    step: 1,
+                    label: "Data Diri",
+                    active: currentStep >= 1,
+                    completed: currentStep > 1,
+                  },
+                  {
+                    step: 2,
+                    label: "Verifikasi KTP",
+                    active: currentStep >= 2,
+                    completed: currentStep > 2,
+                  },
+                  {
+                    step: 3,
+                    label: "Verifikasi Wajah",
+                    active: currentStep >= 3,
+                    completed: currentStep > 3,
+                  },
+                  {
+                    step: 4,
+                    label: "Pembayaran",
+                    active: currentStep >= 4,
+                    completed: currentStep > 4,
+                  },
+                  {
+                    step: 5,
+                    label: "Selesai",
+                    active: currentStep >= 5,
+                    completed: false,
+                  },
+                ].map((item, index) => (
+                  <div key={item.step} className="flex items-center">
+                    <div className="flex flex-col items-center">
+                      <div
+                        className={`relative w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center text-sm sm:text-base font-medium ${
+                          item.completed
+                            ? "bg-[#324D3E] text-white"
+                            : item.active
+                            ? "bg-[#324D3E] text-white"
+                            : "bg-gray-300 text-gray-600"
+                        }`}
+                      >
+                        {item.completed ? (
+                          <svg
+                            className="w-4 h-4 sm:w-5 sm:h-5"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M5 13l4 4L19 7"
+                            />
+                          </svg>
+                        ) : (
+                          item.step
+                        )}
+                      </div>
+                      {/* Step Label directly below circle */}
+                      <p
+                        className={`text-xs sm:text-sm font-medium mt-2 text-center max-w-20 leading-tight ${
+                          currentStep === item.step
+                            ? "text-white"
+                            : currentStep > item.step
+                            ? "text-white/80"
+                            : "text-white/60"
+                        }`}
+                      >
+                        {item.label}
+                      </p>
+                    </div>
+                    {/* Connecting Line */}
+                    {index < 4 && (
+                      <div
+                        className={`w-12 sm:w-16 h-1 mx-2 sm:mx-3 ${
+                          item.completed || (item.active && currentStep > item.step)
+                            ? "bg-[#324D3E]"
+                            : "bg-gray-300"
+                        }`}
+                      />
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
 
@@ -706,16 +755,44 @@ export default function RegisterPage() {
                     </h3>
                     <div className="space-y-6">
                       <FormRow cols={2}>
-                        <ValidationInput
-                          label="Password"
-                          type="password"
-                          {...register("password")}
-                          placeholder="Buat password yang kuat"
-                          required
-                          autoComplete="new-password"
-                          error={errors.password?.message}
-                          showValidation={false}
-                        />
+                        <div className="space-y-2">
+                          <ValidationInput
+                            label="Password"
+                            type="password"
+                            {...register("password")}
+                            placeholder="Buat password yang kuat"
+                            required
+                            autoComplete="new-password"
+                            error={errors.password?.message}
+                            showValidation={false}
+                          />
+                          {/* Password Strength Guide */}
+                          <div className="mt-3 bg-gray-50 rounded-lg p-4 border border-gray-200">
+                            <p className="text-gray-800 font-medium mb-3 text-sm">Syarat Password:</p>
+                            <ul className="text-gray-600 space-y-2 text-sm">
+                              <li className="flex items-center gap-2">
+                                <span className="text-gray-500">•</span>
+                                Minimal 8 karakter
+                              </li>
+                              <li className="flex items-center gap-2">
+                                <span className="text-gray-500">•</span>
+                                Mengandung huruf kecil (a-z)
+                              </li>
+                              <li className="flex items-center gap-2">
+                                <span className="text-gray-500">•</span>
+                                Mengandung huruf besar (A-Z)
+                              </li>
+                              <li className="flex items-center gap-2">
+                                <span className="text-gray-500">•</span>
+                                Mengandung angka (0-9)
+                              </li>
+                              <li className="flex items-center gap-2">
+                                <span className="text-gray-500">•</span>
+                                Mengandung karakter khusus (@$!%*?&)
+                              </li>
+                            </ul>
+                          </div>
+                        </div>
                         <ValidationInput
                           label="Konfirmasi Password"
                           type="password"

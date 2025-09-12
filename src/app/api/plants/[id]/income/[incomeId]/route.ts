@@ -1,5 +1,7 @@
+import { authOptions } from "@/lib/auth";
 import { ensureConnection } from "@/lib/utils/database";
 import { PlantInstance } from "@/models";
+import { getServerSession } from "next-auth/next";
 import { Types } from "mongoose";
 import { type NextRequest, NextResponse } from "next/server";
 
@@ -8,6 +10,17 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string; incomeId: string }> }
 ) {
   try {
+    // Check session and authorization
+    const session = await getServerSession(authOptions);
+    if (!session?.user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // Prevent staff-finance from deleting income
+    if (session.user.role === 'staff_finance') {
+      return NextResponse.json({ error: "Forbidden: Staff Finance cannot delete income" }, { status: 403 });
+    }
+
     const { id, incomeId } = await params;
     console.log("[v0] DELETE income API called with params:", params);
     console.log("[v0] Plant ID:", id, "Income ID:", incomeId);
@@ -43,6 +56,17 @@ export async function PUT(
   { params }: { params: Promise<{ id: string; incomeId: string }> }
 ) {
   try {
+    // Check session and authorization
+    const session = await getServerSession(authOptions);
+    if (!session?.user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // Prevent staff-finance from updating income
+    if (session.user.role === 'staff_finance') {
+      return NextResponse.json({ error: "Forbidden: Staff Finance cannot update income" }, { status: 403 });
+    }
+
     const { id, incomeId } = await params;
     console.log("[v0] PUT income API called with params:", params);
 

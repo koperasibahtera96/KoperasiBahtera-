@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
+import { useSession } from "next-auth/react";
 import { use, useEffect, useMemo, useState } from "react";
 import {
   Area,
@@ -127,6 +128,7 @@ export default function MemberDetailPage(props: {
   params: Promise<{ id: string }>;
 }) {
   const { id } = use(props.params);
+  const { data: session } = useSession();
 
   const [loading, setLoading] = useState(true);
   const [year, setYear] = useState<number>(new Date().getFullYear());
@@ -901,9 +903,17 @@ export default function MemberDetailPage(props: {
           ) : (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Pemasukan side */}
-              <div className="rounded-2xl border border-[#324D3E]/10 p-4 bg-white/60">
-                <div className="font-medium mb-2 text-[#324D3E]">Tambah Pemasukan</div>
-                <form onSubmit={submitIncome} className="grid grid-cols-1 md:grid-cols-4 gap-3 mb-4">
+              <div className="rounded-2xl border border-[#324D3E]/10 dark:border-gray-600/30 p-4 bg-white/60 dark:bg-gray-700/60 backdrop-blur-xl transition-colors duration-300">
+                {/* Hide income form for staff-finance users */}
+                {session?.user?.role !== 'staff_finance' && (
+                  <>
+                    <div className="font-medium mb-2 text-[#324D3E] dark:text-white transition-colors duration-300">
+                      Tambah Pemasukan
+                    </div>
+                    <form
+                      onSubmit={submitIncome}
+                      className="grid grid-cols-1 md:grid-cols-4 gap-3 mb-4"
+                    >
                   <input
                     type="date"
                     value={incForm.date}
@@ -929,16 +939,28 @@ export default function MemberDetailPage(props: {
                   <button className="rounded-xl border border-[#324D3E]/20 px-3 py-2 text-sm hover:bg-[#324D3E] hover:text-white">
                     Simpan
                   </button>
-                </form>
+                    </form>
+                  </>
+                )}
 
-                <div className="font-medium mb-2 text-[#324D3E]">Riwayat Pemasukan</div>
-                <IncomeHistory plantId={selectedPlant} />
+                <div className="font-medium mb-2 text-[#324D3E] dark:text-white transition-colors duration-300">
+                  Riwayat Pemasukan
+                </div>
+                <IncomeHistory plantId={selectedPlant} userRole={session?.user?.role} />
               </div>
 
               {/* Pengeluaran side */}
-              <div className="rounded-2xl border border-[#324D3E]/10 p-4 bg-white/60">
-                <div className="font-medium mb-2 text-[#324D3E]">Tambah Pengeluaran</div>
-                <form onSubmit={submitExpense} className="grid grid-cols-1 md:grid-cols-4 gap-3 mb-4">
+              <div className="rounded-2xl border border-[#324D3E]/10 dark:border-gray-600/30 p-4 bg-white/60 dark:bg-gray-700/60 backdrop-blur-xl transition-colors duration-300">
+                {/* Hide expense form for staff-finance users */}
+                {session?.user?.role !== 'staff_finance' && (
+                  <>
+                    <div className="font-medium mb-2 text-[#324D3E] dark:text-white transition-colors duration-300">
+                      Tambah Pengeluaran
+                    </div>
+                    <form
+                      onSubmit={submitExpense}
+                      className="grid grid-cols-1 md:grid-cols-4 gap-3 mb-4"
+                    >
                   <input
                     type="date"
                     value={expForm.date}
@@ -964,10 +986,14 @@ export default function MemberDetailPage(props: {
                   <button className="rounded-xl border border-[#324D3E]/20 px-3 py-2 text-sm hover:bg-[#324D3E] hover:text-white">
                     Simpan
                   </button>
-                </form>
+                    </form>
+                  </>
+                )}
 
-                <div className="font-medium mb-2 text-[#324D3E]">Riwayat Pengeluaran</div>
-                <ExpenseHistory plantId={selectedPlant} />
+                <div className="font-medium mb-2 text-[#324D3E] dark:text-white transition-colors duration-300">
+                  Riwayat Pengeluaran
+                </div>
+                <ExpenseHistory plantId={selectedPlant} userRole={session?.user?.role} />
               </div>
             </div>
           )}

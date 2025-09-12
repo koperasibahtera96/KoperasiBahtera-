@@ -1,6 +1,6 @@
 import { authOptions } from "@/lib/auth";
 import dbConnect from "@/lib/mongodb";
-import { getFirstAdminId } from "@/lib/utils/admin";
+import { getFirstAdminName } from "@/lib/utils/admin";
 import Investor from "@/models/Investor";
 import Payment from "@/models/Payment";
 import PlantInstance from "@/models/PlantInstance";
@@ -146,7 +146,7 @@ export async function POST(request: NextRequest) {
               const instanceName = `${
                 plantType.charAt(0).toUpperCase() + plantType.slice(1)
               } - ${user.fullName}`;
-              const adminId = await getFirstAdminId();
+              const adminName = await getFirstAdminName();
 
               const plantInstance = new PlantInstance({
                 id: plantInstanceId,
@@ -181,7 +181,7 @@ export async function POST(request: NextRequest) {
                     }),
 
                     description: `Tanaman baru dibuat dengan cicilan untuk user ${user.fullName}`,
-                    addedBy: adminId,
+                    addedBy: adminName,
                   },
                 ],
               });

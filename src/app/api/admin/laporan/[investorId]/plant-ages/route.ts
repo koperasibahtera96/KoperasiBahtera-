@@ -97,6 +97,7 @@ export async function GET(
         createdAt: plantInstance.createdAt,
         ageSource,
         referenceDate: referenceDate.toLocaleDateString("id-ID"),
+        nomorKontrak: plantInstance.id || plantInstance._id.toString(), // Use custom ID as contract number
       };
     });
 

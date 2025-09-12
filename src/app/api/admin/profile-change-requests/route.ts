@@ -17,7 +17,7 @@ export async function GET() {
 
     // Check if user has sufficient role
     const adminUser = await User.findOne({ email: session.user.email });
-    const allowedRoles = ['admin', 'staff', 'spv_staff', 'finance'];
+    const allowedRoles = ['admin', 'staff', 'spv_staff', 'finance', 'staff_finance'];
     if (!adminUser || !allowedRoles.includes(adminUser.role)) {
       return NextResponse.json({ error: 'Access denied' }, { status: 403 });
     }

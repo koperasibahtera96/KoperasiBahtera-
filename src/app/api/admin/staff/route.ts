@@ -72,6 +72,10 @@ export async function POST(request: NextRequest) {
         prefix = "FIN";
         dbRole = "finance";
         break;
+      case "Staff Finance":
+        prefix = "SFN";
+        dbRole = "staff_finance";
+        break;
       default:
         prefix = "ST";
         dbRole = "staff";
@@ -106,7 +110,8 @@ export async function POST(request: NextRequest) {
       postalCode: "00000",
       occupation: role === "SPV Staff" ? "SPV Staff" : 
                   role === "Admin" ? "Administrator" :
-                  role === "Finance" ? "Staff Keuangan" : "Staff Lapangan",
+                  role === "Finance" ? "Staff Keuangan" :
+                  role === "Staff Finance" ? "Staff Finance" : "Staff Lapangan",
       occupationCode: prefix,
       userCode: userCode,
       role: dbRole,
@@ -116,6 +121,7 @@ export async function POST(request: NextRequest) {
       verificationStatus: "approved",
       verifiedBy: session?.user.id,
       verifiedAt: new Date(),
+      canPurchase: true,
     });
 
     await user.save();
@@ -213,7 +219,7 @@ export async function GET(request: NextRequest) {
     const searchQuery = search
       ? {
           $and: [
-            { $or: [{ role: "staff" }, { role: "spv_staff" }, { role: "admin" }, { role: "finance" }] },
+            { $or: [{ role: "staff" }, { role: "spv_staff" }, { role: "admin" }, { role: "finance" }, { role: "staff_finance" }] },
             {
               $or: [
                 { fullName: { $regex: search, $options: "i" } },
@@ -224,7 +230,7 @@ export async function GET(request: NextRequest) {
             },
           ],
         }
-      : { $or: [{ role: "staff" }, { role: "spv_staff" }, { role: "admin" }, { role: "finance" }] };
+      : { $or: [{ role: "staff" }, { role: "spv_staff" }, { role: "admin" }, { role: "finance" }, { role: "staff_finance" }] };
 
     // Get total count
     const total = await User.countDocuments(searchQuery);
@@ -361,6 +367,11 @@ export async function PUT(request: NextRequest) {
         updateDbRole = "finance";
         updatePrefix = "FIN";
         updateOccupation = "Staff Keuangan";
+        break;
+      case "Staff Finance":
+        updateDbRole = "staff_finance";
+        updatePrefix = "SFN";
+        updateOccupation = "Staff Finance";
         break;
       default:
         updateDbRole = "staff";

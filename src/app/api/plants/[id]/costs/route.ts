@@ -1,6 +1,8 @@
 // src/app/api/plants/[id]/costs/route.ts
+import { authOptions } from "@/lib/auth";
 import { ensureConnection, generateUniqueId } from "@/lib/utils/database";
 import { PlantInstance } from "@/models";
+import { getServerSession } from "next-auth/next";
 import { Types } from "mongoose";
 import { type NextRequest, NextResponse } from "next/server";
 
@@ -18,6 +20,17 @@ export async function POST(
   ctx: { params: Promise<{ id: string }> }
 ) {
   try {
+    // Check session and authorization
+    const session = await getServerSession(authOptions);
+    if (!session?.user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // Prevent staff-finance from adding costs
+    if (session.user.role === 'staff_finance') {
+      return NextResponse.json({ error: "Forbidden: Staff Finance cannot add costs" }, { status: 403 });
+    }
+
     await ensureConnection();
     const id = await getId(ctx);
     const body = await request.json();
@@ -58,6 +71,17 @@ export async function DELETE(
   ctx: { params: Promise<{ id: string }> }
 ) {
   try {
+    // Check session and authorization
+    const session = await getServerSession(authOptions);
+    if (!session?.user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    // Prevent staff-finance from deleting costs
+    if (session.user.role === 'staff_finance') {
+      return NextResponse.json({ error: "Forbidden: Staff Finance cannot delete costs" }, { status: 403 });
+    }
+
     await ensureConnection();
     const id = await getId(ctx);
 

@@ -129,6 +129,7 @@ export default function LoginPage() {
                 redirectPath = "/checker";
                 break;
               case "finance":
+              case "staff_finance":
                 redirectPath = "/finance";
                 break;
               default:

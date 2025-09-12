@@ -186,7 +186,7 @@ export async function POST(request: NextRequest) {
       sequential = lastSequential + 1;
     }
 
-    const userCode = `IH-${occupationCode}-${currentYear}-${sequential.toString().padStart(3, '0')}`;
+    const userCode = `BMS-${occupationCode}-${currentYear}-${sequential.toString().padStart(3, '0')}`;
 
     // Use the already validated date of birth
     // dobDate was already parsed and validated above

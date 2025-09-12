@@ -5,11 +5,10 @@ import { NextResponse } from "next/server";
 export default async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
-  // Get JWT token with explicit cookie name (fixes development issues)
+  // Get JWT token with dynamic cookie name based on environment
   const token = await getToken({
     req,
     secret: process.env.NEXTAUTH_SECRET,
-    cookieName: "__Secure-next-auth.session-token",
   });
 
   // If no token, redirect to login for protected routes only
@@ -32,6 +31,8 @@ export default async function middleware(req: NextRequest) {
     return NextResponse.next();
   }
 
+
+
   // === FINANCE ACCESS ===
   if (
     pathname.startsWith("/finance") ||
@@ -43,7 +44,7 @@ export default async function middleware(req: NextRequest) {
     pathname.startsWith("/manajemen-anggota") ||
     pathname.startsWith("/anggota")
   ) {
-    if (userRole === "finance") {
+    if (userRole === "finance" || userRole === "staff_finance") {
       console.log(`✅ Finance access granted to ${pathname}`);
       return NextResponse.next();
     } else {
@@ -64,29 +65,14 @@ export default async function middleware(req: NextRequest) {
     }
   }
 
-  // === USER INVESTMENT ACCESS ===
   if (pathname.startsWith("/investasi") || pathname.startsWith("/cicilan")) {
-    if (userRole === "user") {
-      // Check if user can purchase and is approved
       if (token.canPurchase && token.verificationStatus === "approved") {
-        console.log(`✅ Verified user access granted to ${pathname}`);
         return NextResponse.next();
       } else {
-        console.log(
-          `❌ User not verified: canPurchase=${token.canPurchase}, status=${token.verificationStatus}`
-        );
         return NextResponse.redirect(new URL("/verification-pending", req.url));
       }
-    } else {
-      console.log(
-        `❌ Non-user role '${userRole}' denied access to user routes ${pathname}`
-      );
-      return NextResponse.redirect(new URL("/", req.url));
-    }
-  }
 
-  // === DEFAULT: Allow access to other routes ===
-  console.log(`✅ Default access granted to ${pathname}`);
+  }
   return NextResponse.next();
 }
 

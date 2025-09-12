@@ -353,7 +353,7 @@ export default function CicilanPage() {
                 Mulai investasi dengan cicilan sekarang!
               </p>
               <button
-                onClick={() => router.push("/#investasi")}
+                onClick={() => router.push("/#produk")}
                 className="px-6 py-3 bg-gradient-to-r from-[#324D3E] to-[#4C3D19] text-white rounded-full hover:shadow-lg transition-all duration-300 font-poppins font-medium"
               >
                 Lihat Paket Investasi

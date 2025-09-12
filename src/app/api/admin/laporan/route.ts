@@ -31,7 +31,7 @@ export async function GET(request: Request) {
     // Get paginated investors
     const investors = await Investor.find(searchQuery)
       .skip(skip)
-      .limit(limit)
+    .limit(limit)
       .sort({ createdAt: -1 }); // Most recent first
     
     // Get all plant instances (we still need all for calculations)
@@ -65,40 +65,8 @@ export async function GET(request: Request) {
           acc[type]++;
           return acc;
         }, {} as Record<string, number>),
-        avgAge: 0, // PlantInstance doesn't have age field, will calculate from createdAt
         avgHeight: 0, // PlantInstance doesn't have height field
       };
-
-      // Calculate average age based on 'Tanam Bibit' history date (in months)
-      if (investorPlantInstances.length > 0) {
-        const now = new Date();
-        const totalAgeInMonths = investorPlantInstances.reduce(
-          (sum, plantInstance) => {
-            // Find 'Tanam Bibit' history entry
-            const tanamBibitHistory = plantInstance.history?.find((h: any) => h.action === 'Tanam Bibit');
-            let referenceDate;
-            
-            if (tanamBibitHistory && tanamBibitHistory.addedAt) {
-              // Parse DD/MM/YYYY format
-              const [day, month, year] = tanamBibitHistory.addedAt.split('/');
-              referenceDate = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
-            } else {
-              // Fallback to createdAt if no 'Tanam Bibit' history found
-              referenceDate = new Date(plantInstance.createdAt);
-            }
-            
-            const ageInMonths = Math.floor(
-              (now.getTime() - referenceDate.getTime()) /
-                (1000 * 60 * 60 * 24 * 30)
-            );
-            return sum + Math.max(0, ageInMonths);
-          },
-          0
-        );
-        plantStats.avgAge = Math.round(
-          totalAgeInMonths / investorPlantInstances.length
-        );
-      }
 
       return {
         investor: {
@@ -138,6 +106,7 @@ export async function GET(request: Request) {
             tanggalTanam: plantInstance.createdAt,
             kondisi: plantInstance.status || "Unknown",
             createdAt: plantInstance.createdAt,
+            nomorKontrak: plantInstance.id.slice(6) 
           };
         }),
         statistics: plantStats,

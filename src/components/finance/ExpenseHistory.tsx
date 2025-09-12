@@ -21,7 +21,7 @@ type Pagination = {
   hasPrevPage: boolean
 }
 
-export default function ExpenseHistory({ plantId }: { plantId: string }) {
+export default function ExpenseHistory({ plantId, userRole }: { plantId: string; userRole?: string }) {
   const [list, setList] = useState<ExpenseRecord[]>([])
   const [pagination, setPagination] = useState<Pagination | null>(null)
   const [month, setMonth] = useState<string>("")
@@ -45,6 +45,8 @@ export default function ExpenseHistory({ plantId }: { plantId: string }) {
   useEffect(() => { load(page, month) }, [page, month])
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { load(1, month) }, [plantId])
+
+  const canEdit = userRole !== 'staff_finance';
 
   const onSave = async () => {
     await fetch(`/api/plants/${plantId}/costs/${editing?.id}`, {
@@ -92,7 +94,7 @@ export default function ExpenseHistory({ plantId }: { plantId: string }) {
                   <th className="text-left py-3 px-4 text-[#324D3E] dark:text-white font-semibold">Deskripsi</th>
                   <th className="text-right py-3 px-4 text-[#324D3E] dark:text-white font-semibold">Jumlah</th>
                   <th className="text-center py-3 px-4 text-[#324D3E] dark:text-white font-semibold">Kategori</th>
-                  <th className="text-center py-3 px-4 text-[#324D3E] dark:text-white font-semibold">Aksi</th>
+                  {canEdit && <th className="text-center py-3 px-4 text-[#324D3E] dark:text-white font-semibold">Aksi</th>}
                 </tr>
               </thead>
               <tbody>
@@ -106,16 +108,18 @@ export default function ExpenseHistory({ plantId }: { plantId: string }) {
                         {cost.category || "Operasional"}
                       </span>
                     </td>
-                    <td className="py-3 px-4 text-center">
-                      <div className="flex justify-center gap-2">
-                        <button onClick={()=>setEditing(cost)} className="p-2 text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-xl transition-all duration-200" title="Edit">
-                          <Edit className="w-4 h-4" />
-                        </button>
-                        <button onClick={()=>setDeleting(cost.id)} className="p-2 text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-xl transition-all duration-200" title="Hapus">
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </td>
+                    {canEdit && (
+                      <td className="py-3 px-4 text-center">
+                        <div className="flex justify-center gap-2">
+                          <button onClick={()=>setEditing(cost)} className="p-2 text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-xl transition-all duration-200" title="Edit">
+                            <Edit className="w-4 h-4" />
+                          </button>
+                          <button onClick={()=>setDeleting(cost.id)} className="p-2 text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-xl transition-all duration-200" title="Hapus">
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </td>
+                    )}
                   </tr>
                 ))}
               </tbody>
@@ -148,7 +152,7 @@ export default function ExpenseHistory({ plantId }: { plantId: string }) {
       )}
 
       {/* Modal edit */}
-      {editing && (
+      {canEdit && editing && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-white/95 dark:bg-gray-800/90 backdrop-blur-xl rounded-3xl p-6 w-full max-w-md border border-[#324D3E]/10 dark:border-gray-700 shadow-2xl">
             <h3 className="text-lg font-bold text-[#324D3E] dark:text-white mb-4">Edit Pengeluaran</h3>
@@ -179,7 +183,7 @@ export default function ExpenseHistory({ plantId }: { plantId: string }) {
       )}
 
       {/* Modal delete */}
-      {deleting && (
+      {canEdit && deleting && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-white/95 dark:bg-gray-800/90 backdrop-blur-xl rounded-3xl p-6 w-full max-w-md border border-[#324D3E]/10 dark:border-gray-700 shadow-2xl">
             <h3 className="text-lg font-bold text-[#324D3E] dark:text-white mb-4">Konfirmasi Hapus</h3>
