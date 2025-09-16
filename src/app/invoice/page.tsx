@@ -3,9 +3,9 @@
 import InvoiceCard from "@/components/invoice/InvoiceCard";
 import InvoiceControls from "@/components/invoice/InvoiceControls";
 import { InvoiceLayout } from "@/components/invoice/InvoiceLayout";
-import { Loader2 } from "lucide-react";
+import { Loader2, X } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 
 interface PaymentData {
   ref: string;
@@ -44,35 +44,27 @@ function InvoicePageContent() {
   const q = searchParams.get("q") || "";
   const sort = (searchParams.get("sort") as "asc" | "desc") || "desc";
   const page = Math.max(1, parseInt(searchParams.get("page") || "1", 10));
-  const category = searchParams.get("category") || ""; // "", "registration", "cicilan", "full"
+  const category = searchParams.get("category") || "";
 
-  // Local UI state for category selector (so you can change then Apply)
   const [catDraft, setCatDraft] = useState(category);
+  useEffect(() => setCatDraft(category), [category]);
 
-  useEffect(() => {
-    setCatDraft(category);
-  }, [category]);
-
-  // Build querystring helper
   const buildQS = (next: Record<string, string | number | undefined | null>) => {
     const sp = new URLSearchParams(searchParams.toString());
     Object.entries(next).forEach(([k, v]) => {
       if (v === undefined || v === null || v === "") sp.delete(k);
       else sp.set(k, String(v));
     });
-    // reset to page 1 when filter changes
     if ("category" in next || "q" in next || "sort" in next) {
       sp.set("page", "1");
     }
     return sp.toString();
   };
 
-  // Fetch data
   const fetchData = async () => {
     try {
       setLoading(true);
       setError(null);
-
       const params = new URLSearchParams();
       if (q) params.set("q", q);
       params.set("sort", sort);
@@ -80,11 +72,7 @@ function InvoicePageContent() {
       if (category) params.set("category", category);
 
       const response = await fetch(`/api/invoice?${params.toString()}`);
-
-      if (!response.ok) {
-        throw new Error("Failed to fetch invoices");
-      }
-
+      if (!response.ok) throw new Error("Failed to fetch invoices");
       const result = await response.json();
       setData(result);
     } catch (err) {
@@ -95,105 +83,104 @@ function InvoicePageContent() {
     }
   };
 
-  // Refetch when deps change
   useEffect(() => {
     fetchData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [q, sort, page, category]);
 
-  // Loading UI
+  // helper
+  const isApproved = (p: PaymentData) =>
+    String((p as any).adminStatus || p.status || "").toLowerCase() === "approved";
+
+  // group cicilan -> [{ orderId, items(sorted), paidCount, totalInstallments, userName }]
+  const installmentGroups = useMemo(() => {
+    if (!data) return [];
+    const map = new Map<string, PaymentData[]>();
+    for (const p of data.payments) {
+      if (p.paymentType === "cicilan-installment" && isApproved(p) && (p as any).cicilanOrderId) {
+        const oid = String((p as any).cicilanOrderId);
+        if (!map.has(oid)) map.set(oid, []);
+        map.get(oid)!.push(p);
+      }
+    }
+    return Array.from(map.entries()).map(([orderId, items]) => {
+      const sorted = items
+        .slice()
+        .sort(
+          (a, b) =>
+            ((a as any).installmentNumber ?? 0) - ((b as any).installmentNumber ?? 0)
+        );
+
+      const totalInstallments =
+        ((sorted[0] as any)?.totalInstallments ??
+          Math.max(
+            ...sorted.map((x) => ((x as any).totalInstallments ?? 0) as number),
+            0
+          )) || undefined;
+
+      return {
+        orderId,
+        items: sorted,
+        paidCount: sorted.length,
+        totalInstallments,
+        userName: sorted[0]?.userName,
+      };
+    });
+  }, [data]);
+
+  // non cicilan + cicilan yg sudah digroup (hanya tampilkan sisanya)
+  const otherPayments = useMemo(() => {
+    if (!data) return [];
+    const skip = new Set<string>();
+    for (const g of installmentGroups) {
+      for (const it of g.items) skip.add(it.ref || it._id);
+    }
+    return data.payments.filter((p) => !skip.has(p.ref || p._id));
+  }, [data, installmentGroups]);
+
+  // ===== Modal state untuk detail cicilan (UI saja) =====
+  const [activeGroup, setActiveGroup] = useState<string | null>(null);
+  const closeModal = () => setActiveGroup(null);
+
+  // --- UI states ---
   if (loading) {
     return (
       <InvoiceLayout>
-        <div className="p-4 sm:p-6 space-y-6 sm:space-y-8 font-[family-name:var(--font-poppins)]">
-          <header>
-            <div className="mb-6 sm:mb-8">
-              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-[#324D3E] dark:text-white mb-2 sm:mb-4 transition-colors duration-300">
-                Invoice
-              </h1>
-              <p className="text-[#889063] dark:text-gray-200 text-base sm:text-lg transition-colors duration-300">
-                {new Date().toLocaleDateString("id-ID", {
-                  weekday: "long",
-                  day: "numeric",
-                  month: "long",
-                  year: "numeric",
-                })}
-              </p>
-            </div>
-
-            <div className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl rounded-3xl p-4 sm:p-6 lg:p-8 border border-[#324D3E]/10 dark:border-gray-700 shadow-xl transition-colors duration-300">
-              {/* Loading skeleton for controls */}
-              <div className="animate-pulse">
-                <div className="h-20 bg-gray-200 dark:bg-gray-700 rounded-2xl mb-6"></div>
-              </div>
-
-              {/* Loading skeleton for cards */}
-              <div className="grid grid-cols-1 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4 sm:gap-6 mt-6 sm:mt-8">
-                {[...Array(6)].map((_, i) => (
-                  <div key={i} className="animate-pulse">
-                    <div className="h-48 bg-gray-200 dark:bg-gray-700 rounded-2xl"></div>
-                  </div>
-                ))}
-              </div>
-
-              {/* Loading indicator */}
-              <div className="flex items-center justify-center py-12">
-                <Loader2 className="w-8 h-8 animate-spin text-[#324D3E]" />
-                <span className="ml-2 text-[#889063] dark:text-gray-200">
-                  Memuat data invoice...
-                </span>
-              </div>
-            </div>
-          </header>
+        <div className="p-4 sm:p-6">
+          <Loader2 className="animate-spin" />
         </div>
       </InvoiceLayout>
     );
   }
-
-  // Error UI
   if (error) {
     return (
       <InvoiceLayout>
-        <div className="p-4 sm:p-6 space-y-6 sm:space-y-8 font-[family-name:var(--font-poppins)]">
-          <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-2xl p-6 text-center">
-            <h2 className="text-xl font-semibold text-red-600 dark:text-red-400 mb-2">
-              Terjadi Kesalahan
-            </h2>
-            <p className="text-red-500 dark:text-red-300 mb-4">{error}</p>
-            <button
-              onClick={fetchData}
-              className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg transition-colors"
-            >
-              Coba Lagi
-            </button>
-          </div>
-        </div>
+        <div className="p-6 text-red-500">Error: {error}</div>
+      </InvoiceLayout>
+    );
+  }
+  if (!data) {
+    return (
+      <InvoiceLayout>
+        <div className="p-6">Tidak ada data</div>
       </InvoiceLayout>
     );
   }
 
-  // Empty UI
-  if (!data) {
-    return (
-      <InvoiceLayout>
-        <div className="p-4 sm:p-6 space-y-6 sm:space-y-8 font-[family-name:var(--font-poppins)]">
-          <div className="text-center text-[#889063] dark:text-gray-200 py-12">
-            <p>Tidak ada data yang tersedia</p>
-          </div>
-        </div>
-      </InvoiceLayout>
-    );
-  }
+  // data group aktif buat modal
+  const activeData = activeGroup
+    ? installmentGroups.find((g) => g.orderId === activeGroup)
+    : null;
 
   return (
     <InvoiceLayout>
       <div className="p-4 sm:p-6 space-y-6 sm:space-y-8 font-[family-name:var(--font-poppins)]">
         <header>
           <div className="mb-6 sm:mb-8">
-            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-[#324D3E] dark:text-white mb-2 sm:mb-4 transition-colors duration-300">
+            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-[#324D3E] dark:text-white mb-2">
               Invoice
             </h1>
-            <p className="text-[#889063] dark:text-gray-200 text-base sm:text-lg transition-colors duration-300">
+            <p className="text-[#889063] dark:text-gray-200">
               {new Date().toLocaleDateString("id-ID", {
                 weekday: "long",
                 day: "numeric",
@@ -203,8 +190,7 @@ function InvoicePageContent() {
             </p>
           </div>
 
-          <div className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl rounded-3xl p-4 sm:p-6 lg:p-8 border border-[#324D3E]/10 dark:border-gray-700 shadow-xl transition-colors duration-300">
-            {/* Controls (tetap) */}
+          <div className="bg-white/90 dark:bg-gray-800/90 rounded-3xl p-4 sm:p-6 lg:p-8 border shadow-xl">
             <InvoiceControls
               q={q}
               sort={sort}
@@ -214,7 +200,7 @@ function InvoicePageContent() {
               perPage={PER_PAGE}
             />
 
-            {/* Tambahan: Filter Kategori tanpa mengubah logic komponen lain */}
+            {/* filter kategori (tetap) */}
             <div className="mt-4 sm:mt-6 grid grid-cols-1 md:grid-cols-3 gap-3">
               <div className="md:col-span-2">
                 <label className="block text-sm font-medium text-[#324D3E] dark:text-white mb-2">
@@ -224,31 +210,29 @@ function InvoicePageContent() {
                   <select
                     value={catDraft}
                     onChange={(e) => setCatDraft(e.target.value)}
-                    className="w-full md:w-auto min-w-[220px] border border-[#324D3E]/20 dark:border-gray-600 rounded-xl px-3 py-2 text-sm bg-white/80 dark:bg-gray-700/80 backdrop-blur-xl text-[#324D3E] dark:text-white focus:outline-none focus:ring-2 focus:ring-[#324D3E]/20 focus:border-[#324D3E]/40 transition-colors duration-300"
+                    className="min-w-[220px] border rounded-xl px-3 py-2 text-sm"
                   >
                     <option value="">Semua</option>
                     <option value="registration">Registration</option>
                     <option value="cicilan">Cicilan (Approved)</option>
                     <option value="full">Full Investment</option>
                   </select>
-
                   <button
                     onClick={() => {
                       const qs = buildQS({ category: catDraft });
                       router.push(`${pathname}?${qs}`);
                     }}
-                    className="rounded-xl border border-[#324D3E]/20 dark:border-gray-600 px-4 py-2 text-sm hover:bg-[#324D3E] hover:text-white text-[#324D3E] dark:text-white bg-white/20 dark:bg-gray-700/50 backdrop-blur-xl transition-all duration-300"
+                    className="px-4 py-2 text-sm rounded-xl border"
                   >
                     Terapkan
                   </button>
-
                   <button
                     onClick={() => {
                       setCatDraft("");
                       const qs = buildQS({ category: "" });
                       router.push(`${pathname}?${qs}`);
                     }}
-                    className="rounded-xl border border-transparent px-4 py-2 text-sm bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-[#324D3E] dark:text-white transition-colors duration-300"
+                    className="px-4 py-2 text-sm rounded-xl border"
                   >
                     Reset
                   </button>
@@ -256,26 +240,92 @@ function InvoicePageContent() {
               </div>
             </div>
 
-            {/* Grid Cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-4 sm:gap-6 mt-6 sm:mt-8">
-              {data.payments.map((payment) => (
-                <InvoiceCard
-                  key={payment.ref || payment._id}
-                  payment={payment}
-                />
+            {/* grup cicilan + pembayaran lain */}
+            <div className="grid grid-cols-1 sm:grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6 mt-6 sm:mt-8">
+              {installmentGroups.map((g) => (
+                <div
+                  key={g.orderId}
+                  className="rounded-2xl border bg-white/80 dark:bg-gray-800/80 shadow p-4"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <div className="text-xs text-[#889063]">Cicilan (Approved)</div>
+                      <div className="font-semibold break-all">{g.orderId}</div>
+                      <div className="text-xs mt-1">
+                        {g.paidCount} payment
+                        {g.totalInstallments ? ` dari ${g.totalInstallments} Cicilan` : ""}
+                      </div>
+                      {g.userName && (
+                        <div className="text-xs text-[#889063]">Atas nama: {g.userName}</div>
+                      )}
+                    </div>
+                    <button
+                      onClick={() => setActiveGroup(g.orderId)}
+                      className="text-sm px-3 py-1.5 rounded-xl border"
+                    >
+                      Lihat Detail
+                    </button>
+                  </div>
+                </div>
+              ))}
+
+              {otherPayments.map((payment) => (
+                <InvoiceCard key={payment.ref || payment._id} payment={payment} />
               ))}
             </div>
 
-            {data.payments.length === 0 && (
-              <div className="text-center text-[#889063] dark:text-gray-200 py-8 sm:py-12 bg-white/60 dark:bg-gray-700/60 backdrop-blur-lg rounded-2xl border border-[#324D3E]/10 dark:border-gray-600 mt-6 sm:mt-8 transition-colors duration-300">
-                <div className="text-sm sm:text-base">
-                  Tidak ada invoice yang cocok.
-                </div>
-              </div>
+            {installmentGroups.length === 0 && otherPayments.length === 0 && (
+              <div className="text-center py-8">Tidak ada invoice yang cocok.</div>
             )}
           </div>
         </header>
       </div>
+
+      {/* ===== Modal Detail Cicilan (UI only) ===== */}
+      {activeData && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+          onClick={closeModal}
+        >
+          <div
+            className="relative w-full max-w-7xl bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-4 sm:p-6"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              onClick={closeModal}
+              className="absolute top-3 right-3 p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700"
+              aria-label="Tutup"
+            >
+              <X className="h-5 w-5" />
+            </button>
+
+            <div className="mb-4">
+              <div className="text-xs text-[#889063]">Cicilan (Approved)</div>
+              <div className="font-semibold break-all">{activeData.orderId}</div>
+              <div className="text-xs">
+                {activeData.paidCount} payment
+                {activeData.totalInstallments
+                  ? ` dari ${activeData.totalInstallments} Cicilan`
+                  : ""}
+              </div>
+              {activeData.userName && (
+                <div className="text-xs text-[#889063]">
+                  Atas nama: {activeData.userName}
+                </div>
+              )}
+            </div>
+
+            {/* Grid: maks 4 per baris, kontainer dibatasi 2 baris-an lalu scroll */}
+            <div className="max-h-[600px] overflow-y-auto pr-1">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                {activeData.items.map((payment) => (
+                  <InvoiceCard key={payment.ref || payment._id} payment={payment} />
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </InvoiceLayout>
   );
 }
@@ -285,31 +335,9 @@ export default function InvoicePage() {
     <Suspense
       fallback={
         <InvoiceLayout>
-          <div className="p-4 sm:p-6 space-y-6 sm:space-y-8 font-[family-name:var(--font-poppins)]">
-            <header>
-              <div className="mb-6 sm:mb-8">
-                <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-[#324D3E] dark:text-white mb-2 sm:mb-4 transition-colors duration-300">
-                  Invoice
-                </h1>
-                <p className="text-[#889063] dark:text-gray-200 text-base sm:text-lg transition-colors duration-300">
-                  {new Date().toLocaleDateString("id-ID", {
-                    weekday: "long",
-                    day: "numeric",
-                    month: "long",
-                    year: "numeric",
-                  })}
-                </p>
-              </div>
-
-              <div className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl rounded-3xl p-4 sm:p-6 lg:p-8 border border-[#324D3E]/10 dark:border-gray-700 shadow-xl transition-colors duration-300">
-                <div className="flex items-center justify-center py-12">
-                  <Loader2 className="w-8 h-8 animate-spin text-[#324D3E]" />
-                  <span className="ml-2 text-[#889063] dark:text-gray-200">
-                    Memuat halaman invoice...
-                  </span>
-                </div>
-              </div>
-            </header>
+          <div className="p-4 sm:p-6">
+            <Loader2 className="w-8 h-8 animate-spin" />
+            <span className="ml-2">Memuat halaman invoice...</span>
           </div>
         </InvoiceLayout>
       }
