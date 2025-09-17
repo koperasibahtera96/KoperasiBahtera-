@@ -397,6 +397,7 @@ export async function POST(request: NextRequest) {
             console.log(`✅ [${transactionId}] Investment processing completed successfully for ${orderId}`);
           }
 
+
             const contract = await Contract.findOne({ contractId: orderId }).session(mongoSession);
             if (contract) {
               contract.paymentCompleted = true;
@@ -405,7 +406,27 @@ export async function POST(request: NextRequest) {
             } else {
               console.log(`⚠️ [${transactionId}] Contract not found for ${orderId}, payment successful but contract status not updated`);
             }
-          
+      
+            const investorToUpdate = await Investor.findOne({ 
+              userId: user._id,
+              "investments.investmentId": orderId
+            }).session(mongoSession);
+
+            if (investorToUpdate) {
+              // Find and update the specific investment
+              const investment = investorToUpdate.investments.find(
+                (inv: any) => inv.investmentId === orderId
+              );
+              if (investment) {
+                investment.amountPaid = payment.amount;
+                investment.status = "approved";
+                investment.completionDate = new Date();
+                await investorToUpdate.save({ session: mongoSession });
+                console.log(`💰 [${transactionId}] Updated investor amountPaid for ${orderId}: ${payment.amount}`);
+              }
+            }
+
+          console.log(`✅ [${transactionId}] All updates completed successfully for ${orderId}`);
 
           // Set contract redirect URL for successful payment
           payment.contractRedirectUrl = `/contract/${orderId}`;
@@ -427,6 +448,7 @@ export async function POST(request: NextRequest) {
       }
 
       payment.isProcessed = true;
+      payment.status = "completed"; // Mark payment as completed
       message = "Investment payment successful - Contract ready for signing";
     }
 
