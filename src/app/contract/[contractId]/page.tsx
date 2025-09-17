@@ -40,7 +40,7 @@ interface ContractData {
 
 export default function ContractPage() {
   const params = useParams();
-  const investmentId = params.investmentId as string;
+  const contractId = params.contractId as string;
   const [contractData, setContractData] = useState<ContractData | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadingMessage, setLoadingMessage] = useState(
@@ -52,16 +52,23 @@ export default function ContractPage() {
   const { showError, AlertComponent } = useAlert();
 
   useEffect(() => {
-    if (investmentId) {
+    if (contractId) {
       fetchContractData();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [investmentId]);
+  }, [contractId]);
 
   const fetchContractData = async (retryCount = 0) => {
     try {
       setLoading(true);
-      const response = await fetch(`/api/contract/${investmentId}`);
+
+      // Try new contract system first
+      let response = await fetch(`/api/contract/${contractId}`);
+
+      // If not found, try the old system for backward compatibility
+      if (response.status === 404) {
+        response = await fetch(`/api/contract/${contractId}/view`);
+      }
 
       if (response.ok) {
         const result = await response.json();
@@ -420,7 +427,7 @@ export default function ContractPage() {
       );
 
       // Call API to mark contract as signed in database
-      const response = await fetch(`/api/contract/${investmentId}`, {
+      const response = await fetch(`/api/contract/${contractId}`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -434,7 +441,13 @@ export default function ContractPage() {
       if (response.ok) {
         setSigned(true);
       } else {
-        throw new Error("Failed to save contract signing status");
+        const errorData = await response.json().catch(() => null);
+        console.error("Contract signing API error:", {
+          status: response.status,
+          statusText: response.statusText,
+          error: errorData
+        });
+        throw new Error(`Failed to save contract signing status: ${errorData?.error || response.statusText}`);
       }
     } catch (error) {
       console.error("Error generating PDF:", error);
@@ -489,10 +502,10 @@ export default function ContractPage() {
             Sejahtera.
           </p>
           <button
-            onClick={() => (window.location.href = "/")}
+            onClick={() => (window.location.href = "/payments")}
             className="bg-gradient-to-r from-[#324D3E] to-[#4C3D19] text-white px-6 py-3 rounded-xl font-semibold hover:shadow-lg transition-all duration-200"
           >
-            Kembali ke Beranda
+            Masuk ke pembayaran
           </button>
         </div>
       </div>

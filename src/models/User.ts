@@ -18,7 +18,8 @@ export interface IUser extends Document {
   faceImageUrl?: string; // Face verification image URL from ImageKit
   profileImageUrl?: string; // Profile image URL from ImageKit
   kartuAnggotaUrl?: string; // Kartu Anggota PDF URL from ImageKit
-  role: 'user' | 'staff' | 'spv_staff' | 'admin' | 'finance' | 'staff_finance';
+  role: 'user' | 'staff' | 'spv_staff' | 'admin' | 'finance' | 'staff_finance' | 'ketua' | 'marketing';
+  referralCode?: string; // 6-digit alphanumeric code for marketing staff
   isEmailVerified: boolean;
   isPhoneVerified: boolean;
   isActive: boolean;
@@ -125,9 +126,16 @@ const UserSchema: Schema = new Schema({
   },
   role: {
     type: String,
-    enum: ['user', 'staff', 'spv_staff', 'admin', 'finance', 'staff_finance'],
+    enum: ['user', 'staff', 'spv_staff', 'admin', 'finance', 'staff_finance', 'ketua', 'marketing'],
     default: 'user',
     required: [true, 'Role is required'],
+  },
+  referralCode: {
+    type: String,
+    unique: true,
+    sparse: true,
+    trim: true,
+    match: [/^[A-Z0-9]{6}$/, 'Referral code must be 6 alphanumeric characters'],
   },
   isEmailVerified: {
     type: Boolean,

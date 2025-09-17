@@ -1,6 +1,7 @@
 import { authOptions } from '@/lib/auth';
 import dbConnect from '@/lib/mongodb';
 import { Investor } from '@/models';
+import Contract from '@/models/Contract';
 import User from '@/models/User';
 import mongoose from 'mongoose';
 import { getServerSession } from 'next-auth';
@@ -77,11 +78,36 @@ export async function GET() {
     const totalPaid = investments.reduce((sum: number, inv: any) => sum + (Number(inv.amountPaid) || 0), 0);
     const jumlahPohon = investments.length;
 
-    // For now, return basic data - you can enhance this later with profit calculations
+    // Get contract information for each investment
     const investmentData = await Promise.all(investments.map(async (inv: any) => {
       const totalAmount = Number(inv.totalAmount) || 0;
       const amountPaid = Number(inv.amountPaid) || 0;
       const progress = totalAmount > 0 ? Math.round((amountPaid / totalAmount) * 100) : 0;
+
+      // Find related contract information
+      let contractInfo = null;
+      if (inv.investmentId) {
+        const contract = await Contract.findOne({ contractId: inv.investmentId });
+        if (contract) {
+          contractInfo = {
+            contractId: contract.contractId,
+            adminApprovalStatus: contract.adminApprovalStatus,
+            currentAttempt: contract.currentAttempt || 0,
+            maxAttempts: contract.maxAttempts || 3,
+            paymentAllowed: contract.paymentAllowed,
+            paymentCompleted: contract.paymentCompleted,
+            isMaxRetryReached: (contract.currentAttempt || 0) >= (contract.maxAttempts || 3),
+            isPermanentlyRejected: contract.adminApprovalStatus === 'permanently_rejected',
+            // Add debug info to understand the issue
+            debugInfo: {
+              adminApprovalStatus: contract.adminApprovalStatus,
+              currentAttempt: contract.currentAttempt,
+              maxAttempts: contract.maxAttempts,
+              signatureAttemptsCount: contract.signatureAttempts?.length || 0
+            }
+          };
+        }
+      }
 
       // Populate user names in recent costs
       const recentCosts = await Promise.all((inv.plantInstanceId?.operationalCosts?.slice(-3) || []).map(async (cost: any) => ({
@@ -115,6 +141,7 @@ export async function GET() {
         investmentDate: inv.investmentDate,
         completionDate: inv.completionDate,
         nextPaymentInfo: inv.nextPaymentInfo,
+        contractInfo,
         plantInstance: inv.plantInstanceId ? {
           id: inv.plantInstanceId._id.toString(),
           plantType: inv.plantInstanceId.plantType,

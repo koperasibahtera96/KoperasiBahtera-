@@ -25,6 +25,20 @@ export interface IPlantInstance extends Document {
   baseAnnualROI: number
   operationalCosts: IOperationalCost[]
   incomeRecords: IIncomeRecord[]
+  qrCode?: string
+  owner?: string
+  fotoGambar?: string
+  memberId?: string
+  contractNumber?: string
+  contractId?: string
+  userId?: mongoose.Types.ObjectId
+  location?: string
+  status?: string
+  approvalStatus: "pending" | "approved" | "rejected"
+  lastUpdate?: string
+  history?: any[]
+  isActive?: boolean
+  createdDate?: Date
   createdAt: Date
   updatedAt: Date
 }
@@ -66,6 +80,11 @@ const PlantInstanceSchema = new Schema(
     contractNumber: { type: String, unique: true, sparse: true },
     location: { type: String },
     status: { type: String },
+    approvalStatus: {
+      type: String,
+      enum: ["pending", "approved", "rejected"],
+      default: "pending"
+    },
     lastUpdate: { type: String },
     history: { type: [Schema.Types.Mixed], default: [] },
   },

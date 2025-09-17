@@ -1,0 +1,227 @@
+import dbConnect from "@/lib/mongodb";
+import Contract from "@/models/Contract";
+import Payment from "@/models/Payment";
+import User from "@/models/User";
+import { midtransService } from "@/lib/midtrans";
+import { getServerSession } from "next-auth/next";
+import { NextRequest, NextResponse } from "next/server";
+
+export async function POST(req: NextRequest) {
+  try {
+    await dbConnect();
+
+    const session = await getServerSession();
+    if (!session?.user?.email) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const { productName, productId, totalAmount, paymentType, paymentTerm, totalInstallments, installmentAmount } = await req.json();
+
+    // Validate required fields
+    if (!productName || !productId || !totalAmount || !paymentType) {
+      return NextResponse.json(
+        {
+          error: "Missing required fields: productName, productId, totalAmount, paymentType",
+        },
+        { status: 400 }
+      );
+    }
+
+    // Validate payment type
+    if (!['full', 'cicilan'].includes(paymentType)) {
+      return NextResponse.json(
+        { error: "Invalid payment type. Must be 'full' or 'cicilan'" },
+        { status: 400 }
+      );
+    }
+
+    // Validate amount
+    if (typeof totalAmount !== 'number' || totalAmount <= 0) {
+      return NextResponse.json(
+        { error: "Total amount must be a positive number" },
+        { status: 400 }
+      );
+    }
+
+    // Find user
+    const user = await User.findOne({ email: session.user.email });
+    if (!user) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
+
+    // Check if user already has a pending/active contract for this product
+    const existingContract = await Contract.findOne({
+      userId: user._id,
+      productId,
+      status: { $in: ['draft', 'signed', 'approved'] }
+    });
+
+    if (existingContract) {
+      return NextResponse.json(
+        {
+          error: "You already have an active contract for this product",
+          contractId: existingContract.contractId
+        },
+        { status: 409 }
+      );
+    }
+
+    // Generate unique contract ID
+    const contractId = `CONTRACT-${Date.now()}-${Math.random()
+      .toString(36)
+      .substring(2, 9)
+      .toUpperCase()}`;
+
+    // Generate contract number
+    const year = new Date().getFullYear();
+    const randomId = Math.random().toString(36).substring(2, 8).toUpperCase();
+    const contractNumber = `CONTRACT-${year}-${randomId}`;
+
+    // For full payment contracts, generate Midtrans payment URL
+    let paymentUrl = undefined;
+    if (paymentType === 'full') {
+      try {
+        const midtransTransaction = await midtransService.createTransaction({
+          orderId: contractId,
+          amount: totalAmount,
+          customerDetails: {
+            first_name: user.fullName || user.firstName || 'User',
+            last_name: user.lastName || '',
+            email: user.email,
+            phone: user.phoneNumber || '',
+          },
+          itemDetails: [
+            {
+              id: productId,
+              price: totalAmount,
+              quantity: 1,
+              name: productName,
+            },
+          ],
+          callbacks: {
+            finish: `${process.env.NEXT_PUBLIC_BASE_URL}/payments?paymentSuccess=${contractId}`,
+            error: `${process.env.NEXT_PUBLIC_BASE_URL}/payments?paymentError=${contractId}`,
+            pending: `${process.env.NEXT_PUBLIC_BASE_URL}/payments?paymentPending=${contractId}`,
+          },
+        });
+        
+        paymentUrl = midtransTransaction.redirect_url;
+      } catch (midtransError) {
+        console.error("Failed to create Midtrans transaction:", midtransError);
+        // Continue without payment URL - can be generated later
+      }
+    }
+
+    // Create new contract
+    const contract = new Contract({
+      contractId,
+      userId: user._id,
+      productName,
+      productId,
+      totalAmount,
+      paymentType,
+      // For cicilan payments, store the user's selected terms
+      ...(paymentType === 'cicilan' && {
+        paymentTerm,
+        totalInstallments,
+        installmentAmount
+      }),
+      // For full payments, store the Midtrans payment URL
+      ...(paymentType === 'full' && paymentUrl && {
+        paymentUrl
+      }),
+      contractNumber,
+      status: 'draft',
+      adminApprovalStatus: 'pending',
+      paymentAllowed: paymentType === 'full', // Allow immediate payment for full payments
+      paymentCompleted: false,
+      signatureAttempts: [],
+      currentAttempt: 0,
+      maxAttempts: 3
+    });
+
+    await contract.save();
+
+    // For full payment contracts, create the Payment record immediately
+    // This ensures orderId matches contractId for proper referral code linking
+    if (paymentType === 'full') {
+      const payment = new Payment({
+        orderId: contractId, // Use the same contractId as orderId
+        userId: user._id,
+        amount: totalAmount,
+        currency: "IDR",
+        paymentType: "full-investment",
+        transactionStatus: "pending",
+        productName: productName,
+        productId: productId,
+        contractId: contractId, // Also store contractId for reference
+        customerData: {
+          fullName: user.fullName,
+          email: user.email,
+          phoneNumber: user.phoneNumber,
+          dateOfBirth: user.dateOfBirth,
+          address: user.address,
+          village: user.village,
+          city: user.city,
+          province: user.province,
+          postalCode: user.postalCode,
+          occupation: user.occupation,
+        }
+      });
+
+      await payment.save();
+      console.log("Payment record created for full payment contract:", {
+        orderId: payment.orderId,
+        contractId: payment.contractId
+      });
+    }
+
+    console.log("Contract created successfully:", {
+      contractId: contract.contractId,
+      userId: user._id,
+      productName,
+      paymentType,
+      totalAmount
+    });
+
+    return NextResponse.json({
+      success: true,
+      data: {
+        contractId: contract.contractId,
+        contractNumber: contract.contractNumber,
+        status: contract.status,
+        productName: contract.productName,
+        totalAmount: contract.totalAmount,
+        paymentType: contract.paymentType,
+        ...(contract.paymentUrl && { paymentUrl: contract.paymentUrl })
+      }
+    });
+
+  } catch (error) {
+    console.error("Error creating contract:", error);
+
+    // Handle specific MongoDB errors
+    if (error instanceof Error) {
+      if (error.message.includes('duplicate key')) {
+        return NextResponse.json(
+          { error: "Contract with this ID already exists" },
+          { status: 409 }
+        );
+      }
+      if (error.message.includes('validation failed')) {
+        return NextResponse.json(
+          { error: "Invalid contract data provided" },
+          { status: 400 }
+        );
+      }
+    }
+
+    return NextResponse.json(
+      {
+        error: "Failed to create contract",
+        details: error instanceof Error ? error.message : "Unknown error",
+      },
+      { status: 500 }
+    );
+  }
+}

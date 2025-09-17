@@ -1,10 +1,12 @@
 "use client";
 
 import { AdminLayout } from "@/components/admin/AdminLayout";
+import { KetuaLayout } from "@/components/ketua/KetuaLayout";
 import { useAlert } from "@/components/ui/Alert";
 import { useConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { Select } from "@/components/ui/Select";
 import { RefreshCw } from "lucide-react";
+import { useSession } from "next-auth/react";
 import { useEffect, useState } from "react";
 
 interface Investor {
@@ -26,6 +28,7 @@ interface User {
 }
 
 export default function InvestorsPage() {
+  const { data: session } = useSession();
   const [showModal, setShowModal] = useState(false);
   const [editingInvestor, setEditingInvestor] = useState<Investor | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
@@ -70,9 +73,15 @@ export default function InvestorsPage() {
   // Fetch investors and requests on component mount
   useEffect(() => {
     fetchInvestors();
-    fetchProfileChangeRequests();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    if (session && session?.user?.role !== 'ketua') {
+      fetchProfileChangeRequests();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session])
 
   // Fetch users for dropdown
   useEffect(() => {
@@ -120,6 +129,11 @@ export default function InvestorsPage() {
 
   // Fetch profile change requests
   const fetchProfileChangeRequests = async () => {
+    // Don't fetch if user is Ketua (read-only role)
+    if (session?.user?.role === 'ketua') {
+      return;
+    }
+    
     try {
       setLoadingRequests(true);
       const response = await fetch("/api/admin/profile-change-requests");
@@ -373,8 +387,12 @@ export default function InvestorsPage() {
     setShowInvestorRequestsModal(true);
   };
 
+  // Determine which layout to use based on user role
+  const isKetua = session?.user?.role === 'ketua';
+  const Layout = isKetua ? KetuaLayout : AdminLayout;
+
   return (
-    <AdminLayout>
+    <Layout>
       <div className="space-y-6">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
@@ -397,14 +415,16 @@ export default function InvestorsPage() {
               />
               <span className="hidden sm:inline">Refresh</span>
             </button>
-            <button
-              onClick={() => setShowModal(true)}
-              className="bg-gradient-to-r from-[#324D3E] to-[#4C3D19] text-white px-4 sm:px-6 py-2 sm:py-3 rounded-xl font-semibold hover:shadow-lg transition-all duration-200 flex items-center justify-center gap-2 text-sm sm:text-base whitespace-nowrap"
-            >
-              <span>➕</span>
-              <span className="sm:hidden">+ Investor</span>
-              <span className="hidden sm:inline">Tambah Investor</span>
-            </button>
+            {!isKetua && (
+              <button
+                onClick={() => setShowModal(true)}
+                className="bg-gradient-to-r from-[#324D3E] to-[#4C3D19] text-white px-4 sm:px-6 py-2 sm:py-3 rounded-xl font-semibold hover:shadow-lg transition-all duration-200 flex items-center justify-center gap-2 text-sm sm:text-base whitespace-nowrap"
+              >
+                <span>➕</span>
+                <span className="sm:hidden">+ Investor</span>
+                <span className="hidden sm:inline">Tambah Investor</span>
+              </button>
+            )}
           </div>
         </div>
 
@@ -618,22 +638,26 @@ export default function InvestorsPage() {
                         })()}
                       </td>
                       <td className="px-3 lg:px-6 py-4">
-                        <div className="flex flex-col lg:flex-row items-start lg:items-center gap-1 lg:gap-2">
-                          <button
-                            onClick={() => handleEdit(investor)}
-                            className="text-[#324D3E] dark:text-white hover:text-[#4C3D19] dark:hover:text-gray-200 font-medium text-xs lg:text-sm transition-colors"
-                          >
-                            Edit
-                          </button>
-                          <button
-                            onClick={() =>
-                              handleDelete(investor._id, investor.name)
-                            }
-                            className="text-red-600 hover:text-red-800 font-medium text-xs lg:text-sm transition-colors"
-                          >
-                            Hapus
-                          </button>
-                        </div>
+                        {!isKetua ? (
+                          <div className="flex flex-col lg:flex-row items-start lg:items-center gap-1 lg:gap-2">
+                            <button
+                              onClick={() => handleEdit(investor)}
+                              className="text-[#324D3E] dark:text-white hover:text-[#4C3D19] dark:hover:text-gray-200 font-medium text-xs lg:text-sm transition-colors"
+                            >
+                              Edit
+                            </button>
+                            <button
+                              onClick={() =>
+                                handleDelete(investor._id, investor.name)
+                              }
+                              className="text-red-600 hover:text-red-800 font-medium text-xs lg:text-sm transition-colors"
+                            >
+                              Hapus
+                            </button>
+                          </div>
+                        ) : (
+                          <span className="text-xs text-gray-500 dark:text-gray-400">-</span>
+                        )}
                       </td>
                     </tr>
                   ))
@@ -967,6 +991,6 @@ export default function InvestorsPage() {
       {/* Alert & Confirm Components */}
       <AlertComponent />
       <ConfirmComponent />
-    </AdminLayout>
+    </Layout>
   );
 }

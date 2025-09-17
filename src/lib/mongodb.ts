@@ -1,4 +1,5 @@
 import { AdminLog, Investor, PlantType } from "@/models";
+import Contract from "@/models/Contract";
 import FilteredWord from "@/models/FilteredWord";
 import Payment from "@/models/Payment"; // adjust path
 import Plant from "@/models/Plant"; // adjust path
@@ -49,6 +50,7 @@ async function dbConnect() {
         await WhatsAppSession.syncIndexes();
         await Settings.syncIndexes();
         await AdminLog.syncIndexes();
+        await Contract.syncIndexes();
         return mongoose;
       });
   }

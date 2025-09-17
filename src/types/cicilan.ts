@@ -132,6 +132,21 @@ export interface CicilanGroup {
   contractDownloaded?: boolean;
   contractDownloadedDate?: Date;
   isFullPayment?: boolean; // Flag to identify full payments
+  // Contract admin approval status
+  contractApprovalStatus?: "pending" | "approved" | "rejected" | "permanently_rejected";
+  contractStatus?: "draft" | "signed" | "approved" | "rejected" | "permanently_rejected" | "paid";
+  contractApprovedDate?: Date | string;
+  paymentAllowed?: boolean;
+  // Contract retry information
+  contractId?: string;
+  currentAttempt?: number;
+  maxAttempts?: number;
+  signatureAttemptsCount?: number;
+  hasEverSigned?: boolean;
+  isMaxRetryReached?: boolean;
+  isPermanentlyRejected?: boolean;
+  // Referral code for this investment
+  referralCode?: string;
 }
 
 export interface InvestorDetail {

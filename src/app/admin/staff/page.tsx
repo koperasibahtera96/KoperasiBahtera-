@@ -189,7 +189,9 @@ export default function StaffPage() {
       role: staff.role === "spv_staff" ? "SPV Staff" : 
             staff.role === "admin" ? "Admin" :
             staff.role === "finance" ? "Finance" :
-            staff.role === "staff_finance" ? "Staff Finance" : "Staff",
+            staff.role === "staff_finance" ? "Staff Finance" :
+            staff.role === "ketua" ? "Ketua" :
+          staff.role === "marketing" ? "Marketing" : "Staff",
       password: "",
     });
     setShowEditModal(true);
@@ -531,7 +533,9 @@ export default function StaffPage() {
                                 {staff.role === "spv_staff" ? "SPV Staff" :
                                  staff.role === "admin" ? "Admin" :
                                  staff.role === "finance" ? "Finance" :
-                                 staff.role === "staff_finance" ? "Staff Finance" : "Staff"}
+                                 staff.role === "staff_finance" ? "Staff Finance" :
+                                 staff.role === "ketua" ? "Ketua" :
+                                 staff.role === "marketing" ? "Marketing" : "Staff"}
                               </Badge>
                             </td>
                             <td className="py-3 px-3 sm:px-4">
@@ -701,7 +705,7 @@ export default function StaffPage() {
                     onChange={(e) =>
                       setFormData((prev) => ({
                         ...prev,
-                        role: e.target.value as "Staff" | "SPV Staff" | "Admin" | "Finance" | "Staff Finance",
+                        role: e.target.value as "Staff" | "SPV Staff" | "Admin" | "Finance" | "Staff Finance" | "Ketua" | "Marketing",
                       }))
                     }
                     className="w-full px-3 py-2 border border-[#324D3E]/20 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#324D3E]/20 focus:border-[#324D3E] text-[#324D3E] dark:text-white bg-white dark:bg-gray-700"
@@ -712,6 +716,8 @@ export default function StaffPage() {
                     <option value="Admin">Admin</option>
                     <option value="Finance">Finance</option>
                     <option value="Staff Finance">Staff Finance</option>
+                    <option value="Ketua">Ketua</option>
+                    <option value="Marketing">Marketing</option>
                   </select>
                 </div>
 
@@ -841,7 +847,7 @@ export default function StaffPage() {
                     onChange={(e) =>
                       setFormData((prev) => ({
                         ...prev,
-                        role: e.target.value as "Staff" | "SPV Staff" | "Admin" | "Finance" | "Staff Finance",
+                        role: e.target.value as "Staff" | "SPV Staff" | "Admin" | "Finance" | "Staff Finance" | "Ketua" | "Marketing",
                       }))
                     }
                     className="w-full px-3 py-2 border border-[#324D3E]/20 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#324D3E]/20 focus:border-[#324D3E] text-[#324D3E] dark:text-white bg-white dark:bg-gray-700"
@@ -852,6 +858,8 @@ export default function StaffPage() {
                     <option value="Admin">Admin</option>
                     <option value="Finance">Finance</option>
                     <option value="Staff Finance">Staff Finance</option>
+                    <option value="Ketua">Ketua</option>
+                    <option value="Marketing">Marketing</option>
                   </select>
                 </div>
 

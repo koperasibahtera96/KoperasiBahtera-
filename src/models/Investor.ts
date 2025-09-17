@@ -18,7 +18,7 @@ export interface IInvestmentRecord {
   totalAmount: number;
   amountPaid: number;
   paymentType: 'full' | 'cicilan';
-  status: 'pending' | 'active' | 'completed' | 'cancelled';
+  status: 'pending' | 'active' | 'completed' | 'cancelled' | 'approved';
 
   // For cicilan - minimal tracking with proof images
   installments?: IInstallmentSummary[];
@@ -71,7 +71,7 @@ const InvestmentRecordSchema = new Schema({
   totalAmount: { type: Number, required: true },
   amountPaid: { type: Number, default: 0 },
   paymentType: { type: String, enum: ['full', 'cicilan'], required: true },
-  status: { type: String, enum: ['pending', 'active', 'completed', 'cancelled'], default: 'pending' },
+  status: { type: String, enum: ['pending', 'active', 'completed', 'cancelled', 'approved'], default: 'pending' },
   installments: [InstallmentSummarySchema],
   fullPaymentProofUrl: { type: String },
   contractSigned: { type: Boolean, default: false },

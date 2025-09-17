@@ -2,7 +2,7 @@ import { occupationOptions } from "@/constant/OCCUPATION";
 import { midtransService } from "@/lib/midtrans";
 import dbConnect from "@/lib/mongodb";
 import { getFirstAdminName } from "@/lib/utils/admin";
-import Investor from "@/models/Investor";
+import { Investor } from "@/models";
 import Payment from "@/models/Payment";
 import PlantInstance from "@/models/PlantInstance";
 import User from "@/models/User";

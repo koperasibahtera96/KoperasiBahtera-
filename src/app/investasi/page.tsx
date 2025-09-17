@@ -59,7 +59,7 @@ interface Investment {
   investmentId: string;
   productName: string;
   paymentType: "full" | "cicilan";
-  status: "pending" | "active" | "completed" | "cancelled";
+  status: "pending" | "active" | "completed" | "cancelled" | "approved";
   totalAmount: number;
   amountPaid: number;
   progress: number;
@@ -70,6 +70,16 @@ interface Investment {
     amount: number;
     dueDate: string;
   };
+  contractInfo?: {
+    contractId: string;
+    adminApprovalStatus: string;
+    currentAttempt: number;
+    maxAttempts: number;
+    paymentAllowed: boolean;
+    paymentCompleted: boolean;
+    isMaxRetryReached: boolean;
+    isPermanentlyRejected: boolean;
+  } | null;
   plantInstance: PlantInstance | null;
 }
 
@@ -164,6 +174,8 @@ export default function InvestasiPage() {
         return "bg-yellow-100 text-yellow-800";
       case "cancelled":
         return "bg-red-100 text-red-800";
+      case "approved":
+        return "bg-emerald-100 text-emerald-800";
       default:
         return "bg-gray-100 text-gray-800";
     }
@@ -179,6 +191,8 @@ export default function InvestasiPage() {
         return "Menunggu";
       case "cancelled":
         return "Dibatalkan";
+      case "approved":
+        return "Aktif";
       default:
         return status;
     }
@@ -429,13 +443,13 @@ export default function InvestasiPage() {
               </Link>
             </div>
             <div className="w-full sm:w-auto flex justify-end sm:justify-start items-center space-x-3">
-              <Link href="/cicilan">
+              <Link href="/payments">
                 <motion.button
                   className="px-3 py-1.5 text-sm sm:px-4 sm:py-2 sm:text-base text-[#324D3E] border border-[#324D3E] rounded-full hover:bg-[#324D3E] hover:text-white transition-colors"
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                 >
-                  Cicilan Saya
+                  Pembayaran Saya
                 </motion.button>
               </Link>
               <Link href="/">
@@ -607,19 +621,37 @@ export default function InvestasiPage() {
 
                   {/* Plant Instance Info */}
                   {investment.plantInstance && (
-                    <div className="p-6">
+                    <div className={`p-6 ${
+                      investment.contractInfo?.isPermanentlyRejected
+                        ? 'opacity-60 bg-gray-50'
+                        : ''
+                    }`}>
                       <div className="flex items-center justify-between mb-3">
-                        <h4 className="font-medium text-gray-900">
+                        <h4 className={`font-medium ${
+                          investment.contractInfo?.isPermanentlyRejected
+                            ? 'text-gray-500'
+                            : 'text-gray-900'
+                        }`}>
                           Informasi Tanaman
+                          {investment.contractInfo?.isPermanentlyRejected && (
+                            <span className="text-xs text-red-600 ml-2 font-normal">
+                              (DINONAKTIFKAN)
+                            </span>
+                          )}
                         </h4>
                         <span
                           className={`px-2 py-1 rounded-full text-xs font-medium ${
-                            investment.plantInstance.status === "active"
+                            investment.contractInfo?.isPermanentlyRejected
+                              ? "bg-red-100 text-red-800"
+                              : investment.plantInstance.status === "active"
                               ? "bg-green-100 text-green-800"
                               : "bg-yellow-100 text-yellow-800"
                           }`}
                         >
-                          {investment.plantInstance.status}
+                          {investment.contractInfo?.isPermanentlyRejected
+                            ? "TERKUNCI"
+                            : investment.plantInstance.status
+                          }
                         </span>
                       </div>
 
@@ -725,18 +757,87 @@ export default function InvestasiPage() {
                           </p>
                         </div>
                       )}
+
+                
+
+                      {/* Contract Status Warnings */}
+                      {investment.contractInfo && (
+                        <>
+                          {investment.contractInfo.isPermanentlyRejected && (
+                            <div className="mt-4 p-3 bg-red-50 rounded-lg border border-red-200">
+                              <div className="flex items-center">
+                                <div className="w-4 h-4 text-red-500 mr-2">⚠️</div>
+                                <div>
+                                  <p className="text-sm font-semibold text-red-800">
+                                    Kontrak Ditolak Permanen
+                                  </p>
+                                  <p className="text-xs text-red-700">
+                                    Maksimal percobaan kontrak telah tercapai ({investment.contractInfo.maxAttempts}x).
+                                    Pembayaran dan akses tanaman dinonaktifkan.
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+
+                          {investment.contractInfo.isMaxRetryReached && !investment.contractInfo.isPermanentlyRejected && (
+                            <div className="mt-4 p-3 bg-orange-50 rounded-lg border border-orange-200">
+                              <div className="flex items-center">
+                                <div className="w-4 h-4 text-orange-500 mr-2">⚠️</div>
+                                <div>
+                                  <p className="text-sm font-semibold text-orange-800">
+                                    Kontrak Memerlukan Review
+                                  </p>
+                                  <p className="text-xs text-orange-700">
+                                    Percobaan kontrak: {investment.contractInfo.currentAttempt}/{investment.contractInfo.maxAttempts}.
+                                    Silakan hubungi admin untuk bantuan.
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+
+                          {investment.contractInfo.adminApprovalStatus === 'rejected' &&
+                           !investment.contractInfo.isMaxRetryReached && (
+                            <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                              <div className="flex items-center">
+                                <div className="w-4 h-4 text-blue-500 mr-2">ℹ️</div>
+                                <div>
+                                  <p className="text-sm font-semibold text-blue-800">
+                                    Kontrak Perlu Diajukan Ulang
+                                  </p>
+                                  <p className="text-xs text-blue-700">
+                                    Kunjungi halaman pembayaran untuk mengajukan ulang kontrak.
+                                    Percobaan: {investment.contractInfo.currentAttempt}/{investment.contractInfo.maxAttempts}
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                        </>
+                      )}
                     </div>
                   )}
 
                   {!investment.plantInstance && (
                     <div className="p-6">
                       <div className="text-center py-4">
-                        <div className="text-gray-400 w-12 h-12 mx-auto mb-2">
+                        <div className={`w-12 h-12 mx-auto mb-2 ${
+                          investment.contractInfo?.isPermanentlyRejected
+                            ? 'text-red-400'
+                            : 'text-gray-400'
+                        }`}>
                           <Sprout className="w-full h-full" />
                         </div>
-                        <p className="text-sm text-gray-600">
-                          Tanaman akan dialokasikan setelah pembayaran
-                          dikonfirmasi
+                        <p className={`text-sm ${
+                          investment.contractInfo?.isPermanentlyRejected
+                            ? 'text-red-600 font-medium'
+                            : 'text-gray-600'
+                        }`}>
+                          {investment.contractInfo?.isPermanentlyRejected
+                            ? 'Alokasi tanaman dinonaktifkan - Kontrak ditolak permanen'
+                            : 'Tanaman akan dialokasikan setelah pembayaran dikonfirmasi'
+                          }
                         </p>
                       </div>
                     </div>

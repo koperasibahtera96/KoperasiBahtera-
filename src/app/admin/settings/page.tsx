@@ -164,7 +164,6 @@ export default function AdminSettingsPage() {
         },
         body: JSON.stringify({
           email: emailSettings.email,
-          password: emailSettings.password,
           service: emailSettings.service,
         }),
       });
@@ -551,7 +550,7 @@ export default function AdminSettingsPage() {
             <div className="md:col-span-2">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-2 gap-2 sm:gap-0">
                 <label className="block text-sm font-medium text-[#324D3E]">
-                  App Password / Email Password
+                  App Password
                 </label>
                 <div className="flex gap-2 flex-shrink-0">
                   {hasPassword && !isEditingEmail && (
@@ -890,7 +889,7 @@ export default function AdminSettingsPage() {
               <ol className="list-decimal list-inside space-y-1 text-xs sm:text-sm ml-2 sm:ml-4">
                 <li>Pilih email service provider (Gmail, Outlook, Yahoo)</li>
                 <li>Masukkan email address yang akan digunakan</li>
-                <li>Masukkan App Password (untuk Gmail) atau password akun</li>
+                <li>Masukkan App Password (untuk Gmail)</li>
                 <li>Klik &quot;Simpan Pengaturan&quot; untuk menyimpan</li>
                 <li>
                   Gunakan &quot;Test Email&quot; untuk memverifikasi konfigurasi

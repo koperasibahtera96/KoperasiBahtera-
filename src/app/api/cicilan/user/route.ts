@@ -2,6 +2,7 @@ import dbConnect from "@/lib/mongodb";
 import Payment from "@/models/Payment";
 import User from "@/models/User";
 import Investor from "@/models/Investor";
+import Contract from "@/models/Contract";
 import { getServerSession } from "next-auth/next";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -39,9 +40,34 @@ export async function GET(req: NextRequest) {
       .populate("adminReviewBy", "fullName email")
       .sort({ cicilanOrderId: 1, installmentNumber: 1 });
 
+    // Get full payment contracts
+    const fullPaymentContracts = await Contract.find({
+      userId: user._id,
+      paymentType: "full",
+      status: { $in: ['draft', 'signed', 'approved', 'rejected', 'permanently_rejected'] } // Include rejected contracts so users can retry
+    }).sort({ createdAt: -1 });
+
+    // Get referral codes from full payment records
+    const fullPaymentIds = fullPaymentContracts.map(contract => contract.contractId);
+    const fullPayments = await Payment.find({
+      orderId: { $in: fullPaymentIds },
+      paymentType: "full-investment"
+    }).select('orderId referralCode');
+
+
     // Get investor data for contract information
     const investor = await Investor.findOne({ userId: user._id });
     const investorInvestments = investor?.investments || [];
+
+    // Get contract data for admin approval status
+    const contractIds = Object.keys(installments.reduce((acc, payment) => {
+      acc[payment.cicilanOrderId] = true;
+      return acc;
+    }, {} as any));
+    
+    const contracts = await Contract.find({
+      contractId: { $in: contractIds }
+    }).select('contractId adminApprovalStatus status adminApprovedDate paymentAllowed signatureAttempts currentAttempt maxAttempts');
 
     // Group by cicilanOrderId
     const groupedPayments = installments.reduce((acc, payment) => {
@@ -73,6 +99,11 @@ export async function GET(req: NextRequest) {
       // Find matching investor investment record for contract info
       const investorInvestment = investorInvestments.find(
         (inv: any) => inv.investmentId === group.cicilanOrderId
+      );
+
+      // Find matching contract for admin approval status
+      const contract = contracts.find(
+        (cont: any) => cont.contractId === group.cicilanOrderId
       );
 
       // Create complete installment list
@@ -137,12 +168,52 @@ export async function GET(req: NextRequest) {
         contractSignedDate: investorInvestment?.contractSignedDate,
         contractDownloaded: investorInvestment?.contractDownloaded || false,
         contractDownloadedDate: investorInvestment?.contractDownloadedDate,
+        // Add contract admin approval status
+        contractApprovalStatus: contract?.adminApprovalStatus || 'pending',
+        contractStatus: contract?.status || 'signed',
+        contractApprovedDate: contract?.adminApprovedDate,
+        paymentAllowed: contract?.paymentAllowed || false,
+        // Add retry attempt information
+        contractId: contract?.contractId,
+        currentAttempt: contract?.currentAttempt || 0,
+        maxAttempts: contract?.maxAttempts || 3,
+        signatureAttemptsCount: contract?.signatureAttempts?.length || 0,
+        hasEverSigned: (contract?.signatureAttempts?.length || 0) > 0,
+        isMaxRetryReached: (contract?.currentAttempt || 0) >= (contract?.maxAttempts || 3),
+        isPermanentlyRejected: contract?.adminApprovalStatus === 'permanently_rejected',
+        // Get referral code from any payment in this group
+        referralCode: group.installments.find((inst: any) => inst.referralCode)?.referralCode || null,
       };
     });
 
     return NextResponse.json({
       success: true,
       cicilanGroups,
+      fullPaymentContracts: fullPaymentContracts.map(contract => ({
+        contractId: contract.contractId,
+        productName: contract.productName,
+        productId: contract.productId,
+        totalAmount: contract.totalAmount,
+        paymentType: contract.paymentType,
+        paymentUrl: contract.paymentUrl,
+        adminApprovalStatus: contract.adminApprovalStatus,
+        adminApprovedDate: contract.adminApprovedDate,
+        status: contract.status,
+        contractNumber: contract.contractNumber,
+        contractDate: contract.contractDate,
+        paymentAllowed: contract.paymentAllowed,
+        paymentCompleted: contract.paymentCompleted,
+        createdAt: contract.createdAt,
+        updatedAt: contract.updatedAt,
+        // Add retry attempt information
+        currentAttempt: contract.currentAttempt || 0,
+        maxAttempts: contract.maxAttempts || 3,
+        signatureAttemptsCount: contract.signatureAttempts?.length || 0,
+        hasEverSigned: (contract.signatureAttempts?.length || 0) > 0,
+        isMaxRetryReached: (contract.currentAttempt || 0) >= (contract.maxAttempts || 3),
+        isPermanentlyRejected: contract.adminApprovalStatus === 'permanently_rejected',
+        referralCode: fullPayments.find(p => p.orderId === contract.contractId)?.referralCode || null,
+      }))
     });
   } catch (error) {
     console.error("Error getting user cicilan payments:", error);

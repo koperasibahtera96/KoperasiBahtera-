@@ -1,10 +1,12 @@
 "use client";
 
 import { AdminLayout } from "@/components/admin/AdminLayout";
+import { KetuaLayout } from "@/components/ketua/KetuaLayout";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import * as XLSX from "xlsx-js-style";
 import { RefreshCw } from "lucide-react";
+import { useSession } from "next-auth/react";
 import { useEffect, useState } from "react";
 
 interface Tree {
@@ -60,6 +62,7 @@ interface ReportData {
 }
 
 export default function LaporanPage() {
+  const { data: session } = useSession();
   // XLSX Export Functions
   const downloadAllInvestorsXLSX = () => {
     if (!reportData) return;
@@ -871,8 +874,12 @@ export default function LaporanPage() {
     );
   }
 
+  // Determine which layout to use based on user role
+  const isKetua = session?.user?.role === 'ketua';
+  const Layout = isKetua ? KetuaLayout : AdminLayout;
+
   return (
-    <AdminLayout>
+    <Layout>
       <div className="space-y-6">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
@@ -1375,6 +1382,6 @@ export default function LaporanPage() {
           </div>
         )}
       </div>
-    </AdminLayout>
+    </Layout>
   );
 }

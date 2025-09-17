@@ -73,6 +73,9 @@ export interface IPayment extends Document {
   // General status (for all payment types)
   status: "pending" | "approved" | "rejected" | "completed" | "cancelled";
 
+  // Marketing referral code
+  referralCode?: string;
+
   createdAt: Date;
   updatedAt: Date;
 }
@@ -235,6 +238,13 @@ const PaymentSchema: Schema = new Schema(
       required: true,
       enum: ["pending", "approved", "rejected", "completed", "cancelled"],
       default: "pending",
+    },
+
+    // Marketing referral code
+    referralCode: {
+      type: String,
+      trim: true,
+      match: [/^[A-Z0-9]{6}$/, 'Referral code must be 6 alphanumeric characters'],
     },
   },
   {

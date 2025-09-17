@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
 import Payment from '@/models/Payment';
 import User from '@/models/User';
+import { validateReferralCode } from '@/lib/referral';
 import { getServerSession } from 'next-auth/next';
 
 export async function POST(req: NextRequest) {
@@ -13,7 +14,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { paymentId, proofImageUrl, proofDescription } = await req.json();
+    const { paymentId, proofImageUrl, proofDescription, referralCode } = await req.json();
 
     if (!paymentId || !proofImageUrl) {
       return NextResponse.json({ 
@@ -56,10 +57,38 @@ export async function POST(req: NextRequest) {
       }, { status: 400 });
     }
 
-    // Update payment with proof
+    // Update payment with proof and referral code
     payment.proofImageUrl = proofImageUrl;
     payment.proofDescription = proofDescription || '';
     payment.adminStatus = 'pending';
+
+    // Validate and save referral code if provided
+    if (referralCode) {
+      console.log('Validating referral code:', referralCode);
+
+      if (!validateReferralCode(referralCode)) {
+        console.log('Referral code format validation failed');
+        return NextResponse.json({
+          error: 'Format kode referral tidak valid'
+        }, { status: 400 });
+      }
+
+      // Verify the referral code exists (belongs to a marketing staff)
+      const marketingUser = await User.findOne({
+        referralCode: referralCode,
+        role: 'marketing'
+      });
+
+      console.log('Marketing user found:', marketingUser ? 'Yes' : 'No');
+
+      if (!marketingUser) {
+        return NextResponse.json({
+          error: 'Kode referral tidak valid atau tidak ditemukan'
+        }, { status: 400 });
+      }
+
+      payment.referralCode = referralCode;
+    }
 
     await payment.save();
 

@@ -1,4 +1,5 @@
 import dbConnect from "@/lib/mongodb";
+import Contract from "@/models/Contract";
 import Investor from "@/models/Investor";
 import Payment from "@/models/Payment";
 import User from "@/models/User";
@@ -18,7 +19,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { productId, productName, totalAmount, paymentTerm } =
+    const { productId, productName, totalAmount, paymentTerm, contractId } =
       await req.json();
 
     if (!productId || !productName || !totalAmount || !paymentTerm) {
@@ -27,6 +28,13 @@ export async function POST(req: NextRequest) {
           error:
             "Missing required fields: productId, productName, totalAmount, paymentTerm",
         },
+        { status: 400 }
+      );
+    }
+
+    if (!contractId) {
+      return NextResponse.json(
+        { error: "Contract ID is required. Please sign a contract first." },
         { status: 400 }
       );
     }
@@ -53,6 +61,39 @@ export async function POST(req: NextRequest) {
         throw new Error("User not found");
       }
 
+      // Check if contract exists and is approved
+      const contract = await Contract.findOne({
+        contractId,
+        userId: user._id
+      }).session(mongoSession);
+
+      if (!contract) {
+        throw new Error("Contract not found");
+      }
+
+      if (contract.adminApprovalStatus !== 'approved') {
+        throw new Error(
+          contract.adminApprovalStatus === 'pending'
+            ? "Your contract is still under review. Please wait for admin approval."
+            : contract.adminApprovalStatus === 'rejected'
+            ? "Your contract was rejected. Please re-sign the contract."
+            : "Contract approval required before creating cicilan."
+        );
+      }
+
+      if (!contract.paymentAllowed) {
+        throw new Error("Payment not allowed for this contract");
+      }
+
+      if (contract.paymentType !== 'cicilan') {
+        throw new Error("Contract is not configured for cicilan payment");
+      }
+
+      // Validate contract details match cicilan request
+      if (contract.totalAmount !== totalAmount || contract.productName !== productName) {
+        throw new Error("Contract details do not match cicilan request");
+      }
+
       // Calculate payment terms
       const termToMonths = {
         monthly: 1,
@@ -70,9 +111,8 @@ export async function POST(req: NextRequest) {
       const nextPaymentDue = new Date();
       nextPaymentDue.setHours(nextPaymentDue.getHours() + 24);
 
-      const cicilanOrderId = `CICILAN-${Date.now()}-${Math.random()
-        .toString(36)
-        .substr(2, 9)}`;
+      // Use contract ID as base for cicilan order ID
+      const cicilanOrderId = contractId;
 
       // Create only the first installment Payment record (due 24 hours from now)
       const firstInstallmentOrderId = `${cicilanOrderId}-INST-1`;
@@ -93,6 +133,7 @@ export async function POST(req: NextRequest) {
         dueDate: firstDueDate,
         productName,
         productId,
+        contractId: contractId, // Link to contract
         adminStatus: "pending",
         status: "pending",
         isProcessed: false,

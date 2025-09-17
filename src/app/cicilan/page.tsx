@@ -9,7 +9,6 @@ import {
   Clock,
   CreditCard,
   DollarSign,
-  FileText,
   Search,
   TrendingUp,
   Upload,
@@ -28,10 +27,11 @@ export default function CicilanPage() {
   const [groupedInstallments, setGroupedInstallments] = useState<
     CicilanGroup[]
   >([]);
+  const [fullPaymentContracts, setFullPaymentContracts] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [uploadingProof, setUploadingProof] = useState<string | null>(null);
   const [filter, setFilter] = useState<
-    "all" | "active" | "completed" | "overdue"
+    "all" | "active" | "completed" | "overdue" | "full-payment" | "installment"
   >("all");
   const [searchTerm, setSearchTerm] = useState("");
   const [uploadModal, setUploadModal] = useState<{
@@ -57,6 +57,7 @@ export default function CicilanPage() {
       if (response.ok) {
         const data = await response.json();
         setGroupedInstallments(data.cicilanGroups);
+        setFullPaymentContracts(data.fullPaymentContracts || []);
       } else {
         console.error("Failed to fetch installments");
       }
@@ -126,28 +127,6 @@ export default function CicilanPage() {
     }
   };
 
-  const handleContractSigning = (cicilanOrderId: string) => {
-    router.push(`/contract/${cicilanOrderId}`);
-  };
-
-  const isEligibleForContract = (group: CicilanGroup) => {
-    // Check if all installments are approved
-    const approvedInstallments = group.installments.filter(
-      (inst) => inst.status === "approved"
-    );
-    return approvedInstallments.length === group.totalInstallments;
-  };
-
-  const getContractStatus = (group: CicilanGroup) => {
-    if (!isEligibleForContract(group)) {
-      return "not_eligible";
-    }
-    if (group.contractSigned) {
-      return "signed";
-    }
-    return "ready_to_sign";
-  };
-
   const getStatusColor = (status: string) => {
     switch (status) {
       case "pending":
@@ -215,11 +194,11 @@ export default function CicilanPage() {
 
   // Calculate portfolio statistics
   const getPortfolioStats = () => {
-    const totalInvestments = groupedInstallments.length;
+    const totalInvestments = groupedInstallments.length + fullPaymentContracts.length;
     const totalAmount = groupedInstallments.reduce(
       (sum, group) => sum + group.totalAmount,
       0
-    );
+    ) + fullPaymentContracts.reduce((sum, contract) => sum + contract.totalAmount, 0);
     const totalPaid = groupedInstallments.reduce((sum, group) => {
       return (
         sum +
@@ -227,7 +206,8 @@ export default function CicilanPage() {
           .filter((inst) => inst.status === "approved")
           .reduce((installSum, inst) => installSum + inst.amount, 0)
       );
-    }, 0);
+    }, 0) + fullPaymentContracts.reduce((sum, contract) => 
+      sum + (contract.paymentCompleted ? contract.totalAmount : 0), 0);
 
     const allInstallments = groupedInstallments.flatMap(
       (group) => group.installments
@@ -239,7 +219,7 @@ export default function CicilanPage() {
     const upcomingCount = allInstallments.filter(
       (inst) =>
         inst.dueDate && !isOverdue(inst.dueDate) && inst.status === "pending"
-    ).length;
+    ).length + fullPaymentContracts.filter(contract => !contract.paymentCompleted).length;
 
     return {
       totalInvestments,
@@ -261,7 +241,7 @@ export default function CicilanPage() {
       return true;
     });
 
-    if (filter !== "all") {
+    if (filter !== "all" && filter !== "full-payment") {
       filtered = filtered.filter((group) => {
         const approvedCount = group.installments.filter(
           (inst) => inst.status === "approved"
@@ -279,10 +259,49 @@ export default function CicilanPage() {
             return hasOverdue;
           case "active":
             return approvedCount < totalCount && !hasOverdue;
+          case "installment":
+            return true; // Show all installments when installment filter is selected
           default:
             return true;
         }
       });
+    } else if (filter === "full-payment") {
+      // Hide installments when full-payment filter is selected
+      filtered = [];
+    }
+
+    return filtered;
+  };
+
+  // Filter full payment contracts
+  const getFilteredFullPayments = () => {
+    let filtered = fullPaymentContracts.filter((contract) => {
+      if (searchTerm) {
+        return contract.productName
+          .toLowerCase()
+          .includes(searchTerm.toLowerCase());
+      }
+      return true;
+    });
+
+    if (filter !== "all" && filter !== "installment") {
+      filtered = filtered.filter((contract) => {
+        switch (filter) {
+          case "completed":
+            return contract.paymentCompleted;
+          case "overdue":
+            return false; // Full payments don't have overdue concept
+          case "active":
+            return !contract.paymentCompleted;
+          case "full-payment":
+            return true; // Show all full payments when full-payment filter is selected
+          default:
+            return true;
+        }
+      });
+    } else if (filter === "installment") {
+      // Hide full payments when installment filter is selected
+      filtered = [];
     }
 
     return filtered;
@@ -322,14 +341,14 @@ export default function CicilanPage() {
         <div className="absolute inset-0 bg-black/30"></div>
         <div className="max-w-7xl mx-auto px-4 mt-12 relative z-10">
           {/* Dashboard Overview */}
-          {groupedInstallments.length > 0 && (
+          {(groupedInstallments.length > 0 || fullPaymentContracts.length > 0) && (
             <div className="mb-8">
               <PortfolioOverview stats={getPortfolioStats()} />
             </div>
           )}
 
           {/* Search and Filter Controls */}
-          {groupedInstallments.length > 0 && (
+          {(groupedInstallments.length > 0 || fullPaymentContracts.length > 0) && (
             <div className="mb-6">
               <SearchAndFilter
                 searchTerm={searchTerm}
@@ -337,11 +356,13 @@ export default function CicilanPage() {
                 filter={filter}
                 setFilter={setFilter}
                 stats={getPortfolioStats()}
+                groupedInstallments={groupedInstallments}
+                fullPaymentContracts={fullPaymentContracts}
               />
             </div>
           )}
 
-          {groupedInstallments.length === 0 ? (
+          {groupedInstallments.length === 0 && fullPaymentContracts.length === 0 ? (
             <div className="text-center py-12 bg-white/95 backdrop-blur-sm rounded-3xl shadow-xl">
               <div className="flex justify-center text-[#324D3E] mb-4">
                 <CreditCard size={64} />
@@ -432,6 +453,61 @@ export default function CicilanPage() {
                         </div>
                       </div>
                     </div>
+
+                    {/* Contract Approval Status */}
+                    {group.contractApprovalStatus === "pending" && (
+                      <div className="bg-gradient-to-r from-yellow-50 to-amber-50 rounded-2xl p-4 border border-amber-200 mb-6">
+                        <div className="flex items-center gap-3">
+                          <div className="bg-amber-100 rounded-full p-2">
+                            <Clock className="w-5 h-5 text-amber-600" />
+                          </div>
+                          <div>
+                            <h4 className="font-semibold text-amber-800 font-poppins">
+                              Kontrak Menunggu Persetujuan Admin
+                            </h4>
+                            <p className="text-sm text-amber-700 font-poppins">
+                              Anda sudah dapat melakukan pembayaran cicilan, namun kontrak masih menunggu review admin
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {group.contractApprovalStatus === "approved" && (
+                      <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-2xl p-4 border border-green-200 mb-6">
+                        <div className="flex items-center gap-3">
+                          <div className="bg-green-100 rounded-full p-2">
+                            <CheckCircle className="w-5 h-5 text-green-600" />
+                          </div>
+                          <div>
+                            <h4 className="font-semibold text-green-800 font-poppins">
+                              Kontrak Telah Disetujui Admin
+                            </h4>
+                            <p className="text-sm text-green-700 font-poppins">
+                              Disetujui pada: {group.contractApprovedDate ? formatDate(group.contractApprovedDate) : "Tidak diketahui"}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {group.contractApprovalStatus === "rejected" && (
+                      <div className="bg-gradient-to-r from-red-50 to-rose-50 rounded-2xl p-4 border border-red-200 mb-6">
+                        <div className="flex items-center gap-3">
+                          <div className="bg-red-100 rounded-full p-2">
+                            <Clock className="w-5 h-5 text-red-600" />
+                          </div>
+                          <div>
+                            <h4 className="font-semibold text-red-800 font-poppins">
+                              Kontrak Ditolak Admin
+                            </h4>
+                            <p className="text-sm text-red-700 font-poppins">
+                              Silakan hubungi admin untuk informasi lebih lanjut
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
 
                     {/* Individual Installment Cards */}
                     <div className="space-y-4">
@@ -638,78 +714,185 @@ export default function CicilanPage() {
                             );
                           })}
                       </div>
+                    </div>
+                  </div>
+                ))}
+              
+              {/* Full Payment Contracts with same styling */}
+              {getFilteredFullPayments()
+                .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+                .map((contract) => (
+                  <div
+                    key={contract.contractId}
+                    className="bg-gradient-to-br from-[#FFFCE3]/95 to-white/95 backdrop-blur-sm rounded-3xl shadow-xl border-2 border-[#324D3E]/20 p-8 hover:shadow-2xl transition-all duration-300"
+                  >
+                    {/* Full Payment Header */}
+                    <div className="mb-8">
+                      <div className="flex flex-col lg:flex-row lg:justify-between lg:items-start mb-4 gap-4">
+                        <div className="flex-1">
+                          <h2 className="text-2xl font-bold text-[#324D3E] font-poppins">
+                            {contract.productName}
+                          </h2>
+                          <p className="text-sm text-gray-600 font-poppins">
+                            Contract ID: {contract.contractId}
+                          </p>
+                          <p className="text-lg font-semibold text-[#4C3D19] mt-1 font-poppins">
+                            Total Investasi: Rp{" "}
+                            {contract.totalAmount.toLocaleString("id-ID")}
+                          </p>
+                          <div className="flex flex-wrap gap-4 mt-2 text-sm text-gray-600 font-poppins">
+                            <span className="flex items-center gap-2">
+                              <Calendar size={16} />
+                              Pembayaran Penuh
+                            </span>
+                            <span className="flex items-center gap-2">
+                              <DollarSign size={16} />
+                              Rp{" "}
+                              {contract.totalAmount.toLocaleString("id-ID")}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="lg:text-right">
+                          <div className="text-sm text-gray-600 font-poppins">
+                            Status Pembayaran
+                          </div>
+                          <div className="text-2xl font-bold text-[#324D3E] font-poppins">
+                            {contract.paymentCompleted ? "Selesai" : "Belum Bayar"}
+                          </div>
+                          <div className="w-full lg:w-32 bg-gray-200 rounded-full h-2 mt-2">
+                            <div
+                              className="bg-gradient-to-r from-[#324D3E] to-[#4C3D19] h-2 rounded-full"
+                              style={{
+                                width: contract.paymentCompleted ? "100%" : "0%",
+                              }}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
 
-                      {/* Contract Status & Action */}
-                      <div className="mt-8 pt-6 border-t border-[#324D3E]/20">
-                        {getContractStatus(group) === "ready_to_sign" && (
-                          <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-2xl p-6 border border-green-200">
-                            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                              <div className="flex items-start gap-3">
-                                <div className="bg-green-100 rounded-full p-2 flex-shrink-0">
-                                  <CheckCircle className="w-5 h-5 text-green-600" />
-                                </div>
-                                <div>
-                                  <h4 className="font-semibold text-green-800 font-poppins">
-                                    Semua Angsuran Telah Disetujui!
-                                  </h4>
-                                  <p className="text-sm text-green-700 font-poppins">
-                                    Anda dapat menandatangani kontrak investasi
-                                    sekarang
-                                  </p>
-                                </div>
+                    {/* Contract Approval Status */}
+                    {contract.adminApprovalStatus === "pending" && (
+                      <div className="bg-gradient-to-r from-yellow-50 to-amber-50 rounded-2xl p-4 border border-amber-200 mb-6">
+                        <div className="flex items-center gap-3">
+                          <div className="bg-amber-100 rounded-full p-2">
+                            <Clock className="w-5 h-5 text-amber-600" />
+                          </div>
+                          <div>
+                            <h4 className="font-semibold text-amber-800 font-poppins">
+                              Kontrak Menunggu Persetujuan Admin
+                            </h4>
+                            <p className="text-sm text-amber-700 font-poppins">
+                              Anda sudah dapat melakukan pembayaran sekarang
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {contract.adminApprovalStatus === "approved" && (
+                      <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-2xl p-4 border border-green-200 mb-6">
+                        <div className="flex items-center gap-3">
+                          <div className="bg-green-100 rounded-full p-2">
+                            <CheckCircle className="w-5 h-5 text-green-600" />
+                          </div>
+                          <div>
+                            <h4 className="font-semibold text-green-800 font-poppins">
+                              Kontrak Telah Disetujui Admin
+                            </h4>
+                            <p className="text-sm text-green-700 font-poppins">
+                              Disetujui pada: {contract.adminApprovedDate ? formatDate(contract.adminApprovedDate) : "Tidak diketahui"}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {contract.adminApprovalStatus === "rejected" && (
+                      <div className="bg-gradient-to-r from-red-50 to-rose-50 rounded-2xl p-4 border border-red-200 mb-6">
+                        <div className="flex items-center gap-3">
+                          <div className="bg-red-100 rounded-full p-2">
+                            <Clock className="w-5 h-5 text-red-600" />
+                          </div>
+                          <div>
+                            <h4 className="font-semibold text-red-800 font-poppins">
+                              Kontrak Ditolak Admin
+                            </h4>
+                            <p className="text-sm text-red-700 font-poppins">
+                              Silakan hubungi admin untuk informasi lebih lanjut
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Payment Section */}
+                    <div className="space-y-4">
+                      <h3 className="text-lg font-semibold text-[#324D3E] mb-4 font-poppins">
+                        Pembayaran Penuh
+                      </h3>
+                      <div className="grid grid-cols-1 gap-4">
+                        <div className={`border-2 rounded-2xl p-6 transition-all duration-300 hover:shadow-xl backdrop-blur-sm hover:scale-105 ${
+                          contract.paymentCompleted
+                            ? "bg-gradient-to-br from-emerald-50/90 to-green-50/90 border-emerald-200"
+                            : "bg-gradient-to-br from-[#FFFCE3]/90 to-white/90 border-[#324D3E]/20"
+                        }`}>
+                          <div className="flex justify-between items-start mb-3">
+                            <div>
+                              <div className="text-lg font-bold text-[#324D3E] font-poppins">
+                                Pembayaran Total
                               </div>
-                              <button
-                                onClick={() =>
-                                  handleContractSigning(group.cicilanOrderId)
-                                }
-                                className="bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white px-6 py-3 rounded-2xl font-semibold transition-all duration-300 hover:shadow-lg flex items-center gap-2 font-poppins"
-                              >
-                                <FileText className="w-5 h-5" />
-                                Tanda Tangan Kontrak
-                              </button>
+                              <div className="text-sm text-gray-600 font-poppins">
+                                Dibuat: {formatDate(contract.createdAt)}
+                              </div>
+                            </div>
+                            <span className={`px-3 py-2 text-xs font-bold rounded-full ${
+                              contract.paymentCompleted
+                                ? "bg-gradient-to-r from-emerald-100 to-green-100 text-emerald-800 border border-emerald-200"
+                                : "bg-gradient-to-r from-[#324D3E]/10 to-[#4C3D19]/10 text-[#324D3E] border border-[#324D3E]/20"
+                            }`}>
+                              {contract.paymentCompleted ? "Selesai" : "Belum Bayar"}
+                            </span>
+                          </div>
+
+                          <div className="mb-4">
+                            <div className="text-2xl font-bold text-[#4C3D19] font-poppins">
+                              Rp{" "}
+                              {contract.totalAmount.toLocaleString("id-ID")}
                             </div>
                           </div>
-                        )}
 
-                        {getContractStatus(group) === "signed" && (
-                          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl p-6 border border-blue-200">
-                            <div className="flex items-center gap-3">
-                              <div className="bg-blue-100 rounded-full p-2">
-                                <FileText className="w-5 h-5 text-blue-600" />
-                              </div>
-                              <div>
-                                <h4 className="font-semibold text-blue-800 font-poppins">
-                                  Kontrak Telah Ditandatangani
-                                </h4>
-                                <p className="text-sm text-blue-700 font-poppins">
-                                  Ditandatangani pada:{" "}
-                                  {group.contractSignedDate
-                                    ? formatDate(group.contractSignedDate)
-                                    : "Tidak diketahui"}
-                                </p>
-                              </div>
+                          {/* Payment Status Details */}
+                          {contract.paymentCompleted && (
+                            <div className="text-sm text-green-600 mb-2 font-poppins">
+                              <span className="flex items-center gap-1">
+                                <CheckCircle size={14} />
+                                Pembayaran Selesai
+                              </span>
                             </div>
-                          </div>
-                        )}
+                          )}
 
-                        {getContractStatus(group) === "not_eligible" && (
-                          <div className="bg-gradient-to-r from-gray-50 to-slate-50 rounded-2xl p-6 border border-gray-200">
-                            <div className="flex items-center gap-3">
-                              <div className="bg-gray-100 rounded-full p-2">
-                                <Clock className="w-5 h-5 text-gray-600" />
-                              </div>
-                              <div>
-                                <h4 className="font-semibold text-gray-800 font-poppins">
-                                  Kontrak Belum Tersedia
-                                </h4>
-                                <p className="text-sm text-gray-700 font-poppins">
-                                  Selesaikan semua angsuran untuk mengakses
-                                  kontrak
-                                </p>
-                              </div>
+                          {/* Action Button */}
+                          {!contract.paymentCompleted && contract.paymentUrl && (
+                            <button
+                              onClick={() => window.open(contract.paymentUrl, '_blank')}
+                              className="w-full px-3 py-2 bg-gradient-to-r from-[#324D3E] to-[#4C3D19] text-white text-sm rounded-full hover:shadow-lg transition-all duration-300 font-poppins font-medium"
+                            >
+                              <span className="flex items-center justify-center gap-2">
+                                <CreditCard size={16} />
+                                Bayar Sekarang
+                              </span>
+                            </button>
+                          )}
+
+                          {!contract.paymentUrl && !contract.paymentCompleted && (
+                            <div className="text-center">
+                              <p className="text-sm text-gray-600 font-poppins">
+                                URL pembayaran belum tersedia
+                              </p>
                             </div>
-                          </div>
-                        )}
+                          )}
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -968,8 +1151,8 @@ function PortfolioOverview({ stats }: PortfolioOverviewProps) {
 interface SearchAndFilterProps {
   searchTerm: string;
   setSearchTerm: (term: string) => void;
-  filter: "all" | "active" | "completed" | "overdue";
-  setFilter: (filter: "all" | "active" | "completed" | "overdue") => void;
+  filter: "all" | "active" | "completed" | "overdue" | "full-payment" | "installment";
+  setFilter: (filter: "all" | "active" | "completed" | "overdue" | "full-payment" | "installment") => void;
   stats: {
     totalInvestments: number;
     totalAmount: number;
@@ -977,6 +1160,8 @@ interface SearchAndFilterProps {
     overdueCount: number;
     upcomingCount: number;
   };
+  groupedInstallments: CicilanGroup[];
+  fullPaymentContracts: any[];
 }
 
 function SearchAndFilter({
@@ -985,17 +1170,18 @@ function SearchAndFilter({
   filter,
   setFilter,
   stats,
+  groupedInstallments,
+  fullPaymentContracts,
 }: SearchAndFilterProps) {
   const filters = [
     { key: "all", label: "Semua", count: stats.totalInvestments },
     {
       key: "active",
       label: "Aktif",
-      count:
-        stats.totalInvestments -
-        Math.floor(
-          (stats.totalPaid / stats.totalAmount) * stats.totalInvestments
-        ),
+      count: groupedInstallments.filter(group => {
+        const approvedCount = group.installments.filter(inst => inst.status === "approved").length;
+        return approvedCount < group.installments.length;
+      }).length + fullPaymentContracts.filter(contract => !contract.paymentCompleted).length,
     },
     {
       key: "overdue",
@@ -1005,9 +1191,20 @@ function SearchAndFilter({
     {
       key: "completed",
       label: "Selesai",
-      count: Math.floor(
-        (stats.totalPaid / stats.totalAmount) * stats.totalInvestments
-      ),
+      count: groupedInstallments.filter(group => {
+        const approvedCount = group.installments.filter(inst => inst.status === "approved").length;
+        return approvedCount === group.installments.length;
+      }).length + fullPaymentContracts.filter(contract => contract.paymentCompleted).length,
+    },
+    {
+      key: "installment",
+      label: "Cicilan",
+      count: groupedInstallments.length,
+    },
+    {
+      key: "full-payment",
+      label: "Bayar Penuh",
+      count: fullPaymentContracts.length,
     },
   ];
 

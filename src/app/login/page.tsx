@@ -153,6 +153,8 @@ function LoginContent() {
                 case "admin":
                   redirectPath = "/admin";
                   break;
+                case "ketua":
+                  redirectPath = "/admin/investors"
                 case "staff":
                 case "spv_staff":
                   redirectPath = "/checker";

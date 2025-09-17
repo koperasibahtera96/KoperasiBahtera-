@@ -1,17 +1,18 @@
 "use client";
 
 import { AnimatePresence, motion } from "framer-motion";
-import { 
-  BarChart3, 
-  CheckCircle, 
-  Users, 
-  CreditCard, 
-  MessageCircle, 
-  Trees, 
-  HardHat, 
+import {
+  BarChart3,
+  CheckCircle,
+  Users,
+  CreditCard,
+  MessageCircle,
+  Trees,
+  HardHat,
   TrendingUp,
   Settings,
-  FileText
+  FileText,
+  ClipboardCheck
 } from "lucide-react";
 import { signOut, useSession } from "next-auth/react";
 import Image from "next/image";
@@ -26,6 +27,7 @@ interface AdminLayoutProps {
 const navigation = [
   { name: "Dashboard", href: "/admin", icon: BarChart3, color: "text-blue-600" },
   { name: "Verifikasi User", href: "/admin/verification", icon: CheckCircle, color: "text-green-600" },
+  { name: "Persetujuan Kontrak", href: "/admin/contract-approvals", icon: ClipboardCheck, color: "text-emerald-600" },
   { name: "Manajemen Investor", href: "/admin/investors", icon: Users, color: "text-purple-600" },
   { name: "Kelola Cicilan", href: "/admin/cicilan", icon: CreditCard, color: "text-amber-600" },
   { name: "Kelola Komentar", href: "/admin/reviews", icon: MessageCircle, color: "text-pink-600" },

@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth/next";
 import { NextResponse } from "next/server";
 import nodemailer from "nodemailer";
 import { decrypt } from "@/lib/encryption";
+import Settings from "@/models/Settings";
 
 export async function POST(req: Request) {
   try {
@@ -12,18 +13,24 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { email, password, service } = await req.json();
+    const { email, service } = await req.json();
 
-    if (!email || !password) {
+    console.log(email, service);
+
+    if (!email) {
       return NextResponse.json(
         { error: "Email dan password diperlukan untuk pengujian" },
         { status: 400 }
       );
     }
 
+    const getUserSettings = await Settings.findOne({ type: "email"});
+
+
+
     // Create transporter with the provided settings
     // Check if the password is encrypted (contains a colon)
-    const decryptedPassword = password.includes(':') ? decrypt(password) : password;
+    const decryptedPassword = decrypt(getUserSettings.config.password);
     
     const transporter = nodemailer.createTransport({
       service: service || "gmail",

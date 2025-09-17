@@ -133,6 +133,125 @@ export default function AboutSection() {
             </motion.p>
           </motion.div>
 
+          {/* Management Team Section */}
+          <motion.div
+            className="mb-8 sm:mb-12 md:mb-16"
+            variants={containerVariants}
+          >
+            <motion.h3
+              className="text-2xl sm:text-3xl lg:text-4xl font-black text-center text-[#2D3B30] mb-6 sm:mb-8 font-[family-name:var(--font-poppins)] drop-shadow-sm"
+              variants={fadeInUp}
+              whileHover={{
+                scale: 1.05,
+                color: "#1F2937",
+                transition: { duration: 0.3 }
+              }}
+            >
+              Pengurus dan Foto
+            </motion.h3>
+
+            <motion.div
+              className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6 lg:gap-8 max-w-4xl mx-auto"
+              variants={containerVariants}
+            >
+              {/* Ketua Koperasi */}
+              <motion.div
+                className="text-center"
+                variants={fadeInUp}
+                whileHover={{
+                  scale: 1.05,
+                  transition: { duration: 0.3 }
+                }}
+              >
+                <div className="relative mb-3 sm:mb-4">
+                  <div className="w-20 h-20 sm:w-24 sm:h-24 lg:w-28 lg:h-28 mx-auto bg-gradient-to-br from-gray-300 to-gray-400 rounded-full flex items-center justify-center shadow-lg">
+                    <svg className="w-8 h-8 sm:w-10 sm:h-10 lg:w-12 lg:h-12 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                    </svg>
+                  </div>
+                </div>
+                <h4 className="text-xs sm:text-sm lg:text-base font-bold text-[#2D3B30] mb-1">
+                  Halim Perdana Kusuma, S.H., M.H.
+                </h4>
+                <p className="text-xs sm:text-sm text-gray-700 font-medium">
+                  Ketua Koperasi
+                </p>
+              </motion.div>
+
+              {/* Sekretaris */}
+              <motion.div
+                className="text-center"
+                variants={fadeInUp}
+                whileHover={{
+                  scale: 1.05,
+                  transition: { duration: 0.3 }
+                }}
+              >
+                <div className="relative mb-3 sm:mb-4">
+                  <div className="w-20 h-20 sm:w-24 sm:h-24 lg:w-28 lg:h-28 mx-auto bg-gradient-to-br from-gray-300 to-gray-400 rounded-full flex items-center justify-center shadow-lg">
+                    <svg className="w-8 h-8 sm:w-10 sm:h-10 lg:w-12 lg:h-12 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                    </svg>
+                  </div>
+                </div>
+                <h4 className="text-xs sm:text-sm lg:text-base font-bold text-[#2D3B30] mb-1">
+                  Meidi Asri, S.H., M.H.
+                </h4>
+                <p className="text-xs sm:text-sm text-gray-700 font-medium">
+                  Sekretaris
+                </p>
+              </motion.div>
+
+              {/* Bendahara */}
+              <motion.div
+                className="text-center"
+                variants={fadeInUp}
+                whileHover={{
+                  scale: 1.05,
+                  transition: { duration: 0.3 }
+                }}
+              >
+                <div className="relative mb-3 sm:mb-4">
+                  <div className="w-20 h-20 sm:w-24 sm:h-24 lg:w-28 lg:h-28 mx-auto bg-gradient-to-br from-gray-300 to-gray-400 rounded-full flex items-center justify-center shadow-lg">
+                    <svg className="w-8 h-8 sm:w-10 sm:h-10 lg:w-12 lg:h-12 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                    </svg>
+                  </div>
+                </div>
+                <h4 className="text-xs sm:text-sm lg:text-base font-bold text-[#2D3B30] mb-1">
+                  Rika Ariyanti, S.E.
+                </h4>
+                <p className="text-xs sm:text-sm text-gray-700 font-medium">
+                  Bendahara
+                </p>
+              </motion.div>
+
+              {/* Direktur */}
+              <motion.div
+                className="text-center"
+                variants={fadeInUp}
+                whileHover={{
+                  scale: 1.05,
+                  transition: { duration: 0.3 }
+                }}
+              >
+                <div className="relative mb-3 sm:mb-4">
+                  <div className="w-20 h-20 sm:w-24 sm:h-24 lg:w-28 lg:h-28 mx-auto bg-gradient-to-br from-gray-300 to-gray-400 rounded-full flex items-center justify-center shadow-lg">
+                    <svg className="w-8 h-8 sm:w-10 sm:h-10 lg:w-12 lg:h-12 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                    </svg>
+                  </div>
+                </div>
+                <h4 className="text-xs sm:text-sm lg:text-base font-bold text-[#2D3B30] mb-1">
+                  Bobot Sudoyo, S.P., M.Si.
+                </h4>
+                <p className="text-xs sm:text-sm text-gray-700 font-medium">
+                  Direktur
+                </p>
+              </motion.div>
+            </motion.div>
+          </motion.div>
+
           {/* Vision and Mission */}
           <motion.div 
             className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8 md:gap-10 lg:gap-12"

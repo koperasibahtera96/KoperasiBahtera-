@@ -770,7 +770,8 @@ export default function PlantDetail({
                   </div>
                 </div>
 
-                <div className="flex flex-col items-center gap-3">
+                {/* Commented out QR Code display and download - not being used currently */}
+                {/* <div className="flex flex-col items-center gap-3">
                   <div className="bg-white/80 p-3 rounded-2xl border border-[#324D3E]/20 shadow-lg">
                     <Image
                       unoptimized
@@ -826,7 +827,7 @@ export default function PlantDetail({
                     <Download className="w-3 h-3 mr-1" />
                     Download
                   </Button>
-                </div>
+                </div> */}
               </div>
             </div>
           </div>

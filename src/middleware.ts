@@ -33,6 +33,26 @@ export default async function middleware(req: NextRequest) {
     return NextResponse.next();
   }
 
+  // === KETUA ACCESS ===
+  // Ketua can only access specific pages (read-only)
+  if (userRole === "ketua") {
+    const allowedKetuaPaths = [
+      "/admin/investors",
+      "/admin/trees", 
+      "/admin/laporan"
+    ];
+    
+    const isAllowedPath = allowedKetuaPaths.some(path => pathname.startsWith(path));
+    
+    if (isAllowedPath) {
+      console.log(`✅ Ketua access granted to ${pathname} (read-only)`);
+      return NextResponse.next();
+    } else {
+      console.log(`❌ Ketua role denied access to ${pathname} - only allowed ${allowedKetuaPaths.join(', ')}`);
+      return NextResponse.redirect(new URL("/admin/investors", req.url));
+    }
+  }
+
 
 
   // === FINANCE ACCESS ===
@@ -69,7 +89,7 @@ export default async function middleware(req: NextRequest) {
     }
   }
 
-  if (pathname.startsWith("/investasi") || pathname.startsWith("/cicilan")) {
+  if (pathname.startsWith("/investasi") || pathname.startsWith("/payments")) {
       if (token.canPurchase && token.verificationStatus === "approved") {
         return NextResponse.next();
       } else {
@@ -77,6 +97,11 @@ export default async function middleware(req: NextRequest) {
       }
 
   }
+
+  if (pathname.startsWith("/public")) {
+    return NextResponse.next();
+  }
+
   return NextResponse.next();
 }
 
@@ -86,6 +111,7 @@ export const config = {
     "/finance/:path*",
     "/checker/:path*",
     "/investasi/:path*",
-    "/cicilan/:path*",
+    "/payments/:path*",
+    "/public/:path*"
   ],
 };

@@ -5,16 +5,16 @@ import { NextResponse } from "next/server";
 
 export async function GET(
   request: Request,
-  { params }: { params: Promise<{ investmentId: string }> }
+  { params }: { params: Promise<{ contractId: string }> }
 ) {
   try {
     await dbConnect();
 
-    const { investmentId } = await params;
+    const { contractId } = await params;
 
-    // Find investor with the specific investment
+    // Find investor with the specific investment (using contractId as investmentId for backward compatibility)
     const investor = await Investor.findOne({
-      "investments.investmentId": investmentId,
+      "investments.investmentId": contractId,
     });
 
     if (!investor) {
@@ -26,7 +26,7 @@ export async function GET(
 
     // Find the specific investment
     const investment = investor.investments.find(
-      (inv: any) => inv.investmentId === investmentId
+      (inv: any) => inv.investmentId === contractId
     );
 
     if (!investment) {
@@ -58,7 +58,7 @@ export async function GET(
 
     // Generate contract number and date
     const contractDate = new Date().toISOString();
-    const contractNumber = `KIH-${new Date().getFullYear()}-${investmentId
+    const contractNumber = `KIH-${new Date().getFullYear()}-${contractId
       .slice(-6)
       .toUpperCase()}`;
 
@@ -100,7 +100,7 @@ export async function GET(
       data: contractData,
     });
   } catch (error) {
-    console.error("GET /api/contract/[investmentId] error:", error);
+    console.error("GET /api/contract/[contractId]/view error:", error);
     return NextResponse.json(
       { success: false, error: "Failed to fetch contract data" },
       { status: 500 }
@@ -111,18 +111,18 @@ export async function GET(
 // POST to mark contract as signed and save signature data
 export async function POST(
   request: Request,
-  { params }: { params: Promise<{ investmentId: string }> }
+  { params }: { params: Promise<{ contractId: string }> }
 ) {
   try {
     await dbConnect();
 
-    const { investmentId } = await params;
+    const { contractId } = await params;
     const body = await request.json();
     const { signatureData, contractNumber } = body;
 
     // Find investor with the specific investment
     const investor = await Investor.findOne({
-      "investments.investmentId": investmentId,
+      "investments.investmentId": contractId,
     });
 
     if (!investor) {
@@ -134,7 +134,7 @@ export async function POST(
 
     // Update investment to mark contract as signed
     const investmentIndex = investor.investments.findIndex(
-      (inv: any) => inv.investmentId === investmentId
+      (inv: any) => inv.investmentId === contractId
     );
 
     if (investmentIndex === -1) {
@@ -157,7 +157,7 @@ export async function POST(
       message: "Contract signed successfully",
     });
   } catch (error) {
-    console.error("POST /api/contract/[investmentId] error:", error);
+    console.error("POST /api/contract/[contractId]/view error:", error);
     return NextResponse.json(
       { success: false, error: "Failed to save contract signature" },
       { status: 500 }

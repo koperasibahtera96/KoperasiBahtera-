@@ -1,9 +1,11 @@
 'use client';
 
 import { AdminLayout } from '@/components/admin/AdminLayout';
+import { KetuaLayout } from '@/components/ketua/KetuaLayout';
 import { useAlert } from '@/components/ui/Alert';
 import { Select } from '@/components/ui/Select';
 import { RefreshCw } from 'lucide-react';
+import { useSession } from 'next-auth/react';
 import { useEffect, useState } from 'react';
 
 interface PlantInstance {
@@ -76,6 +78,7 @@ interface TreesData {
 }
 
 export default function TreesPage() {
+  const { data: session } = useSession();
   const [treesData, setTreesData] = useState<TreesData | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedType, setSelectedType] = useState<string>('all');
@@ -155,9 +158,12 @@ export default function TreesPage() {
     selectedType === 'all' || group.plantType === selectedType
   ) || [];
 
+  // Determine which layout to use based on user role
+  const isKetua = session?.user?.role === 'ketua';
+  const Layout = isKetua ? KetuaLayout : AdminLayout;
 
   return (
-    <AdminLayout>
+    <Layout>
       <div className="space-y-6">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
@@ -474,6 +480,6 @@ export default function TreesPage() {
 
       {/* Alert Component */}
       <AlertComponent />
-    </AdminLayout>
+    </Layout>
   );
 }

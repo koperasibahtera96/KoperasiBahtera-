@@ -653,10 +653,10 @@ Yth. *${investorName}*,
 Mohon segera lakukan pembayaran sesuai jadwal.
 
 🔗 *AKSES DASHBOARD:*
-${process.env.NEXTAUTH_URL}/cicilan
+${process.env.NEXTAUTH_URL}/payments
 
 💡 *Sudah Bayar?*
-Upload bukti pembayaran melalui dashboard cicilan Anda.
+Upload bukti pembayaran melalui dashboard pembayaran Anda.
 
 Terima kasih atas kerjasama Anda.
 

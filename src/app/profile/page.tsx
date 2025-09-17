@@ -458,7 +458,7 @@ export default function ProfilePage() {
                   <>
                     <button
                       onClick={() => window.open(userData.kartuAnggotaUrl, '_blank')}
-                      className="flex items-center gap-2 px-2 py-1.5 sm:px-3 sm:py-2 bg-[#324D3E] text-white rounded-lg font-medium hover:bg-[#4C3D19] transition-all duration-200 hover:scale-[1.02] shadow-md shadow-[#324D3E]/20 text-sm sm:text-base"
+                      className="flex items-center gap-2 px-2 py-1.5 sm:px-3 sm:py-2 bg-[#32a4D3E] text-white rounded-lg font-medium hover:bg-[#4C3D19] transition-all duration-200 hover:scale-[1.02] shadow-md shadow-[#324D3E]/20 text-sm sm:text-base"
                     >
                       <Eye size={14} className="sm:hidden" />
                       <Eye size={16} className="hidden sm:block" />
@@ -481,7 +481,7 @@ export default function ProfilePage() {
                         <FileText size={14} className="sm:hidden" />
                         <FileText size={16} className="hidden sm:block" />
                         <span className="hidden xs:inline">Buat Kartu Anggota</span>
-                        <span className="xs:hidden">Buat</span>
+                        <span className="sm:hidden">Buat</span>
                       </>
                     )}
                   </button>

@@ -6,6 +6,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import jsPDF from 'jspdf';
 import fs from 'fs';
 import path from 'path';
+import QRCode from 'qrcode';
 
 // Helper function to convert image to base64
 const getImageAsBase64 = (imagePath: string): string | null => {
@@ -95,9 +96,50 @@ export async function POST(_request: NextRequest) {
     pdf.setFontSize(20);
     pdf.setFont('helvetica', 'bold');
     pdf.text('KARTU ANGGOTA', pageWidth/2, 15, { align: 'center' });
-    
+
     pdf.setFontSize(14);
     pdf.text('KOPERASI BINTANG MERAH SEJAHTERA', pageWidth/2, 28, { align: 'center' });
+
+    // Generate QR code for public user profile URL
+    const publicProfileUrl = `${process.env.NEXTAUTH_URL}/public/user/${user.userCode}`;
+    console.log('Generating QR code for URL:', publicProfileUrl);
+
+    try {
+      const qrCodeDataURL = await QRCode.toDataURL(publicProfileUrl, {
+        errorCorrectionLevel: 'M',
+        type: 'image/png',
+        margin: 1,
+        width: 100, // Size for the QR code image
+        color: {
+          dark: '#B42828', // Red color matching the theme
+          light: '#FFFFFF'
+        }
+      });
+
+      // QR code position (top right corner)
+      const qrSize = 35; // Size in mm for PDF - match logo size
+      const qrX = pageWidth - qrSize; // Positioned at absolute right edge
+      const qrY = 0; // Positioned at absolute top edge
+
+      // Add QR code to PDF
+      pdf.addImage(qrCodeDataURL, 'PNG', qrX, qrY, qrSize, qrSize);
+
+      // Add small text below QR code
+      pdf.setFontSize(6);
+      pdf.setTextColor(255, 255, 255);
+      pdf.setFont('helvetica', 'normal');
+      pdf.text('Scan untuk', qrX + qrSize/2, qrY + qrSize + 4, { align: 'center' });
+      pdf.text('profil publik', qrX + qrSize/2, qrY + qrSize + 8, { align: 'center' });
+
+    } catch (qrError) {
+      console.error('Error generating QR code:', qrError);
+      // Add fallback text if QR code generation fails
+      pdf.setFontSize(8);
+      pdf.setTextColor(255, 255, 255);
+      pdf.setFont('helvetica', 'normal');
+      pdf.text('QR Code', pageWidth - 25, 15, { align: 'center' });
+      pdf.text('Available', pageWidth - 25, 25, { align: 'center' });
+    }
 
     // Logo section (top left corner) - Aligned with header height
     const logoX = 0; // Positioned at absolute left edge
@@ -144,8 +186,8 @@ export async function POST(_request: NextRequest) {
     // Member photo section (left side, aligned with text)
     const photoX = 20;
     const photoY = 45; // Moved up to align with information area
-    const photoWidth = 50;
-    const photoHeight = 65;
+    const photoWidth = 35; // Match logo size
+    const photoHeight = 35; // Match logo size
     
     // Create photo frame
     pdf.setFillColor(255, 255, 255);
@@ -155,29 +197,29 @@ export async function POST(_request: NextRequest) {
     pdf.roundedRect(photoX, photoY, photoWidth, photoHeight, 3, 3, 'S');
 
     // Add profile image if available
-    if (user.profileImageUrl) {
+    if (user.faceImageUrl) {
       try {
-        console.log('Fetching profile image from:', user.profileImageUrl);
-        const profileImageBase64 = await fetchImageAsBase64(user.profileImageUrl);
+        console.log('Fetching face image from:', user.faceImageUrl);
+        const profileImageBase64 = await fetchImageAsBase64(user.faceImageUrl);
         
         if (profileImageBase64) {
           // Add the actual profile image, maintaining aspect ratio and fitting within frame
           pdf.addImage(profileImageBase64, 'JPEG', photoX + 2, photoY + 2, photoWidth - 4, photoHeight - 4);
-          console.log('Profile image added successfully');
+          console.log('Face image added successfully');
         } else {
-          throw new Error('Could not fetch profile image');
+          throw new Error('Could not fetch face image');
         }
       } catch (error) {
-        console.error('Error adding profile image:', error);
+        console.error('Error adding face image:', error);
         // Fallback to "image available" text
         pdf.setTextColor(180, 40, 40);
         pdf.setFontSize(8);
         pdf.setFont('helvetica', 'normal');
-        pdf.text('FOTO PROFIL', photoX + photoWidth/2, photoY + photoHeight/2 - 5, { align: 'center' });
+        pdf.text('FOTO WAJAH', photoX + photoWidth/2, photoY + photoHeight/2 - 5, { align: 'center' });
         pdf.text('TERSEDIA', photoX + photoWidth/2, photoY + photoHeight/2 + 5, { align: 'center' });
       }
     } else {
-      // Photo placeholder text when no profile image
+      // Photo placeholder text when no face image
       pdf.setTextColor(120, 120, 120);
       pdf.setFontSize(10);
       pdf.setFont('helvetica', 'bold');

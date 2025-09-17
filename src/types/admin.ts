@@ -3,7 +3,7 @@ export interface StaffUser {
   fullName: string;
   phoneNumber: string;
   email: string;
-  role: 'staff' | 'spv_staff' | 'admin' | 'finance' | 'staff_finance';
+  role: 'staff' | 'spv_staff' | 'admin' | 'finance' | 'staff_finance' | 'ketua' | 'marketing';
   userCode: string;
   isActive: boolean;
   createdAt: string;
@@ -14,7 +14,7 @@ export interface StaffFormData {
   fullName: string;
   phoneNumber: string;
   email: string;
-  role: 'Staff' | 'SPV Staff' | 'Admin' | 'Finance' | 'Staff Finance';
+  role: 'Staff' | 'SPV Staff' | 'Admin' | 'Finance' | 'Staff Finance' | 'Ketua' | 'Marketing';
   password: string;
 }
 

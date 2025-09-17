@@ -4,6 +4,7 @@ import {
   handleMongooseError,
   isMongooseError,
 } from "@/lib/mongooseErrorHandler";
+import { generateReferralCode } from "@/lib/referral";
 import { logAdminAction } from "@/lib/utils/admin";
 import User from "@/models/User";
 import bcrypt from "bcryptjs";
@@ -76,6 +77,14 @@ export async function POST(request: NextRequest) {
         prefix = "SFN";
         dbRole = "staff_finance";
         break;
+      case "Ketua":
+        prefix = "KET";
+        dbRole = "ketua";
+        break;
+      case "Marketing":
+        prefix = "MKT";
+        dbRole = "marketing";
+        break;
       default:
         prefix = "ST";
         dbRole = "staff";
@@ -97,6 +106,19 @@ export async function POST(request: NextRequest) {
       .toString()
       .padStart(3, "0")}`;
 
+    // Generate referral code for marketing staff
+    let referralCode;
+    if (dbRole === "marketing") {
+      let isUnique = false;
+      while (!isUnique) {
+        referralCode = generateReferralCode();
+        const existingCode = await User.findOne({ referralCode });
+        if (!existingCode) {
+          isUnique = true;
+        }
+      }
+    }
+
     const user = new User({
       fullName: fullName.trim(),
       phoneNumber: phoneNumber.trim(),
@@ -108,13 +130,16 @@ export async function POST(request: NextRequest) {
       city: "Kota belum diisi",
       province: "Provinsi belum diisi",
       postalCode: "00000",
-      occupation: role === "SPV Staff" ? "SPV Staff" : 
+      occupation: role === "SPV Staff" ? "SPV Staff" :
                   role === "Admin" ? "Administrator" :
                   role === "Finance" ? "Staff Keuangan" :
-                  role === "Staff Finance" ? "Staff Finance" : "Staff Lapangan",
+                  role === "Staff Finance" ? "Staff Finance" :
+                  role === "Ketua" ? "Ketua" :
+                  role === "Marketing" ? "Marketing Staff" : "Staff Lapangan",
       occupationCode: prefix,
       userCode: userCode,
       role: dbRole,
+      ...(referralCode && { referralCode }),
       isEmailVerified: true,
       isPhoneVerified: true,
       isActive: true,
@@ -219,7 +244,7 @@ export async function GET(request: NextRequest) {
     const searchQuery = search
       ? {
           $and: [
-            { $or: [{ role: "staff" }, { role: "spv_staff" }, { role: "admin" }, { role: "finance" }, { role: "staff_finance" }] },
+            { $or: [{ role: "staff" }, { role: "spv_staff" }, { role: "admin" }, { role: "finance" }, { role: "staff_finance" }, { role: "marketing" }] },
             {
               $or: [
                 { fullName: { $regex: search, $options: "i" } },
@@ -230,7 +255,7 @@ export async function GET(request: NextRequest) {
             },
           ],
         }
-      : { $or: [{ role: "staff" }, { role: "spv_staff" }, { role: "admin" }, { role: "finance" }, { role: "staff_finance" }] };
+      : { $or: [{ role: "staff" }, { role: "spv_staff" }, { role: "admin" }, { role: "finance" }, { role: "staff_finance" }, { role: "ketua" }, { role: "marketing" }] };
 
     // Get total count
     const total = await User.countDocuments(searchQuery);
@@ -373,6 +398,16 @@ export async function PUT(request: NextRequest) {
         updatePrefix = "SFN";
         updateOccupation = "Staff Finance";
         break;
+      case "Ketua":
+        updateDbRole = "ketua";
+        updatePrefix = "KET";
+        updateOccupation = "Ketua";
+        break;
+      case "Marketing":
+        updateDbRole = "marketing";
+        updatePrefix = "MKT";
+        updateOccupation = "Marketing Staff";
+        break;
       default:
         updateDbRole = "staff";
         updatePrefix = "ST";
@@ -387,6 +422,20 @@ export async function PUT(request: NextRequest) {
       occupation: updateOccupation,
       occupationCode: updatePrefix,
     };
+
+    // Generate referral code if role is changed to marketing and doesn't have one
+    if (updateDbRole === "marketing" && !staffUser.referralCode) {
+      let referralCode;
+      let isUnique = false;
+      while (!isUnique) {
+        referralCode = generateReferralCode();
+        const existingCode = await User.findOne({ referralCode });
+        if (!existingCode) {
+          isUnique = true;
+        }
+      }
+      updateData.referralCode = referralCode;
+    }
 
     // If password is provided, hash and update it
     if (password && password.trim() !== "") {

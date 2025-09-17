@@ -4,6 +4,7 @@ import ProfileChangeRequest from '@/models/ProfileChangeRequest';
 import User from '@/models/User';
 import { getServerSession } from 'next-auth';
 import { NextResponse } from 'next/server';
+import { Investor } from '@/models';
 
 export async function GET() {
   try {
@@ -111,6 +112,13 @@ export async function PUT(request: Request) {
         updateData,
         { new: true }
       );
+
+      await Investor.findByIdAndUpdate(
+        profileRequest.userId,
+        updateData,
+        { new: true }
+      );
+
 
       if (!updatedUser) {
         return NextResponse.json(

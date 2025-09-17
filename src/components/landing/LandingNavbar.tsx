@@ -273,16 +273,16 @@ export default function LandingNavbar({
                       </Link>
                     </motion.div>
 
-                    {/* Cicilan Saya Button */}
+                    {/* Pembayaran Saya Button */}
                     <motion.div
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}
                     >
                       <Link
-                        href="/cicilan"
+                        href="/payments"
                         className="px-2 md:px-2 lg:px-3 xl:px-4 py-1 text-gray-700 transition-all duration-300 font-medium rounded-full border border-[#324D3E] hover:border-[#4C3D19] hover:bg-[#4C3D19] hover:text-white whitespace-nowrap text-xs md:text-xs lg:text-sm xl:text-base"
                       >
-                        Cicilan Saya
+                        Pembayaran Saya
                       </Link>
                     </motion.div>
                   </>
@@ -665,7 +665,7 @@ export default function LandingNavbar({
                             </motion.div>
                           </Link>
 
-                          <Link href="/cicilan">
+                          <Link href="/payments">
                             <motion.div
                               className="w-full px-4 py-3 text-left text-gray-700 hover:bg-gray-50 transition-colors font-medium cursor-pointer"
                               whileHover={{
@@ -689,7 +689,7 @@ export default function LandingNavbar({
                                     d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"
                                   />
                                 </svg>
-                                <span>Cicilan Saya</span>
+                                <span>Pembayaran Saya</span>
                               </div>
                             </motion.div>
                           </Link>
