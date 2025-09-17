@@ -3,6 +3,7 @@ import { midtransService } from "@/lib/midtrans";
 import dbConnect from "@/lib/mongodb";
 import { getFirstAdminName } from "@/lib/utils/admin";
 import { Investor } from "@/models";
+import Contract from "@/models/Contract";
 import Payment from "@/models/Payment";
 import PlantInstance from "@/models/PlantInstance";
 import User from "@/models/User";
@@ -208,7 +209,7 @@ export async function POST(request: NextRequest) {
         }`;
         message = "Transaction successful but user creation failed";
       }
-    } else if (shouldCreateUser && !payment.isProcessed && orderId.startsWith("INV-")) {
+    } else if (shouldCreateUser && !payment.isProcessed && orderId.startsWith("CONTRACT-")) {
       // Investment payments - create PlantInstance and investor record
       console.log(
         "Investment payment successful - creating PlantInstance and investor record for:",
@@ -240,160 +241,171 @@ export async function POST(request: NextRequest) {
 
           if (existingInvestment) {
             console.log(`⚠️ [${transactionId}] Investment ${orderId} already processed, skipping duplicate creation`);
-            return; // Exit transaction early
-          }
-          
-          console.log(`✅ [${transactionId}] No existing investment found, proceeding with creation for ${orderId}`);
+            // Don't return early - still need to update contract status
+          } else {
+            console.log(`✅ [${transactionId}] No existing investment found, proceeding with creation for ${orderId}`);
 
-          // Map product name to plant type
-          const getPlantType = (
-            productName: string
-          ): "gaharu" | "alpukat" | "jengkol" | "aren" => {
-            const name = productName.toLowerCase();
-            if (name.includes("gaharu")) return "gaharu";
-            if (name.includes("alpukat")) return "alpukat";
-            if (name.includes("jengkol")) return "jengkol";
-            if (name.includes("aren")) return "aren";
-            return "gaharu"; // default
-          };
-
-          const getBaseROI = (
-            plantType: "gaharu" | "alpukat" | "jengkol" | "aren"
-          ): number => {
-            const roiMap = {
-              gaharu: 0.15,
-              alpukat: 0.12,
-              jengkol: 0.1,
-              aren: 0.18,
+            // Map product name to plant type
+            const getPlantType = (
+              productName: string
+            ): "gaharu" | "alpukat" | "jengkol" | "aren" => {
+              const name = productName.toLowerCase();
+              if (name.includes("gaharu")) return "gaharu";
+              if (name.includes("alpukat")) return "alpukat";
+              if (name.includes("jengkol")) return "jengkol";
+              if (name.includes("aren")) return "aren";
+              return "gaharu"; // default
             };
-            return roiMap[plantType] || 0.12;
-          };
 
-          // Check if PlantInstance already exists to prevent duplicates
-          console.log(`🌱 [${transactionId}] Checking for existing PlantInstance with contractNumber: CONTRACT-${orderId}`);
-          let savedPlantInstance = await PlantInstance.findOne({
-            contractNumber: `CONTRACT-${orderId}`
-          }).session(mongoSession);
+            const getBaseROI = (
+              plantType: "gaharu" | "alpukat" | "jengkol" | "aren"
+            ): number => {
+              const roiMap = {
+                gaharu: 0.15,
+                alpukat: 0.12,
+                jengkol: 0.1,
+                aren: 0.18,
+              };
+              return roiMap[plantType] || 0.12;
+            };
 
-          if (!savedPlantInstance) {
-            console.log(`🌱 [${transactionId}] No existing PlantInstance found, creating new one`);
-            // Create new PlantInstance with FULLY deterministic data to prevent duplicates on transaction retries
-            const plantInstanceId = `PLANT-${payment.orderId}-${orderId.slice(-8)}`;
-            
-            const productName = payment.productName || "gaharu";
-            const plantType = getPlantType(productName);
-            const instanceName = `${
-              plantType.charAt(0).toUpperCase() + plantType.slice(1)
-            } - ${user.fullName}`;
-            const adminName = await getFirstAdminName();
+            // Check if PlantInstance already exists to prevent duplicates
+            console.log(`🌱 [${transactionId}] Checking for existing PlantInstance with contractNumber: ${orderId}`);
+            let savedPlantInstance = await PlantInstance.findOne({
+              contractNumber: orderId // orderId is already CONTRACT-... format
+            }).session(mongoSession);
 
-            // Use deterministic history ID based on orderId to prevent duplicates on retries
-            const deterministicHistoryId = `HISTORY-${orderId}-NEW`;
-            
-            const plantInstance = new PlantInstance({
-              id: plantInstanceId,
-              plantType,
-              instanceName,
-              baseAnnualROI: getBaseROI(plantType),
-              operationalCosts: [],
-              incomeRecords: [],
-              qrCode: `QR-${productName}`,
-              owner: user.fullName,
-              fotoGambar: null,
-              memberId: user._id.toString(),
-              contractNumber: `CONTRACT-${orderId}`,
-              location: "TBD",
-              status: "active", // Payment succeeded, plant is now active
-              lastUpdate: new Date().toLocaleDateString("id-ID", {
-                day: "2-digit",
-                month: "2-digit",
-                year: "numeric",
-              }),
-              history: [
-                {
-                  id: deterministicHistoryId,
-                  action: "Kontrak Baru",
-                  type: "Kontrak Baru",
-                  date: new Date().toLocaleDateString("id-ID", {
-                    day: "2-digit",
-                    month: "2-digit",
-                    year: "numeric",
-                  }),
-                  description: `Tanaman baru dibuat dengan pembayaran full untuk user ${user.fullName}`,
-                  addedBy: adminName,
-                },
-              ],
-            });
-
-            try {
-              savedPlantInstance = await plantInstance.save({ session: mongoSession });
-              console.log(`🌱 [${transactionId}] Created new PlantInstance for ${orderId}: ${savedPlantInstance._id}`);
-            } catch (duplicateError) {
-              // If save fails due to duplicate key (transaction retry), try to find existing one
-              console.log(`🌱 [${transactionId}] PlantInstance creation failed (likely duplicate), searching for existing one`);
-              savedPlantInstance = await PlantInstance.findOne({
-                contractNumber: `CONTRACT-${orderId}`
-              }).session(mongoSession);
+            if (!savedPlantInstance) {
+              console.log(`🌱 [${transactionId}] No existing PlantInstance found, creating new one`);
+              // Create new PlantInstance with FULLY deterministic data to prevent duplicates on transaction retries
+              const plantInstanceId = `PLANT-${payment.orderId}-${orderId.slice(-8)}`;
               
-              if (!savedPlantInstance) {
-                throw duplicateError; // Re-throw if it's not a duplicate issue
+              const productName = payment.productName || "gaharu";
+              const plantType = getPlantType(productName);
+              const instanceName = `${
+                plantType.charAt(0).toUpperCase() + plantType.slice(1)
+              } - ${user.fullName}`;
+              const adminName = await getFirstAdminName();
+
+              // Use deterministic history ID based on orderId to prevent duplicates on retries
+              const deterministicHistoryId = `HISTORY-${orderId}-NEW`;
+              
+              const plantInstance = new PlantInstance({
+                id: plantInstanceId,
+                plantType,
+                instanceName,
+                baseAnnualROI: getBaseROI(plantType),
+                operationalCosts: [],
+                incomeRecords: [],
+                qrCode: `QR-${productName}`,
+                owner: user.fullName,
+                fotoGambar: null,
+                memberId: user._id.toString(),
+                contractNumber: orderId, // orderId is already CONTRACT-... format
+                location: "TBD",
+                status: "active", // Payment succeeded, plant is now active
+                lastUpdate: new Date().toLocaleDateString("id-ID", {
+                  day: "2-digit",
+                  month: "2-digit",
+                  year: "numeric",
+                }),
+                history: [
+                  {
+                    id: deterministicHistoryId,
+                    action: "Kontrak Baru",
+                    type: "Kontrak Baru",
+                    date: new Date().toLocaleDateString("id-ID", {
+                      day: "2-digit",
+                      month: "2-digit",
+                      year: "numeric",
+                    }),
+                    description: `Tanaman baru dibuat dengan pembayaran full untuk user ${user.fullName}`,
+                    addedBy: adminName,
+                  },
+                ],
+              });
+
+              try {
+                savedPlantInstance = await plantInstance.save({ session: mongoSession });
+                console.log(`🌱 [${transactionId}] Created new PlantInstance for ${orderId}: ${savedPlantInstance._id}`);
+              } catch (duplicateError) {
+                // If save fails due to duplicate key (transaction retry), try to find existing one
+                console.log(`🌱 [${transactionId}] PlantInstance creation failed (likely duplicate), searching for existing one`);
+                savedPlantInstance = await PlantInstance.findOne({
+                  contractNumber: orderId // orderId is already CONTRACT-... format
+                }).session(mongoSession);
+                
+                if (!savedPlantInstance) {
+                  throw duplicateError; // Re-throw if it's not a duplicate issue
+                }
+                console.log(`🌱 [${transactionId}] Found existing PlantInstance after creation failure: ${savedPlantInstance._id}`);
               }
-              console.log(`🌱 [${transactionId}] Found existing PlantInstance after creation failure: ${savedPlantInstance._id}`);
+            } else {
+              console.log(`🌱 [${transactionId}] PlantInstance already exists for ${orderId}, reusing: ${savedPlantInstance._id}`);
             }
-          } else {
-            console.log(`🌱 [${transactionId}] PlantInstance already exists for ${orderId}, reusing: ${savedPlantInstance._id}`);
+
+            // Create investment record for investor collection
+            const productName = payment.productName || "gaharu";
+            const investmentRecord = {
+              investmentId: orderId,
+              productName: productName,
+              plantInstanceId: savedPlantInstance._id.toString(),
+              totalAmount: payment.amount,
+              amountPaid: payment.amount, // Full payment completed
+              paymentType: "full" as const,
+              status: "completed" as const, // Payment succeeded
+              installments: undefined,
+              fullPaymentProofUrl: null, // Midtrans handles the payment proof
+              investmentDate: new Date(),
+              completionDate: new Date(),
+            };
+
+            // Check if investor already exists
+            console.log(`💰 [${transactionId}] Checking for existing investor for user: ${user._id}`);
+            let existingInvestor = await Investor.findOne({ userId: user._id }).session(mongoSession);
+
+            if (existingInvestor) {
+              // Update existing investor
+              console.log(`💰 [${transactionId}] Found existing investor: ${existingInvestor._id}, updating with investment`);
+              existingInvestor.name = user.fullName;
+              existingInvestor.phoneNumber = user.phoneNumber;
+              existingInvestor.status = "active";
+              existingInvestor.investments.push(investmentRecord);
+              existingInvestor.totalInvestasi += payment.amount;
+              existingInvestor.totalPaid += payment.amount;
+              existingInvestor.jumlahPohon += extractTreeCount(payment.productName);
+              await existingInvestor.save({ session: mongoSession });
+              console.log(`💰 [${transactionId}] Updated existing investor for ${orderId}: ${existingInvestor._id} (${existingInvestor.investments.length} total investments)`);
+            } else {
+              // Create new investor
+              console.log(`💰 [${transactionId}] No existing investor found, creating new one`);
+              existingInvestor = new Investor({
+                userId: user._id,
+                name: user.fullName,
+                email: user.email,
+                phoneNumber: user.phoneNumber,
+                status: "active",
+                investments: [investmentRecord],
+                totalInvestasi: payment.amount,
+                totalPaid: payment.amount,
+                jumlahPohon: extractTreeCount(payment.productName),
+              });
+              await existingInvestor.save({ session: mongoSession });
+              console.log(`💰 [${transactionId}] Created new investor for ${orderId}: ${existingInvestor._id}`);
+            }
+
+            console.log(`✅ [${transactionId}] Investment processing completed successfully for ${orderId}`);
           }
-          // Create investment record for investor collection
-          const productName = payment.productName || "gaharu";
-          const investmentRecord = {
-            investmentId: orderId,
-            productName: productName,
-            plantInstanceId: savedPlantInstance._id.toString(),
-            totalAmount: payment.amount,
-            amountPaid: payment.amount, // Full payment completed
-            paymentType: "full" as const,
-            status: "completed" as const, // Payment succeeded
-            installments: undefined,
-            fullPaymentProofUrl: null, // Midtrans handles the payment proof
-            investmentDate: new Date(),
-            completionDate: new Date(),
-          };
 
-          // Check if investor already exists
-          console.log(`💰 [${transactionId}] Checking for existing investor for user: ${user._id}`);
-          let existingInvestor = await Investor.findOne({ userId: user._id }).session(mongoSession);
-
-          if (existingInvestor) {
-            // Update existing investor
-            console.log(`💰 [${transactionId}] Found existing investor: ${existingInvestor._id}, updating with investment`);
-            existingInvestor.name = user.fullName;
-            existingInvestor.phoneNumber = user.phoneNumber;
-            existingInvestor.status = "active";
-            existingInvestor.investments.push(investmentRecord);
-            existingInvestor.totalInvestasi += payment.amount;
-            existingInvestor.totalPaid += payment.amount;
-            existingInvestor.jumlahPohon += extractTreeCount(payment.productName);
-            await existingInvestor.save({ session: mongoSession });
-            console.log(`💰 [${transactionId}] Updated existing investor for ${orderId}: ${existingInvestor._id} (${existingInvestor.investments.length} total investments)`);
-          } else {
-            // Create new investor
-            console.log(`💰 [${transactionId}] No existing investor found, creating new one`);
-            existingInvestor = new Investor({
-              userId: user._id,
-              name: user.fullName,
-              email: user.email,
-              phoneNumber: user.phoneNumber,
-              status: "active",
-              investments: [investmentRecord],
-              totalInvestasi: payment.amount,
-              totalPaid: payment.amount,
-              jumlahPohon: extractTreeCount(payment.productName),
-            });
-            await existingInvestor.save({ session: mongoSession });
-            console.log(`💰 [${transactionId}] Created new investor for ${orderId}: ${existingInvestor._id}`);
-          }
-
-          console.log(`✅ [${transactionId}] Transaction completed successfully for ${orderId}`);
+            const contract = await Contract.findOne({ contractId: orderId }).session(mongoSession);
+            if (contract) {
+              contract.paymentCompleted = true;
+              await contract.save({ session: mongoSession });
+              console.log(`📄 [${transactionId}] Contract ${orderId} marked as paymentCompleted: true`);
+            } else {
+              console.log(`⚠️ [${transactionId}] Contract not found for ${orderId}, payment successful but contract status not updated`);
+            }
+          
 
           // Set contract redirect URL for successful payment
           payment.contractRedirectUrl = `/contract/${orderId}`;
