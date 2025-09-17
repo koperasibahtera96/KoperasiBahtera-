@@ -67,7 +67,7 @@ class MidtransService {
           },
         ],
         callbacks: paymentData.callbacks || {
-          finish: `${process.env.NEXT_PUBLIC_BASE_URL}/?orderId=${paymentData.orderId}&paymentType=investment`,
+          finish: `${process.env.NEXT_PUBLIC_BASE_URL}/payments`,
           error: `${process.env.NEXT_PUBLIC_BASE_URL}/payment/error`,
           pending: `${process.env.NEXT_PUBLIC_BASE_URL}/payment/pending`,
         },

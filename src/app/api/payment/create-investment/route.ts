@@ -44,21 +44,6 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    if (contract.adminApprovalStatus !== 'approved') {
-      return NextResponse.json(
-        {
-          error: "Contract must be approved before payment",
-          contractStatus: contract.adminApprovalStatus,
-          message: contract.adminApprovalStatus === 'pending'
-            ? "Your contract is still under review. Please wait for admin approval."
-            : contract.adminApprovalStatus === 'rejected'
-            ? "Your contract was rejected. Please re-sign the contract."
-            : "Contract approval required before payment."
-        },
-        { status: 403 }
-      );
-    }
-
     if (!contract.paymentAllowed) {
       return NextResponse.json(
         { error: "Payment not allowed for this contract" },
@@ -94,7 +79,7 @@ export async function POST(req: NextRequest) {
         },
       ],
       callbacks: {
-        finish: `${process.env.NEXT_PUBLIC_BASE_URL}/payment/investment-success?contractId=${contractId}`,
+        finish: `${process.env.NEXT_PUBLIC_BASE_URL}/payments`,
         error: `${process.env.NEXT_PUBLIC_BASE_URL}/payment/error`,
         pending: `${process.env.NEXT_PUBLIC_BASE_URL}/payment/pending`,
       },

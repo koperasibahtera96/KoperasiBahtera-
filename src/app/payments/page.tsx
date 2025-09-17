@@ -57,7 +57,7 @@ interface FullPaymentContract {
 }
 
 export default function PaymentsPage() {
-  const { data: _, status } = useSession();
+  const { data: session, status } = useSession();
   const router = useRouter();
   const [groupedInstallments, setGroupedInstallments] = useState<
     CicilanGroup[]
@@ -80,6 +80,41 @@ export default function PaymentsPage() {
     productName: string | null;
   }>({ isOpen: false, contractId: null, contractType: null, productName: null });
   const { showSuccess, showError, AlertComponent } = useAlert();
+
+  const handleFullPayment = async (contract: FullPaymentContract) => {
+    try {
+      // Call create-investment API to create Payment record and get Midtrans URL
+      const response = await fetch("/api/payment/create-investment", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          plan: {
+            name: contract.productName,
+            price: contract.totalAmount,
+          },
+          user: {
+            email: session?.user?.email,
+          },
+          contractId: contract.contractId,
+          referralCode: contract.referralCode, // Include referral code if set
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.success && data.data?.redirect_url) {
+        // Open the Midtrans payment URL
+        window.open(data.data.redirect_url, '_blank');
+      } else {
+        showError("Gagal", data.error || "Gagal membuat pembayaran");
+      }
+    } catch (error) {
+      console.error("Error creating payment:", error);
+      showError("Kesalahan", "Terjadi kesalahan saat membuat pembayaran");
+    }
+  };
 
   const handleSetReferralCode = async (investmentId: string, referralCode: string) => {
     // Validate referral code format
@@ -1154,7 +1189,7 @@ export default function PaymentsPage() {
                           {/* Action Button */}
                           {!contract.paymentCompleted && contract.paymentUrl && !contract.isPermanentlyRejected && contract.hasEverSigned && (
                             <button
-                              onClick={() => window.open(contract.paymentUrl, '_blank')}
+                              onClick={() => handleFullPayment(contract)}
                               className="w-full px-3 py-2 bg-gradient-to-r from-[#324D3E] to-[#4C3D19] text-white text-sm rounded-full hover:shadow-lg transition-all duration-300 font-poppins font-medium"
                             >
                               <span className="flex items-center justify-center gap-2">

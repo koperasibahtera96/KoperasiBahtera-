@@ -1,6 +1,5 @@
 import dbConnect from "@/lib/mongodb";
 import Contract from "@/models/Contract";
-import Payment from "@/models/Payment";
 import User from "@/models/User";
 import { midtransService } from "@/lib/midtrans";
 import { getServerSession } from "next-auth/next";
@@ -141,40 +140,6 @@ export async function POST(req: NextRequest) {
     });
 
     await contract.save();
-
-    // For full payment contracts, create the Payment record immediately
-    // This ensures orderId matches contractId for proper referral code linking
-    if (paymentType === 'full') {
-      const payment = new Payment({
-        orderId: contractId, // Use the same contractId as orderId
-        userId: user._id,
-        amount: totalAmount,
-        currency: "IDR",
-        paymentType: "full-investment",
-        transactionStatus: "pending",
-        productName: productName,
-        productId: productId,
-        contractId: contractId, // Also store contractId for reference
-        customerData: {
-          fullName: user.fullName,
-          email: user.email,
-          phoneNumber: user.phoneNumber,
-          dateOfBirth: user.dateOfBirth,
-          address: user.address,
-          village: user.village,
-          city: user.city,
-          province: user.province,
-          postalCode: user.postalCode,
-          occupation: user.occupation,
-        }
-      });
-
-      await payment.save();
-      console.log("Payment record created for full payment contract:", {
-        orderId: payment.orderId,
-        contractId: payment.contractId
-      });
-    }
 
     console.log("Contract created successfully:", {
       contractId: contract.contractId,
