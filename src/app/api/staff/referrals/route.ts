@@ -51,11 +51,37 @@ export async function GET(_req: NextRequest) {
     .populate('userId', 'fullName email phoneNumber')
     .sort({ createdAt: -1 });
 
-    // Calculate commissions (2% of each payment amount)
+    // Calculate commissions
     let totalCommission = 0;
     const referrals = referralPayments.map(payment => {
-      const commission = Math.round(payment.amount * 0.02); // 2% commission
-      totalCommission += commission;
+      let commission = 0;
+      let shouldIncludeCommission = false;
+
+      if (payment.paymentType === 'full-investment') {
+        // Full payment: 2% of total amount
+        commission = Math.round(payment.amount * 0.02);
+        shouldIncludeCommission = true;
+      } else if (payment.paymentType === 'cicilan-installment') {
+        // Cicilan payment: Only calculate commission on first installment
+        if (payment.installmentNumber === 1 && payment.installmentAmount && payment.totalInstallments) {
+          // Calculate 2% of total contract amount (installmentAmount * totalInstallments)
+          const totalContractAmount = payment.installmentAmount * payment.totalInstallments;
+          commission = Math.round(totalContractAmount * 0.02);
+          shouldIncludeCommission = true;
+        } else {
+          // Not the first installment, no commission
+          commission = 0;
+          shouldIncludeCommission = false;
+        }
+      } else if (payment.paymentType === 'registration') {
+        // Registration payments: No commission
+        commission = 0;
+        shouldIncludeCommission = false;
+      }
+
+      if (shouldIncludeCommission) {
+        totalCommission += commission;
+      }
 
       return {
         paymentId: payment._id,
@@ -67,8 +93,11 @@ export async function GET(_req: NextRequest) {
         paymentType: payment.paymentType,
         amount: payment.amount,
         commission: commission,
+        isCommissionEligible: shouldIncludeCommission,
+        installmentNumber: payment.installmentNumber || null,
+        totalInstallments: payment.totalInstallments || null,
         status: payment.transactionStatus || payment.adminStatus,
-        paymentDate: payment.transactionStatus === 'settlement' 
+        paymentDate: payment.transactionStatus === 'settlement'
           ? payment.settlementTime || payment.createdAt
           : payment.adminReviewDate || payment.createdAt,
         createdAt: payment.createdAt

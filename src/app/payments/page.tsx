@@ -726,6 +726,7 @@ export default function PaymentsPage() {
                       investmentId={group.cicilanOrderId}
                       currentReferralCode={(group as any).referralCode}
                       onSetReferralCode={handleSetReferralCode}
+                      hasPayments={group.installments.some(inst => inst.status === "approved")}
                     />
 
                     {/* Individual Installment Cards */}
@@ -1138,6 +1139,7 @@ export default function PaymentsPage() {
                       investmentId={contract.contractId}
                       currentReferralCode={(contract as any).referralCode}
                       onSetReferralCode={handleSetReferralCode}
+                      hasPayments={contract.paymentCompleted}
                     />
 
                     {/* Payment Section */}
@@ -1622,15 +1624,16 @@ interface ReferralCodeInputProps {
   investmentId: string;
   currentReferralCode: string | undefined;
   onSetReferralCode: (investmentId: string, code: string) => void;
+  hasPayments?: boolean; // New prop to check if user has made payments
 }
 
-function ReferralCodeInput({ investmentId, currentReferralCode, onSetReferralCode }: ReferralCodeInputProps) {
+function ReferralCodeInput({ investmentId, currentReferralCode, onSetReferralCode, hasPayments = false }: ReferralCodeInputProps) {
   const [referralCode, setReferralCode] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!referralCode.trim()) return;
+    if (!referralCode.trim() || hasPayments) return;
 
     setIsSubmitting(true);
     try {
@@ -1643,16 +1646,16 @@ function ReferralCodeInput({ investmentId, currentReferralCode, onSetReferralCod
 
   if (currentReferralCode) {
     return (
-      <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-2xl p-4 border border-green-200 mb-4">
-        <div className="flex items-center gap-3">
-          <div className="bg-green-100 rounded-full p-2">
-            <CheckCircle className="w-5 h-5 text-green-600" />
+      <div className="max-w-md bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl p-3 border border-green-200 mb-4">
+        <div className="flex items-center gap-2">
+          <div className="bg-green-100 rounded-full p-1.5">
+            <CheckCircle className="w-4 h-4 text-green-600" />
           </div>
           <div className="flex-1">
-            <h4 className="font-semibold text-green-800 font-poppins">
+            <h4 className="font-medium text-green-800 font-poppins text-sm">
               Kode Referral Terdaftar
             </h4>
-            <p className="text-sm text-green-700 font-poppins">
+            <p className="text-xs text-green-700 font-poppins">
               <span className="font-mono font-bold">{currentReferralCode}</span> - Digunakan untuk investasi ini
             </p>
           </div>
@@ -1661,9 +1664,29 @@ function ReferralCodeInput({ investmentId, currentReferralCode, onSetReferralCod
     );
   }
 
+  if (hasPayments) {
+    return (
+      <div className="max-w-md bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl p-3 border border-gray-200 mb-4">
+        <div className="flex items-center gap-2">
+          <div className="bg-gray-100 rounded-full p-1.5">
+            <CheckCircle className="w-4 h-4 text-gray-500" />
+          </div>
+          <div className="flex-1">
+            <h4 className="font-medium text-gray-600 font-poppins text-sm">
+              Kode Referral Tidak Tersedia
+            </h4>
+            <p className="text-xs text-gray-500 font-poppins">
+              Referral hanya dapat diatur sebelum pembayaran pertama
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="bg-gradient-to-r from-blue-50 to-sky-50 rounded-2xl p-4 border border-blue-200 mb-4">
-      <h4 className="font-semibold text-blue-800 font-poppins mb-3">
+    <div className="max-w-md bg-gradient-to-r from-blue-50 to-sky-50 rounded-xl p-3 border border-blue-200 mb-4">
+      <h4 className="font-medium text-blue-800 font-poppins mb-2 text-sm">
         Masukkan Kode Referral (Opsional)
       </h4>
       <form onSubmit={handleSubmit} className="flex gap-2">
@@ -1671,20 +1694,21 @@ function ReferralCodeInput({ investmentId, currentReferralCode, onSetReferralCod
           type="text"
           value={referralCode}
           onChange={(e) => setReferralCode(e.target.value.toUpperCase())}
-          className="flex-1 px-3 py-2 border border-blue-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 font-mono text-sm"
-          placeholder="Contoh: ABC123"
+          className="flex-1 px-2 py-1.5 border border-blue-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 font-mono text-sm"
+          placeholder="ABC123"
           maxLength={6}
           pattern="[A-Z0-9]{6}"
+          disabled={hasPayments}
         />
         <button
           type="submit"
-          disabled={!referralCode.trim() || isSubmitting}
-          className="px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white text-sm rounded-xl hover:shadow-lg disabled:opacity-50 font-poppins font-medium transition-all duration-300 whitespace-nowrap"
+          disabled={!referralCode.trim() || isSubmitting || hasPayments}
+          className="px-3 py-1.5 bg-gradient-to-r from-blue-600 to-blue-700 text-white text-xs rounded-lg hover:shadow-lg disabled:opacity-50 font-poppins font-medium transition-all duration-300 whitespace-nowrap"
         >
           {isSubmitting ? "Menyimpan..." : "Simpan"}
         </button>
       </form>
-      <p className="text-xs text-blue-600 mt-2 font-poppins">
+      <p className="text-xs text-blue-600 mt-1 font-poppins">
         Kode referral untuk investasi ini saja
       </p>
     </div>

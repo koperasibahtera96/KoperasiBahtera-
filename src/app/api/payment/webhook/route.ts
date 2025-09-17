@@ -418,9 +418,20 @@ export async function POST(request: NextRequest) {
                 (inv: any) => inv.investmentId === orderId
               );
               if (investment) {
+                // Check if this investment was previously unpaid (to avoid double-counting)
+                const wasUnpaid = investment.amountPaid === 0;
+
                 investment.amountPaid = payment.amount;
                 investment.status = "approved";
                 investment.completionDate = new Date();
+
+                // Update investor totals only if this was previously unpaid
+                if (wasUnpaid) {
+                  investorToUpdate.totalPaid += payment.amount;
+                  investorToUpdate.jumlahPohon += extractTreeCount(payment.productName);
+                  console.log(`💰 [${transactionId}] Updated investor totals - totalPaid: ${investorToUpdate.totalPaid}, jumlahPohon: ${investorToUpdate.jumlahPohon}`);
+                }
+
                 await investorToUpdate.save({ session: mongoSession });
                 console.log(`💰 [${transactionId}] Updated investor amountPaid for ${orderId}: ${payment.amount}`);
               }

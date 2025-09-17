@@ -48,20 +48,19 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    // Check if user already has a pending/active contract for this product
-    const existingContract = await Contract.findOne({
+    // Spam protection: Check for recent contract creation attempts
+    const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
+    const recentContracts = await Contract.countDocuments({
       userId: user._id,
-      productId,
-      status: { $in: ['draft', 'signed', 'approved'] }
+      createdAt: { $gte: fiveMinutesAgo }
     });
 
-    if (existingContract) {
+    if (recentContracts >= 3) {
       return NextResponse.json(
         {
-          error: "You already have an active contract for this product",
-          contractId: existingContract.contractId
+          error: "Too many contract creation attempts. Please wait a few minutes before creating another contract."
         },
-        { status: 409 }
+        { status: 429 }
       );
     }
 
