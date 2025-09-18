@@ -3,9 +3,17 @@
 import InvoiceCard from "@/components/invoice/InvoiceCard";
 import InvoiceControls from "@/components/invoice/InvoiceControls";
 import { InvoiceLayout } from "@/components/invoice/InvoiceLayout";
-import { Loader2, X } from "lucide-react";
+import { Loader2, X, FileDown } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useMemo, useState } from "react";
+
+// ===== XLSX (dynamic, aman SSR) =====
+let XLSXMod: any;
+async function getXLSX() {
+  if (XLSXMod) return XLSXMod;
+  XLSXMod = await import("xlsx-js-style");
+  return XLSXMod as any;
+}
 
 interface PaymentData {
   ref: string;
@@ -31,6 +39,28 @@ interface InvoiceResponse {
 
 const PER_PAGE = 9;
 
+/** =========================
+ *  WARNA/GRADASI KARTU (UI)
+ *  =========================
+ *  - Full/Registration => gradasi kuning (lebih gelap)
+ *  - Cicilan => gradasi bata/merah (lebih gelap)
+ *  - Border luar tipis hitam
+ */
+const GRAD_FULL =
+  "linear-gradient(180deg, #d97706 0%, #f59e0b 45%, #fbbf24 75%, #ffd166 100%)";
+const GRAD_CICIL =
+  "linear-gradient(180deg, #7a1f0f 0%, #b7410e 45%, #e86f3a 75%, #ffb199 100%)";
+const GRAD_DEFAULT =
+  "linear-gradient(180deg, #d1d5db 0%, #e5e7eb 55%, #f3f4f6 100%)";
+
+function cardGradientByPayment(p: PaymentData) {
+  const t = (p?.paymentType || "").toLowerCase();
+  if (t.includes("cicil")) return GRAD_CICIL;
+  if (t.includes("full") || t.includes("registrasi") || t.includes("registration"))
+    return GRAD_FULL;
+  return GRAD_DEFAULT;
+}
+
 function InvoicePageContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -40,7 +70,7 @@ function InvoicePageContent() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // --- read query params ---
+  // --- query params ---
   const q = searchParams.get("q") || "";
   const sort = (searchParams.get("sort") as "asc" | "desc") || "desc";
   const page = Math.max(1, parseInt(searchParams.get("page") || "1", 10));
@@ -88,11 +118,10 @@ function InvoicePageContent() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [q, sort, page, category]);
 
-  // helper
   const isApproved = (p: PaymentData) =>
     String((p as any).adminStatus || p.status || "").toLowerCase() === "approved";
 
-  // group cicilan -> [{ orderId, items(sorted), paidCount, totalInstallments, userName }]
+  // Group cicilan
   const installmentGroups = useMemo(() => {
     if (!data) return [];
     const map = new Map<string, PaymentData[]>();
@@ -128,7 +157,6 @@ function InvoicePageContent() {
     });
   }, [data]);
 
-  // non cicilan + cicilan yg sudah digroup (hanya tampilkan sisanya)
   const otherPayments = useMemo(() => {
     if (!data) return [];
     const skip = new Set<string>();
@@ -138,11 +166,119 @@ function InvoicePageContent() {
     return data.payments.filter((p) => !skip.has(p.ref || p._id));
   }, [data, installmentGroups]);
 
-  // ===== Modal state untuk detail cicilan (UI saja) =====
   const [activeGroup, setActiveGroup] = useState<string | null>(null);
   const closeModal = () => setActiveGroup(null);
 
-  // --- UI states ---
+  // ===== Export Excel (logika tetap) =====
+  const exportExcel = async () => {
+    if (!data) return;
+    const XLSX = await getXLSX();
+
+    const userIds = Array.from(
+      new Set<string>(
+        data.payments
+          .map((p: any) => String(p.userId || p.user_id || p.user || ""))
+          .filter(Boolean)
+      )
+    );
+
+    const userMap: Record<
+      string,
+      { id: string; email: string; fullName?: string; userCode?: string }
+    > = {};
+
+    await Promise.all(
+      userIds.map(async (id) => {
+        try {
+          const r = await fetch(`/api/users/${id}`, { cache: "no-store" });
+          if (r.ok) {
+            const j = await r.json();
+            if (j?.user) userMap[id] = j.user;
+          }
+        } catch {}
+      })
+    );
+
+    const statusPembayaran = (pt: string) => {
+      const s = (pt || "").toLowerCase();
+      if (s.includes("cicil")) return "CICILAN";
+      if (s.includes("full") || s.includes("registrasi") || s.includes("registration"))
+        return "LUNAS";
+      return s.toUpperCase() || "—";
+    };
+
+    const header = [
+      "No",
+      "No. Anggota",
+      "Nama Anggota",
+      "No. INV",
+      "Tanggal INV",
+      "Total Pembayaran",
+      "Status Pembayaran",
+    ];
+
+    const rows = data.payments.map((p, i) => {
+      const uid = String((p as any).userId || (p as any).user_id || (p as any).user || "");
+      const u = userMap[uid];
+      const tanggal = (p as any).updatedAt
+        ? new Date((p as any).updatedAt).toLocaleDateString("id-ID")
+        : p.createdAt
+        ? new Date(p.createdAt).toLocaleDateString("id-ID")
+        : "-";
+      const total = Number(p.amount ?? 0);
+
+      return [
+        i + 1,
+        u?.userCode || "-",
+        u?.fullName || p.userName || "-",
+        p.orderId,
+        tanggal,
+        total,
+        statusPembayaran(p.paymentType),
+      ];
+    });
+
+    const aoa = [["Tarikan Data Invoice"], [], header, ...rows];
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.aoa_to_sheet(aoa);
+
+    ws["!cols"] = [
+      { wch: 5 },
+      { wch: 14 },
+      { wch: 24 },
+      { wch: 16 },
+      { wch: 14 },
+      { wch: 18 },
+      { wch: 18 },
+    ];
+
+    const border = {
+      top: { style: "thin" },
+      right: { style: "thin" },
+      bottom: { style: "thin" },
+      left: { style: "thin" },
+    };
+    const XLSXAny: any = XLSX;
+    const range = XLSXAny.utils.decode_range(ws["!ref"]);
+    for (let r = 2; r <= range.e.r; r++) {
+      for (let c = 0; c <= range.e.c; c++) {
+        const cellAddr = XLSXAny.utils.encode_cell({ r, c });
+        const cell = ws[cellAddr];
+        if (!cell) continue;
+        cell.s = { ...(cell.s || {}), border };
+        if (r === 2) cell.s = { ...(cell.s || {}), font: { bold: true } };
+        if (r > 2 && c === 5) cell.z = "#,##0";
+      }
+    }
+
+    XLSXAny.utils.book_append_sheet(wb, ws, "Invoice");
+    XLSXAny.writeFile(
+      wb,
+      `Tarikan_Invoice_${new Date().toISOString().slice(0, 10)}.xlsx`
+    );
+  };
+
+  // --- states UI ---
   if (loading) {
     return (
       <InvoiceLayout>
@@ -167,7 +303,6 @@ function InvoicePageContent() {
     );
   }
 
-  // data group aktif buat modal
   const activeData = activeGroup
     ? installmentGroups.find((g) => g.orderId === activeGroup)
     : null;
@@ -176,18 +311,28 @@ function InvoicePageContent() {
     <InvoiceLayout>
       <div className="p-4 sm:p-6 space-y-6 sm:space-y-8 font-[family-name:var(--font-poppins)]">
         <header>
-          <div className="mb-6 sm:mb-8">
-            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-[#324D3E] dark:text-white mb-2">
-              Invoice
-            </h1>
-            <p className="text-[#889063] dark:text-gray-200">
-              {new Date().toLocaleDateString("id-ID", {
-                weekday: "long",
-                day: "numeric",
-                month: "long",
-                year: "numeric",
-              })}
-            </p>
+          <div className="mb-6 sm:mb-8 flex items-center justify-between gap-3">
+            <div>
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-[#324D3E] dark:text-white mb-2">
+                Invoice
+              </h1>
+              <p className="text-[#889063] dark:text-gray-200">
+                {new Date().toLocaleDateString("id-ID", {
+                  weekday: "long",
+                  day: "numeric",
+                  month: "long",
+                  year: "numeric",
+                })}
+              </p>
+            </div>
+
+            <button
+              onClick={exportExcel}
+              className="inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-[#324D3E] to-[#4C3D19] px-4 py-2 text-sm font-semibold text-white shadow-lg hover:opacity-95"
+            >
+              <FileDown className="w-4 h-4" />
+              Export Excel
+            </button>
           </div>
 
           <div className="bg-white/90 dark:bg-gray-800/90 rounded-3xl p-4 sm:p-6 lg:p-8 border shadow-xl">
@@ -269,8 +414,15 @@ function InvoicePageContent() {
                 </div>
               ))}
 
+              {/* ====== KARTU DENGAN GRADASI DI BADAN & BORDER TIPIS HITAM ====== */}
               {otherPayments.map((payment) => (
-                <InvoiceCard key={payment.ref || payment._id} payment={payment} />
+                <div
+                  key={payment.ref || payment._id}
+                  className="rounded-3xl p-4 shadow-lg border border-black/80"
+                  style={{ background: cardGradientByPayment(payment) }}
+                >
+                  <InvoiceCard payment={payment} />
+                </div>
               ))}
             </div>
 
@@ -281,7 +433,7 @@ function InvoicePageContent() {
         </header>
       </div>
 
-      {/* ===== Modal Detail Cicilan (UI only) ===== */}
+      {/* ===== Modal Detail Cicilan ===== */}
       {activeData && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
@@ -315,11 +467,16 @@ function InvoicePageContent() {
               )}
             </div>
 
-            {/* Grid: maks 4 per baris, kontainer dibatasi 2 baris-an lalu scroll */}
             <div className="max-h-[600px] overflow-y-auto pr-1">
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 {activeData.items.map((payment) => (
-                  <InvoiceCard key={payment.ref || payment._id} payment={payment} />
+                  <div
+                    key={payment.ref || payment._id}
+                    className="rounded-3xl p-4 shadow-lg border border-black/80"
+                    style={{ background: cardGradientByPayment(payment) }}
+                  >
+                    <InvoiceCard payment={payment} />
+                  </div>
                 ))}
               </div>
             </div>

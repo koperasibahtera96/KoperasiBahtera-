@@ -381,7 +381,7 @@ export default function MemberDetailPage(props: {
     const ketRow = rowIndex("|Keterangan|Nilai");
     if (ketRow >= 0)
       styleRange(ws, ketRow, 1, ketRow, 2, {
-        font: bold,
+        font: { ...bold },
         alignment: center,
         border: borderAll,
       });
@@ -389,9 +389,7 @@ export default function MemberDetailPage(props: {
     // "RINGKASAN INVESTASI"
     const ringkasanRow = rowIndex("|RINGKASAN INVESTASI");
     if (ringkasanRow >= 0)
-      styleRange(ws, ringkasanRow, 1, ringkasanRow, 1, {
-        font: { ...bold, sz: 12 },
-      });
+      styleRange(ws, ringkasanRow, 1, ringkasanRow, 1, { font: { ...bold, sz: 12 } });
 
     // Header "DETAIL INVESTASI PER TANAMAN"
     const detailRow = rowIndex("|DETAIL INVESTASI PER TANAMAN");
@@ -400,7 +398,7 @@ export default function MemberDetailPage(props: {
 
     const detailHeader = detailRow + 1;
     styleRange(ws, detailHeader, 1, detailHeader, 11, {
-      font: bold,
+      font: { ...bold },
       alignment: center,
       border: borderAll,
     });
@@ -533,6 +531,101 @@ export default function MemberDetailPage(props: {
     }
   }
 
+  // =========================
+  // ==== BULK INPUT NEW  ====
+  // =========================
+  const [bulkOpen, setBulkOpen] = useState(false);
+  const [bulkType, setBulkType] = useState<"income" | "expense">("income");
+  const [bulkDate, setBulkDate] = useState<string>("");
+  const [bulkAmount, setBulkAmount] = useState<string>("");
+  const [bulkNote, setBulkNote] = useState<string>("");        // untuk income
+  const [bulkCategory, setBulkCategory] = useState<string>("Operasional"); // untuk expense
+  const [bulkSelected, setBulkSelected] = useState<Record<string, boolean>>({});
+
+  // Group instances by plantType (untuk checkbox grup: Aren/Jengkol/…)
+  const bulkGroups = useMemo(() => {
+    const g = new Map<string, InstanceDetail[]>();
+    for (const it of instances) {
+      const key = (it.plantType ?? "lainnya").toLowerCase();
+      if (!g.has(key)) g.set(key, []);
+      g.get(key)!.push(it);
+    }
+    return Array.from(g.entries())
+      .sort((a, b) => a[0].localeCompare(b[0]))
+      .map(([plantType, list]) => ({
+        plantType,
+        list: list.slice().sort((a, b) => (a.instanceName ?? "").localeCompare(b.instanceName ?? "")),
+      }));
+  }, [instances]);
+
+  const bulkSelectedCount = useMemo(
+    () => Object.values(bulkSelected).filter(Boolean).length,
+    [bulkSelected]
+  );
+
+  function toggleBulkOne(id: string, checked: boolean) {
+    setBulkSelected(prev => ({ ...prev, [id]: checked }));
+  }
+  function toggleBulkGroup(groupKey: string, checked: boolean) {
+    setBulkSelected(prev => {
+      const clone = { ...prev };
+      const grp = bulkGroups.find(g => g.plantType === groupKey);
+      if (grp) for (const it of grp.list) clone[it.id] = checked;
+      return clone;
+    });
+  }
+  function toggleBulkAll(checked: boolean) {
+    setBulkSelected(prev => {
+      const clone = { ...prev };
+      for (const it of instances) clone[it.id] = checked;
+      return clone;
+    });
+  }
+
+// ganti seluruh fungsi submitBulk dengan versi ini
+async function submitBulk() {
+  try {
+    const ids = Object.entries(bulkSelected)
+      .filter(([, v]) => v)
+      .map(([k]) => k)
+      .filter((k) => /^[0-9a-fA-F]{24}$/.test(k)); // pastikan ObjectId valid
+
+    if (ids.length === 0) {
+      showError("Peringatan", "Pilih minimal satu tanaman/kontrak terlebih dahulu.");
+      return;
+    }
+    const amt = Number(bulkAmount.replace(/\./g, ""));
+    if (!amt || amt <= 0) {
+      showError("Peringatan", "Nominal harus lebih dari 0.");
+      return;
+    }
+
+    const res = await fetch("/api/finance/bulk-records", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        type: bulkType,
+        plantInstanceIds: ids,
+        amount: amt,
+        date: bulkDate || undefined,
+        note: bulkType === "income" ? (bulkNote || "Pemasukan (bulk)") : undefined,
+        category: bulkType === "expense" ? (bulkCategory || "Operasional") : undefined,
+        createdBy: member?.name || "system", // ⬅️ penting: sama seperti input manual
+      }),
+    });
+
+    const json = await res.json();
+    if (!res.ok) throw new Error(json?.error || "Gagal menyimpan data bulk.");
+
+    setBulkAmount("");
+    setBulkNote("");
+    await fetchDetail(year);
+  } catch (e: any) {
+    showError("Error", e?.message ?? "Terjadi kesalahan saat bulk input.");
+  }
+}
+
+
   if (loading)
     return (
       <FinanceSidebar>
@@ -598,7 +691,7 @@ export default function MemberDetailPage(props: {
             </motion.button>
           </Link>
 
-          <motion.button
+        <motion.button
             onClick={exportXLSX}
             className="inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-green-500 to-[#324D3E] hover:from-green-600 hover:to-[#4C3D19] px-4 py-2 text-sm font-medium text-white shadow-lg"
             whileHover={{ scale: 1.05 }}
@@ -838,6 +931,150 @@ export default function MemberDetailPage(props: {
         >
           <div className="text-lg font-semibold mb-4 text-[#324D3E]">Kelola Keuangan</div>
 
+          {/* ======== (NEW) Toggle Bulk Input ======== */}
+          <div className="rounded-2xl border border-[#324D3E]/10 p-4 mb-6 bg-white/70">
+            <div className="flex items-center justify-between gap-3">
+              <div className="font-medium text-[#324D3E]">Bulk Input Keuangan</div>
+              <button
+                className="inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-[#324D3E]/20 hover:bg-[#324D3E] hover:text-white"
+                onClick={() => setBulkOpen(v => !v)}
+              >
+                {bulkOpen ? "Sembunyikan" : "Tampilkan"}
+              </button>
+            </div>
+
+            {bulkOpen && (
+              <div className="mt-4 grid gap-6">
+                {/* Controls */}
+                <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
+                  <select
+                    className="border border-[#324D3E]/20 rounded-xl px-3 py-2 bg-white/80"
+                    value={bulkType}
+                    onChange={(e) => setBulkType(e.target.value as "income" | "expense")}
+                  >
+                    <option value="income">Pendapatan</option>
+                    <option value="expense">Pengeluaran</option>
+                  </select>
+
+                  <input
+                    type="date"
+                    value={bulkDate}
+                    onChange={(e) => setBulkDate(e.target.value)}
+                    className="border border-[#324D3E]/20 rounded-xl px-3 py-2 bg-white/80"
+                  />
+
+                  <input
+                    value={bulkAmount}
+                    onChange={(e) => {
+                      const formatted = formatNumber(e.target.value);
+                      setBulkAmount(formatted);
+                    }}
+                    placeholder="Nominal (IDR)"
+                    inputMode="numeric"
+                    className="border border-[#324D3E]/20 rounded-xl px-3 py-2 bg-white/80"
+                  />
+
+                  {bulkType === "income" ? (
+                    <input
+                      value={bulkNote}
+                      onChange={(e) => setBulkNote(e.target.value)}
+                      placeholder="Catatan (opsional)"
+                      className="border border-[#324D3E]/20 rounded-xl px-3 py-2 bg-white/80"
+                    />
+                  ) : (
+                    <input
+                      value={bulkCategory}
+                      onChange={(e) => setBulkCategory(e.target.value)}
+                      placeholder="Kategori (Operasional/Pupuk/...)"
+                      className="border border-[#324D3E]/20 rounded-xl px-3 py-2 bg-white/80"
+                    />
+                  )}
+
+                  <button
+                    onClick={submitBulk}
+                    className="rounded-xl border border-[#324D3E]/20 px-3 py-2 text-sm bg-[#324D3E] text-white disabled:opacity-50"
+                    disabled={!bulkAmount || bulkSelectedCount === 0}
+                    title="Tambahkan ke semua yang tercentang"
+                  >
+                    Tambahkan ke {bulkSelectedCount} tanaman
+                  </button>
+                </div>
+
+                {/* Checklist grouped by plantType */}
+                <div className="rounded-xl border border-[#324D3E]/10 p-3">
+                  <div className="flex items-center justify-between">
+                    <div className="text-sm font-medium text-[#324D3E]">Pilih Tanaman / Kontrak</div>
+                    <div className="flex items-center gap-3 text-xs">
+                      <span className="opacity-70">Dipilih: <b>{bulkSelectedCount}</b></span>
+                      <button
+                        className="underline"
+                        onClick={() => toggleBulkAll(true)}
+                      >
+                        Pilih semua
+                      </button>
+                      <span className="opacity-40">|</span>
+                      <button
+                        className="underline"
+                        onClick={() => toggleBulkAll(false)}
+                      >
+                        Kosongkan
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="mt-3 grid gap-4">
+                    {bulkGroups.map((g) => (
+                      <div key={g.plantType} className="rounded-lg border border-[#324D3E]/10 p-3">
+                        <div className="flex items-center justify-between">
+                          <div className="font-semibold capitalize text-[#324D3E]">{g.plantType}</div>
+                          <div className="flex items-center gap-2 text-xs">
+                            <button
+                              className="underline"
+                              onClick={() => toggleBulkGroup(g.plantType, true)}
+                            >
+                              Pilih {g.plantType}
+                            </button>
+                            <span className="opacity-40">|</span>
+                            <button
+                              className="underline"
+                              onClick={() => toggleBulkGroup(g.plantType, false)}
+                            >
+                              Hapus {g.plantType}
+                            </button>
+                          </div>
+                        </div>
+
+                        <div className="mt-2 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
+                          {g.list.map((it) => (
+                            <label key={it.id} className="flex items-center gap-2 rounded-lg border border-[#324D3E]/10 p-2 cursor-pointer">
+                              <input
+                                type="checkbox"
+                                checked={!!bulkSelected[it.id]}
+                                onChange={(e) => toggleBulkOne(it.id, e.target.checked)}
+                              />
+                              <span className="text-sm">
+                                {it.contractNumber ? `${it.contractNumber} ` : ""}({it.instanceName})
+                              </span>
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                    {bulkGroups.length === 0 && (
+                      <div className="text-sm opacity-70">Tidak ada PlantInstance.</div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="text-xs opacity-70">
+                  Aksi ini <b>menambahkan</b> {bulkType === "income" ? "pendapatan" : "pengeluaran"} dengan nominal yang sama ke semua tanaman yang dicentang.
+                  Data lain tidak diubah. (Ditandai <code>source: "bulk"</code> pada record.)
+                </div>
+              </div>
+            )}
+          </div>
+          {/* ======== END Bulk Input ======== */}
+
           {/* Bar kontrol: Search ➜ Cari ➜ Reset ➜ Select ➜ Download Invoice (paling kanan) */}
           <div className="flex flex-col lg:flex-row lg:items-center lg:gap-3 gap-3 mb-4">
             <div className="flex items-center gap-2 w-full lg:max-w-md">
@@ -914,31 +1151,31 @@ export default function MemberDetailPage(props: {
                       onSubmit={submitIncome}
                       className="grid grid-cols-1 md:grid-cols-4 gap-3 mb-4"
                     >
-                  <input
-                    type="date"
-                    value={incForm.date}
-                    onChange={(e) => setIncForm((f) => ({ ...f, date: e.target.value }))}
-                    className="border border-[#324D3E]/20 rounded-xl px-3 py-2 bg-white/80"
-                  />
-                  <input
-                    value={incForm.description}
-                    onChange={(e) => setIncForm((f) => ({ ...f, description: e.target.value }))}
-                    className="border border-[#324D3E]/20 rounded-xl px-3 py-2 bg-white/80"
-                    placeholder="Deskripsi"
-                  />
-                  <input
-                    value={incForm.amount}
-                    onChange={(e) => {
-                      const formatted = formatNumber(e.target.value);
-                      setIncForm((f) => ({ ...f, amount: formatted }));
-                    }}
-                    className="border border-[#324D3E]/20 rounded-xl px-3 py-2 bg-white/80"
-                    placeholder="Jumlah"
-                    inputMode="numeric"
-                  />
-                  <button className="rounded-xl border border-[#324D3E]/20 px-3 py-2 text-sm hover:bg-[#324D3E] hover:text-white">
-                    Simpan
-                  </button>
+                      <input
+                        type="date"
+                        value={incForm.date}
+                        onChange={(e) => setIncForm((f) => ({ ...f, date: e.target.value }))}
+                        className="border border-[#324D3E]/20 rounded-xl px-3 py-2 bg-white/80"
+                      />
+                      <input
+                        value={incForm.description}
+                        onChange={(e) => setIncForm((f) => ({ ...f, description: e.target.value }))}
+                        className="border border-[#324D3E]/20 rounded-xl px-3 py-2 bg-white/80"
+                        placeholder="Deskripsi"
+                      />
+                      <input
+                        value={incForm.amount}
+                        onChange={(e) => {
+                          const formatted = formatNumber(e.target.value);
+                          setIncForm((f) => ({ ...f, amount: formatted }));
+                        }}
+                        className="border border-[#324D3E]/20 rounded-xl px-3 py-2 bg-white/80"
+                        placeholder="Jumlah"
+                        inputMode="numeric"
+                      />
+                      <button className="rounded-xl border border-[#324D3E]/20 px-3 py-2 text-sm hover:bg-[#324D3E] hover:text-white">
+                        Simpan
+                      </button>
                     </form>
                   </>
                 )}
@@ -961,31 +1198,31 @@ export default function MemberDetailPage(props: {
                       onSubmit={submitExpense}
                       className="grid grid-cols-1 md:grid-cols-4 gap-3 mb-4"
                     >
-                  <input
-                    type="date"
-                    value={expForm.date}
-                    onChange={(e) => setExpForm((f) => ({ ...f, date: e.target.value }))}
-                    className="border border-[#324D3E]/20 rounded-xl px-3 py-2 bg-white/80"
-                  />
-                  <input
-                    value={expForm.description}
-                    onChange={(e) => setExpForm((f) => ({ ...f, description: e.target.value }))}
-                    className="border border-[#324D3E]/20 rounded-xl px-3 py-2 bg-white/80"
-                    placeholder="Deskripsi"
-                  />
-                  <input
-                    value={expForm.amount}
-                    onChange={(e) => {
-                      const formatted = formatNumber(e.target.value);
-                      setExpForm((f) => ({ ...f, amount: formatted }));
-                    }}
-                    className="border border-[#324D3E]/20 rounded-xl px-3 py-2 bg-white/80"
-                    placeholder="Jumlah"
-                    inputMode="numeric"
-                  />
-                  <button className="rounded-xl border border-[#324D3E]/20 px-3 py-2 text-sm hover:bg-[#324D3E] hover:text-white">
-                    Simpan
-                  </button>
+                      <input
+                        type="date"
+                        value={expForm.date}
+                        onChange={(e) => setExpForm((f) => ({ ...f, date: e.target.value }))}
+                        className="border border-[#324D3E]/20 rounded-xl px-3 py-2 bg-white/80"
+                      />
+                      <input
+                        value={expForm.description}
+                        onChange={(e) => setExpForm((f) => ({ ...f, description: e.target.value }))}
+                        className="border border-[#324D3E]/20 rounded-xl px-3 py-2 bg-white/80"
+                        placeholder="Deskripsi"
+                      />
+                      <input
+                        value={expForm.amount}
+                        onChange={(e) => {
+                          const formatted = formatNumber(e.target.value);
+                          setExpForm((f) => ({ ...f, amount: formatted }));
+                        }}
+                        className="border border-[#324D3E]/20 rounded-xl px-3 py-2 bg-white/80"
+                        placeholder="Jumlah"
+                        inputMode="numeric"
+                      />
+                      <button className="rounded-xl border border-[#324D3E]/20 px-3 py-2 text-sm hover:bg-[#324D3E] hover:text-white">
+                        Simpan
+                      </button>
                     </form>
                   </>
                 )}

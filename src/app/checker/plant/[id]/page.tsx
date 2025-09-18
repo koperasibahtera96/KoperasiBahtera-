@@ -44,7 +44,12 @@ import {
 import { useSession } from "next-auth/react";
 import Image from "next/image";
 import Link from "next/link";
-import { use, useEffect, useState } from "react";
+import { use, useEffect, useMemo, useState } from "react";
+import ImageKit from "imagekit-javascript";
+
+// ===== Helper: deteksi URL video
+const isVideoUrl = (url?: string) =>
+  !!url && /\.(mp4|webm|mov|m4v|ogg)(\?|#|$)/i.test(url);
 
 const statusColors: Record<string, string> = {
   "Tanam Bibit": "bg-[#4C3D19]/10 text-[#4C3D19] border border-[#4C3D19]/20",
@@ -75,19 +80,16 @@ export default function PlantDetail({
   const { data: session } = useSession();
   const { id } = use(params);
 
-  // // Redirect unauthenticated users to login with callbackUrl
-  // useEffect(() => {
-  //   if (status === "loading") return; // Wait for session check
-  //   if (!session) {
-  //     const callbackUrl = `${window.location.origin}/checker/plant/${id}`;
-  //     window.location.href = `/login?callbackUrl=${encodeURIComponent(callbackUrl)}`;
-  //   }
-  // }, [session, status, id]);
   const [plantData, setPlantData] = useState<PlantInstance | null>(null);
   const [reportStatus, setReportStatus] = useState("");
   const [customStatus, setCustomStatus] = useState("");
   const [notes, setNotes] = useState("");
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+
+  // ===== NEW: toggle & 2 state terpisah (foto/video)
+  const [uploadMode, setUploadMode] = useState<"photo" | "video">("photo");
+  const [selectedPhoto, setSelectedPhoto] = useState<File | null>(null);
+  const [selectedVideo, setSelectedVideo] = useState<File | null>(null);
+
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [loading, setLoading] = useState(true);
   const [selectedHistory, setSelectedHistory] = useState<PlantHistory | null>(
@@ -108,6 +110,44 @@ export default function PlantDetail({
   const { showError, showSuccess, showConfirmation, AlertComponent } =
     useAlert();
 
+  // ===== ImageKit client untuk direct upload VIDEO
+  const IK_PUBLIC =
+    (process.env.NEXT_PUBLIC_IMAGEKIT_PUBLIC_KEY as string) ||
+    (process.env.IMAGEKIT_PUBLIC_KEY as string);
+  const IK_URL =
+    (process.env.NEXT_PUBLIC_IMAGEKIT_URL_ENDPOINT as string) ||
+    (process.env.IMAGEKIT_URL_ENDPOINT as string);
+
+  const ik = useMemo(() => {
+    if (!IK_PUBLIC || !IK_URL) return null;
+    return new ImageKit({
+      publicKey: IK_PUBLIC,
+      urlEndpoint: IK_URL,
+      authenticationEndpoint: "/api/video-auth",
+    });
+  }, [IK_PUBLIC, IK_URL]);
+
+  const uploadVideoDirect = (file: File): Promise<string> =>
+    new Promise((resolve, reject) => {
+      if (!ik) {
+        reject(new Error("ImageKit belum terkonfigurasi"));
+        return;
+      }
+      ik.upload(
+        {
+          file,
+          fileName: file.name,
+          folder: "/plant-photos", // sama seperti foto (boleh ubah)
+          useUniqueFileName: true,
+          tags: ["checker", "video"],
+        },
+        (err: any, res: any) => {
+          if (err) reject(err);
+          else resolve(res.url as string);
+        }
+      );
+    });
+
   useEffect(() => {
     fetchPlantData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -127,12 +167,62 @@ export default function PlantDetail({
     }
   };
 
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  // ===== Handler FOTO (tetap 2MB)
+  const handlePhotoChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (file && file.size <= 2 * 1024 * 1024) {
-      setSelectedFile(file);
-    } else {
-      showError("File terlalu besar", "Maksimal ukuran file adalah 2MB.");
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      showError("Tipe tidak didukung", "Pilih file gambar.");
+      return;
+    }
+    if (file.size > 2 * 1024 * 1024) {
+      showError("File terlalu besar", "Maksimal ukuran foto 2MB.");
+      return;
+    }
+    setSelectedPhoto(file);
+  };
+
+  // ===== Handler VIDEO (tanpa limit MB, cek durasi ≤ 30s)
+  const handleVideoChange = async (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith("video/")) {
+      showError("Tipe tidak didukung", "Pilih file video.");
+      return;
+    }
+
+    const getDuration = (f: File) =>
+      new Promise<number>((resolve, reject) => {
+        const url = URL.createObjectURL(f);
+        const v = document.createElement("video");
+        v.preload = "metadata";
+        v.src = url;
+        v.onloadedmetadata = () => {
+          const d = v.duration;
+          URL.revokeObjectURL(url);
+          resolve(d);
+        };
+        v.onerror = () => {
+          URL.revokeObjectURL(url);
+          reject(new Error("Gagal membaca durasi video"));
+        };
+      });
+
+    try {
+      const duration = await getDuration(file);
+      if (!Number.isFinite(duration)) {
+        showError("Video tidak valid", "Durasi video tidak dapat dibaca.");
+        return;
+      }
+      if (duration > 30) {
+        showError("Video kepanjangan", "Durasi video maksimal 30 detik.");
+        return;
+      }
+      setSelectedVideo(file);
+    } catch {
+      showError("Video tidak valid", "Gagal membaca durasi video.");
     }
   };
 
@@ -144,11 +234,24 @@ export default function PlantDetail({
       );
       return;
     }
-
     if (reportStatus === "lainnya" && !customStatus.trim()) {
       showError(
         "Mohon lengkapi status custom",
         "Status custom harus diisi jika memilih 'Lainnya'."
+      );
+      return;
+    }
+
+    // wajib salah satu: foto / video
+    const currentFile =
+      uploadMode === "video"
+        ? selectedVideo || selectedPhoto // fallback kalau user sudah pilih foto
+        : selectedPhoto || selectedVideo; // fallback kalau user sudah pilih video
+
+    if (!currentFile) {
+      showError(
+        "Lampiran kosong",
+        "Pilih Foto (≤2MB) atau Video (≤30 detik)."
       );
       return;
     }
@@ -158,15 +261,17 @@ export default function PlantDetail({
     try {
       let imageUrl: string | null = null;
 
-      if (selectedFile) {
+      if (currentFile.type.startsWith("video/")) {
+        // === VIDEO: direct upload ke ImageKit (tanpa limit MB server)
+        imageUrl = await uploadVideoDirect(currentFile);
+      } else {
+        // === FOTO: tetap pakai API lama /api/upload
         const formData = new FormData();
-        formData.append("file", selectedFile);
-
+        formData.append("file", currentFile);
         const uploadResponse = await fetch("/api/upload", {
           method: "POST",
           body: formData,
         });
-
         if (uploadResponse.ok) {
           const uploadResult = await uploadResponse.json();
           imageUrl = uploadResult.imageUrl;
@@ -194,7 +299,7 @@ export default function PlantDetail({
           year: "numeric",
         }),
         description: notes,
-        hasImage: !!selectedFile,
+        hasImage: true,
         imageUrl: imageUrl || undefined,
         addedBy: session?.user?.name || "Unknown User",
         addedAt: new Date().toLocaleDateString("id-ID", {
@@ -223,7 +328,8 @@ export default function PlantDetail({
           setReportStatus("");
           setCustomStatus("");
           setNotes("");
-          setSelectedFile(null);
+          setSelectedPhoto(null);
+          setSelectedVideo(null);
           showSuccess("Berhasil!", "Laporan berhasil disimpan!");
         } else {
           throw new Error("Failed to save report");
@@ -285,7 +391,6 @@ export default function PlantDetail({
     if (!plantData) return;
 
     if (session?.user.role === "admin") {
-      // Admin can delete directly
       const confirmed = await showConfirmation(
         "Hapus Riwayat",
         "Apakah Anda yakin ingin menghapus riwayat ini?",
@@ -322,7 +427,6 @@ export default function PlantDetail({
         showError("Gagal menghapus", "Gagal menghapus riwayat.");
       }
     } else if (session?.user.role === "spv_staff") {
-      // SPV staff needs to request approval
       setRequestFormData({
         requestType: "delete_history",
         deleteReason: "",
@@ -336,7 +440,6 @@ export default function PlantDetail({
 
   const handleDeletePlant = async () => {
     if (session?.user.role === "admin") {
-      // Admin can delete directly
       const confirmed = await showConfirmation(
         "Hapus Tanaman",
         "Apakah Anda yakin ingin menghapus tanaman ini? Aksi ini tidak dapat dibatalkan.",
@@ -370,7 +473,6 @@ export default function PlantDetail({
         );
       }
     } else if (session?.user.role === "spv_staff") {
-      // SPV staff needs to request approval
       setRequestFormData({
         requestType: "delete",
         deleteReason: "",
@@ -386,9 +488,11 @@ export default function PlantDetail({
     if (selectedHistory?.imageUrl) {
       const link = document.createElement("a");
       link.href = selectedHistory.imageUrl;
-      link.download = `${plantData?.instanceName || ""}-${
-        selectedHistory.type
-      }-${selectedHistory.date}.jpg`;
+      const match = selectedHistory.imageUrl.match(
+        /\.(mp4|webm|mov|m4v|ogg|png|jpe?g|webp|gif)(\?|#|$)/i
+      );
+      const ext = match ? match[1] : "bin";
+      link.download = `${plantData?.instanceName || ""}-${selectedHistory.type}-${selectedHistory.date}.${ext}`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -552,39 +656,45 @@ export default function PlantDetail({
         yPosition += 8;
 
         if (item.imageUrl) {
-          try {
-            const response = await fetch(item.imageUrl);
-            const blob = await response.blob();
-            const reader = new FileReader();
+          if (isVideoUrl(item.imageUrl)) {
+            pdf.setFontSize(10);
+            pdf.text("Media: VIDEO (lihat di aplikasi)", 20, yPosition);
+            yPosition += 10;
+          } else {
+            try {
+              const response = await fetch(item.imageUrl);
+              const blob = await response.blob();
+              const reader = new FileReader();
 
-            await new Promise<void>((resolve) => {
-              reader.onload = () => {
-                const imgData = reader.result as string;
-                const imgWidth = 60;
-                const imgHeight = 60;
+              await new Promise<void>((resolve) => {
+                reader.onload = () => {
+                  const imgData = reader.result as string;
+                  const imgWidth = 60;
+                  const imgHeight = 60;
 
-                if (yPosition + imgHeight > pageHeight - 20) {
-                  pdf.addPage();
-                  yPosition = 20;
-                }
+                  if (yPosition + imgHeight > pageHeight - 20) {
+                    pdf.addPage();
+                    yPosition = 20;
+                  }
 
-                pdf.addImage(
-                  imgData,
-                  "JPEG",
-                  20,
-                  yPosition,
-                  imgWidth,
-                  imgHeight
-                );
-                resolve();
-              };
-              reader.readAsDataURL(blob);
-            });
+                  pdf.addImage(
+                    imgData,
+                    "JPEG",
+                    20,
+                    yPosition,
+                    imgWidth,
+                    imgHeight
+                  );
+                  resolve();
+                };
+                reader.readAsDataURL(blob);
+              });
 
-            yPosition += 65;
-          } catch {
-            pdf.text("Gambar tidak dapat dimuat", 20, yPosition);
-            yPosition += 8;
+              yPosition += 65;
+            } catch {
+              pdf.text("Gambar tidak dapat dimuat", 20, yPosition);
+              yPosition += 8;
+            }
           }
         }
 
@@ -699,11 +809,9 @@ export default function PlantDetail({
             </p>
           </div>
 
-          {/* Plant Info Header */}
           <div className="bg-white/90 backdrop-blur-xl rounded-3xl shadow-xl border border-[#324D3E]/10 p-8 mb-8">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
               <div className="flex items-center gap-4">
-                {/* Plant Avatar */}
                 <div className="relative w-16 h-16 bg-gradient-to-br from-[#324D3E] to-[#4C3D19] rounded-2xl overflow-hidden shadow-lg">
                   {plantData.fotoGambar ? (
                     <Image
@@ -747,91 +855,31 @@ export default function PlantDetail({
                 </div>
               </div>
 
-              <div className="flex items-center justify-between">
-                <div className="space-y-4">
-                  <div className="bg-white/60 rounded-2xl p-4 border border-[#324D3E]/10">
-                    <p className="text-sm text-[#889063] mb-1">Pemilik</p>
-                    <div className="flex items-center gap-2">
-                      <User className="w-4 h-4 text-[#4C3D19]" />
-                      <span className="font-semibold text-[#324D3E]">
-                        {plantData.owner}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="bg-white/60 rounded-2xl p-4 border border-[#324D3E]/10">
-                    <p className="text-sm text-[#889063] mb-1">Lokasi Tanam</p>
-                    <div className="flex items-center gap-2">
-                      <MapPin className="w-4 h-4 text-[#4C3D19]" />
-                      <span className="font-semibold text-[#324D3E]">
-                        {plantData.location}
-                      </span>
-                    </div>
+              <div className="space-y-4">
+                <div className="bg-white/60 rounded-2xl p-4 border border-[#324D3E]/10">
+                  <p className="text-sm text-[#889063] mb-1">Pemilik</p>
+                  <div className="flex items-center gap-2">
+                    <User className="w-4 h-4 text-[#4C3D19]" />
+                    <span className="font-semibold text-[#324D3E]">
+                      {plantData.owner}
+                    </span>
                   </div>
                 </div>
 
-                {/* Commented out QR Code display and download - not being used currently */}
-                {/* <div className="flex flex-col items-center gap-3">
-                  <div className="bg-white/80 p-3 rounded-2xl border border-[#324D3E]/20 shadow-lg">
-                    <Image
-                      unoptimized
-                      src={`https://api.qrserver.com/v1/create-qr-code/?size=80x80&data=${encodeURIComponent(
-                        `${
-                          typeof window !== "undefined"
-                            ? window.location.origin
-                            : ""
-                        }/checker/plant/${id}`
-                      )}`}
-                      alt="QR Code"
-                      className="w-20 h-20"
-                      width={80}
-                      height={80}
-                    />
+                <div className="bg-white/60 rounded-2xl p-4 border border-[#324D3E]/10">
+                  <p className="text-sm text-[#889063] mb-1">Lokasi Tanam</p>
+                  <div className="flex items-center gap-2">
+                    <MapPin className="w-4 h-4 text-[#4C3D19]" />
+                    <span className="font-semibold text-[#324D3E]">
+                      {plantData.location}
+                    </span>
                   </div>
-                  <Button
-                    size="sm"
-                    onClick={async () => {
-                      try {
-                        const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(
-                          `${
-                            typeof window !== "undefined"
-                              ? window.location.origin
-                              : ""
-                          }/checker/plant/${id}`
-                        )}`;
-
-                        const response = await fetch(qrUrl);
-                        const blob = await response.blob();
-                        const url = window.URL.createObjectURL(blob);
-
-                        const link = document.createElement("a");
-                        link.href = url;
-                        link.download = `QR-${plantData.instanceName || ""}-${
-                          plantData.qrCode
-                        }.png`;
-                        document.body.appendChild(link);
-                        link.click();
-                        document.body.removeChild(link);
-
-                        window.URL.revokeObjectURL(url);
-                      } catch (error) {
-                        console.error("Error downloading QR code:", error);
-                        showError(
-                          "Download gagal",
-                          "Gagal mendownload QR code"
-                        );
-                      }
-                    }}
-                    className="bg-gradient-to-r from-[#324D3E] to-[#4C3D19] hover:shadow-lg text-white text-xs px-4 py-2 rounded-xl transition-all duration-300"
-                  >
-                    <Download className="w-3 h-3 mr-1" />
-                    Download
-                  </Button>
-                </div> */}
+                </div>
               </div>
             </div>
           </div>
 
+          {/* GRID */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             {/* Form Laporan & Perawatan */}
             <Card className="bg-white/90 backdrop-blur-xl border-[#324D3E]/10 rounded-3xl shadow-xl">
@@ -842,36 +890,97 @@ export default function PlantDetail({
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-6 p-8">
-                <div>
-                  <label className="block text-sm font-medium text-[#324D3E] mb-3">
-                    Foto Tanaman (Wajib, Max 2MB)
-                  </label>
-                  <div className="border-2 border-dashed border-[#324D3E]/30 rounded-2xl p-8 text-center hover:border-[#324D3E] hover:bg-[#324D3E]/5 transition-all duration-300 cursor-pointer">
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={handleFileChange}
-                      className="hidden"
-                      id="photo-upload"
-                    />
-                    <label htmlFor="photo-upload" className="cursor-pointer">
-                      <Upload className="w-12 h-12 mx-auto mb-4 text-[#889063]" />
-                      <p className="text-[#324D3E] mb-2 font-medium">
-                        {selectedFile
-                          ? selectedFile.name
-                          : "Klik untuk upload atau seret foto"}
-                      </p>
-                      {selectedFile && (
-                        <p className="text-sm text-[#889063]">
-                          Ukuran: {(selectedFile.size / 1024 / 1024).toFixed(2)}{" "}
-                          MB
-                        </p>
-                      )}
-                    </label>
+                {/* Toggle Foto / Video */}
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-[#889063]">
+                    Wajib lampirkan salah satu: <b>Foto ≤2MB</b> atau <b>Video ≤30 detik</b>
+                  </span>
+                  <div className="inline-flex overflow-hidden rounded-xl border border-[#324D3E]/20">
+                    <button
+                      type="button"
+                      onClick={() => setUploadMode("photo")}
+                      className={`px-4 py-2 text-sm ${
+                        uploadMode === "photo"
+                          ? "bg-[#324D3E] text-white"
+                          : "bg-white text-[#324D3E]"
+                      }`}
+                    >
+                      Foto
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setUploadMode("video")}
+                      className={`px-4 py-2 text-sm ${
+                        uploadMode === "video"
+                          ? "bg-[#324D3E] text-white"
+                          : "bg-white text-[#324D3E]"
+                      }`}
+                    >
+                      Video
+                    </button>
                   </div>
                 </div>
 
-                {/* Status Dropdown */}
+                {/* Uploader sesuai mode */}
+                {uploadMode === "photo" ? (
+                  <div>
+                    <label className="block text-sm font-medium text-[#324D3E] mb-3">
+                      Foto Tanaman (Wajib, Max 2MB)
+                    </label>
+                    <div className="border-2 border-dashed border-[#324D3E]/30 rounded-2xl p-8 text-center hover:border-[#324D3E] hover:bg-[#324D3E]/5 transition-all duration-300 cursor-pointer">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handlePhotoChange}
+                        className="hidden"
+                        id="photo-upload"
+                      />
+                      <label htmlFor="photo-upload" className="cursor-pointer">
+                        <Upload className="w-12 h-12 mx-auto mb-4 text-[#889063]" />
+                        <p className="text-[#324D3E] mb-2 font-medium">
+                          {selectedPhoto
+                            ? selectedPhoto.name
+                            : "Klik untuk upload atau seret foto"}
+                        </p>
+                        {selectedPhoto && (
+                          <p className="text-sm text-[#889063]">
+                            Ukuran: {(selectedPhoto.size / 1024 / 1024).toFixed(2)} MB
+                          </p>
+                        )}
+                      </label>
+                    </div>
+                  </div>
+                ) : (
+                  <div>
+                    <label className="block text-sm font-medium text-[#324D3E] mb-3">
+                      Video Laporan (Durasi maksimal 30 detik)
+                    </label>
+                    <div className="border-2 border-dashed border-[#324D3E]/30 rounded-2xl p-8 text-center hover:border-[#324D3E] hover:bg-[#324D3E]/5 transition-all duration-300 cursor-pointer">
+                      <input
+                        type="file"
+                        accept="video/*"
+                        onChange={handleVideoChange}
+                        className="hidden"
+                        id="video-upload"
+                      />
+                      <label htmlFor="video-upload" className="cursor-pointer">
+                        <Upload className="w-12 h-12 mx-auto mb-4 text-[#889063]" />
+                        <p className="text-[#324D3E] mb-2 font-medium">
+                          {selectedVideo
+                            ? selectedVideo.name
+                            : "Klik untuk upload atau seret video"}
+                        </p>
+                        {selectedVideo && (
+                          <p className="text-sm text-[#889063]">
+                            Ukuran: {(selectedVideo.size / 1024 / 1024).toFixed(2)} MB • Maks 30 detik
+                          </p>
+                        )}
+                      </label>
+                    </div>
+                  </div>
+                )}
+
+                {/* Status */}
                 <div>
                   <label className="block text-sm font-medium text-[#324D3E] mb-3">
                     Status Laporan
@@ -902,7 +1011,7 @@ export default function PlantDetail({
                   </Select>
                 </div>
 
-                {/* Custom Status Input - Show when "Lainnya" is selected */}
+                {/* Custom Status */}
                 {reportStatus === "lainnya" && (
                   <div>
                     <label className="block text-sm font-medium text-[#324D3E] mb-3">
@@ -941,6 +1050,7 @@ export default function PlantDetail({
               </CardContent>
             </Card>
 
+            {/* Riwayat */}
             <Card className="bg-white/90 backdrop-blur-xl border-[#324D3E]/10 rounded-3xl shadow-xl">
               <CardHeader>
                 <div className="flex items-center justify-between">
@@ -980,14 +1090,23 @@ export default function PlantDetail({
                     >
                       <div className="w-20 h-20 bg-[#324D3E]/10 rounded-2xl flex items-center justify-center flex-shrink-0">
                         {item.imageUrl ? (
-                          <Image
-                            unoptimized
-                            src={item.imageUrl || "/placeholder.svg"}
-                            alt="Plant photo"
-                            className="w-full h-full object-cover rounded-2xl"
-                            width={80}
-                            height={80}
-                          />
+                          isVideoUrl(item.imageUrl) ? (
+                            <video
+                              src={item.imageUrl}
+                              className="w-full h-full object-cover rounded-2xl"
+                              controls
+                              preload="metadata"
+                            />
+                          ) : (
+                            <Image
+                              unoptimized
+                              src={item.imageUrl || "/placeholder.svg"}
+                              alt="Plant media"
+                              className="w-full h-full object-cover rounded-2xl"
+                              width={80}
+                              height={80}
+                            />
+                          )
                         ) : (
                           <Camera className="w-6 h-6 text-[#889063]" />
                         )}
@@ -1018,7 +1137,6 @@ export default function PlantDetail({
                         <p className="text-sm text-[#324D3E] mb-3">
                           {item.description}
                         </p>
-                        {/* Action buttons for each history item */}
                         <div className="flex items-center justify-between">
                           <div className="flex gap-2">
                             <Button
@@ -1079,7 +1197,7 @@ export default function PlantDetail({
             </Card>
           </div>
 
-          {/* Modal for history detail view and editing */}
+          {/* Modal Detail */}
           {showModal && selectedHistory && (
             <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
               <div className="bg-white/95 backdrop-blur-xl rounded-3xl max-w-4xl w-full max-h-[90vh] overflow-y-auto shadow-2xl border border-[#324D3E]/10">
@@ -1102,18 +1220,26 @@ export default function PlantDetail({
                   </div>
 
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    {/* Large Image Display */}
                     <div className="space-y-4">
                       <div className="aspect-square bg-gray-100 rounded-lg overflow-hidden">
                         {selectedHistory.imageUrl ? (
-                          <Image
-                            unoptimized
-                            src={selectedHistory.imageUrl || "/placeholder.svg"}
-                            alt="Plant photo"
-                            className="w-full h-full object-cover"
-                            width={64}
-                            height={64}
-                          />
+                          isVideoUrl(selectedHistory.imageUrl) ? (
+                            <video
+                              src={selectedHistory.imageUrl}
+                              className="w-full h-full object-cover"
+                              controls
+                              preload="metadata"
+                            />
+                          ) : (
+                            <Image
+                              unoptimized
+                              src={selectedHistory.imageUrl || "/placeholder.svg"}
+                              alt="Plant media"
+                              className="w-full h-full object-cover"
+                              width={64}
+                              height={64}
+                            />
+                          )
                         ) : (
                           <div className="w-full h-full flex items-center justify-center">
                             <Camera className="w-16 h-16 text-gray-400" />
@@ -1140,7 +1266,6 @@ export default function PlantDetail({
                       </Card>
                     </div>
 
-                    {/* Notes Section */}
                     <div className="space-y-4">
                       <Card className="bg-gray-50 border-gray-200">
                         <CardHeader>
@@ -1194,7 +1319,6 @@ export default function PlantDetail({
                     </div>
                   </div>
 
-                  {/* Optional actions */}
                   <div className="flex items-center justify-end gap-2 mt-6">
                     {selectedHistory?.imageUrl && (
                       <Button
@@ -1202,7 +1326,7 @@ export default function PlantDetail({
                         className="bg-gradient-to-r from-[#324D3E] to-[#4C3D19] hover:shadow-lg text-white rounded-xl"
                       >
                         <Download className="w-4 h-4 mr-2" />
-                        Download Foto
+                        Download Foto/Video
                       </Button>
                     )}
                   </div>
@@ -1211,7 +1335,7 @@ export default function PlantDetail({
             </div>
           )}
 
-          {/* Request Modal for SPV Staff */}
+          {/* Request Modal */}
           {showRequestModal && (
             <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
               <div className="bg-white/95 backdrop-blur-xl rounded-3xl max-w-md w-full max-h-[90vh] overflow-y-auto shadow-2xl border border-[#324D3E]/10">

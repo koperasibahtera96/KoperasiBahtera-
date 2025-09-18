@@ -8,7 +8,7 @@ import { formatCurrency, formatPercentage } from "@/lib/utils"
 import { BarChart3, DollarSign, Download, TrendingUp, Users } from "lucide-react"
 import Link from "next/link"
 import React from "react"
-import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts"
+import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip as RTooltip } from "recharts"
 
 // ===== XLSX (pakai dynamic import agar aman SSR) =====
 let XLSXMod: any
@@ -20,8 +20,41 @@ async function getXLSX() {
 
 const BRUTALIST_COLORS = ["#FF6B35", "#F7931E", "#FFD23F", "#06FFA5", "#118AB2", "#073B4C"]
 
+// === HELPER WARNA PIE (hanya UI, tidak mengubah data/logic) ===
+const COLOR_ALPUKAT = "#16a34a" // hijau
+const COLOR_JENGKOL = "#0ea5e9" // biru laut
+const COLOR_AREN    = "#b7410e" // bata (merah bata)
+
+function normName(s: string) {
+  return (s || "").toLowerCase().trim()
+}
+function isGaharu(name: string) {
+  return normName(name).includes("gaharu")
+}
+function pickBaseColor(name: string, fallback: string) {
+  const n = normName(name)
+  if (n.includes("alpukat")) return COLOR_ALPUKAT
+  if (n.includes("jengkol")) return COLOR_JENGKOL
+  if (n.includes("aren"))    return COLOR_AREN
+  // khusus gaharu: biarkan fallback (warna existing)
+  return fallback
+}
+function hexToRgb(hex: string) {
+  const s = hex.replace("#", "")
+  const v = s.length === 3 ? s.split("").map((x) => x + x).join("") : s
+  const n = parseInt(v, 16)
+  return { r: (n >> 16) & 255, g: (n >> 8) & 255, b: n & 255 }
+}
+function lighten(hex: string, amt = 0.28) {
+  const { r, g, b } = hexToRgb(hex)
+  const f = (x: number) => Math.max(0, Math.min(255, Math.round(x + (255 - x) * amt)))
+  return `rgb(${f(r)}, ${f(g)}, ${f(b)})`
+}
+function slugId(name: string) {
+  return (name || "slice").toLowerCase().replace(/[^a-z0-9]+/g, "-")
+}
+
 // ==== Response type dari /api/finance/summary ====
-// (longgar + alias supaya cocok dengan API baru)
 type Summary = {
   totals?: {
     investment?: number | string
@@ -41,14 +74,12 @@ type Summary = {
   investorsCount?: number | string
   distribution?: { name: string; value: number | string }[]
   topPlantTypes?: {
-    // API baru
     type?: string
     totalInvestment?: number | string
     paidProfit?: number | string
     roi?: number | string
     treeCount?: number | string
     activeInvestors?: number | string
-    // kemungkinan lama
     plantTypeId?: string
     plantTypeName?: string
   }[]
@@ -247,6 +278,7 @@ export default function FinancePage() {
               </Button>
             </div>
 
+            {/* KARTU RINGKASAN */}
             {loading ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
                 {[...Array(4)].map((_, i) => (
@@ -298,6 +330,37 @@ export default function FinancePage() {
                   <div className="h-64">
                     <ResponsiveContainer width="100%" height="100%">
                       <PieChart>
+                        {/* === Gradien + Stripes per slice (arah berbeda per index) === */}
+                        <defs>
+                          {investmentData.map((entry, i) => {
+                            const base = pickBaseColor(entry.name, entry.color) // <- PAKSA WARNA SESUAI NAMA
+                            const light = lighten(base, 0.32)
+                            const id = slugId(entry.name || `slice-${i}`)
+                            // rotasi berbeda supaya tidak menyatu
+                            const rotations = [45, -45, 60, -60, 30, -30]
+                            const rot = rotations[i % rotations.length]
+                            return (
+                              <pattern
+                                key={`pat-${id}`}
+                                id={`pat-${id}`}
+                                width="12"
+                                height="12"
+                                patternUnits="userSpaceOnUse"
+                                patternTransform={`rotate(${rot})`}
+                              >
+                                {/* fill gradien */}
+                                <linearGradient id={`grad-${id}`} x1="0" y1="0" x2="1" y2="1">
+                                  <stop offset="0%" stopColor={light} />
+                                  <stop offset="100%" stopColor={base} />
+                                </linearGradient>
+                                <rect x="0" y="0" width="12" height="12" fill={`url(#grad-${id})`} />
+                                {/* stripes tebal hitam */}
+                                <rect x="0" y="0" width="4" height="12" fill="rgba(0,0,0,0.38)" />
+                              </pattern>
+                            )
+                          })}
+                        </defs>
+
                         <Pie
                           data={investmentData}
                           cx="50%"
@@ -308,11 +371,12 @@ export default function FinancePage() {
                           strokeWidth={3}
                           label
                         >
-                          {investmentData.map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={entry.color} />
-                          ))}
+                          {investmentData.map((entry, index) => {
+                            const id = slugId(entry.name || `slice-${index}`)
+                            return <Cell key={`cell-${id}`} fill={`url(#pat-${id})`} />
+                          })}
                         </Pie>
-                        <Tooltip content={<PieTooltip />} />
+                        <RTooltip content={<PieTooltip />} />
                       </PieChart>
                     </ResponsiveContainer>
                   </div>
@@ -321,11 +385,13 @@ export default function FinancePage() {
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 mt-6">
                     {investmentData.map((d) => {
                       const pct = totalInvestPie > 0 ? (d.value / totalInvestPie) * 100 : 0
+                      // gunakan warna final yang dipakai pada slice
+                      const legendColor = pickBaseColor(d.name, d.color)
                       return (
                         <div key={d.name} className="flex items-center gap-3 text-sm">
                           <span
                             className="inline-block h-3 w-3 rounded-full"
-                            style={{ backgroundColor: d.color }}
+                            style={{ backgroundColor: legendColor }}
                             aria-label={`Warna ${d.name}`}
                           />
                           <span className="font-medium">{d.name}</span>
