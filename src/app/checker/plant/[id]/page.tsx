@@ -107,6 +107,8 @@ export default function PlantDetail({
     newDescription: "",
   });
   const [submittingRequest, setSubmittingRequest] = useState(false);
+  const [isEditingLocation, setIsEditingLocation] = useState(false);
+  const [editLocationValue, setEditLocationValue] = useState("");
   const { showError, showSuccess, showConfirmation, AlertComponent } =
     useAlert();
 
@@ -576,6 +578,47 @@ export default function PlantDetail({
     setShowRequestModal(true);
   };
 
+  const handleLocationUpdate = async () => {
+    if (!editLocationValue.trim() || !plantData) {
+      showError("Lokasi kosong", "Lokasi tidak boleh kosong.");
+      return;
+    }
+
+    try {
+      const updatedPlant: PlantInstance = {
+        ...plantData,
+        location: editLocationValue.trim(),
+      };
+
+      const response = await fetch(`/api/plants/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(updatedPlant),
+      });
+
+      if (response.ok) {
+        setPlantData(updatedPlant);
+        setIsEditingLocation(false);
+        showSuccess("Berhasil!", "Lokasi tanaman berhasil diperbarui!");
+      } else {
+        throw new Error("Failed to update location");
+      }
+    } catch (error) {
+      console.error("Error updating location:", error);
+      showError("Gagal memperbarui", "Gagal memperbarui lokasi tanaman.");
+    }
+  };
+
+  const handleLocationEditStart = () => {
+    setEditLocationValue(plantData?.location || "");
+    setIsEditingLocation(true);
+  };
+
+  const handleLocationEditCancel = () => {
+    setIsEditingLocation(false);
+    setEditLocationValue("");
+  };
+
   const handleDownloadHistoryPDF = async () => {
     if (!plantData) return;
 
@@ -855,6 +898,7 @@ export default function PlantDetail({
                 </div>
               </div>
 
+<<<<<<< Updated upstream
               <div className="space-y-4">
                 <div className="bg-white/60 rounded-2xl p-4 border border-[#324D3E]/10">
                   <p className="text-sm text-[#889063] mb-1">Pemilik</p>
@@ -863,6 +907,79 @@ export default function PlantDetail({
                     <span className="font-semibold text-[#324D3E]">
                       {plantData.owner}
                     </span>
+=======
+              <div className="flex items-center justify-between">
+                <div className="space-y-4">
+                  <div className="bg-white/60 rounded-2xl p-4 border border-[#324D3E]/10">
+                    <p className="text-sm text-[#889063] mb-1">Pemilik</p>
+                    <div className="flex items-center gap-2">
+                      <User className="w-4 h-4 text-[#4C3D19]" />
+                      <span className="font-semibold text-[#324D3E]">
+                        {plantData.owner}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="bg-white/60 rounded-2xl p-4 border border-[#324D3E]/10">
+                    <p className="text-sm text-[#889063] mb-1">Lokasi Tanam</p>
+                    {isEditingLocation && session?.user.role === "admin" ? (
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2">
+                          <MapPin className="w-4 h-4 text-[#4C3D19]" />
+                          <input
+                            type="text"
+                            value={editLocationValue}
+                            onChange={(e) => setEditLocationValue(e.target.value)}
+                            className="flex-1 bg-white border border-[#324D3E]/20 rounded-lg px-3 py-1 text-[#324D3E] text-sm focus:outline-none focus:ring-2 focus:ring-[#324D3E]/20 focus:border-[#324D3E]/40"
+                            placeholder="Masukkan lokasi tanaman..."
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") {
+                                handleLocationUpdate();
+                              } else if (e.key === "Escape") {
+                                handleLocationEditCancel();
+                              }
+                            }}
+                            autoFocus
+                          />
+                        </div>
+                        <div className="flex gap-2">
+                          <Button
+                            size="sm"
+                            onClick={handleLocationUpdate}
+                            className="bg-green-500 hover:bg-green-600 text-white text-xs px-3 py-1 rounded-lg"
+                          >
+                            Simpan
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={handleLocationEditCancel}
+                            className="border-gray-300 text-gray-700 text-xs px-3 py-1 rounded-lg"
+                          >
+                            Batal
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2">
+                        <MapPin className="w-4 h-4 text-[#4C3D19]" />
+                        <span className="font-semibold text-[#324D3E] flex-1">
+                          {plantData.location}
+                        </span>
+                        {session?.user.role === "admin" && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={handleLocationEditStart}
+                            className="text-[#324D3E] hover:text-[#4C3D19] hover:bg-[#324D3E]/10 p-1 rounded-lg"
+                            title="Edit lokasi"
+                          >
+                            <Edit className="w-3 h-3" />
+                          </Button>
+                        )}
+                      </div>
+                    )}
+>>>>>>> Stashed changes
                   </div>
                 </div>
 

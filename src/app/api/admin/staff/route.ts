@@ -85,6 +85,10 @@ export async function POST(request: NextRequest) {
         prefix = "MKT";
         dbRole = "marketing";
         break;
+      case "Marketing Head":
+        prefix = "MKH";
+        dbRole = "marketing_head";
+        break;
       default:
         prefix = "ST";
         dbRole = "staff";
@@ -106,9 +110,9 @@ export async function POST(request: NextRequest) {
       .toString()
       .padStart(3, "0")}`;
 
-    // Generate referral code for marketing staff
+    // Generate referral code for marketing staff (both marketing and marketing_head)
     let referralCode;
-    if (dbRole === "marketing") {
+    if (dbRole === "marketing" || dbRole === "marketing_head") {
       let isUnique = false;
       while (!isUnique) {
         referralCode = generateReferralCode();
@@ -135,7 +139,8 @@ export async function POST(request: NextRequest) {
                   role === "Finance" ? "Staff Keuangan" :
                   role === "Staff Finance" ? "Staff Finance" :
                   role === "Ketua" ? "Ketua" :
-                  role === "Marketing" ? "Marketing Staff" : "Staff Lapangan",
+                  role === "Marketing" ? "Marketing Staff" :
+                  role === "Marketing Head" ? "Marketing Head" : "Staff Lapangan",
       occupationCode: prefix,
       userCode: userCode,
       role: dbRole,

@@ -1,5 +1,6 @@
 import { authOptions } from "@/lib/auth";
 import dbConnect from "@/lib/mongodb";
+import { createCommissionRecord } from "@/lib/commission";
 import { getFirstAdminName } from "@/lib/utils/admin";
 import Investor from "@/models/Investor";
 import Payment from "@/models/Payment";
@@ -374,6 +375,21 @@ export async function POST(request: NextRequest) {
           }
         }
       });
+
+      // Create commission record if payment is approved, it's the first installment, and has referral code
+      if (action === "approve" && payment.installmentNumber === 1 && payment.referralCode) {
+        try {
+          const commissionResult = await createCommissionRecord(payment._id.toString());
+          if (commissionResult.success) {
+            console.log(`Commission created for cicilan payment ${paymentId}: ${commissionResult.message}`);
+          } else {
+            console.log(`Commission creation skipped for cicilan payment ${paymentId}: ${commissionResult.message}`);
+          }
+        } catch (commissionError) {
+          console.error(`Error creating commission for cicilan payment ${paymentId}:`, commissionError);
+          // Don't fail the approval for commission errors
+        }
+      }
 
       return NextResponse.json({
         success: true,

@@ -2,6 +2,7 @@
 
 import LandingHeader from "@/components/landing/LandingHeader";
 import { useAlert } from "@/components/ui/Alert";
+import { DualSignatureInput } from "@/components/ui/dual-signature-input";
 import { CicilanGroup, CicilanInstallmentWithPayment } from "@/types/cicilan";
 import {
   Calendar,
@@ -19,12 +20,6 @@ import { useSession } from "next-auth/react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, useRef } from "react";
-import dynamic from "next/dynamic";
-
-// Dynamically import SignatureCanvas to avoid SSR issues
-const SignatureCanvas = dynamic(() => import("react-signature-canvas"), {
-  ssr: false,
-}) as React.ComponentType<any>;
 
 // Type alias for backward compatibility
 type Installment = CicilanInstallmentWithPayment;
@@ -167,6 +162,17 @@ export default function PaymentsPage() {
       fetchInstallments();
     }
   }, [status, router]);
+
+  // Fix scroll height calculation issues
+  useEffect(() => {
+    // Ensure proper scroll behavior and prevent layout issues
+    const originalOverflow = document.body.style.overflow;
+    document.body.style.overflowX = 'hidden';
+
+    return () => {
+      document.body.style.overflow = originalOverflow;
+    };
+  }, []);
 
   const fetchInstallments = async () => {
     try {
@@ -435,6 +441,21 @@ export default function PaymentsPage() {
     return filtered;
   };
 
+  // Combine and sort all contracts by creation date
+  const getAllSortedContracts = () => {
+    const installments = getFilteredInstallments();
+    const fullPayments = getFilteredFullPayments();
+
+    // Create a combined array with type indicators
+    const combined = [
+      ...installments.map(item => ({ ...item, type: 'installment' as const })),
+      ...fullPayments.map(item => ({ ...item, type: 'fullPayment' as const }))
+    ];
+
+    // Sort by creation date (newest first)
+    return combined.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  };
+
   if (status === "loading" || isLoading) {
     return (
       <>
@@ -455,10 +476,10 @@ export default function PaymentsPage() {
     <>
       <AlertComponent />
       <LandingHeader />
-      <div className="min-h-screen relative py-16">
+      <div className="relative py-16" style={{ minHeight: '100vh' }}>
         {/* Blurred background image */}
-        <div 
-          className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+        <div
+          className="fixed inset-0 bg-cover bg-center bg-no-repeat -z-10"
           style={{
             backgroundImage: "url(/landing/hero-bg.png)",
             filter: "blur(8px)",
@@ -466,7 +487,7 @@ export default function PaymentsPage() {
           }}
         ></div>
         {/* Background overlay */}
-        <div className="absolute inset-0 bg-black/30"></div>
+        <div className="fixed inset-0 bg-black/30 -z-10"></div>
         <div className="max-w-7xl mx-auto px-4 mt-12 relative z-10">
           {/* Dashboard Overview */}
           {(groupedInstallments.length > 0 || fullPaymentContracts.length > 0) && (
@@ -491,7 +512,7 @@ export default function PaymentsPage() {
           )}
 
           {groupedInstallments.length === 0 && fullPaymentContracts.length === 0 ? (
-            <div className="text-center py-12 bg-white/95 backdrop-blur-sm rounded-3xl shadow-xl">
+            <div className="text-center py-12 bg-white rounded-3xl shadow-lg">
               <div className="flex justify-center text-[#324D3E] mb-4">
                 <CreditCard size={64} />
               </div>
@@ -509,18 +530,15 @@ export default function PaymentsPage() {
               </button>
             </div>
           ) : (
-            <div className="space-y-12">
-              {getFilteredInstallments()
-                .sort(
-                  (a, b) =>
-                    new Date(b.installments[0]?.createdAt || 0).getTime() -
-                    new Date(a.installments[0]?.createdAt || 0).getTime()
-                )
-                .map((group) => (
-                  <div
-                    key={group.cicilanOrderId}
-                    className="bg-gradient-to-br from-[#FFFCE3]/95 to-white/95 backdrop-blur-sm rounded-3xl shadow-xl border-2 border-[#324D3E]/20 p-8 hover:shadow-2xl transition-all duration-300"
-                  >
+            <div className="space-y-12 pb-16">
+              {getAllSortedContracts().map((item) => {
+                if (item.type === 'installment') {
+                  const group = item;
+                  return (
+                    <div
+                      key={group.cicilanOrderId}
+                      className="bg-gradient-to-br from-[#FFFCE3] to-white rounded-3xl shadow-lg border-2 border-[#324D3E]/20 p-8 hover:shadow-xl transition-shadow duration-200"
+                    >
                     {/* Cicilan Header */}
                     <div className="mb-8">
                       <div className="flex flex-col lg:flex-row lg:justify-between lg:items-start mb-4 gap-4">
@@ -534,6 +552,9 @@ export default function PaymentsPage() {
                           <p className="text-lg font-semibold text-[#4C3D19] mt-1 font-poppins">
                             Total Investasi: Rp{" "}
                             {group.totalAmount.toLocaleString("id-ID")}
+                            <span className="text-sm text-gray-500 ml-2 font-normal">
+                              • Dibuat: {new Date(group.createdAt).toLocaleDateString('id-ID')} {new Date(group.createdAt).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
+                            </span>
                           </p>
                           <div className="flex flex-wrap gap-4 mt-2 text-sm text-gray-600 font-poppins">
                             <span className="flex items-center gap-2">
@@ -814,7 +835,7 @@ export default function PaymentsPage() {
                             return (
                               <div
                                 key={`${group.cicilanOrderId}-${installment.installmentNumber}`}
-                                className={`border-2 rounded-2xl p-6 transition-all duration-300 hover:shadow-xl backdrop-blur-sm hover:scale-105 ${
+                                className={`border-2 rounded-2xl p-6 transition-shadow duration-200 hover:shadow-lg ${
                                   effectiveStatus === "approved"
                                     ? "bg-gradient-to-br from-emerald-50/90 to-green-50/90 border-emerald-200"
                                     : effectiveStatus === "submitted"
@@ -936,21 +957,20 @@ export default function PaymentsPage() {
                       </div>
                     </div>
                   </div>
-                ))}
-              
-              {/* Full Payment Contracts with same styling */}
-              {getFilteredFullPayments()
-                .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-                .map((contract) => (
-                  <div
-                    key={contract.contractId}
-                    className={`bg-gradient-to-br backdrop-blur-sm rounded-3xl shadow-xl border-2 p-8 transition-all duration-300 ${
-                      contract.isPermanentlyRejected
-                        ? 'from-gray-50/95 to-gray-100/95 border-gray-300/50 opacity-75'
-                        : 'from-[#FFFCE3]/95 to-white/95 border-[#324D3E]/20 hover:shadow-2xl'
-                    }`}
-                  >
-                    {/* Full Payment Header */}
+                  );
+                } else {
+                  // Full Payment Contract
+                  const contract = item;
+                  return (
+                    <div
+                      key={contract.contractId}
+                      className={`bg-gradient-to-br rounded-3xl shadow-lg border-2 p-8 transition-shadow duration-200 ${
+                        contract.isPermanentlyRejected
+                          ? 'from-gray-50 to-gray-100 border-gray-300/50 opacity-75'
+                          : 'from-[#FFFCE3] to-white border-[#324D3E]/20 hover:shadow-xl'
+                      }`}
+                    >
+                      {/* Full Payment Header */}
                     <div className="mb-8">
                       <div className="flex flex-col lg:flex-row lg:justify-between lg:items-start mb-4 gap-4">
                         <div className="flex-1">
@@ -963,6 +983,9 @@ export default function PaymentsPage() {
                           <p className="text-lg font-semibold text-[#4C3D19] mt-1 font-poppins">
                             Total Investasi: Rp{" "}
                             {contract.totalAmount.toLocaleString("id-ID")}
+                            <span className="text-sm text-gray-500 ml-2 font-normal">
+                              • Dibuat: {new Date(contract.createdAt).toLocaleDateString('id-ID')} {new Date(contract.createdAt).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
+                            </span>
                           </p>
                           <div className="flex flex-wrap gap-4 mt-2 text-sm text-gray-600 font-poppins">
                             <span className="flex items-center gap-2">
@@ -1148,7 +1171,7 @@ export default function PaymentsPage() {
                         Pembayaran Penuh
                       </h3>
                       <div className="grid grid-cols-1 gap-4">
-                        <div className={`border-2 rounded-2xl p-6 transition-all duration-300 hover:shadow-xl backdrop-blur-sm hover:scale-105 ${
+                        <div className={`border-2 rounded-2xl p-6 transition-shadow duration-200 hover:shadow-lg ${
                           contract.paymentCompleted
                             ? "bg-gradient-to-br from-emerald-50/90 to-green-50/90 border-emerald-200"
                             : "bg-gradient-to-br from-[#FFFCE3]/90 to-white/90 border-[#324D3E]/20"
@@ -1232,7 +1255,9 @@ export default function PaymentsPage() {
                       </div>
                     </div>
                   </div>
-                ))}
+                  );
+                }
+              })}
             </div>
           )}
         </div>
@@ -1281,13 +1306,13 @@ function ContractRetrySignatureModal({
   onSuccess,
 }: ContractRetrySignatureModalProps) {
   const [signing, setSigning] = useState(false);
+  const [signatureData, setSignatureData] = useState<string | null>(null);
   const [retryData, setRetryData] = useState<{
     currentAttempt: number;
     maxAttempts: number;
     canRetry: boolean;
     lastRejectionReason?: string;
   } | null>(null);
-  const sigCanvas = useRef<any>(null);
   const { showSuccess, showError } = useAlert();
 
   useEffect(() => {
@@ -1309,11 +1334,12 @@ function ContractRetrySignatureModal({
     }
   };
 
-  const handleRetrySubmit = async () => {
-    if (!sigCanvas.current || !contractId) return;
+  const handleSignatureChange = (newSignatureData: string | null) => {
+    setSignatureData(newSignatureData);
+  };
 
-    const signatureData = sigCanvas.current.toDataURL();
-    if (sigCanvas.current.isEmpty()) {
+  const handleRetrySubmit = async () => {
+    if (!signatureData || !contractId) {
       showError("Tanda Tangan Diperlukan", "Silakan buat tanda tangan Anda");
       return;
     }
@@ -1326,7 +1352,7 @@ function ContractRetrySignatureModal({
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          signatureData,
+          signatureData: signatureData,
           contractType,
         }),
       });
@@ -1347,11 +1373,6 @@ function ContractRetrySignatureModal({
     }
   };
 
-  const clearSignature = () => {
-    if (sigCanvas.current) {
-      sigCanvas.current.clear();
-    }
-  };
 
   if (!isOpen) return null;
 
@@ -1420,37 +1441,14 @@ function ContractRetrySignatureModal({
                 </ul>
               </div>
 
-              {/* Signature Canvas */}
+              {/* Signature Input */}
               <div className="mb-6">
-                <label className="block text-sm font-medium text-[#324D3E] mb-3 font-poppins">
-                  Tanda Tangan Digital *
-                </label>
-                <div className="border-2 border-[#324D3E]/20 rounded-2xl p-4 bg-white">
-                  <div className="border border-gray-300 rounded-xl overflow-hidden" style={{ width: '100%', height: '200px' }}>
-                    <SignatureCanvas
-                      ref={sigCanvas}
-                      canvasProps={{
-                        width: 600,
-                        height: 200,
-                        style: {
-                          width: '100%',
-                          height: '200px',
-                          display: 'block',
-                        }
-                      }}
-                      backgroundColor="white"
-                    />
-                  </div>
-                  <div className="flex justify-end mt-3">
-                    <button
-                      type="button"
-                      onClick={clearSignature}
-                      className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800 font-poppins transition-colors"
-                    >
-                      Hapus Tanda Tangan
-                    </button>
-                  </div>
-                </div>
+                <DualSignatureInput
+                  onSignatureChange={handleSignatureChange}
+                  label="Tanda Tangan Digital"
+                  required
+                  disabled={signing}
+                />
               </div>
 
               {/* Action Buttons */}
@@ -1464,7 +1462,7 @@ function ContractRetrySignatureModal({
                 </button>
                 <button
                   onClick={handleRetrySubmit}
-                  disabled={signing}
+                  disabled={signing || !signatureData}
                   className="flex-1 px-4 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-full hover:shadow-lg disabled:opacity-50 font-poppins font-medium transition-all duration-300"
                 >
                   <span className="flex items-center justify-center gap-2">
@@ -1731,7 +1729,7 @@ function PortfolioOverview({ stats }: PortfolioOverviewProps) {
     stats.totalAmount > 0 ? (stats.totalPaid / stats.totalAmount) * 100 : 0;
 
   return (
-    <div className="bg-white/95 backdrop-blur-sm rounded-3xl shadow-xl border border-white/20 p-6">
+    <div className="bg-white rounded-3xl shadow-lg border border-gray-200 p-6">
       <h2 className="text-2xl font-bold text-[#324D3E] font-poppins mb-6">
         Portfolio Overview
       </h2>
@@ -1873,7 +1871,7 @@ function SearchAndFilter({
   ];
 
   return (
-    <div className="bg-white/95 backdrop-blur-sm rounded-3xl shadow-xl border border-white/20 p-6">
+    <div className="bg-white rounded-3xl shadow-lg border border-gray-200 p-6">
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
         {/* Search */}
         <div className="flex-1 max-w-md">

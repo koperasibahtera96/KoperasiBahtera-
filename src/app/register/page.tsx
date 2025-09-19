@@ -7,7 +7,7 @@ import { ValidationInput } from "@/components/forms/ValidationInput";
 import LandingHeader from "@/components/landing/LandingHeader";
 import { KebijakanPrivasiContent } from "@/components/legal/kebijakan-privasi";
 import { SyaratDanKetentuanContent } from "@/components/legal/syarat-dan-ketentuan";
-import { LegalModal } from "@/components/ui/legal-modal";
+import { EnhancedLegalModal } from "@/components/ui/enhanced-legal-modal";
 import { occupationOptions } from "@/constant/OCCUPATION";
 import { provinceOptions } from "@/constant/PROVINCE";
 import { RegistrationFormData, registrationSchema } from "@/schemas/User";
@@ -39,6 +39,8 @@ export default function RegisterPage() {
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
   const [isCheckingAvailability, setIsCheckingAvailability] = useState(false);
   const [hasAttemptedSubmit, setHasAttemptedSubmit] = useState(false);
+  const [hasReadTerms, setHasReadTerms] = useState(false);
+  const [hasReadPrivacy, setHasReadPrivacy] = useState(false);
   const countdownIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const cameraSelfieRef = useRef<CameraSelfieRef>(null);
 
@@ -810,24 +812,28 @@ export default function RegisterPage() {
                   {/* Terms and Conditions */}
                   <div className="space-y-4 pt-6 border-t border-gray-200">
                     <div>
-                      <label className="flex items-start gap-3 cursor-pointer group">
+                      <div className="flex items-start gap-3">
                         <input
                           type="checkbox"
                           {...register("agreeToTerms")}
                           className="w-5 h-5 text-[#324D3E] border-2 border-gray-300 rounded focus:ring-[#324D3E] focus:ring-2 mt-0.5"
+                          checked={hasReadTerms}
+                          readOnly
                           required
                         />
-                        <span className="text-sm text-gray-700 group-hover:text-gray-900">
+                        <span className="text-sm text-gray-700">
                           Saya menyetujui{" "}
-                          <LegalModal
+                          <EnhancedLegalModal
                             triggerText="Syarat dan Ketentuan"
                             title="Syarat dan Ketentuan"
+                            onConfirm={() => setHasReadTerms(true)}
+                            isConfirmed={hasReadTerms}
                           >
                             <SyaratDanKetentuanContent />
-                          </LegalModal>{" "}
+                          </EnhancedLegalModal>{" "}
                           yang berlaku
                         </span>
-                      </label>
+                      </div>
                       {errors.agreeToTerms && (
                         <p className="mt-1 text-sm text-red-600">
                           {errors.agreeToTerms.message}
@@ -836,24 +842,28 @@ export default function RegisterPage() {
                     </div>
 
                     <div>
-                      <label className="flex items-start gap-3 cursor-pointer group">
+                      <div className="flex items-start gap-3">
                         <input
                           type="checkbox"
                           {...register("agreeToPrivacy")}
                           className="w-5 h-5 text-[#324D3E] border-2 border-gray-300 rounded focus:ring-[#324D3E] focus:ring-2 mt-0.5"
+                          checked={hasReadPrivacy}
+                          readOnly
                           required
                         />
-                        <span className="text-sm text-gray-700 group-hover:text-gray-900">
+                        <span className="text-sm text-gray-700">
                           Saya menyetujui{" "}
-                          <LegalModal
+                          <EnhancedLegalModal
                             triggerText="Kebijakan Privasi"
                             title="Kebijakan Privasi"
+                            onConfirm={() => setHasReadPrivacy(true)}
+                            isConfirmed={hasReadPrivacy}
                           >
                             <KebijakanPrivasiContent />
-                          </LegalModal>{" "}
+                          </EnhancedLegalModal>{" "}
                           yang berlaku
                         </span>
-                      </label>
+                      </div>
                       {errors.agreeToPrivacy && (
                         <p className="mt-1 text-sm text-red-600">
                           {errors.agreeToPrivacy.message}

@@ -1,6 +1,7 @@
 import { occupationOptions } from "@/constant/OCCUPATION";
 import { midtransService } from "@/lib/midtrans";
 import dbConnect from "@/lib/mongodb";
+import { createCommissionRecord } from "@/lib/commission";
 import { getFirstAdminName } from "@/lib/utils/admin";
 import { Investor } from "@/models";
 import Contract from "@/models/Contract";
@@ -147,7 +148,7 @@ export async function POST(request: NextRequest) {
           const currentYear = new Date().getFullYear().toString().slice(-2);
           const lastUserCode = await User.findOne({
             occupationCode: occupationCode,
-            userCode: { $regex: `^IH-${occupationCode}-${currentYear}-` },
+            userCode: { $regex: `^BMS-${occupationCode}-${currentYear}-` },
           })
             .sort({ userCode: -1 })
             .select("userCode");
@@ -160,7 +161,7 @@ export async function POST(request: NextRequest) {
             sequential = lastSequential + 1;
           }
 
-          const userCode = `IH-${occupationCode}-${currentYear}-${sequential
+          const userCode = `BMS-${occupationCode}-${currentYear}-${sequential
             .toString()
             .padStart(3, "0")}`;
 
@@ -465,6 +466,23 @@ export async function POST(request: NextRequest) {
 
     await payment.save();
     console.log(`Processed transaction ${orderId}: ${message}`);
+
+    // Create commission record if payment is successful and has referral code
+    if ((transactionStatus === "settlement" || (transactionStatus === "capture" && fraudStatus === "accept")) &&
+        payment.referralCode &&
+        payment.paymentType === 'full-investment') {
+      try {
+        const commissionResult = await createCommissionRecord(payment._id.toString());
+        if (commissionResult.success) {
+          console.log(`Commission created for payment ${orderId}: ${commissionResult.message}`);
+        } else {
+          console.log(`Commission creation skipped for payment ${orderId}: ${commissionResult.message}`);
+        }
+      } catch (commissionError) {
+        console.error(`Error creating commission for payment ${orderId}:`, commissionError);
+        // Don't fail the webhook for commission errors
+      }
+    }
 
     return NextResponse.json({
       success: true,

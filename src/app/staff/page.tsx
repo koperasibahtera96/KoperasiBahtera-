@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
+import StaffLayout from "@/components/staff/StaffLayout";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { 
@@ -154,50 +155,50 @@ export default function StaffPage() {
 
   if (status === 'loading' || loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 font-[family-name:var(--font-poppins)]">
+      <StaffLayout>
         <div className="container mx-auto py-8 px-4">
           <div className="flex items-center justify-center h-64">
-            <RefreshCw className="h-8 w-8 animate-spin text-green-600" />
-            <span className="ml-2 text-lg">Loading...</span>
+            <RefreshCw className="h-8 w-8 animate-spin text-blue-600" />
+            <span className="ml-2 text-lg text-gray-700 font-semibold">Loading...</span>
           </div>
         </div>
-      </div>
+      </StaffLayout>
     );
   }
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 font-[family-name:var(--font-poppins)]">
+      <StaffLayout>
         <div className="container mx-auto py-8 px-4">
-          <Card className="shadow-xl bg-white/90 backdrop-blur-sm">
+          <Card className="shadow-lg bg-red-50 border border-red-200">
             <div className="p-8 text-center">
-              <p className="text-red-600 mb-4 text-lg">{error}</p>
-              <Button onClick={fetchReferralData} className="bg-green-600 hover:bg-green-700">
+              <p className="text-red-600 mb-4 text-lg font-semibold">{error}</p>
+              <Button onClick={fetchReferralData} className="bg-red-600 hover:bg-red-700 text-white font-semibold">
                 <RefreshCw className="w-4 h-4 mr-2" />
                 Try Again
               </Button>
             </div>
           </Card>
         </div>
-      </div>
+      </StaffLayout>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 font-[family-name:var(--font-poppins)]">
+    <StaffLayout>
       <div className="container mx-auto py-8 px-4 space-y-8">
         {/* Header */}
         <div className="text-center space-y-4">
-          <h1 className="text-4xl md:text-5xl font-black text-[#2D3B30] drop-shadow-sm">
+          <h1 className="text-4xl md:text-5xl font-black text-gray-900 drop-shadow-sm">
             Marketing Dashboard
           </h1>
-          <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+          <p className="text-lg text-gray-600 max-w-2xl mx-auto font-medium">
             Track your referrals and commission earnings
           </p>
-          <Button 
-            onClick={fetchReferralData} 
+          <Button
+            onClick={fetchReferralData}
             variant="outline"
-            className="shadow-lg bg-white/80 backdrop-blur-sm hover:bg-white"
+            className="shadow-lg bg-white hover:bg-gray-50 border-blue-200 text-blue-600 font-semibold"
           >
             <RefreshCw className="w-4 h-4 mr-2" />
             Refresh Data
@@ -205,29 +206,29 @@ export default function StaffPage() {
         </div>
 
         {/* Referral Code Card */}
-        <Card className="shadow-xl bg-white/90 backdrop-blur-sm">
+        <Card className="shadow-lg bg-[#FFFCE3] border border-[#324D3E]/20">
           <div className="p-6 space-y-4">
             <div className="flex items-center gap-3">
-              <ExternalLink className="h-6 w-6 text-green-600" />
-              <h2 className="text-xl font-bold text-[#2D3B30]">Your Referral Code</h2>
+              <ExternalLink className="h-6 w-6 text-[#324D3E]" />
+              <h2 className="text-xl font-bold text-[#324D3E]">Your Referral Code</h2>
             </div>
             {data?.referralCode ? (
               <div className="flex flex-col sm:flex-row items-center gap-4">
-                <div className="bg-gradient-to-r from-green-100 to-blue-100 px-6 py-4 rounded-xl shadow-inner">
-                  <code className="text-2xl font-mono font-bold text-[#2D3B30] tracking-wider">
+                <div className="bg-gradient-to-r from-[#324D3E]/10 to-[#4C3D19]/10 px-6 py-4 rounded-xl border border-[#324D3E]/20">
+                  <code className="text-2xl font-mono font-bold text-[#324D3E] tracking-wider">
                     {data.referralCode}
                   </code>
                 </div>
-                <Button 
-                  onClick={copyReferralCode} 
-                  className={`shadow-lg transition-all duration-300 ${copiedCode ? 'bg-green-600 hover:bg-green-700' : 'bg-blue-600 hover:bg-blue-700'}`}
+                <Button
+                  onClick={copyReferralCode}
+                  className={`shadow-lg transition-all duration-300 font-semibold ${copiedCode ? 'bg-[#324D3E] hover:bg-[#4C3D19] text-white' : 'bg-[#324D3E] hover:bg-[#4C3D19] text-white'}`}
                 >
                   <Copy className="w-4 h-4 mr-2" />
                   {copiedCode ? 'Copied!' : 'Copy Code'}
                 </Button>
               </div>
             ) : (
-              <div className="text-gray-600 bg-gray-50 p-4 rounded-lg">
+              <div className="text-gray-700 bg-gray-100 p-4 rounded-lg border border-gray-200">
                 {data?.message || "No referral code assigned. Contact admin."}
               </div>
             )}
@@ -236,55 +237,55 @@ export default function StaffPage() {
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <Card className="shadow-xl bg-gradient-to-br from-green-500 to-green-600 text-white">
+          <Card className="shadow-lg bg-[#FFFCE3] border border-[#324D3E]/20">
             <div className="p-6 space-y-3">
               <div className="flex items-center justify-between">
-                <h3 className="text-sm font-medium opacity-90">Total Commission</h3>
-                <DollarSign className="h-5 w-5 opacity-80" />
+                <h3 className="text-sm font-semibold text-[#324D3E]">Total Commission</h3>
+                <DollarSign className="h-5 w-5 text-[#324D3E]" />
               </div>
-              <div className="text-2xl font-bold">
+              <div className="text-2xl font-bold text-[#324D3E]">
                 {formatCurrency(data?.totalCommission || 0)}
               </div>
-              <p className="text-xs opacity-80">
+              <p className="text-xs text-gray-600 font-medium">
                 2% of total referred investments
               </p>
             </div>
           </Card>
 
-          <Card className="shadow-xl bg-gradient-to-br from-blue-500 to-blue-600 text-white">
+          <Card className="shadow-lg bg-[#FFFCE3] border border-[#324D3E]/20">
             <div className="p-6 space-y-3">
               <div className="flex items-center justify-between">
-                <h3 className="text-sm font-medium opacity-90">Total Referrals</h3>
-                <Users className="h-5 w-5 opacity-80" />
+                <h3 className="text-sm font-semibold text-[#324D3E]">Total Referrals</h3>
+                <Users className="h-5 w-5 text-[#324D3E]" />
               </div>
-              <div className="text-2xl font-bold">{data?.totalReferrals || 0}</div>
-              <p className="text-xs opacity-80">
+              <div className="text-2xl font-bold text-[#324D3E]">{data?.totalReferrals || 0}</div>
+              <p className="text-xs text-gray-600 font-medium">
                 Successful referrals
               </p>
             </div>
           </Card>
 
-          <Card className="shadow-xl bg-gradient-to-br from-purple-500 to-purple-600 text-white">
+          <Card className="shadow-lg bg-[#FFFCE3] border border-[#324D3E]/20">
             <div className="p-6 space-y-3">
               <div className="flex items-center justify-between">
-                <h3 className="text-sm font-medium opacity-90">Full Payments</h3>
-                <TrendingUp className="h-5 w-5 opacity-80" />
+                <h3 className="text-sm font-semibold text-[#324D3E]">Full Payments</h3>
+                <TrendingUp className="h-5 w-5 text-[#324D3E]" />
               </div>
-              <div className="text-2xl font-bold">{data?.summary.fullPayments || 0}</div>
-              <p className="text-xs opacity-80">
+              <div className="text-2xl font-bold text-[#324D3E]">{data?.summary.fullPayments || 0}</div>
+              <p className="text-xs text-gray-600 font-medium">
                 One-time investments
               </p>
             </div>
           </Card>
 
-          <Card className="shadow-xl bg-gradient-to-br from-orange-500 to-orange-600 text-white">
+          <Card className="shadow-lg bg-[#FFFCE3] border border-[#324D3E]/20">
             <div className="p-6 space-y-3">
               <div className="flex items-center justify-between">
-                <h3 className="text-sm font-medium opacity-90">Installments</h3>
-                <TrendingUp className="h-5 w-5 opacity-80" />
+                <h3 className="text-sm font-semibold text-[#324D3E]">Installments</h3>
+                <TrendingUp className="h-5 w-5 text-[#324D3E]" />
               </div>
-              <div className="text-2xl font-bold">{data?.summary.cicilanPayments || 0}</div>
-              <p className="text-xs opacity-80">
+              <div className="text-2xl font-bold text-[#324D3E]">{data?.summary.cicilanPayments || 0}</div>
+              <p className="text-xs text-gray-600 font-medium">
                 Installment payments
               </p>
             </div>
@@ -292,49 +293,49 @@ export default function StaffPage() {
         </div>
 
         {/* Referrals Table */}
-        <Card className="shadow-xl bg-white/90 backdrop-blur-sm">
+        <Card className="shadow-lg bg-[#FFFCE3] border border-[#324D3E]/20">
           <div className="p-6 space-y-6">
             <div className="flex items-center justify-between">
-              <h2 className="text-xl font-bold text-[#2D3B30]">Referral History</h2>
+              <h2 className="text-xl font-bold text-[#324D3E]">Referral History</h2>
               {totalPages > 1 && (
-                <div className="text-sm text-gray-600">
+                <div className="text-sm text-gray-700 font-medium">
                   Page {currentPage} of {totalPages}
                 </div>
               )}
             </div>
-            
+
             {data?.referrals && data.referrals.length > 0 ? (
               <>
                 <div className="overflow-x-auto">
                   <table className="w-full">
                     <thead>
-                      <tr className="border-b border-gray-200">
-                        <th className="text-left py-3 px-4 font-semibold text-[#2D3B30]">Customer</th>
-                        <th className="text-left py-3 px-4 font-semibold text-[#2D3B30] hidden sm:table-cell">Product</th>
-                        <th className="text-left py-3 px-4 font-semibold text-[#2D3B30] hidden md:table-cell">Type</th>
-                        <th className="text-left py-3 px-4 font-semibold text-[#2D3B30]">Amount</th>
-                        <th className="text-left py-3 px-4 font-semibold text-[#2D3B30]">Commission</th>
-                        <th className="text-left py-3 px-4 font-semibold text-[#2D3B30] hidden lg:table-cell">Status</th>
-                        <th className="text-left py-3 px-4 font-semibold text-[#2D3B30] hidden xl:table-cell">Date</th>
+                      <tr className="border-b border-[#324D3E]/20">
+                        <th className="text-left py-3 px-4 font-semibold text-[#324D3E]">Customer</th>
+                        <th className="text-left py-3 px-4 font-semibold text-[#324D3E] hidden sm:table-cell">Product</th>
+                        <th className="text-left py-3 px-4 font-semibold text-[#324D3E] hidden md:table-cell">Type</th>
+                        <th className="text-left py-3 px-4 font-semibold text-[#324D3E]">Amount</th>
+                        <th className="text-left py-3 px-4 font-semibold text-[#324D3E]">Commission</th>
+                        <th className="text-left py-3 px-4 font-semibold text-[#324D3E] hidden lg:table-cell">Status</th>
+                        <th className="text-left py-3 px-4 font-semibold text-[#324D3E] hidden xl:table-cell">Date</th>
                       </tr>
                     </thead>
                     <tbody>
                       {paginatedReferrals.map((referral) => (
-                        <tr key={referral.paymentId} className="border-b border-gray-100 hover:bg-gray-50/50">
+                        <tr key={referral.paymentId} className="border-b border-[#324D3E]/10 hover:bg-[#324D3E]/5">
                           <td className="py-4 px-4">
                             <div>
-                              <div className="font-medium text-[#2D3B30]">{referral.customerName}</div>
-                              <div className="text-sm text-gray-500">{referral.customerEmail}</div>
+                              <div className="font-medium text-[#324D3E]">{referral.customerName}</div>
+                              <div className="text-sm text-gray-600">{referral.customerEmail}</div>
                             </div>
                           </td>
-                          <td className="py-4 px-4 text-gray-600 hidden sm:table-cell">{referral.productName || 'N/A'}</td>
+                          <td className="py-4 px-4 text-gray-700 hidden sm:table-cell font-medium">{referral.productName || 'N/A'}</td>
                           <td className="py-4 px-4 hidden md:table-cell">{getPaymentTypeBadge(referral.paymentType)}</td>
-                          <td className="py-4 px-4 font-mono text-[#2D3B30]">{formatCurrency(referral.amount)}</td>
-                          <td className="py-4 px-4 font-mono font-semibold text-green-600">
+                          <td className="py-4 px-4 font-mono text-[#324D3E] font-semibold">{formatCurrency(referral.amount)}</td>
+                          <td className="py-4 px-4 font-mono font-semibold text-[#4C3D19]">
                             {formatCurrency(referral.commission)}
                           </td>
                           <td className="py-4 px-4 hidden lg:table-cell">{getStatusBadge(referral.status)}</td>
-                          <td className="py-4 px-4 text-gray-600 hidden xl:table-cell">{formatDate(referral.paymentDate)}</td>
+                          <td className="py-4 px-4 text-gray-700 hidden xl:table-cell font-medium">{formatDate(referral.paymentDate)}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -344,7 +345,7 @@ export default function StaffPage() {
                 {/* Pagination */}
                 {totalPages > 1 && (
                   <div className="flex items-center justify-between pt-4">
-                    <div className="text-sm text-gray-600">
+                    <div className="text-sm text-gray-700 font-medium">
                       Showing {(currentPage - 1) * itemsPerPage + 1} to {Math.min(currentPage * itemsPerPage, data.referrals.length)} of {data.referrals.length} referrals
                     </div>
                     <div className="flex gap-2">
@@ -352,7 +353,7 @@ export default function StaffPage() {
                         variant="outline"
                         onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
                         disabled={currentPage === 1}
-                        className="shadow-md bg-white/80"
+                        className="shadow-md bg-white hover:bg-[#324D3E]/5 border-[#324D3E]/30 text-[#324D3E] font-semibold"
                       >
                         <ChevronLeft className="w-4 h-4 mr-1" />
                         Previous
@@ -361,7 +362,7 @@ export default function StaffPage() {
                         variant="outline"
                         onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
                         disabled={currentPage === totalPages}
-                        className="shadow-md bg-white/80"
+                        className="shadow-md bg-white hover:bg-[#324D3E]/5 border-[#324D3E]/30 text-[#324D3E] font-semibold"
                       >
                         Next
                         <ChevronRight className="w-4 h-4 ml-1" />
@@ -372,14 +373,14 @@ export default function StaffPage() {
               </>
             ) : (
               <div className="text-center py-12">
-                <Users className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-                <p className="text-gray-500 text-lg">No referrals found</p>
-                <p className="text-gray-400">Share your referral code to start earning commissions!</p>
+                <Users className="h-16 w-16 text-[#324D3E]/30 mx-auto mb-4" />
+                <p className="text-gray-700 text-lg font-semibold">No referrals found</p>
+                <p className="text-gray-600 font-medium">Share your referral code to start earning commissions!</p>
               </div>
             )}
           </div>
         </Card>
       </div>
-    </div>
+    </StaffLayout>
   );
 }

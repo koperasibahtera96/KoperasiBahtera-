@@ -4,7 +4,7 @@ import LandingHeader from "@/components/landing/LandingHeader";
 import { useAlert } from "@/components/ui/Alert";
 import { provinceOptions } from "@/constant/PROVINCE";
 import { motion } from "framer-motion";
-import { Check, Edit2, X, FileText, Eye } from "lucide-react";
+import { Check, Edit2, X, FileText } from "lucide-react";
 import { useSession } from "next-auth/react";
 import Image from "next/image";
 import { redirect } from "next/navigation";
@@ -38,7 +38,6 @@ export default function ProfilePage() {
   const { data: session, status, update } = useSession();
   const { showSuccess, showError, AlertComponent } = useAlert();
   const [isLoading, setIsLoading] = useState(false);
-  const [isGeneratingKartu, setIsGeneratingKartu] = useState(false);
   const [_, setIsEditingImage] = useState(false);
   const [isEditingPassword, setIsEditingPassword] = useState(false);
   const [isEditingPhone, setIsEditingPhone] = useState(false);
@@ -196,43 +195,9 @@ export default function ProfilePage() {
     }
   };
 
-  const handleGenerateKartuAnggota = async () => {
-    if (userData.kartuAnggotaUrl) {
-      // If kartu anggota already exists, open it in new tab
-      window.open(userData.kartuAnggotaUrl, '_blank');
-      return;
-    }
-
-    setIsGeneratingKartu(true);
-    
-    try {
-      const response = await fetch("/api/user/generate-kartu-anggota", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || "Failed to generate kartu anggota");
-      }
-
-      // Update local user data
-      setUserData((prev: any) => ({
-        ...prev,
-        kartuAnggotaUrl: data.kartuAnggotaUrl,
-      }));
-
-      showSuccess("Success", "Kartu anggota generated successfully! You can now view or download it.");
-
-    } catch (error: any) {
-      console.error("Error generating kartu anggota:", error);
-      showError("Error", error.message || "Failed to generate kartu anggota");
-    } finally {
-      setIsGeneratingKartu(false);
-    }
+  const handleGenerateKartuAnggota = () => {
+    // Always redirect to the kartu anggota page
+    window.location.href = '/kartu-anggota';
   };
 
   const handleNameChangeRequest = async (e: React.FormEvent) => {
@@ -454,38 +419,15 @@ export default function ProfilePage() {
                 Profile Information
               </h2>
               <div className="flex items-center gap-2">
-                {userData.kartuAnggotaUrl ? (
-                  <>
-                    <button
-                      onClick={() => window.open(userData.kartuAnggotaUrl, '_blank')}
-                      className="flex items-center gap-2 px-2 py-1.5 sm:px-3 sm:py-2 bg-[#32a4D3E] text-white rounded-lg font-medium hover:bg-[#4C3D19] transition-all duration-200 hover:scale-[1.02] shadow-md shadow-[#324D3E]/20 text-sm sm:text-base"
-                    >
-                      <Eye size={14} className="sm:hidden" />
-                      <Eye size={16} className="hidden sm:block" />
-                      <span className="hidden xs:inline">View</span>
-                    </button>
-                  </>
-                ) : (
-                  <button
-                    onClick={handleGenerateKartuAnggota}
-                    disabled={isGeneratingKartu}
-                    className="flex items-center gap-1 sm:gap-2 px-2 py-1.5 sm:px-4 sm:py-2 bg-[#324D3E] text-white rounded-lg sm:rounded-xl font-medium sm:font-semibold hover:bg-[#4C3D19] transition-all duration-200 hover:scale-[1.02] disabled:opacity-50 disabled:hover:scale-100 shadow-md sm:shadow-lg shadow-[#324D3E]/25 text-xs sm:text-base"
-                  >
-                    {isGeneratingKartu ? (
-                      <>
-                        <div className="w-3 h-3 sm:w-4 sm:h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                        <span className="hidden xs:inline">Loading...</span>
-                      </>
-                    ) : (
-                      <>
-                        <FileText size={14} className="sm:hidden" />
-                        <FileText size={16} className="hidden sm:block" />
-                        <span className="hidden xs:inline">Buat Kartu Anggota</span>
-                        <span className="sm:hidden">Buat</span>
-                      </>
-                    )}
-                  </button>
-                )}
+                <button
+                  onClick={handleGenerateKartuAnggota}
+                  className="flex items-center gap-1 sm:gap-2 px-2 py-1.5 sm:px-4 sm:py-2 bg-[#324D3E] text-white rounded-lg sm:rounded-xl font-medium sm:font-semibold hover:bg-[#4C3D19] transition-all duration-200 hover:scale-[1.02] shadow-md sm:shadow-lg shadow-[#324D3E]/25 text-xs sm:text-base"
+                >
+                  <FileText size={14} className="sm:hidden" />
+                  <FileText size={16} className="hidden sm:block" />
+                  <span className="hidden xs:inline">{userData.kartuAnggotaUrl ? 'View Kartu Anggota' : 'Buat Kartu Anggota'}</span>
+                  <span className="sm:hidden">{userData.kartuAnggotaUrl ? 'View' : 'Buat'}</span>
+                </button>
               </div>
             </div>
             <div className="relative">

@@ -163,6 +163,9 @@ function LoginContent() {
                 case "staff_finance":
                   redirectPath = "/finance";
                   break;
+                case "marketing":
+                  redirectPath = "/staff";
+                  break;
                 default:
                   redirectPath = "/";
               }

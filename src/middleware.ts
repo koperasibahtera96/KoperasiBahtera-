@@ -89,6 +89,30 @@ export default async function middleware(req: NextRequest) {
     }
   }
 
+  // === MARKETING ACCESS ===
+  if (pathname.startsWith("/marketing")) {
+    const allowedRoles = ["marketing_head", "admin"];
+    if (allowedRoles.includes(userRole)) {
+      console.log(`✅ ${userRole} access granted to ${pathname}`);
+      return NextResponse.next();
+    } else {
+      console.log(`❌ User role '${userRole}' denied access to ${pathname}`);
+      return NextResponse.redirect(new URL("/", req.url));
+    }
+  }
+
+  // === STAFF ACCESS ===
+  if (pathname.startsWith("/staff")) {
+    const allowedRoles = ["marketing", "marketing_head", "admin"];
+    if (allowedRoles.includes(userRole)) {
+      console.log(`✅ ${userRole} access granted to ${pathname}`);
+      return NextResponse.next();
+    } else {
+      console.log(`❌ User role '${userRole}' denied access to ${pathname}`);
+      return NextResponse.redirect(new URL("/", req.url));
+    }
+  }
+
   if (pathname.startsWith("/investasi") || pathname.startsWith("/payments")) {
       if (token.canPurchase && token.verificationStatus === "approved") {
         return NextResponse.next();
@@ -110,6 +134,8 @@ export const config = {
     "/admin/:path*",
     "/finance/:path*",
     "/checker/:path*",
+    "/marketing/:path*",
+    "/staff/:path*",
     "/investasi/:path*",
     "/payments/:path*",
     "/public/:path*"

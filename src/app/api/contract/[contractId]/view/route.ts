@@ -58,7 +58,7 @@ export async function GET(
 
     // Generate contract number and date
     const contractDate = new Date().toISOString();
-    const contractNumber = `KIH-${new Date().getFullYear()}-${contractId
+    const contractNumber = `KBMS-${new Date().getFullYear()}-${contractId
       .slice(-6)
       .toUpperCase()}`;
 

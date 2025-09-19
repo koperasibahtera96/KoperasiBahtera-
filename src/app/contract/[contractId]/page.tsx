@@ -1,16 +1,11 @@
 "use client";
 
 import { useAlert } from "@/components/ui/Alert";
+import { DualSignatureInput } from "@/components/ui/dual-signature-input";
 import jsPDF from "jspdf";
-import dynamic from "next/dynamic";
 import Image from "next/image";
 import { useParams } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
-
-// Dynamically import SignatureCanvas to avoid SSR issues
-const SignatureCanvas = dynamic(() => import("react-signature-canvas"), {
-  ssr: false,
-}) as React.ComponentType<any>;
+import { useEffect, useState } from "react";
 
 interface ContractData {
   investor: {
@@ -48,7 +43,7 @@ export default function ContractPage() {
   );
   const [signing, setSigning] = useState(false);
   const [signed, setSigned] = useState(false);
-  const sigCanvas = useRef<any>(null);
+  const [signatureData, setSignatureData] = useState<string | null>(null);
   const { showError, AlertComponent } = useAlert();
 
   useEffect(() => {
@@ -114,18 +109,21 @@ export default function ContractPage() {
     }
   };
 
-  const clearSignature = () => {
-    sigCanvas.current?.clear();
+  const handleSignatureChange = (newSignatureData: string | null) => {
+    setSignatureData(newSignatureData);
   };
 
   const generatePDF = async () => {
-    if (!contractData || !sigCanvas.current) return;
+    if (!contractData || !signatureData) {
+      showError("Tanda Tangan Diperlukan", "Silakan buat tanda tangan Anda terlebih dahulu");
+      return;
+    }
 
     setSigning(true);
 
     try {
-      // Get signature as image data
-      const signatureDataURL = sigCanvas.current.toDataURL();
+      // Use the signature data from the dual signature component
+      const signatureDataURL = signatureData;
 
       // Create PDF
       const pdf = new jsPDF();
@@ -662,38 +660,25 @@ export default function ContractPage() {
               Tanda Tangan Digital
             </h3>
 
-            <div className="max-w-md mx-auto">
-              <p className="text-[#889063] text-center mb-4">
-                Silakan tanda tangan pada area di bawah ini untuk menyetujui
-                kontrak
+            <div className="max-w-lg mx-auto">
+              <p className="text-[#889063] text-center mb-6">
+                Silakan tanda tangan pada area di bawah ini untuk menyetujui kontrak.
+                Anda dapat menggambar tanda tangan atau upload gambar tanda tangan.
               </p>
 
-              <div className="border-2 border-[#324D3E]/20 rounded-xl p-4 mb-4">
-                <SignatureCanvas
-                  ref={sigCanvas}
-                  canvasProps={{
-                    width: 400,
-                    height: 200,
-                    className:
-                      "signature-canvas w-full h-48 border border-gray-300 rounded-lg",
-                    style: { width: "100%", height: "200px" },
-                  }}
-                  backgroundColor="rgb(255, 255, 255)"
-                />
-              </div>
+              <DualSignatureInput
+                onSignatureChange={handleSignatureChange}
+                label="Tanda Tangan Digital"
+                required
+                disabled={signing}
+                className="mb-6"
+              />
 
               <div className="flex gap-4">
                 <button
-                  onClick={clearSignature}
-                  className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 py-3 px-6 rounded-xl font-medium transition-colors"
-                >
-                  Hapus Tanda Tangan
-                </button>
-
-                <button
                   onClick={generatePDF}
-                  disabled={signing}
-                  className="flex-1 bg-gradient-to-r from-[#324D3E] to-[#4C3D19] text-white py-3 px-6 rounded-xl font-semibold hover:shadow-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                  disabled={signing || !signatureData}
+                  className="w-full bg-gradient-to-r from-[#324D3E] to-[#4C3D19] text-white py-3 px-6 rounded-xl font-semibold hover:shadow-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {signing ? (
                     <span className="flex items-center justify-center gap-2">

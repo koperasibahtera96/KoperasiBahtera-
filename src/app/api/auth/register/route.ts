@@ -169,13 +169,13 @@ export async function POST(request: NextRequest) {
     const occupationData = occupationOptions.find(opt => opt.value === occupation);
     const occupationCode = occupationData?.code || '999'; // Default to 'Lainnya' if not found
 
-    // Generate user code - format: IH-{OccupationCode}-{Year}-{Sequential}
+    // Generate user code - format: BMS-{OccupationCode}-{Year}-{Sequential}
     const currentYear = new Date().getFullYear().toString().slice(-2); // Last 2 digits of year
     
     // Find the last user with the same occupation code in the current year
     const lastUserCode = await User.findOne({
       occupationCode: occupationCode,
-      userCode: { $regex: `^IH-${occupationCode}-${currentYear}-` }
+      userCode: { $regex: `^BMS-${occupationCode}-${currentYear}-` }
     })
     .sort({ userCode: -1 })
     .select('userCode');

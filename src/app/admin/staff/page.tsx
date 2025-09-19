@@ -191,7 +191,8 @@ export default function StaffPage() {
             staff.role === "finance" ? "Finance" :
             staff.role === "staff_finance" ? "Staff Finance" :
             staff.role === "ketua" ? "Ketua" :
-          staff.role === "marketing" ? "Marketing" : "Staff",
+            staff.role === "marketing" ? "Marketing" :
+            staff.role === "marketing_head" ? "Marketing Head" : "Staff",
       password: "",
     });
     setShowEditModal(true);
@@ -535,7 +536,8 @@ export default function StaffPage() {
                                  staff.role === "finance" ? "Finance" :
                                  staff.role === "staff_finance" ? "Staff Finance" :
                                  staff.role === "ketua" ? "Ketua" :
-                                 staff.role === "marketing" ? "Marketing" : "Staff"}
+                                 staff.role === "marketing" ? "Marketing" :
+                                 staff.role === "marketing_head" ? "Marketing Head" : "Staff"}
                               </Badge>
                             </td>
                             <td className="py-3 px-3 sm:px-4">
@@ -718,6 +720,7 @@ export default function StaffPage() {
                     <option value="Staff Finance">Staff Finance</option>
                     <option value="Ketua">Ketua</option>
                     <option value="Marketing">Marketing</option>
+                    <option value="Marketing Head">Marketing Head</option>
                   </select>
                 </div>
 
@@ -860,6 +863,7 @@ export default function StaffPage() {
                     <option value="Staff Finance">Staff Finance</option>
                     <option value="Ketua">Ketua</option>
                     <option value="Marketing">Marketing</option>
+                    <option value="Marketing Head">Marketing Head</option>
                   </select>
                 </div>
 
