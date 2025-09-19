@@ -117,7 +117,7 @@ export const KebijakanPrivasiContent = () => (
     </p>
     <ul className="list-none space-y-1">
       <li><strong>Nomor Telepon:</strong> 081118893679</li>
-      <li><strong>Email:</strong> bintangmerahsejahtera@gmail.com</li>
+      <li><strong>Email:</strong> koperasibintangmerahsejahtera@gmail.com</li>
     </ul>
 
     <p className="mt-4">

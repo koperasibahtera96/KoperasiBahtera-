@@ -1117,8 +1117,8 @@ async function submitBulk() {
                   Tidak ada hasil
                 </option>
               )}
-              {filteredInstances.map((p) => (
-                <option key={p.id} value={p.id}>
+              {filteredInstances.map((p, index) => (
+                <option key={`${p.id}-${p.contractNumber}-${index}`} value={p.id}>
                   {p.contractNumber} ({p.instanceName})
                 </option>
               ))}

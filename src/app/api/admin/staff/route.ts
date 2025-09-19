@@ -125,15 +125,23 @@ export async function POST(request: NextRequest) {
 
     const user = new User({
       fullName: fullName.trim(),
+      nik: "0000000000000000", // Default NIK for staff - should be updated later
       phoneNumber: phoneNumber.trim(),
       password: hashedPassword,
       email: email.trim().toLowerCase(),
       dateOfBirth: new Date(),
-      address: "Alamat belum diisi",
-      village: "Desa belum diisi",
-      city: "Kota belum diisi",
-      province: "Provinsi belum diisi",
-      postalCode: "00000",
+      // KTP Address - default values for staff
+      ktpAddress: "Alamat KTP belum diisi",
+      ktpVillage: "Desa KTP belum diisi",
+      ktpCity: "Kota KTP belum diisi",
+      ktpProvince: "Provinsi KTP belum diisi",
+      ktpPostalCode: "00000",
+      // Domisili Address - default values for staff
+      domisiliAddress: "Alamat domisili belum diisi",
+      domisiliVillage: "Desa domisili belum diisi",
+      domisiliCity: "Kota domisili belum diisi",
+      domisiliProvince: "Provinsi domisili belum diisi",
+      domisiliPostalCode: "00000",
       occupation: role === "SPV Staff" ? "SPV Staff" :
                   role === "Admin" ? "Administrator" :
                   role === "Finance" ? "Staff Keuangan" :

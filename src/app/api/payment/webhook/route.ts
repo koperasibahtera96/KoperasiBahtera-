@@ -144,39 +144,43 @@ export async function POST(request: NextRequest) {
           );
           const occupationCode = occupationData?.code || "999";
 
-          // Generate user code
+          // Generate user code - format: BMS-{Year}{OccupationCode}.{Sequential}
           const currentYear = new Date().getFullYear().toString().slice(-2);
-          const lastUserCode = await User.findOne({
-            occupationCode: occupationCode,
-            userCode: { $regex: `^BMS-${occupationCode}-${currentYear}-` },
-          })
+
+          // Find the last user with any user code to get the highest sequential number
+          const lastUser = await User.findOne({})
             .sort({ userCode: -1 })
             .select("userCode");
 
           let sequential = 1;
-          if (lastUserCode && lastUserCode.userCode) {
-            const lastSequential = parseInt(
-              lastUserCode.userCode.split("-")[3]
-            );
-            sequential = lastSequential + 1;
+          if (lastUser && lastUser.userCode) {
+            // Extract sequential number from format BMS-2599.0017
+            const match = lastUser.userCode.match(/BMS-\d+\.(\d+)$/);
+            if (match) {
+              sequential = parseInt(match[1]) + 1;
+            }
           }
 
-          const userCode = `BMS-${occupationCode}-${currentYear}-${sequential
-            .toString()
-            .padStart(3, "0")}`;
+          const userCode = `BMS-${currentYear}${occupationCode}.${sequential.toString().padStart(4, "0")}`;
 
           // Create user
           const user = new User({
             email: payment.customerData.email,
             password: hashedPassword,
             fullName: payment.customerData.fullName,
+            nik: payment.customerData.nik,
             phoneNumber: payment.customerData.phoneNumber,
             dateOfBirth: payment.customerData.dateOfBirth,
-            address: payment.customerData.address,
-            village: payment.customerData.village,
-            city: payment.customerData.city,
-            province: payment.customerData.province,
-            postalCode: payment.customerData.postalCode,
+            ktpAddress: payment.customerData.ktpAddress,
+            ktpVillage: payment.customerData.ktpVillage,
+            ktpCity: payment.customerData.ktpCity,
+            ktpProvince: payment.customerData.ktpProvince,
+            ktpPostalCode: payment.customerData.ktpPostalCode,
+            domisiliAddress: payment.customerData.domisiliAddress,
+            domisiliVillage: payment.customerData.domisiliVillage,
+            domisiliCity: payment.customerData.domisiliCity,
+            domisiliProvince: payment.customerData.domisiliProvince,
+            domisiliPostalCode: payment.customerData.domisiliPostalCode,
             occupation: payment.customerData.occupation,
             occupationCode: occupationCode,
             userCode: userCode,

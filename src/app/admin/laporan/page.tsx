@@ -72,7 +72,7 @@ export default function LaporanPage() {
     const headerInfo = [
       ["KOPERASI BINTANG MERAH SEJAHTERA"],
       ["Jl. Green Investment No. 123, Jakarta"],
-      ["Tel: (021) 1234-5678 | Email: info@investasihijau.com"],
+      ["Tel: 081118893679 | Email: koperasibintangmerahsejahtera@gmail.com"],
       [""],
       ["LAPORAN ADMIN - SEMUA INVESTOR"],
       [`Dibuat pada: ${new Date().toLocaleDateString("id-ID", {
@@ -213,7 +213,7 @@ export default function LaporanPage() {
     const headerInfo = [
       ["KOPERASI BINTANG MERAH SEJAHTERA"],
       ["Jl. Green Investment No. 123, Jakarta"],
-      ["Tel: (021) 1234-5678 | Email: info@investasihijau.com"],
+      ["Tel: 081118893679 | Email: koperasibintangmerahsejahtera@gmail.com"],
       [""],
       [`LAPORAN INVESTOR - ${report.investor.name.toUpperCase()}`],
       [`Dibuat pada: ${new Date().toLocaleDateString("id-ID", {
@@ -415,7 +415,7 @@ export default function LaporanPage() {
     doc.setFontSize(12);
     doc.setFont("helvetica", "normal");
     doc.text("Jl. Green Investment No. 123, Jakarta", 55, 32);
-    doc.text("Tel: (021) 1234-5678 | Email: info@investasihijau.com", 55, 38);
+    doc.text("Tel: 081118893679 | Email: koperasibintangmerahsejahtera@gmail.com", 55, 38);
 
     // Report title
     doc.setFontSize(16);

@@ -6,6 +6,8 @@ export const registrationSchema = z.object({
     .min(2, 'Nama lengkap minimal 2 karakter')
     .max(100, 'Nama lengkap maksimal 100 karakter')
     .regex(/^[a-zA-Z\s\.]+$/, 'Nama hanya boleh berisi huruf, spasi, dan titik'),
+  nik: z.string()
+    .regex(/^[0-9]{16}$/, 'NIK harus berisi 16 digit angka'),
   email: z.string()
     .email('Format email tidak valid')
     .max(255, 'Email terlalu panjang'),
@@ -21,16 +23,28 @@ export const registrationSchema = z.object({
     .min(1, 'Konfirmasi password wajib diisi'),
   dateOfBirth: z.string()
     .min(1, 'Tanggal lahir wajib diisi'),
-  address: z.string()
-    .min(1, 'Alamat wajib diisi'),
-  village: z.string()
-    .min(1, 'Desa/Kelurahan wajib diisi'),
-  city: z.string()
-    .min(1, 'Kota/Kabupaten wajib diisi'),
-  province: z.string()
-    .min(1, 'Provinsi wajib diisi'),
-  postalCode: z.string()
-    .regex(/^[0-9]{5}$/, 'Kode pos harus 5 digit angka'),
+  // KTP Address
+  ktpAddress: z.string()
+    .min(1, 'Alamat KTP wajib diisi'),
+  ktpVillage: z.string()
+    .min(1, 'Desa/Kelurahan KTP wajib diisi'),
+  ktpCity: z.string()
+    .min(1, 'Kota/Kabupaten KTP wajib diisi'),
+  ktpProvince: z.string()
+    .min(1, 'Provinsi KTP wajib diisi'),
+  ktpPostalCode: z.string()
+    .regex(/^[0-9]{5}$/, 'Kode pos KTP harus 5 digit angka'),
+  // Domisili Address
+  domisiliAddress: z.string()
+    .min(1, 'Alamat domisili wajib diisi'),
+  domisiliVillage: z.string()
+    .min(1, 'Desa/Kelurahan domisili wajib diisi'),
+  domisiliCity: z.string()
+    .min(1, 'Kota/Kabupaten domisili wajib diisi'),
+  domisiliProvince: z.string()
+    .min(1, 'Provinsi domisili wajib diisi'),
+  domisiliPostalCode: z.string()
+    .regex(/^[0-9]{5}$/, 'Kode pos domisili harus 5 digit angka'),
   occupation: z.string()
     .min(1, 'Pekerjaan wajib diisi'),
   agreeToTerms: z.boolean()

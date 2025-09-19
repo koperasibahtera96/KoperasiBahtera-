@@ -35,7 +35,7 @@ export async function GET(
     if (mongoose.isValidObjectId(id)) {
       console.log('Searching by ObjectId');
       user = await User.findById(id)
-        .select('fullName userCode profileImageUrl faceImageUrl role verificationStatus createdAt phoneNumber email dateOfBirth address village city province postalCode occupation occupationCode')
+        .select('fullName userCode profileImageUrl faceImageUrl role verificationStatus createdAt phoneNumber email dateOfBirth ktpAddress ktpVillage ktpCity ktpProvince ktpPostalCode domisiliAddress domisiliVillage domisiliCity domisiliProvince domisiliPostalCode occupation occupationCode nik')
         .lean();
       console.log('User found by ObjectId:', user?._id);
     }
@@ -44,7 +44,7 @@ export async function GET(
       console.log('Searching by userCode');
       // Try to find by userCode
       user = await User.findOne({ userCode: id })
-        .select('fullName userCode profileImageUrl faceImageUrl role verificationStatus createdAt phoneNumber email dateOfBirth address village city province postalCode occupation occupationCode')
+        .select('fullName userCode profileImageUrl faceImageUrl role verificationStatus createdAt phoneNumber email dateOfBirth ktpAddress ktpVillage ktpCity ktpProvince ktpPostalCode domisiliAddress domisiliVillage domisiliCity domisiliProvince domisiliPostalCode occupation occupationCode nik')
         .lean();
       console.log('User found by userCode:', user?._id);
     }

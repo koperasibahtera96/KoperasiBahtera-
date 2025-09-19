@@ -95,7 +95,7 @@ export default function KartuAnggotaFront({ user, qrCodeDataUrl }: KartuAnggotaF
         <div className="text-base font-bold mb-2">Bintaro Business Center</div>
         <div className="text-sm leading-tight">Jl RC Veteran Raya No 1i, Bintaro - Kec Pesanggrahan</div>
         <div className="text-sm leading-tight">Kota Jakarta Selatan DKI Jakarta 12330</div>
-        <div className="text-sm leading-tight">Telp: 0811 1889 3679 Email: bintangmerahsejahtera@gmail.com</div>
+        <div className="text-sm leading-tight">Telp: 081118893679 Email: koperasibintangmerahsejahtera@gmail.com</div>
       </div>
     </div>
   );

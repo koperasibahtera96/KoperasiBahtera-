@@ -53,6 +53,7 @@ export default function RegisterPage() {
     formState: { errors },
     watch,
     trigger,
+    setValue,
   } = useForm<RegistrationFormData>({
     resolver: zodResolver(registrationSchema),
     mode: "onSubmit",
@@ -186,15 +187,21 @@ export default function RegisterPage() {
         ],
         registrationData: {
           fullName: formData.fullName.trim(),
+          nik: formData.nik.trim(),
           email: formData.email.toLowerCase().trim(),
           phoneNumber: formData.phoneNumber.trim(),
           password: formData.password,
           dateOfBirth: new Date(formData.dateOfBirth),
-          address: formData.address.trim(),
-          village: formData.village.trim(),
-          city: formData.city.trim(),
-          province: formData.province,
-          postalCode: formData.postalCode.trim(),
+          ktpAddress: formData.ktpAddress.trim(),
+          ktpVillage: formData.ktpVillage.trim(),
+          ktpCity: formData.ktpCity.trim(),
+          ktpProvince: formData.ktpProvince,
+          ktpPostalCode: formData.ktpPostalCode.trim(),
+          domisiliAddress: formData.domisiliAddress.trim(),
+          domisiliVillage: formData.domisiliVillage.trim(),
+          domisiliCity: formData.domisiliCity.trim(),
+          domisiliProvince: formData.domisiliProvince,
+          domisiliPostalCode: formData.domisiliPostalCode.trim(),
           occupation: formData.occupation,
           ktpImageUrl,
           faceImageUrl,
@@ -276,15 +283,21 @@ export default function RegisterPage() {
       // Trigger validation for step 1 fields
       const fieldsToValidate: any = [
         "fullName",
+        "nik",
         "dateOfBirth",
         "email",
         "phoneNumber",
         "occupation",
-        "address",
-        "village",
-        "city",
-        "province",
-        "postalCode",
+        "ktpAddress",
+        "ktpVillage",
+        "ktpCity",
+        "ktpProvince",
+        "ktpPostalCode",
+        "domisiliAddress",
+        "domisiliVillage",
+        "domisiliCity",
+        "domisiliProvince",
+        "domisiliPostalCode",
         "password",
         "confirmPassword",
         "agreeToTerms",
@@ -347,15 +360,21 @@ export default function RegisterPage() {
         },
         body: JSON.stringify({
           fullName: data.fullName.trim(),
+          nik: data.nik.trim(),
           email: data.email.toLowerCase().trim(),
           phoneNumber: data.phoneNumber.trim(),
           password: data.password,
           dateOfBirth: data.dateOfBirth,
-          address: data.address.trim(),
-          village: data.village.trim(),
-          city: data.city.trim(),
-          province: data.province,
-          postalCode: data.postalCode.trim(),
+          ktpAddress: data.ktpAddress.trim(),
+          ktpVillage: data.ktpVillage.trim(),
+          ktpCity: data.ktpCity.trim(),
+          ktpProvince: data.ktpProvince,
+          ktpPostalCode: data.ktpPostalCode.trim(),
+          domisiliAddress: data.domisiliAddress.trim(),
+          domisiliVillage: data.domisiliVillage.trim(),
+          domisiliCity: data.domisiliCity.trim(),
+          domisiliProvince: data.domisiliProvince,
+          domisiliPostalCode: data.domisiliPostalCode.trim(),
           occupation: data.occupation,
           ktpImageUrl,
           faceImageUrl,
@@ -622,6 +641,18 @@ export default function RegisterPage() {
                           showValidation={false}
                         />
                         <ValidationInput
+                          label="NIK"
+                          {...register("nik")}
+                          placeholder="16 digit NIK"
+                          required
+                          maxLength={16}
+                          error={errors.nik?.message}
+                          showValidation={false}
+                        />
+                      </FormRow>
+
+                      <FormRow cols={2}>
+                        <ValidationInput
                           label="Tanggal Lahir"
                           type="date"
                           {...register("dateOfBirth")}
@@ -629,6 +660,7 @@ export default function RegisterPage() {
                           error={errors.dateOfBirth?.message}
                           showValidation={false}
                         />
+                        <div></div>
                       </FormRow>
 
                       <FormRow cols={2}>
@@ -688,19 +720,19 @@ export default function RegisterPage() {
                     </div>
                   </div>
 
-                  {/* Address Information */}
+                  {/* KTP Address Information */}
                   <div>
                     <h3 className="text-lg font-semibold text-gray-800 mb-4 border-b border-gray-200 pb-2">
-                      Informasi Alamat
+                      Informasi Alamat KTP
                     </h3>
                     <div className="space-y-6">
                       <FormField>
                         <ValidationInput
                           label="Alamat Lengkap"
-                          {...register("address")}
+                          {...register("ktpAddress")}
                           placeholder="Jalan, RT/RW, Nomor Rumah"
                           required
-                          error={errors.address?.message}
+                          error={errors.ktpAddress?.message}
                           showValidation={false}
                         />
                       </FormField>
@@ -708,18 +740,18 @@ export default function RegisterPage() {
                       <FormRow cols={2}>
                         <ValidationInput
                           label="Desa/Kelurahan"
-                          {...register("village")}
+                          {...register("ktpVillage")}
                           placeholder="Nama desa/kelurahan"
                           required
-                          error={errors.village?.message}
+                          error={errors.ktpVillage?.message}
                           showValidation={false}
                         />
                         <ValidationInput
                           label="Kota/Kabupaten"
-                          {...register("city")}
+                          {...register("ktpCity")}
                           placeholder="Nama kota/kabupaten"
                           required
-                          error={errors.city?.message}
+                          error={errors.ktpCity?.message}
                           showValidation={false}
                         />
                       </FormRow>
@@ -728,22 +760,112 @@ export default function RegisterPage() {
                         <div>
                           <Select
                             label="Provinsi"
-                            {...register("province")}
+                            {...register("ktpProvince")}
                             options={provinceOptions}
                             required
                           />
-                          {errors.province && (
+                          {errors.ktpProvince && (
                             <p className="mt-1 text-sm text-red-600">
-                              {errors.province.message}
+                              {errors.ktpProvince.message}
                             </p>
                           )}
                         </div>
                         <ValidationInput
                           label="Kode Pos"
-                          {...register("postalCode")}
+                          {...register("ktpPostalCode")}
                           placeholder="12345"
                           required
-                          error={errors.postalCode?.message}
+                          error={errors.ktpPostalCode?.message}
+                          showValidation={false}
+                        />
+                      </FormRow>
+                    </div>
+                  </div>
+
+                  {/* Domisili Address Information */}
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-800 mb-4 border-b border-gray-200 pb-2">
+                      Domisili Sekarang
+                    </h3>
+                    <div className="space-y-6">
+                      {/* Copy Address Checkbox */}
+                      <div className="flex items-center gap-3 p-4 bg-gray-50 rounded-lg">
+                        <input
+                          type="checkbox"
+                          id="copyAddressCheckbox"
+                          className="w-4 h-4 text-[#324D3E] border-gray-300 rounded focus:ring-[#324D3E] focus:ring-2"
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              const ktpValues = watch();
+                              setValue("domisiliAddress", ktpValues.ktpAddress || "");
+                              setValue("domisiliVillage", ktpValues.ktpVillage || "");
+                              setValue("domisiliCity", ktpValues.ktpCity || "");
+                              setValue("domisiliProvince", ktpValues.ktpProvince || "");
+                              setValue("domisiliPostalCode", ktpValues.ktpPostalCode || "");
+                            } else {
+                              setValue("domisiliAddress", "");
+                              setValue("domisiliVillage", "");
+                              setValue("domisiliCity", "");
+                              setValue("domisiliProvince", "");
+                              setValue("domisiliPostalCode", "");
+                            }
+                          }}
+                        />
+                        <label htmlFor="copyAddressCheckbox" className="text-sm text-gray-700 cursor-pointer">
+                          Alamat saya sekarang sama dengan di KTP
+                        </label>
+                      </div>
+
+                      <FormField>
+                        <ValidationInput
+                          label="Alamat Lengkap"
+                          {...register("domisiliAddress")}
+                          placeholder="Jalan, RT/RW, Nomor Rumah"
+                          required
+                          error={errors.domisiliAddress?.message}
+                          showValidation={false}
+                        />
+                      </FormField>
+
+                      <FormRow cols={2}>
+                        <ValidationInput
+                          label="Desa/Kelurahan"
+                          {...register("domisiliVillage")}
+                          placeholder="Nama desa/kelurahan"
+                          required
+                          error={errors.domisiliVillage?.message}
+                          showValidation={false}
+                        />
+                        <ValidationInput
+                          label="Kota/Kabupaten"
+                          {...register("domisiliCity")}
+                          placeholder="Nama kota/kabupaten"
+                          required
+                          error={errors.domisiliCity?.message}
+                          showValidation={false}
+                        />
+                      </FormRow>
+
+                      <FormRow cols={2}>
+                        <div>
+                          <Select
+                            label="Provinsi"
+                            {...register("domisiliProvince")}
+                            options={provinceOptions}
+                            required
+                          />
+                          {errors.domisiliProvince && (
+                            <p className="mt-1 text-sm text-red-600">
+                              {errors.domisiliProvince.message}
+                            </p>
+                          )}
+                        </div>
+                        <ValidationInput
+                          label="Kode Pos"
+                          {...register("domisiliPostalCode")}
+                          placeholder="12345"
+                          required
+                          error={errors.domisiliPostalCode?.message}
                           showValidation={false}
                         />
                       </FormRow>
@@ -1106,6 +1228,10 @@ export default function RegisterPage() {
                           {watchedValues.fullName}
                         </div>
                         <div>
+                          <span className="text-gray-600">NIK:</span>{" "}
+                          {watchedValues.nik}
+                        </div>
+                        <div>
                           <span className="text-gray-600">Tanggal Lahir:</span>{" "}
                           {watchedValues.dateOfBirth}
                         </div>
@@ -1130,33 +1256,67 @@ export default function RegisterPage() {
 
                     <div className="bg-gray-50 rounded-lg p-6">
                       <h4 className="font-semibold text-gray-800 mb-4">
-                        Informasi Alamat
+                        Alamat KTP
                       </h4>
                       <div className="space-y-3 text-sm">
                         <div>
                           <span className="text-gray-600">Alamat Lengkap:</span>{" "}
-                          {watchedValues.address}
+                          {watchedValues.ktpAddress}
                         </div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                           <div>
                             <span className="text-gray-600">
                               Desa/Kelurahan:
                             </span>{" "}
-                            {watchedValues.village}
+                            {watchedValues.ktpVillage}
                           </div>
                           <div>
                             <span className="text-gray-600">
                               Kota/Kabupaten:
                             </span>{" "}
-                            {watchedValues.city}
+                            {watchedValues.ktpCity}
                           </div>
                           <div>
                             <span className="text-gray-600">Provinsi:</span>{" "}
-                            {watchedValues.province}
+                            {watchedValues.ktpProvince}
                           </div>
                           <div>
                             <span className="text-gray-600">Kode Pos:</span>{" "}
-                            {watchedValues.postalCode}
+                            {watchedValues.ktpPostalCode}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="bg-gray-50 rounded-lg p-6">
+                      <h4 className="font-semibold text-gray-800 mb-4">
+                        Alamat Domisili
+                      </h4>
+                      <div className="space-y-3 text-sm">
+                        <div>
+                          <span className="text-gray-600">Alamat Lengkap:</span>{" "}
+                          {watchedValues.domisiliAddress}
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div>
+                            <span className="text-gray-600">
+                              Desa/Kelurahan:
+                            </span>{" "}
+                            {watchedValues.domisiliVillage}
+                          </div>
+                          <div>
+                            <span className="text-gray-600">
+                              Kota/Kabupaten:
+                            </span>{" "}
+                            {watchedValues.domisiliCity}
+                          </div>
+                          <div>
+                            <span className="text-gray-600">Provinsi:</span>{" "}
+                            {watchedValues.domisiliProvince}
+                          </div>
+                          <div>
+                            <span className="text-gray-600">Kode Pos:</span>{" "}
+                            {watchedValues.domisiliPostalCode}
                           </div>
                         </div>
                       </div>

@@ -4,13 +4,21 @@ export interface IUser extends Document {
   email: string;
   password: string;
   fullName: string;
+  nik: string;
   phoneNumber: string;
   dateOfBirth: Date;
-  address: string;
-  village: string;
-  city: string;
-  province: string;
-  postalCode: string;
+  // KTP Address
+  ktpAddress: string;
+  ktpVillage: string;
+  ktpCity: string;
+  ktpProvince: string;
+  ktpPostalCode: string;
+  // Domisili Address
+  domisiliAddress: string;
+  domisiliVillage: string;
+  domisiliCity: string;
+  domisiliProvince: string;
+  domisiliPostalCode: string;
   occupation: string;
   occupationCode?: string; // Auto-generated based on occupation
   userCode?: string; // Auto-generated user code
@@ -57,6 +65,13 @@ const UserSchema: Schema = new Schema({
     minlength: [2, 'Full name must be at least 2 characters'],
     maxlength: [100, 'Full name cannot exceed 100 characters'],
   },
+  nik: {
+    type: String,
+    required: [true, 'NIK is required'],
+    unique: true,
+    trim: true,
+    match: [/^[0-9]{16}$/, 'NIK must be 16 digits'],
+  },
   phoneNumber: {
     type: String,
     required: [true, 'Phone number is required'],
@@ -68,31 +83,59 @@ const UserSchema: Schema = new Schema({
     type: Date,
     required: [true, 'Date of birth is required'],
   },
-  address: {
+  // KTP Address
+  ktpAddress: {
     type: String,
-    required: [true, 'Address is required'],
+    required: [true, 'KTP address is required'],
     trim: true,
   },
-  village: {
+  ktpVillage: {
     type: String,
-    required: [true, 'Village is required'],
+    required: [true, 'KTP village is required'],
     trim: true,
   },
-  city: {
+  ktpCity: {
     type: String,
-    required: [true, 'City is required'],
+    required: [true, 'KTP city is required'],
     trim: true,
   },
-  province: {
+  ktpProvince: {
     type: String,
-    required: [true, 'Province is required'],
+    required: [true, 'KTP province is required'],
     trim: true,
   },
-  postalCode: {
+  ktpPostalCode: {
     type: String,
-    required: [true, 'Postal code is required'],
+    required: [true, 'KTP postal code is required'],
     trim: true,
-    match: [/^[0-9]{5}$/, 'Postal code must be 5 digits'],
+    match: [/^[0-9]{5}$/, 'KTP postal code must be 5 digits'],
+  },
+  // Domisili Address
+  domisiliAddress: {
+    type: String,
+    required: [true, 'Domisili address is required'],
+    trim: true,
+  },
+  domisiliVillage: {
+    type: String,
+    required: [true, 'Domisili village is required'],
+    trim: true,
+  },
+  domisiliCity: {
+    type: String,
+    required: [true, 'Domisili city is required'],
+    trim: true,
+  },
+  domisiliProvince: {
+    type: String,
+    required: [true, 'Domisili province is required'],
+    trim: true,
+  },
+  domisiliPostalCode: {
+    type: String,
+    required: [true, 'Domisili postal code is required'],
+    trim: true,
+    match: [/^[0-9]{5}$/, 'Domisili postal code must be 5 digits'],
   },
   occupation: {
     type: String,
@@ -183,7 +226,10 @@ const UserSchema: Schema = new Schema({
 // Indexes for better query performance
 UserSchema.index({ role: 1 });
 UserSchema.index({ isActive: 1 });
-UserSchema.index({ province: 1 });
-UserSchema.index({ city: 1 });
+UserSchema.index({ ktpProvince: 1 });
+UserSchema.index({ ktpCity: 1 });
+UserSchema.index({ domisiliProvince: 1 });
+UserSchema.index({ domisiliCity: 1 });
+// Note: nik and userCode already have unique indexes from their schema definition
 
 export default mongoose.models.User || mongoose.model<IUser>('User', UserSchema);

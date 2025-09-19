@@ -225,7 +225,7 @@ const generateFrontHTML = (user: any, logoBase64: string | null, qrCodeDataUrl: 
           <div class="footer-title">Bintaro Business Center</div>
           <div>Jl RC Veteran Raya No 1i, Bintaro - Kec Pesanggrahan</div>
           <div>Kota Jakarta Selatan DKI Jakarta 12330</div>
-          <div>Telp: 0811 1889 3679 Email: bintangmerahsejahtera@gmail.com</div>
+          <div>Telp: 081118893679 Email: koperasibintangmerahsejahtera@gmail.com</div>
         </div>
       </div>
     </body>

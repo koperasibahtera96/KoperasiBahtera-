@@ -8,17 +8,23 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
 
-    const { 
-      fullName, 
-      email, 
-      phoneNumber, 
+    const {
+      fullName,
+      nik,
+      email,
+      phoneNumber,
       password,
       dateOfBirth,
-      address,
-      village,
-      city,
-      province,
-      postalCode,
+      ktpAddress,
+      ktpVillage,
+      ktpCity,
+      ktpProvince,
+      ktpPostalCode,
+      domisiliAddress,
+      domisiliVillage,
+      domisiliCity,
+      domisiliProvince,
+      domisiliPostalCode,
       occupation,
       ktpImageUrl,
       faceImageUrl
@@ -27,23 +33,29 @@ export async function POST(request: NextRequest) {
     // Log received data for debugging
     console.log('Registration data received:', {
       fullName: fullName ? 'Present' : 'Missing',
+      nik: nik ? 'Present' : 'Missing',
       email: email ? 'Present' : 'Missing',
       phoneNumber: phoneNumber ? 'Present' : 'Missing',
       dateOfBirth: dateOfBirth ? 'Present' : 'Missing',
-      address: address ? 'Present' : 'Missing',
-      village: village ? 'Present' : 'Missing',
-      city: city ? 'Present' : 'Missing',
-      province: province ? 'Present' : 'Missing',
-      postalCode: postalCode ? 'Present' : 'Missing',
+      ktpAddress: ktpAddress ? 'Present' : 'Missing',
+      ktpVillage: ktpVillage ? 'Present' : 'Missing',
+      ktpCity: ktpCity ? 'Present' : 'Missing',
+      ktpProvince: ktpProvince ? 'Present' : 'Missing',
+      ktpPostalCode: ktpPostalCode ? 'Present' : 'Missing',
+      domisiliAddress: domisiliAddress ? 'Present' : 'Missing',
+      domisiliVillage: domisiliVillage ? 'Present' : 'Missing',
+      domisiliCity: domisiliCity ? 'Present' : 'Missing',
+      domisiliProvince: domisiliProvince ? 'Present' : 'Missing',
+      domisiliPostalCode: domisiliPostalCode ? 'Present' : 'Missing',
       occupation: occupation ? 'Present' : 'Missing',
       ktpImageUrl: ktpImageUrl ? 'Present' : 'Missing',
       faceImageUrl: faceImageUrl ? 'Present' : 'Missing',
     });
 
     // Server-side validation
-    if (!fullName || !email || !phoneNumber || !password || !dateOfBirth || !address || !village || !city || !province || !postalCode || !occupation || !ktpImageUrl || !faceImageUrl) {
+    if (!fullName || !nik || !email || !phoneNumber || !password || !dateOfBirth || !ktpAddress || !ktpVillage || !ktpCity || !ktpProvince || !ktpPostalCode || !domisiliAddress || !domisiliVillage || !domisiliCity || !domisiliProvince || !domisiliPostalCode || !occupation || !ktpImageUrl || !faceImageUrl) {
       return NextResponse.json(
-        { error: 'Semua field wajib diisi, termasuk KTP dan foto wajah' },
+        { error: 'Semua field wajib diisi, termasuk NIK, alamat KTP, alamat domisili, KTP dan foto wajah' },
         { status: 400 }
       );
     }
@@ -119,10 +131,25 @@ export async function POST(request: NextRequest) {
     const dobDate = new Date(dateOfBirth);
 
 
-    // Validate postal code
-    if (!/^[0-9]{5}$/.test(postalCode)) {
+    // Validate NIK
+    if (!/^[0-9]{16}$/.test(nik)) {
       return NextResponse.json(
-        { error: 'Kode pos harus 5 digit angka' },
+        { error: 'NIK harus berisi 16 digit angka' },
+        { status: 400 }
+      );
+    }
+
+    // Validate postal codes
+    if (!/^[0-9]{5}$/.test(ktpPostalCode)) {
+      return NextResponse.json(
+        { error: 'Kode pos KTP harus 5 digit angka' },
+        { status: 400 }
+      );
+    }
+
+    if (!/^[0-9]{5}$/.test(domisiliPostalCode)) {
+      return NextResponse.json(
+        { error: 'Kode pos domisili harus 5 digit angka' },
         { status: 400 }
       );
     }
@@ -169,24 +196,24 @@ export async function POST(request: NextRequest) {
     const occupationData = occupationOptions.find(opt => opt.value === occupation);
     const occupationCode = occupationData?.code || '999'; // Default to 'Lainnya' if not found
 
-    // Generate user code - format: BMS-{OccupationCode}-{Year}-{Sequential}
+    // Generate user code - format: BMS-{Year}{OccupationCode}.{Sequential}
     const currentYear = new Date().getFullYear().toString().slice(-2); // Last 2 digits of year
-    
-    // Find the last user with the same occupation code in the current year
-    const lastUserCode = await User.findOne({
-      occupationCode: occupationCode,
-      userCode: { $regex: `^BMS-${occupationCode}-${currentYear}-` }
-    })
+
+    // Find the last user with any user code to get the highest sequential number
+    const lastUser = await User.findOne({})
     .sort({ userCode: -1 })
     .select('userCode');
 
     let sequential = 1;
-    if (lastUserCode && lastUserCode.userCode) {
-      const lastSequential = parseInt(lastUserCode.userCode.split('-')[3]);
-      sequential = lastSequential + 1;
+    if (lastUser && lastUser.userCode) {
+      // Extract sequential number from format BMS-2599.0017
+      const match = lastUser.userCode.match(/BMS-\d+\.(\d+)$/);
+      if (match) {
+        sequential = parseInt(match[1]) + 1;
+      }
     }
 
-    const userCode = `BMS-${occupationCode}-${currentYear}-${sequential.toString().padStart(3, '0')}`;
+    const userCode = `BMS-${currentYear}${occupationCode}.${sequential.toString().padStart(4, '0')}`;
 
     // Use the already validated date of birth
     // dobDate was already parsed and validated above
@@ -196,13 +223,19 @@ export async function POST(request: NextRequest) {
       email: email.toLowerCase().trim(),
       password: hashedPassword,
       fullName: fullName.trim(),
+      nik: nik.trim(),
       phoneNumber: phoneNumber.trim(),
       dateOfBirth: dobDate,
-      address: address.trim(),
-      village: village.trim(),
-      city: city.trim(),
-      province: province.trim(),
-      postalCode: postalCode.trim(),
+      ktpAddress: ktpAddress.trim(),
+      ktpVillage: ktpVillage.trim(),
+      ktpCity: ktpCity.trim(),
+      ktpProvince: ktpProvince.trim(),
+      ktpPostalCode: ktpPostalCode.trim(),
+      domisiliAddress: domisiliAddress.trim(),
+      domisiliVillage: domisiliVillage.trim(),
+      domisiliCity: domisiliCity.trim(),
+      domisiliProvince: domisiliProvince.trim(),
+      domisiliPostalCode: domisiliPostalCode.trim(),
       occupation: occupation.trim(),
       occupationCode: occupationCode,
       userCode: userCode,
@@ -221,13 +254,19 @@ export async function POST(request: NextRequest) {
       id: user._id,
       email: user.email,
       fullName: user.fullName,
+      nik: user.nik,
       phoneNumber: user.phoneNumber,
       dateOfBirth: user.dateOfBirth,
-      address: user.address,
-      village: user.village,
-      city: user.city,
-      province: user.province,
-      postalCode: user.postalCode,
+      ktpAddress: user.ktpAddress,
+      ktpVillage: user.ktpVillage,
+      ktpCity: user.ktpCity,
+      ktpProvince: user.ktpProvince,
+      ktpPostalCode: user.ktpPostalCode,
+      domisiliAddress: user.domisiliAddress,
+      domisiliVillage: user.domisiliVillage,
+      domisiliCity: user.domisiliCity,
+      domisiliProvince: user.domisiliProvince,
+      domisiliPostalCode: user.domisiliPostalCode,
       occupation: user.occupation,
       occupationCode: user.occupationCode,
       userCode: user.userCode,
@@ -245,13 +284,19 @@ export async function POST(request: NextRequest) {
           id: user._id,
           email: user.email,
           fullName: user.fullName,
+          nik: user.nik,
           phoneNumber: user.phoneNumber,
           dateOfBirth: user.dateOfBirth,
-          address: user.address,
-          village: user.village,
-          city: user.city,
-          province: user.province,
-          postalCode: user.postalCode,
+          ktpAddress: user.ktpAddress,
+          ktpVillage: user.ktpVillage,
+          ktpCity: user.ktpCity,
+          ktpProvince: user.ktpProvince,
+          ktpPostalCode: user.ktpPostalCode,
+          domisiliAddress: user.domisiliAddress,
+          domisiliVillage: user.domisiliVillage,
+          domisiliCity: user.domisiliCity,
+          domisiliProvince: user.domisiliProvince,
+          domisiliPostalCode: user.domisiliPostalCode,
           occupation: user.occupation,
           occupationCode: user.occupationCode,
           userCode: user.userCode,
