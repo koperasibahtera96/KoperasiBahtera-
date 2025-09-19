@@ -939,20 +939,46 @@ export default function RegisterPage() {
                   <div className="space-y-4 pt-6 border-t border-gray-200">
                     <div>
                       <div className="flex items-start gap-3">
-                        <input
-                          type="checkbox"
-                          {...register("agreeToTerms")}
-                          className="w-5 h-5 text-[#324D3E] border-2 border-gray-300 rounded focus:ring-[#324D3E] focus:ring-2 mt-0.5"
-                          checked={hasReadTerms}
-                          readOnly
-                          required
-                        />
+                        <EnhancedLegalModal
+                          triggerText="Syarat dan Ketentuan"
+                          title="Syarat dan Ketentuan"
+                          onConfirm={() => {
+                            setHasReadTerms(true);
+                            setValue("agreeToTerms", true);
+                          }}
+                          triggerElement={
+                            <input
+                              type="checkbox"
+                              {...register("agreeToTerms")}
+                              className="w-5 h-5 text-[#324D3E] border-2 border-gray-300 rounded focus:ring-[#324D3E] focus:ring-2 mt-0.5 cursor-pointer"
+                              checked={hasReadTerms}
+                              onChange={(e) => {
+                                if (!hasReadTerms && e.target.checked) {
+                                  // If user tries to check but hasn't read terms, prevent default and open modal
+                                  e.preventDefault();
+                                  return;
+                                }
+                                // Allow unchecking
+                                if (!e.target.checked) {
+                                  setHasReadTerms(false);
+                                  setValue("agreeToTerms", false);
+                                }
+                              }}
+                              required
+                            />
+                          }
+                        >
+                          <SyaratDanKetentuanContent />
+                        </EnhancedLegalModal>
                         <span className="text-sm text-gray-700">
                           Saya menyetujui{" "}
                           <EnhancedLegalModal
                             triggerText="Syarat dan Ketentuan"
                             title="Syarat dan Ketentuan"
-                            onConfirm={() => setHasReadTerms(true)}
+                            onConfirm={() => {
+                              setHasReadTerms(true);
+                              setValue("agreeToTerms", true);
+                            }}
                           >
                             <SyaratDanKetentuanContent />
                           </EnhancedLegalModal>{" "}
@@ -968,20 +994,46 @@ export default function RegisterPage() {
 
                     <div>
                       <div className="flex items-start gap-3">
-                        <input
-                          type="checkbox"
-                          {...register("agreeToPrivacy")}
-                          className="w-5 h-5 text-[#324D3E] border-2 border-gray-300 rounded focus:ring-[#324D3E] focus:ring-2 mt-0.5"
-                          checked={hasReadPrivacy}
-                          readOnly
-                          required
-                        />
+                        <EnhancedLegalModal
+                          triggerText="Kebijakan Privasi"
+                          title="Kebijakan Privasi"
+                          onConfirm={() => {
+                            setHasReadPrivacy(true);
+                            setValue("agreeToPrivacy", true);
+                          }}
+                          triggerElement={
+                            <input
+                              type="checkbox"
+                              {...register("agreeToPrivacy")}
+                              className="w-5 h-5 text-[#324D3E] border-2 border-gray-300 rounded focus:ring-[#324D3E] focus:ring-2 mt-0.5 cursor-pointer"
+                              checked={hasReadPrivacy}
+                              onChange={(e) => {
+                                if (!hasReadPrivacy && e.target.checked) {
+                                  // If user tries to check but hasn't read privacy policy, prevent default and open modal
+                                  e.preventDefault();
+                                  return;
+                                }
+                                // Allow unchecking
+                                if (!e.target.checked) {
+                                  setHasReadPrivacy(false);
+                                  setValue("agreeToPrivacy", false);
+                                }
+                              }}
+                              required
+                            />
+                          }
+                        >
+                          <KebijakanPrivasiContent />
+                        </EnhancedLegalModal>
                         <span className="text-sm text-gray-700">
                           Saya menyetujui{" "}
                           <EnhancedLegalModal
                             triggerText="Kebijakan Privasi"
                             title="Kebijakan Privasi"
-                            onConfirm={() => setHasReadPrivacy(true)}
+                            onConfirm={() => {
+                              setHasReadPrivacy(true);
+                              setValue("agreeToPrivacy", true);
+                            }}
                           >
                             <KebijakanPrivasiContent />
                           </EnhancedLegalModal>{" "}
