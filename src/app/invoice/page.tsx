@@ -1,13 +1,15 @@
+// src/app/invoice/page.tsx
 "use client";
 
 import InvoiceCard from "@/components/invoice/InvoiceCard";
 import InvoiceControls from "@/components/invoice/InvoiceControls";
 import { InvoiceLayout } from "@/components/invoice/InvoiceLayout";
-import { Loader2, X, FileDown } from "lucide-react";
+import { downloadInvoiceImage } from "@/lib/invoiceImage";
+import { Loader2 } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { Suspense, useEffect, useMemo, useState } from "react";
+import React, { Suspense, useEffect, useMemo, useState } from "react";
 
-// ===== XLSX (dynamic, aman SSR) =====
+// ===== XLSX (dynamic import, tidak ganggu SSR) =====
 let XLSXMod: any;
 async function getXLSX() {
   if (XLSXMod) return XLSXMod;
@@ -20,12 +22,19 @@ interface PaymentData {
   _id: string;
   orderId: string;
   amount: number;
+  totalAmount?: number;
+  gross_amount?: number;
   currency: string;
   paymentType: string;
   status: string;
+  adminStatus?: string;
   createdAt: string;
+  updatedAt?: string;
+  userId?: string;
   userName: string;
   userImage?: string;
+  buyerEmail?: string;
+  userEmail?: string;
   [key: string]: any;
 }
 
@@ -37,29 +46,8 @@ interface InvoiceResponse {
   perPage: number;
 }
 
-const PER_PAGE = 9;
-
-/** =========================
- *  WARNA/GRADASI KARTU (UI)
- *  =========================
- *  - Full/Registration => gradasi kuning (lebih gelap)
- *  - Cicilan => gradasi bata/merah (lebih gelap)
- *  - Border luar tipis hitam
- */
-const GRAD_FULL =
-  "linear-gradient(180deg, #d97706 0%, #f59e0b 45%, #fbbf24 75%, #ffd166 100%)";
-const GRAD_CICIL =
-  "linear-gradient(180deg, #7a1f0f 0%, #b7410e 45%, #e86f3a 75%, #ffb199 100%)";
-const GRAD_DEFAULT =
-  "linear-gradient(180deg, #d1d5db 0%, #e5e7eb 55%, #f3f4f6 100%)";
-
-function cardGradientByPayment(p: PaymentData) {
-  const t = (p?.paymentType || "").toLowerCase();
-  if (t.includes("cicil")) return GRAD_CICIL;
-  if (t.includes("full") || t.includes("registrasi") || t.includes("registration"))
-    return GRAD_FULL;
-  return GRAD_DEFAULT;
-}
+// tampilkan 10 per halaman (label kontrol UI). Back-end tetap sumber kebenaran pagination.
+const PER_PAGE = 10;
 
 function InvoicePageContent() {
   const searchParams = useSearchParams();
@@ -70,7 +58,7 @@ function InvoicePageContent() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // --- query params ---
+  // --- read query params ---
   const q = searchParams.get("q") || "";
   const sort = (searchParams.get("sort") as "asc" | "desc") || "desc";
   const page = Math.max(1, parseInt(searchParams.get("page") || "1", 10));
@@ -118,15 +106,20 @@ function InvoicePageContent() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [q, sort, page, category]);
 
+  // helper (tetap seperti sebelumnya)
   const isApproved = (p: PaymentData) =>
     String((p as any).adminStatus || p.status || "").toLowerCase() === "approved";
 
-  // Group cicilan
+  // group cicilan -> [{ orderId, items(sorted), paidCount, totalInstallments, userName }]
   const installmentGroups = useMemo(() => {
     if (!data) return [];
     const map = new Map<string, PaymentData[]>();
     for (const p of data.payments) {
-      if (p.paymentType === "cicilan-installment" && isApproved(p) && (p as any).cicilanOrderId) {
+      if (
+        p.paymentType === "cicilan-installment" &&
+        isApproved(p) &&
+        (p as any).cicilanOrderId
+      ) {
         const oid = String((p as any).cicilanOrderId);
         if (!map.has(oid)) map.set(oid, []);
         map.get(oid)!.push(p);
@@ -157,6 +150,7 @@ function InvoicePageContent() {
     });
   }, [data]);
 
+  // non cicilan + sisanya (tetap)
   const otherPayments = useMemo(() => {
     if (!data) return [];
     const skip = new Set<string>();
@@ -166,119 +160,198 @@ function InvoicePageContent() {
     return data.payments.filter((p) => !skip.has(p.ref || p._id));
   }, [data, installmentGroups]);
 
-  const [activeGroup, setActiveGroup] = useState<string | null>(null);
-  const closeModal = () => setActiveGroup(null);
+  // ====== UI tabel ======
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
+  const toggleGroup = (orderId: string) =>
+    setExpanded((s) => ({ ...s, [orderId]: !s[orderId] }));
 
-  // ===== Export Excel (logika tetap) =====
-  const exportExcel = async () => {
-    if (!data) return;
-    const XLSX = await getXLSX();
+  const emailOf = (p: PaymentData) =>
+    (p as any).userEmail || (p as any).buyerEmail || (p as any).email || p.userName || "—";
 
-    const userIds = Array.from(
-      new Set<string>(
-        data.payments
-          .map((p: any) => String(p.userId || p.user_id || p.user || ""))
-          .filter(Boolean)
-      )
-    );
+  const nominalOf = (p: PaymentData) =>
+    Number(p.amount ?? p.totalAmount ?? p.gross_amount ?? 0);
 
-    const userMap: Record<
-      string,
-      { id: string; email: string; fullName?: string; userCode?: string }
-    > = {};
+  const fmtCurrency = (n: number) =>
+    new Intl.NumberFormat("id-ID", {
+      style: "currency",
+      currency: "IDR",
+      maximumFractionDigits: 0,
+    }).format(n || 0);
 
-    await Promise.all(
-      userIds.map(async (id) => {
-        try {
-          const r = await fetch(`/api/users/${id}`, { cache: "no-store" });
-          if (r.ok) {
-            const j = await r.json();
-            if (j?.user) userMap[id] = j.user;
-          }
-        } catch {}
-      })
-    );
+  const fmtDatePretty = (v?: any) => {
+    const d = v ? new Date(v) : new Date();
+    return isNaN(d.getTime())
+      ? "—"
+      : new Intl.DateTimeFormat("id-ID", {
+          day: "2-digit",
+          month: "long",
+          year: "numeric",
+        }).format(d);
+  };
 
-    const statusPembayaran = (pt: string) => {
-      const s = (pt || "").toLowerCase();
-      if (s.includes("cicil")) return "CICILAN";
-      if (s.includes("full") || s.includes("registrasi") || s.includes("registration"))
-        return "LUNAS";
-      return s.toUpperCase() || "—";
-    };
-
-    const header = [
-      "No",
-      "No. Anggota",
-      "Nama Anggota",
-      "No. INV",
-      "Tanggal INV",
-      "Total Pembayaran",
-      "Status Pembayaran",
-    ];
-
-    const rows = data.payments.map((p, i) => {
-      const uid = String((p as any).userId || (p as any).user_id || (p as any).user || "");
-      const u = userMap[uid];
-      const tanggal = (p as any).updatedAt
-        ? new Date((p as any).updatedAt).toLocaleDateString("id-ID")
-        : p.createdAt
-        ? new Date(p.createdAt).toLocaleDateString("id-ID")
-        : "-";
-      const total = Number(p.amount ?? 0);
-
-      return [
-        i + 1,
-        u?.userCode || "-",
-        u?.fullName || p.userName || "-",
-        p.orderId,
-        tanggal,
-        total,
-        statusPembayaran(p.paymentType),
-      ];
-    });
-
-    const aoa = [["Tarikan Data Invoice"], [], header, ...rows];
-    const wb = XLSX.utils.book_new();
-    const ws = XLSX.utils.aoa_to_sheet(aoa);
-
-    ws["!cols"] = [
-      { wch: 5 },
-      { wch: 14 },
-      { wch: 24 },
-      { wch: 16 },
-      { wch: 14 },
-      { wch: 18 },
-      { wch: 18 },
-    ];
-
-    const border = {
-      top: { style: "thin" },
-      right: { style: "thin" },
-      bottom: { style: "thin" },
-      left: { style: "thin" },
-    };
-    const XLSXAny: any = XLSX;
-    const range = XLSXAny.utils.decode_range(ws["!ref"]);
-    for (let r = 2; r <= range.e.r; r++) {
-      for (let c = 0; c <= range.e.c; c++) {
-        const cellAddr = XLSXAny.utils.encode_cell({ r, c });
-        const cell = ws[cellAddr];
-        if (!cell) continue;
-        cell.s = { ...(cell.s || {}), border };
-        if (r === 2) cell.s = { ...(cell.s || {}), font: { bold: true } };
-        if (r > 2 && c === 5) cell.z = "#,##0";
-      }
+  // --- Status badge (hanya cicilan pending → Belum Dibayar; lainnya Lunas) ---
+  const renderStatus = (p: PaymentData) => {
+    const t = (p.paymentType || "").toLowerCase();
+    const st = (p.adminStatus || p.status || "").toLowerCase();
+    if ((t.includes("cicilan") || t.includes("installment")) && st === "pending") {
+      return (
+        <span className="inline-flex rounded-full bg-red-100 text-red-700 px-2 py-1 text-xs font-semibold">
+          Belum Dibayar
+        </span>
+      );
     }
-
-    XLSXAny.utils.book_append_sheet(wb, ws, "Invoice");
-    XLSXAny.writeFile(
-      wb,
-      `Tarikan_Invoice_${new Date().toISOString().slice(0, 10)}.xlsx`
+    return (
+      <span className="inline-flex rounded-full bg-green-100 text-green-700 px-2 py-1 text-xs font-semibold">
+        Lunas
+      </span>
     );
   };
 
-  // --- states UI ---
+  // ================= XLS: No, No.Anggota, Nama Anggota, No.Inv, Tanggal INV, Total Pembayaran, Status Pembayaran =================
+
+  // cache no anggota per userId (tidak mengubah logic fetch yang ada)
+  const memberCodeCache = React.useRef<Map<string, string>>(new Map());
+
+  async function getMemberCode(userId?: string): Promise<string> {
+    if (!userId) return "—";
+    const cached = memberCodeCache.current.get(userId);
+    if (cached) return cached;
+    try {
+      const res = await fetch(`/api/users/${userId}`);
+      if (!res.ok) throw new Error("not ok");
+      const js = await res.json();
+      const code =
+        js?.user?.userCode || js?.user?.memberCode || js?.userCode || js?.memberCode || "—";
+      memberCodeCache.current.set(userId, String(code));
+      return String(code);
+    } catch {
+      return "—";
+    }
+  }
+
+  function statusForXls(p: PaymentData): string {
+    const t = (p.paymentType || "").toLowerCase();
+    const st = (p.adminStatus || p.status || "").toLowerCase();
+    if (t.includes("full")) return "Lunas";
+    if (t.includes("reg")) return "Lunas";
+    if (t.includes("cicilan") || t.includes("installment")) {
+      return st === "pending" ? "Belum Dibayar" : "Cicilan";
+    }
+    return "—";
+  }
+
+  const fmtDateShort = (v?: any) => {
+    const d = v ? new Date(v) : new Date();
+    return isNaN(d.getTime())
+      ? "—"
+      : new Intl.DateTimeFormat("id-ID", {
+          day: "2-digit",
+          month: "2-digit",
+          year: "numeric",
+        }).format(d);
+  };
+
+  // Export XLS sesuai format yang kamu minta
+  const handleExportXLS = async () => {
+    if (!data) return;
+
+    // kumpulkan semua rows yang akan diekspor (tiap transaksi = 1 baris)
+    type Row = {
+      "No": number | string;
+      "No.Anggota": string;
+      "Nama Anggota": string;
+      "No.Inv": string;
+      "Tanggal INV": string;
+      "Total Pembayaran": string; // sudah Rp
+      "Status Pembayaran": string;
+    };
+    const rows: Row[] = [];
+
+    // kumpulkan unique userId untuk prefetch No.Anggota
+    const userIds = new Set<string>();
+    const collectUserId = (p: PaymentData) => {
+      if (p.userId) userIds.add(String(p.userId));
+    };
+    installmentGroups.forEach((g) => g.items.forEach(collectUserId));
+    otherPayments.forEach(collectUserId);
+
+    // prefetch
+    await Promise.all(Array.from(userIds).map((id) => getMemberCode(id)));
+
+    // nomor berurutan (ingat: 1 grup cicilan tetap dihitung satu nomor di UI,
+    // tapi untuk XLS — sesuai permintaan kamu sebelumnya — kita ekspor per transaksi baris)
+    let no = 1;
+
+    // cicilan: ekspor setiap item cicilan sebagai baris
+    for (const g of installmentGroups) {
+      for (const p of g.items) {
+        const noAnggota = await getMemberCode(p.userId as any);
+        rows.push({
+          "No": no++,
+          "No.Anggota": noAnggota,
+          "Nama Anggota": String(p.userName ?? "—"),
+          "No.Inv": String(p.orderId || p.ref || p._id),
+          "Tanggal INV": fmtDateShort(p.updatedAt || p.createdAt),
+          "Total Pembayaran": fmtCurrency(nominalOf(p)),
+          "Status Pembayaran": statusForXls(p),
+        });
+      }
+    }
+
+    // selain cicilan
+    for (const p of otherPayments) {
+      const noAnggota = await getMemberCode(p.userId as any);
+      rows.push({
+        "No": no++,
+        "No.Anggota": noAnggota,
+        "Nama Anggota": String(p.userName ?? "—"),
+        "No.Inv": String(p.orderId || p.ref || p._id),
+        "Tanggal INV": fmtDateShort(p.updatedAt || p.createdAt),
+        "Total Pembayaran": fmtCurrency(nominalOf(p)),
+        "Status Pembayaran": statusForXls(p),
+      });
+    }
+
+    // tulis XLS
+    const XLSX = await getXLSX();
+    const ws = XLSX.utils.json_to_sheet(rows);
+const range = XLSX.utils.decode_range(ws["!ref"]);
+    for (let R = range.s.r; R <= range.e.r; ++R) {
+      for (let C = range.s.c; C <= range.e.c; ++C) {
+        const cellAddr = XLSX.utils.encode_cell({ r: R, c: C });
+        if (!ws[cellAddr]) continue;
+        ws[cellAddr].s = {
+          border: {
+            top: { style: "thin", color: { rgb: "000000" } },
+            bottom: { style: "thin", color: { rgb: "000000" } },
+            left: { style: "thin", color: { rgb: "000000" } },
+            right: { style: "thin", color: { rgb: "000000" } },
+          },
+          font:
+            R === 0
+              ? { bold: true, color: { rgb: "000000" } }
+              : { bold: false, color: { rgb: "000000" } },
+        };
+      }
+    }
+
+    // optional: auto width
+    const colWidths = [
+      { wch: 6 },  // No
+      { wch: 14 }, // No.Anggota
+      { wch: 28 }, // Nama
+      { wch: 28 }, // No.Inv
+      { wch: 14 }, // Tanggal
+      { wch: 18 }, // Total Pembayaran
+      { wch: 18 }, // Status Pembayaran
+    ];
+    (ws["!cols"] as any) = colWidths;
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Invoice");
+    XLSX.writeFile(wb, `Tarikan_Invoice_${new Date().toISOString().slice(0, 10)}.xlsx`);
+  };
+
+  // --- UI states ---
   if (loading) {
     return (
       <InvoiceLayout>
@@ -303,15 +376,14 @@ function InvoicePageContent() {
     );
   }
 
-  const activeData = activeGroup
-    ? installmentGroups.find((g) => g.orderId === activeGroup)
-    : null;
+  // penomoran: 1 grup cicilan = 1 nomor (sub-row tidak menambah) — hanya untuk TABEL UI
+  let rowNo = (page - 1) * PER_PAGE + 1;
 
   return (
     <InvoiceLayout>
       <div className="p-4 sm:p-6 space-y-6 sm:space-y-8 font-[family-name:var(--font-poppins)]">
         <header>
-          <div className="mb-6 sm:mb-8 flex items-center justify-between gap-3">
+          <div className="mb-6 sm:mb-8 flex items-start justify-between gap-4">
             <div>
               <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-[#324D3E] dark:text-white mb-2">
                 Invoice
@@ -326,12 +398,13 @@ function InvoicePageContent() {
               </p>
             </div>
 
+            {/* Tombol Export XLS (tidak mengubah logic lain) */}
             <button
-              onClick={exportExcel}
-              className="inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-[#324D3E] to-[#4C3D19] px-4 py-2 text-sm font-semibold text-white shadow-lg hover:opacity-95"
+              onClick={handleExportXLS}
+              className="h-10 px-4 rounded-xl border bg-white hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700 text-sm font-semibold"
+              title="Export Excel semua baris di halaman ini"
             >
-              <FileDown className="w-4 h-4" />
-              Export Excel
+              Export XLS
             </button>
           </div>
 
@@ -345,7 +418,7 @@ function InvoicePageContent() {
               perPage={PER_PAGE}
             />
 
-            {/* filter kategori (tetap) */}
+            {/* Filter Kategori (tetap) */}
             <div className="mt-4 sm:mt-6 grid grid-cols-1 md:grid-cols-3 gap-3">
               <div className="md:col-span-2">
                 <label className="block text-sm font-medium text-[#324D3E] dark:text-white mb-2">
@@ -385,104 +458,134 @@ function InvoicePageContent() {
               </div>
             </div>
 
-            {/* grup cicilan + pembayaran lain */}
-            <div className="grid grid-cols-1 sm:grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6 mt-6 sm:mt-8">
-              {installmentGroups.map((g) => (
-                <div
-                  key={g.orderId}
-                  className="rounded-2xl border bg-white/80 dark:bg-gray-800/80 shadow p-4"
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <div className="text-xs text-[#889063]">Cicilan (Approved)</div>
-                      <div className="font-semibold break-all">{g.orderId}</div>
-                      <div className="text-xs mt-1">
-                        {g.paidCount} payment
-                        {g.totalInstallments ? ` dari ${g.totalInstallments} Cicilan` : ""}
-                      </div>
-                      {g.userName && (
-                        <div className="text-xs text-[#889063]">Atas nama: {g.userName}</div>
-                      )}
-                    </div>
-                    <button
-                      onClick={() => setActiveGroup(g.orderId)}
-                      className="text-sm px-3 py-1.5 rounded-xl border"
+            {/* ====================== TABEL ====================== */}
+            <div className="mt-6 sm:mt-8 overflow-x-auto">
+              <table className="w-full border-separate border-spacing-y-2">
+                <thead>
+                  <tr className="text-left text-sm text-[#324D3E] dark:text-white">
+                    <th className="px-4 py-3">No</th>
+                    <th className="px-4 py-3">Jenis</th>
+                    <th className="px-4 py-3">User</th>
+                    <th className="px-4 py-3">Nominal</th>
+                    <th className="px-4 py-3">Tanggal</th>
+                    <th className="px-4 py-3">Invoice</th>
+                    <th className="px-4 py-3">Status</th>
+                    <th className="px-4 py-3">Aksi</th>
+                  </tr>
+                </thead>
+
+                <tbody>
+                  {/* Grup Cicilan (parent row + sub rows) */}
+                  {installmentGroups.map((g) => {
+                    const first = g.items[0];
+                    const userEmail = emailOf(first);
+                    const tanggal = fmtDatePretty(first.updatedAt || first.createdAt);
+
+                    return (
+                      <React.Fragment key={`grpwrap-${g.orderId}`}>
+                        <tr
+                          key={`grp-${g.orderId}`}
+                          className="bg-white dark:bg-gray-800 rounded-xl shadow border border-[#324D3E]/10 dark:border-gray-700"
+                        >
+                          <td className="px-4 py-3 align-top">{rowNo++}</td>
+                          <td className="px-4 py-3 align-top">Pembayaran Cicilan</td>
+                          <td className="px-4 py-3 align-top">{userEmail}</td>
+                          <td className="px-4 py-3 align-top">-</td>
+                          <td className="px-4 py-3 align-top">{tanggal}</td>
+                          <td className="px-4 py-3 align-top break-all">{g.orderId}</td>
+                          <td className="px-4 py-3 align-top">{renderStatus(first)}</td>
+                          <td className="px-4 py-3 align-top">
+                            <button
+                              onClick={() => toggleGroup(g.orderId)}
+                              className="px-3 py-1.5 text-sm rounded-lg border hover:bg-gray-50"
+                            >
+                              {expanded[g.orderId] ? "Sembunyikan" : "Lihat detail"}
+                            </button>
+                          </td>
+                        </tr>
+
+                        {expanded[g.orderId] &&
+                          g.items.map((p, idx) => (
+                            <tr
+                              key={(p.ref || p._id) + "-sub"}
+                              className="bg-white dark:bg-gray-800 rounded-xl shadow border border-[#324D3E]/10 dark:border-gray-700"
+                            >
+                              <td className="px-4 py-3 align-top" />
+                              <td className="px-4 py-3 align-top">
+                                Cicilan #{(p as any).installmentNumber ?? idx + 1}
+                              </td>
+                              <td className="px-4 py-3 align-top">{emailOf(p)}</td>
+                              <td className="px-4 py-3 align-top">
+                                {fmtCurrency(nominalOf(p))}
+                              </td>
+                              <td className="px-4 py-3 align-top">
+                                {fmtDatePretty(p.updatedAt || p.createdAt)}
+                              </td>
+                              <td className="px-4 py-3 align-top break-all">
+                                {String(p.orderId || p.ref || p._id)}
+                              </td>
+                              <td className="px-4 py-3 align-top">{renderStatus(p)}</td>
+                              <td className="px-4 py-3 align-top">
+                                <button
+                                  onClick={() => downloadInvoiceImage(p)}
+                                  className="px-3 py-1.5 text-sm rounded-lg bg-[#2f3e33] text-white"
+                                >
+                                  Unduh
+                                </button>
+                              </td>
+                            </tr>
+                          ))}
+                      </React.Fragment>
+                    );
+                  })}
+
+                  {/* Baris lain (full, registration, dll) */}
+                  {otherPayments.map((p) => (
+                    <tr
+                      key={p.ref || p._id}
+                      className="bg-white dark:bg-gray-800 rounded-xl shadow border border-[#324D3E]/10 dark:border-gray-700"
                     >
-                      Lihat Detail
-                    </button>
-                  </div>
-                </div>
-              ))}
+                      <td className="px-4 py-3 align-top">{rowNo++}</td>
+                      <td className="px-4 py-3 align-top">
+                        {(() => {
+                          const x = (p.paymentType || "").toLowerCase();
+                          if (x.includes("full")) return "Pembayaran Penuh";
+                          if (x.includes("cicilan") || x.includes("installment"))
+                            return "Pembayaran Cicilan";
+                          if (x.includes("reg")) return "Pendaftaran";
+                          return "—";
+                        })()}
+                      </td>
+                      <td className="px-4 py-3 align-top">{emailOf(p)}</td>
+                      <td className="px-4 py-3 align-top">{fmtCurrency(nominalOf(p))}</td>
+                      <td className="px-4 py-3 align-top">
+                        {fmtDatePretty(p.updatedAt || p.createdAt)}
+                      </td>
+                      <td className="px-4 py-3 align-top break-all">
+                        {String(p.orderId || p.ref || p._id)}
+                      </td>
+                      <td className="px-4 py-3 align-top">{renderStatus(p)}</td>
+                      <td className="px-4 py-3 align-top">
+                        <button
+                          onClick={() => downloadInvoiceImage(p)}
+                          className="px-3 py-1.5 text-sm rounded-lg bg-[#2f3e33] text-white"
+                        >
+                          Unduh
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
 
-              {/* ====== KARTU DENGAN GRADASI DI BADAN & BORDER TIPIS HITAM ====== */}
-              {otherPayments.map((payment) => (
-                <div
-                  key={payment.ref || payment._id}
-                  className="rounded-3xl p-4 shadow-lg border border-black/80"
-                  style={{ background: cardGradientByPayment(payment) }}
-                >
-                  <InvoiceCard payment={payment} />
-                </div>
-              ))}
+              {installmentGroups.length === 0 && otherPayments.length === 0 && (
+                <div className="text-center py-8">Tidak ada invoice yang cocok.</div>
+              )}
             </div>
-
-            {installmentGroups.length === 0 && otherPayments.length === 0 && (
-              <div className="text-center py-8">Tidak ada invoice yang cocok.</div>
-            )}
+            {/* =================================================== */}
           </div>
         </header>
       </div>
-
-      {/* ===== Modal Detail Cicilan ===== */}
-      {activeData && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
-          onClick={closeModal}
-        >
-          <div
-            className="relative w-full max-w-7xl bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-4 sm:p-6"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <button
-              onClick={closeModal}
-              className="absolute top-3 right-3 p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700"
-              aria-label="Tutup"
-            >
-              <X className="h-5 w-5" />
-            </button>
-
-            <div className="mb-4">
-              <div className="text-xs text-[#889063]">Cicilan (Approved)</div>
-              <div className="font-semibold break-all">{activeData.orderId}</div>
-              <div className="text-xs">
-                {activeData.paidCount} payment
-                {activeData.totalInstallments
-                  ? ` dari ${activeData.totalInstallments} Cicilan`
-                  : ""}
-              </div>
-              {activeData.userName && (
-                <div className="text-xs text-[#889063]">
-                  Atas nama: {activeData.userName}
-                </div>
-              )}
-            </div>
-
-            <div className="max-h-[600px] overflow-y-auto pr-1">
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                {activeData.items.map((payment) => (
-                  <div
-                    key={payment.ref || payment._id}
-                    className="rounded-3xl p-4 shadow-lg border border-black/80"
-                    style={{ background: cardGradientByPayment(payment) }}
-                  >
-                    <InvoiceCard payment={payment} />
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </InvoiceLayout>
   );
 }

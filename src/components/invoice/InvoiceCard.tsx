@@ -1,6 +1,7 @@
 "use client";
 
 import { toJpeg } from "html-to-image";
+import { downloadInvoiceImage } from "@/lib/invoiceImage";
 import {
   BadgeCheck,
   CalendarClock,
@@ -125,7 +126,7 @@ export default function InvoiceCard({ payment }: Props) {
   const refCode = String((payment as any)?.ref ?? (payment as any)?._id ?? "");
   const userImage = (payment as any)?.userImage as string | undefined;
 
-  // Saat download: buka sementara panel Detail, capture, lalu kembalikan
+  // Saat download: buka sementara panel Detail, capture, lalu kembalikan  Tolong check pada bagian ini !! 
   async function handleDownload() {
     if (!cardRef.current) return;
     const wasOpen = open;
@@ -278,15 +279,13 @@ export default function InvoiceCard({ payment }: Props) {
 
         {/* Tombol & Toggle Detail */}
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
-          <button
-            data-hide-on-print
-            onClick={handleDownload}
-            className="inline-flex items-center justify-center gap-2 rounded-2xl px-3 sm:px-4 py-2 sm:py-3 text-xs font-bold bg-gradient-to-r from-[#324D3E] to-[#4C3D19] text-white hover:shadow-lg transition-all duration-300"
-          >
-            <Download size={14} />
-            <span className="hidden sm:inline">Download Invoice</span>
-            <span className="sm:hidden">Download</span>
-          </button>
+<button
+  // sebelumnya mungkin ada handler lain, cukup ganti 1 baris ini:
+  onClick={() => downloadInvoiceImage(payment)}
+  className="inline-flex items-center gap-2 rounded-xl bg-[#2f3e33] text-white px-3 py-2"
+>
+  Download Invoice
+</button>
 
           <button
             data-hide-on-print
