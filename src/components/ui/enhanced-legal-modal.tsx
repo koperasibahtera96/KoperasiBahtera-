@@ -15,7 +15,6 @@ interface EnhancedLegalModalProps {
   title: string;
   children: React.ReactNode;
   onConfirm: () => void;
-  isConfirmed: boolean;
   triggerElement?: React.ReactNode;
 }
 
@@ -24,7 +23,6 @@ export const EnhancedLegalModal: React.FC<EnhancedLegalModalProps> = ({
   title,
   children,
   onConfirm,
-  isConfirmed,
   triggerElement
 }) => {
   const [isOpen, setIsOpen] = useState(false);

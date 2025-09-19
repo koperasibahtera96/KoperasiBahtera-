@@ -19,7 +19,7 @@ import {
 import { useSession } from "next-auth/react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
 
 // Type alias for backward compatibility
 type Installment = CicilanInstallmentWithPayment;

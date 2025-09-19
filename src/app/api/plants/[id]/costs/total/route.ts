@@ -5,11 +5,11 @@ import { PlantInstance } from "@/models";
 
 export async function GET(
   _req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     await ensureConnection();
-    const { id } = params;
+    const { id } = await params;
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return NextResponse.json({ error: "Invalid id" }, { status: 400 });
     }
@@ -17,8 +17,7 @@ export async function GET(
     const url = new URL(_req.url);
     const month = url.searchParams.get("month"); // "YYYY-MM" (opsional)
 
-    const proj = await PlantInstance.findById(id, { operationalCosts: 1 }).lean();
-    if (!proj) return NextResponse.json({ total: 0 });
+    const proj = await PlantInstance.findById(id, { operationalCosts: 1 });
 
     const total = (proj.operationalCosts || [])
       .filter((r: any) =>

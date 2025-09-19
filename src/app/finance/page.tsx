@@ -28,9 +28,9 @@ const COLOR_AREN    = "#b7410e" // bata (merah bata)
 function normName(s: string) {
   return (s || "").toLowerCase().trim()
 }
-function isGaharu(name: string) {
-  return normName(name).includes("gaharu")
-}
+// function isGaharu(name: string) {
+//   return normName(name).includes("gaharu")
+// }
 function pickBaseColor(name: string, fallback: string) {
   const n = normName(name)
   if (n.includes("alpukat")) return COLOR_ALPUKAT

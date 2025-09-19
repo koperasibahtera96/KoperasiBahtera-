@@ -827,7 +827,6 @@ export default function RegisterPage() {
                             triggerText="Syarat dan Ketentuan"
                             title="Syarat dan Ketentuan"
                             onConfirm={() => setHasReadTerms(true)}
-                            isConfirmed={hasReadTerms}
                           >
                             <SyaratDanKetentuanContent />
                           </EnhancedLegalModal>{" "}
@@ -857,7 +856,6 @@ export default function RegisterPage() {
                             triggerText="Kebijakan Privasi"
                             title="Kebijakan Privasi"
                             onConfirm={() => setHasReadPrivacy(true)}
-                            isConfirmed={hasReadPrivacy}
                           >
                             <KebijakanPrivasiContent />
                           </EnhancedLegalModal>{" "}

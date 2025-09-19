@@ -69,20 +69,23 @@ export default function IncomeHistory({
     }
   };
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+
   useEffect(() => {
     load(1, month);
     loadTotal(month);
     setPage(1);
-  }, [month]);
   // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [month]);
+
   useEffect(() => {
     load(page, month);
-  }, [page, month]);
   // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page, month]);
+
   useEffect(() => {
     load(1, month);
     loadTotal(month);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [plantId]); // ganti plant
 
   const canEdit = userRole !== "staff_finance";

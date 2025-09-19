@@ -2,16 +2,13 @@
 
 import { AnimatePresence, motion } from "framer-motion";
 import {
-  BarChart3,
   Users,
-  CreditCard,
   TrendingUp,
   Settings,
   LogOut,
   Menu,
   X,
   UserCircle,
-  DollarSign,
 } from "lucide-react";
 import { signOut, useSession } from "next-auth/react";
 import Image from "next/image";
@@ -63,7 +60,7 @@ const sidebarVariants: any = {
   },
 };
 
-const navItemVariants = {
+const navItemVariants: any = {
   hidden: { x: -20, opacity: 0 },
   visible: {
     x: 0,
@@ -177,7 +174,7 @@ export default function StaffLayout({ children }: StaffLayoutProps) {
 
             {/* Navigation */}
             <nav className="flex-1 p-6 space-y-2 overflow-y-auto">
-              {navigation.map((item, index) => {
+              {navigation.map((item) => {
                 const isActive = pathname === item.href;
                 return (
                   <motion.div key={item.name} variants={navItemVariants}>

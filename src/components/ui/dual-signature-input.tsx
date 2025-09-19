@@ -1,6 +1,7 @@
 import React, { useState, useRef, useCallback } from 'react';
 import dynamic from 'next/dynamic';
 import { Upload, Edit3, Trash2, FileImage } from 'lucide-react';
+import Image from 'next/image';
 
 // Dynamically import SignatureCanvas to avoid SSR issues
 const SignatureCanvas = dynamic(() => import("react-signature-canvas"), {
@@ -131,6 +132,7 @@ export const DualSignatureInput: React.FC<DualSignatureInputProps> = ({
     if (clearTrigger) {
       clearSignature();
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [clearTrigger]);
 
   const hasSignature = signatureMode === 'canvas'
@@ -214,7 +216,9 @@ export const DualSignatureInput: React.FC<DualSignatureInputProps> = ({
               // Show uploaded image
               <div className="text-center">
                 <div className="relative inline-block">
-                  <img
+                  <Image
+                    width={48}
+                    height={48}
                     src={uploadedImage}
                     alt="Uploaded signature"
                     className="max-w-full max-h-48 border border-gray-300 rounded-lg"

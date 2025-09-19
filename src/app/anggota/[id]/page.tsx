@@ -1068,7 +1068,7 @@ async function submitBulk() {
 
                 <div className="text-xs opacity-70">
                   Aksi ini <b>menambahkan</b> {bulkType === "income" ? "pendapatan" : "pengeluaran"} dengan nominal yang sama ke semua tanaman yang dicentang.
-                  Data lain tidak diubah. (Ditandai <code>source: "bulk"</code> pada record.)
+                  Data lain tidak diubah. (Ditandai <code>source: &quot;bulk&quot;</code> pada record.)
                 </div>
               </div>
             )}

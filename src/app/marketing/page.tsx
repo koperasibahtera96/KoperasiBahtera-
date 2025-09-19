@@ -14,7 +14,6 @@ import {
   Download,
   Eye,
   AlertTriangle,
-  Check,
   X,
 } from "lucide-react";
 
@@ -82,12 +81,6 @@ export default function MarketingHeadPage() {
     loading: false,
   });
 
-  // Date range filter
-  const [dateFilter, setDateFilter] = useState({
-    startDate: "",
-    endDate: "",
-  });
-
   // Commission history modal
   const [commissionHistory, setCommissionHistory] = useState<{
     show: boolean;
@@ -111,6 +104,7 @@ export default function MarketingHeadPage() {
 
     // Check if user has marketing_head role (you might want to add this check on the backend too)
     fetchData();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session, status, router]);
 
   const fetchData = async () => {

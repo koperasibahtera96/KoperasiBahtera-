@@ -29,7 +29,7 @@ export async function GET(req: NextRequest) {
     const staffId = url.searchParams.get('staffId');
 
     // Build query
-    let query: any = {};
+    const query: any = {};
 
     if (startDate && endDate) {
       query.earnedAt = {

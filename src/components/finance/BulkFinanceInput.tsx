@@ -3,7 +3,6 @@
 import { useMemo, useState } from "react"
 import { Button } from "@/components/ui-staff/button"
 import { Input } from "@/components/ui-staff/input"
-import { Textarea } from "@/components/ui-staff/textarea"
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui-staff/select"
 import { useAlert } from "@/components/ui/Alert"
 
@@ -71,12 +70,12 @@ export default function BulkFinanceInput({
         .filter(([, v]) => v)
         .map(([k]) => k)
       if (ids.length === 0) {
-        showAlert("Pilih minimal satu tanaman/kontrak dulu.", { type: "warning" })
+        showAlert("warning", "Error", "Pilih minimal satu tanaman/kontrak dulu.")
         return
       }
       const amt = Number(amount)
       if (!amt || amt <= 0) {
-        showAlert("Nominal harus > 0", { type: "warning" })
+        showAlert("warning", "Error", "Nominal harus > 0",)
         return
       }
 
@@ -96,13 +95,13 @@ export default function BulkFinanceInput({
       const json = await res.json()
       if (!res.ok) throw new Error(json?.error || "Gagal menyimpan")
 
-      showAlert(`Berhasil menambah ${type === "income" ? "pendapatan" : "pengeluaran"} ke ${json.modified ?? ids.length} tanaman.`, { type: "success" })
+      showAlert("success", "Berhasil ",`Berhasil menambah ${type === "income" ? "pendapatan" : "pengeluaran"} ke ${json.modified ?? ids.length} tanaman.`)
       // reset ringan (pilihan tetap biar enak input berulang)
       setAmount("")
       setNote("")
       if (onSuccess) onSuccess()
     } catch (e: any) {
-      showAlert(e?.message ?? "Terjadi kesalahan", { type: "error" })
+      showAlert("error", "Error", e.message || "Terjadi kesalahan")
     }
   }
 
