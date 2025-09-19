@@ -20,6 +20,12 @@ export async function POST(request: NextRequest) {
   try {
     await ensureConnection();
     const body = await request.json();
+
+    // Set default kavling value if not provided
+    if (!body.kavling) {
+      body.kavling = "-";
+    }
+
     const plant = new PlantInstance(body);
     await plant.save();
     return NextResponse.json(plant, { status: 201 });

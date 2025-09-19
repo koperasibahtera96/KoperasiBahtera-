@@ -47,6 +47,111 @@ import Link from "next/link";
 import { use, useEffect, useMemo, useState } from "react";
 import ImageKit from "imagekit-javascript";
 
+// ===== EditableField Component (for both location and kavling)
+function EditableField({
+  plantId,
+  fieldName,
+  initialValue,
+  onUpdate,
+  placeholder
+}: {
+  plantId: string;
+  fieldName: string;
+  initialValue: string;
+  onUpdate: (newValue: string) => void;
+  placeholder: string;
+}) {
+  const [isEditing, setIsEditing] = useState(false);
+  const [value, setValue] = useState(initialValue);
+  const [isLoading, setIsLoading] = useState(false);
+  const { showError, showSuccess } = useAlert();
+
+  const handleSave = async () => {
+    if (value.trim() === initialValue) {
+      setIsEditing(false);
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const updateData = { [fieldName]: value.trim() || "-" };
+      const response = await fetch(`/api/plants/${plantId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(updateData),
+      });
+
+      if (response.ok) {
+        onUpdate(value.trim() || "-");
+        setIsEditing(false);
+        showSuccess("Berhasil!", `${fieldName === 'location' ? 'Lokasi' : 'Kavling'} berhasil diperbarui!`);
+      } else {
+        throw new Error(`Failed to update ${fieldName}`);
+      }
+    } catch (error) {
+      console.error(`Error updating ${fieldName}:`, error);
+      showError("Gagal memperbarui", `Gagal memperbarui ${fieldName === 'location' ? 'lokasi' : 'kavling'}.`);
+      setValue(initialValue);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleCancel = () => {
+    setValue(initialValue);
+    setIsEditing(false);
+  };
+
+  if (isEditing) {
+    return (
+      <div className="flex items-center gap-2 flex-1">
+        <input
+          type="text"
+          value={value}
+          onChange={(e) => setValue(e.target.value)}
+          className="flex-1 bg-white border border-[#324D3E]/20 rounded-lg px-2 py-1 text-sm text-[#324D3E] focus:outline-none focus:ring-1 focus:ring-[#324D3E]/40"
+          placeholder={placeholder}
+          autoFocus
+          disabled={isLoading}
+        />
+        <Button
+          size="sm"
+          onClick={handleSave}
+          disabled={isLoading}
+          className="bg-green-500 hover:bg-green-600 text-white px-2 py-1 h-7 text-xs"
+        >
+          {isLoading ? "..." : "✓"}
+        </Button>
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={handleCancel}
+          disabled={isLoading}
+          className="border-gray-300 text-gray-600 hover:bg-gray-50 px-2 py-1 h-7 text-xs"
+        >
+          ✕
+        </Button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex items-center gap-2">
+      <span className="font-semibold text-[#324D3E]">
+        {initialValue}
+      </span>
+      <Button
+        size="sm"
+        variant="ghost"
+        onClick={() => setIsEditing(true)}
+        className="p-1 h-6 w-6 hover:bg-[#324D3E]/10"
+      >
+        <Edit className="w-3 h-3 text-[#324D3E]" />
+      </Button>
+    </div>
+  );
+}
+
 // ===== Helper: deteksi URL video
 const isVideoUrl = (url?: string) =>
   !!url && /\.(mp4|webm|mov|m4v|ogg)(\?|#|$)/i.test(url);
@@ -732,18 +837,18 @@ export default function PlantDetail({
           <LandingNavbar hideNavigation={true} />
         </header>
 
-        <main className="pt-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
-          <div className="space-y-8 py-8">
-            <div className="text-center">
-              <h1 className="text-3xl lg:text-4xl font-bold text-[#324D3E] mb-4">
+        <main className="pt-16 sm:pt-20 px-2 sm:px-4 md:px-6 lg:px-8 max-w-7xl mx-auto" role="main">
+          <div className="space-y-4 sm:space-y-6 lg:space-y-8 py-4 sm:py-6 lg:py-8">
+            <header className="text-center px-2 sm:px-0">
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-[#324D3E] mb-2 sm:mb-4">
                 Detail Tanaman
               </h1>
-              <p className="text-[#889063] text-lg">Memuat data tanaman...</p>
-            </div>
-            <div className="bg-white/90 backdrop-blur-xl rounded-3xl shadow-xl border border-[#324D3E]/10 p-12 text-center">
-              <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-[#324D3E] mx-auto mb-6"></div>
-              <p className="text-[#889063] text-lg">Memuat data tanaman...</p>
-            </div>
+              <p className="text-[#889063] text-sm sm:text-base lg:text-lg">Memuat data tanaman...</p>
+            </header>
+            <section className="bg-white/90 backdrop-blur-xl rounded-2xl sm:rounded-3xl shadow-xl border border-[#324D3E]/10 p-6 sm:p-8 lg:p-12 text-center" aria-label="Loading">
+              <div className="animate-spin rounded-full h-12 w-12 sm:h-16 sm:w-16 border-b-4 border-[#324D3E] mx-auto mb-4 sm:mb-6" role="status" aria-label="Loading"></div>
+              <p className="text-[#889063] text-sm sm:text-base lg:text-lg">Memuat data tanaman...</p>
+            </section>
           </div>
         </main>
       </div>
@@ -757,26 +862,26 @@ export default function PlantDetail({
           <LandingNavbar hideNavigation={true} />
         </header>
 
-        <main className="pt-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
-          <div className="space-y-8 py-8">
-            <div className="text-center">
-              <h1 className="text-3xl lg:text-4xl font-bold text-[#324D3E] mb-4">
+        <main className="pt-16 sm:pt-20 px-2 sm:px-4 md:px-6 lg:px-8 max-w-7xl mx-auto" role="main">
+          <div className="space-y-4 sm:space-y-6 lg:space-y-8 py-4 sm:py-6 lg:py-8">
+            <header className="text-center px-2 sm:px-0">
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-[#324D3E] mb-2 sm:mb-4">
                 Detail Tanaman
               </h1>
-              <p className="text-[#889063] text-lg">Tanaman tidak ditemukan</p>
-            </div>
-            <div className="bg-white/90 backdrop-blur-xl rounded-3xl shadow-xl border border-[#324D3E]/10 p-12 text-center">
-              <h2 className="text-2xl font-bold text-[#324D3E] mb-4">
+              <p className="text-[#889063] text-sm sm:text-base lg:text-lg">Tanaman tidak ditemukan</p>
+            </header>
+            <section className="bg-white/90 backdrop-blur-xl rounded-2xl sm:rounded-3xl shadow-xl border border-[#324D3E]/10 p-6 sm:p-8 lg:p-12 text-center" aria-label="Error">
+              <h2 className="text-xl sm:text-2xl font-bold text-[#324D3E] mb-3 sm:mb-4">
                 Tanaman Tidak Ditemukan
               </h2>
               <Link
                 href="/checker"
-                className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-[#324D3E] to-[#4C3D19] text-white font-medium rounded-2xl hover:shadow-lg transition-all duration-300"
+                className="inline-flex items-center gap-2 px-4 sm:px-6 py-2 sm:py-3 bg-gradient-to-r from-[#324D3E] to-[#4C3D19] text-white font-medium rounded-xl sm:rounded-2xl hover:shadow-lg transition-all duration-300 text-sm sm:text-base"
               >
-                <ArrowLeft className="w-4 h-4" />
+                <ArrowLeft className="w-3 h-3 sm:w-4 sm:h-4" />
                 Kembali ke Dashboard
               </Link>
-            </div>
+            </section>
           </div>
         </main>
       </div>
@@ -790,116 +895,149 @@ export default function PlantDetail({
         <LandingNavbar hideNavigation={true} />
       </header>
 
-      <main className="pt-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
-        <div className="space-y-8 py-8">
+      <main className="pt-16 sm:pt-20 px-2 sm:px-4 md:px-6 lg:px-8 max-w-7xl mx-auto" role="main">
+        <div className="space-y-4 sm:space-y-6 lg:space-y-8 py-4 sm:py-6 lg:py-8">
           {/* Page Header */}
-          <div className="text-center">
+          <header className="text-center px-2 sm:px-0">
             <Link
               href="/checker"
-              className="inline-flex items-center gap-2 px-6 py-3 bg-white/80 backdrop-blur-lg text-[#324D3E] hover:bg-[#324D3E] hover:text-white font-medium rounded-2xl border border-[#324D3E]/20 mb-6 transition-all duration-300"
+              className="inline-flex items-center gap-2 px-4 sm:px-6 py-2 sm:py-3 bg-white/80 backdrop-blur-lg text-[#324D3E] hover:bg-[#324D3E] hover:text-white font-medium rounded-xl sm:rounded-2xl border border-[#324D3E]/20 mb-4 sm:mb-6 transition-all duration-300 text-sm sm:text-base"
             >
-              <ArrowLeft className="w-4 h-4" />
-              Kembali ke Dashboard
+              <ArrowLeft className="w-3 h-3 sm:w-4 sm:h-4" />
+              <span className="hidden sm:inline">Kembali ke Dashboard</span>
+              <span className="sm:hidden">Kembali</span>
             </Link>
-            <h1 className="text-3xl lg:text-4xl font-bold text-[#324D3E] mb-4">
+            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-[#324D3E] mb-2 sm:mb-4 px-2">
               Detail Tanaman
             </h1>
-            <p className="text-[#889063] text-lg">
+            <p className="text-[#889063] text-sm sm:text-base lg:text-lg px-2">
               Monitor dan kelola tanaman {plantData.instanceName || ""}
             </p>
-          </div>
+          </header>
 
-          <div className="bg-white/90 backdrop-blur-xl rounded-3xl shadow-xl border border-[#324D3E]/10 p-8 mb-8">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              <div className="flex items-center gap-4">
-                <div className="relative w-16 h-16 bg-gradient-to-br from-[#324D3E] to-[#4C3D19] rounded-2xl overflow-hidden shadow-lg">
+          <section className="bg-white/90 backdrop-blur-xl rounded-2xl sm:rounded-3xl shadow-xl border border-[#324D3E]/10 p-4 sm:p-6 lg:p-8 mb-4 sm:mb-6 lg:mb-8" aria-label="Plant Information">
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
+              <div className="flex items-center gap-3 sm:gap-4 md:col-span-2 xl:col-span-1">
+                <div className="relative w-12 h-12 sm:w-16 sm:h-16 bg-gradient-to-br from-[#324D3E] to-[#4C3D19] rounded-xl sm:rounded-2xl overflow-hidden shadow-lg flex-shrink-0">
                   {plantData.fotoGambar ? (
                     <Image
                       src={plantData.fotoGambar}
                       alt={plantData?.instanceName || "Foto tanaman"}
                       fill
-                      sizes="64px"
+                      sizes="(max-width: 640px) 48px, 64px"
                       className="object-cover"
+                      loading="lazy"
+                      quality={85}
                     />
                   ) : (
-                    <Leaf className="w-8 h-8 text-white absolute inset-0 m-auto" />
+                    <Leaf className="w-6 h-6 sm:w-8 sm:h-8 text-white absolute inset-0 m-auto" />
                   )}
                 </div>
 
-                <div>
-                  <p className="text-sm text-[#889063] mb-1">Jenis Tanaman</p>
-                  <h2 className="text-2xl font-bold text-[#324D3E]">
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs sm:text-sm text-[#889063] mb-1">Jenis Tanaman</p>
+                  <h2 className="text-lg sm:text-xl lg:text-2xl font-bold text-[#324D3E] truncate">
                     {plantData.instanceName || ""}
                   </h2>
                 </div>
               </div>
 
-              <div className="space-y-4">
-                <div className="bg-white/60 rounded-2xl p-4 border border-[#324D3E]/10">
-                  <p className="text-sm text-[#889063] mb-1">QR Code</p>
+              <div className="space-y-3 sm:space-y-4">
+                <div className="bg-white/60 rounded-xl sm:rounded-2xl p-3 sm:p-4 border border-[#324D3E]/10">
+                  <p className="text-xs sm:text-sm text-[#889063] mb-1">QR Code</p>
                   <div className="flex items-center gap-2">
-                    <QrCode className="w-4 h-4 text-[#4C3D19]" />
-                    <span className="font-semibold text-[#324D3E]">
+                    <QrCode className="w-3 h-3 sm:w-4 sm:h-4 text-[#4C3D19] flex-shrink-0" />
+                    <span className="font-semibold text-[#324D3E] text-sm sm:text-base truncate">
                       {plantData.qrCode}
                     </span>
                   </div>
                 </div>
-                <div className="bg-white/60 rounded-2xl p-4 border border-[#324D3E]/10">
-                  <p className="text-sm text-[#889063] mb-1">No. Kontrak</p>
+                <div className="bg-white/60 rounded-xl sm:rounded-2xl p-3 sm:p-4 border border-[#324D3E]/10">
+                  <p className="text-xs sm:text-sm text-[#889063] mb-1">No. Kontrak</p>
                   <div className="flex items-center gap-2">
-                    <FileText className="w-4 h-4 text-[#4C3D19]" />
-                    <span className="font-semibold text-[#324D3E]">
+                    <FileText className="w-3 h-3 sm:w-4 sm:h-4 text-[#4C3D19] flex-shrink-0" />
+                    <span className="font-semibold text-[#324D3E] text-sm sm:text-base truncate">
                       {plantData.contractNumber}
                     </span>
                   </div>
                 </div>
               </div>
 
-              <div className="space-y-4">
-                <div className="bg-white/60 rounded-2xl p-4 border border-[#324D3E]/10">
-                  <p className="text-sm text-[#889063] mb-1">Pemilik</p>
+              <div className="space-y-3 sm:space-y-4 md:col-span-2 xl:col-span-1">
+                <div className="bg-white/60 rounded-xl sm:rounded-2xl p-3 sm:p-4 border border-[#324D3E]/10">
+                  <p className="text-xs sm:text-sm text-[#889063] mb-1">Pemilik</p>
                   <div className="flex items-center gap-2">
-                    <User className="w-4 h-4 text-[#4C3D19]" />
-                    <span className="font-semibold text-[#324D3E]">
+                    <User className="w-3 h-3 sm:w-4 sm:h-4 text-[#4C3D19] flex-shrink-0" />
+                    <span className="font-semibold text-[#324D3E] text-sm sm:text-base truncate">
                       {plantData.owner}
                     </span>
                   </div>
                 </div>
 
-                <div className="bg-white/60 rounded-2xl p-4 border border-[#324D3E]/10">
-                  <p className="text-sm text-[#889063] mb-1">Lokasi Tanam</p>
-                  <div className="flex items-center gap-2">
-                    <MapPin className="w-4 h-4 text-[#4C3D19]" />
-                    <span className="font-semibold text-[#324D3E]">
-                      {plantData.location}
-                    </span>
+                <div className="bg-white/60 rounded-xl sm:rounded-2xl p-3 sm:p-4 border border-[#324D3E]/10">
+                  <p className="text-xs sm:text-sm text-[#889063] mb-1">Lokasi Tanam</p>
+                  <div className="flex items-center gap-2 min-w-0">
+                    <MapPin className="w-3 h-3 sm:w-4 sm:h-4 text-[#4C3D19] flex-shrink-0" />
+                    {(session?.user.role === "admin" || session?.user.role === "spv_staff") ? (
+                      <EditableField
+                        plantId={id}
+                        fieldName="location"
+                        initialValue={plantData.location || "-"}
+                        onUpdate={(newLocation) => setPlantData({...plantData, location: newLocation})}
+                        placeholder="Masukkan lokasi tanam..."
+                      />
+                    ) : (
+                      <span className="font-semibold text-[#324D3E] text-sm sm:text-base truncate">
+                        {plantData.location || "-"}
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                <div className="bg-white/60 rounded-xl sm:rounded-2xl p-3 sm:p-4 border border-[#324D3E]/10">
+                  <p className="text-xs sm:text-sm text-[#889063] mb-1">Kavling</p>
+                  <div className="flex items-center gap-2 min-w-0">
+                    <MapPin className="w-3 h-3 sm:w-4 sm:h-4 text-[#4C3D19] flex-shrink-0" />
+                    {(session?.user.role === "admin" || session?.user.role === "spv_staff") ? (
+                      <EditableField
+                        plantId={id}
+                        fieldName="kavling"
+                        initialValue={plantData.kavling || "-"}
+                        onUpdate={(newKavling) => setPlantData({...plantData, kavling: newKavling})}
+                        placeholder="Masukkan kavling..."
+                      />
+                    ) : (
+                      <span className="font-semibold text-[#324D3E] text-sm sm:text-base truncate">
+                        {plantData.kavling || "-"}
+                      </span>
+                    )}
                   </div>
                 </div>
               </div>
             </div>
-          </div>
+          </section>
 
           {/* GRID */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 lg:gap-8">
             {/* Form Laporan & Perawatan */}
-            <Card className="bg-white/90 backdrop-blur-xl border-[#324D3E]/10 rounded-3xl shadow-xl">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-[#324D3E] text-xl">
-                  <FileText className="w-6 h-6" />
-                  Form Laporan & Perawatan
+            <Card className="bg-white/90 backdrop-blur-xl border-[#324D3E]/10 rounded-2xl sm:rounded-3xl shadow-xl">
+              <CardHeader className="p-4 sm:p-6">
+                <CardTitle className="flex items-center gap-2 text-[#324D3E] text-lg sm:text-xl">
+                  <FileText className="w-5 h-5 sm:w-6 sm:h-6" />
+                  <span className="truncate">Form Laporan & Perawatan</span>
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-6 p-8">
+              <CardContent className="space-y-4 sm:space-y-6 p-4 sm:p-6 lg:p-8">
                 {/* Toggle Foto / Video */}
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-[#889063]">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                  <span className="text-xs sm:text-sm text-[#889063]">
                     Wajib lampirkan salah satu: <b>Foto ≤2MB</b> atau <b>Video ≤30 detik</b>
                   </span>
-                  <div className="inline-flex overflow-hidden rounded-xl border border-[#324D3E]/20">
+                  <div className="inline-flex overflow-hidden rounded-lg sm:rounded-xl border border-[#324D3E]/20 self-start sm:self-auto">
                     <button
                       type="button"
                       onClick={() => setUploadMode("photo")}
-                      className={`px-4 py-2 text-sm ${
+                      className={`px-3 sm:px-4 py-2 text-xs sm:text-sm ${
                         uploadMode === "photo"
                           ? "bg-[#324D3E] text-white"
                           : "bg-white text-[#324D3E]"
@@ -910,7 +1048,7 @@ export default function PlantDetail({
                     <button
                       type="button"
                       onClick={() => setUploadMode("video")}
-                      className={`px-4 py-2 text-sm ${
+                      className={`px-3 sm:px-4 py-2 text-xs sm:text-sm ${
                         uploadMode === "video"
                           ? "bg-[#324D3E] text-white"
                           : "bg-white text-[#324D3E]"
@@ -924,26 +1062,27 @@ export default function PlantDetail({
                 {/* Uploader sesuai mode */}
                 {uploadMode === "photo" ? (
                   <div>
-                    <label className="block text-sm font-medium text-[#324D3E] mb-3">
+                    <label className="block text-xs sm:text-sm font-medium text-[#324D3E] mb-2 sm:mb-3">
                       Foto Tanaman (Wajib, Max 2MB)
                     </label>
-                    <div className="border-2 border-dashed border-[#324D3E]/30 rounded-2xl p-8 text-center hover:border-[#324D3E] hover:bg-[#324D3E]/5 transition-all duration-300 cursor-pointer">
+                    <div className="border-2 border-dashed border-[#324D3E]/30 rounded-xl sm:rounded-2xl p-4 sm:p-6 lg:p-8 text-center hover:border-[#324D3E] hover:bg-[#324D3E]/5 transition-all duration-300 cursor-pointer">
                       <input
                         type="file"
                         accept="image/*"
                         onChange={handlePhotoChange}
                         className="hidden"
                         id="photo-upload"
+                        aria-label="Upload photo file"
                       />
                       <label htmlFor="photo-upload" className="cursor-pointer">
-                        <Upload className="w-12 h-12 mx-auto mb-4 text-[#889063]" />
-                        <p className="text-[#324D3E] mb-2 font-medium">
+                        <Upload className="w-8 h-8 sm:w-10 sm:h-10 lg:w-12 lg:h-12 mx-auto mb-3 sm:mb-4 text-[#889063]" />
+                        <p className="text-[#324D3E] mb-2 font-medium text-sm sm:text-base">
                           {selectedPhoto
                             ? selectedPhoto.name
                             : "Klik untuk upload atau seret foto"}
                         </p>
                         {selectedPhoto && (
-                          <p className="text-sm text-[#889063]">
+                          <p className="text-xs sm:text-sm text-[#889063]">
                             Ukuran: {(selectedPhoto.size / 1024 / 1024).toFixed(2)} MB
                           </p>
                         )}
@@ -952,26 +1091,27 @@ export default function PlantDetail({
                   </div>
                 ) : (
                   <div>
-                    <label className="block text-sm font-medium text-[#324D3E] mb-3">
+                    <label className="block text-xs sm:text-sm font-medium text-[#324D3E] mb-2 sm:mb-3">
                       Video Laporan (Durasi maksimal 30 detik)
                     </label>
-                    <div className="border-2 border-dashed border-[#324D3E]/30 rounded-2xl p-8 text-center hover:border-[#324D3E] hover:bg-[#324D3E]/5 transition-all duration-300 cursor-pointer">
+                    <div className="border-2 border-dashed border-[#324D3E]/30 rounded-xl sm:rounded-2xl p-4 sm:p-6 lg:p-8 text-center hover:border-[#324D3E] hover:bg-[#324D3E]/5 transition-all duration-300 cursor-pointer">
                       <input
                         type="file"
                         accept="video/*"
                         onChange={handleVideoChange}
                         className="hidden"
                         id="video-upload"
+                        aria-label="Upload video file"
                       />
                       <label htmlFor="video-upload" className="cursor-pointer">
-                        <Upload className="w-12 h-12 mx-auto mb-4 text-[#889063]" />
-                        <p className="text-[#324D3E] mb-2 font-medium">
+                        <Upload className="w-8 h-8 sm:w-10 sm:h-10 lg:w-12 lg:h-12 mx-auto mb-3 sm:mb-4 text-[#889063]" />
+                        <p className="text-[#324D3E] mb-2 font-medium text-sm sm:text-base">
                           {selectedVideo
                             ? selectedVideo.name
                             : "Klik untuk upload atau seret video"}
                         </p>
                         {selectedVideo && (
-                          <p className="text-sm text-[#889063]">
+                          <p className="text-xs sm:text-sm text-[#889063]">
                             Ukuran: {(selectedVideo.size / 1024 / 1024).toFixed(2)} MB • Maks 30 detik
                           </p>
                         )}
@@ -982,7 +1122,7 @@ export default function PlantDetail({
 
                 {/* Status */}
                 <div>
-                  <label className="block text-sm font-medium text-[#324D3E] mb-3">
+                  <label className="block text-xs sm:text-sm font-medium text-[#324D3E] mb-2 sm:mb-3">
                     Status Laporan
                   </label>
                   <Select
@@ -994,15 +1134,15 @@ export default function PlantDetail({
                       }
                     }}
                   >
-                    <SelectTrigger className="bg-white border-[#324D3E]/20 text-[#324D3E] rounded-xl h-12 focus:ring-2 focus:ring-[#324D3E]/20">
+                    <SelectTrigger className="bg-white border-[#324D3E]/20 text-[#324D3E] rounded-lg sm:rounded-xl h-10 sm:h-12 focus:ring-2 focus:ring-[#324D3E]/20 text-sm sm:text-base">
                       <SelectValue placeholder="Pilih status..." />
                     </SelectTrigger>
-                    <SelectContent className="bg-white border-[#324D3E]/20 rounded-xl">
+                    <SelectContent className="bg-white border-[#324D3E]/20 rounded-lg sm:rounded-xl">
                       {statusOptions.map((option) => (
                         <SelectItem
                           key={option.value}
                           value={option.value}
-                          className="text-[#324D3E]"
+                          className="text-[#324D3E] text-sm sm:text-base"
                         >
                           {option.label}
                         </SelectItem>
@@ -1014,7 +1154,7 @@ export default function PlantDetail({
                 {/* Custom Status */}
                 {reportStatus === "lainnya" && (
                   <div>
-                    <label className="block text-sm font-medium text-[#324D3E] mb-3">
+                    <label className="block text-xs sm:text-sm font-medium text-[#324D3E] mb-2 sm:mb-3">
                       Status Custom
                     </label>
                     <input
@@ -1022,26 +1162,26 @@ export default function PlantDetail({
                       placeholder="Masukkan status custom..."
                       value={customStatus}
                       onChange={(e) => setCustomStatus(e.target.value)}
-                      className="w-full bg-white border border-[#324D3E]/20 rounded-xl px-4 py-3 text-[#324D3E] placeholder:text-[#889063] focus:outline-none focus:ring-2 focus:ring-[#324D3E]/20 focus:border-[#324D3E]/40"
+                      className="w-full bg-white border border-[#324D3E]/20 rounded-lg sm:rounded-xl px-3 sm:px-4 py-2 sm:py-3 text-[#324D3E] placeholder:text-[#889063] focus:outline-none focus:ring-2 focus:ring-[#324D3E]/20 focus:border-[#324D3E]/40 text-sm sm:text-base"
                     />
                   </div>
                 )}
 
                 {/* Notes */}
                 <div>
-                  <label className="block text-sm font-medium text-[#324D3E] mb-3">
+                  <label className="block text-xs sm:text-sm font-medium text-[#324D3E] mb-2 sm:mb-3">
                     Catatan
                   </label>
                   <Textarea
                     placeholder="Contoh: Pemupukan NPK dosis 10gr atau Laporan tanaman terkena banjir..."
                     value={notes}
                     onChange={(e) => setNotes(e.target.value)}
-                    className="bg-white border-[#324D3E]/20 min-h-[120px] text-[#324D3E] placeholder:text-[#889063] rounded-xl focus:ring-2 focus:ring-[#324D3E]/20"
+                    className="bg-white border-[#324D3E]/20 min-h-[100px] sm:min-h-[120px] text-[#324D3E] placeholder:text-[#889063] rounded-lg sm:rounded-xl focus:ring-2 focus:ring-[#324D3E]/20 text-sm sm:text-base"
                   />
                 </div>
 
                 <Button
-                  className="w-full bg-gradient-to-r from-[#324D3E] to-[#4C3D19] hover:shadow-lg disabled:opacity-50 text-white font-semibold py-3 rounded-2xl transition-all duration-300"
+                  className="w-full bg-gradient-to-r from-[#324D3E] to-[#4C3D19] hover:shadow-lg disabled:opacity-50 text-white font-semibold py-2.5 sm:py-3 rounded-xl sm:rounded-2xl transition-all duration-300 text-sm sm:text-base"
                   onClick={handleSubmit}
                   disabled={isSubmitting}
                 >
@@ -1051,102 +1191,108 @@ export default function PlantDetail({
             </Card>
 
             {/* Riwayat */}
-            <Card className="bg-white/90 backdrop-blur-xl border-[#324D3E]/10 rounded-3xl shadow-xl">
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <CardTitle className="flex items-center gap-2 text-[#324D3E] text-xl">
-                    <Clock className="w-6 h-6" />
-                    Riwayat Tanaman
+            <Card className="bg-white/90 backdrop-blur-xl border-[#324D3E]/10 rounded-2xl sm:rounded-3xl shadow-xl">
+              <CardHeader className="p-4 sm:p-6">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                  <CardTitle className="flex items-center gap-2 text-[#324D3E] text-lg sm:text-xl">
+                    <Clock className="w-5 h-5 sm:w-6 sm:h-6" />
+                    <span className="truncate">Riwayat Tanaman</span>
                   </CardTitle>
-                  <Button
-                    onClick={handleDownloadHistoryPDF}
-                    className="bg-gradient-to-r from-purple-500 to-purple-600 hover:shadow-lg text-white rounded-xl"
-                    size="sm"
-                  >
-                    <Download className="w-4 h-4 mr-2" />
-                    Download PDF
-                  </Button>
-                  {(session?.user.role === "admin" ||
-                    session?.user.role === "spv_staff") && (
+                  <div className="flex flex-wrap gap-2 sm:gap-3">
                     <Button
-                      onClick={() => handleDeletePlant()}
-                      className="bg-gradient-to-r from-red-500 to-red-600 hover:shadow-lg text-white rounded-xl"
+                      onClick={handleDownloadHistoryPDF}
+                      className="bg-gradient-to-r from-purple-500 to-purple-600 hover:shadow-lg text-white rounded-lg sm:rounded-xl flex-1 sm:flex-none"
                       size="sm"
                     >
-                      <Trash2 className="w-4 h-4 mr-2" />
-                      {session?.user.role === "admin"
-                        ? "Delete Plant"
-                        : "Request Delete"}
+                      <Download className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+                      <span className="text-xs sm:text-sm">Download PDF</span>
                     </Button>
-                  )}
+                    {(session?.user.role === "admin" ||
+                      session?.user.role === "spv_staff") && (
+                      <Button
+                        onClick={() => handleDeletePlant()}
+                        className="bg-gradient-to-r from-red-500 to-red-600 hover:shadow-lg text-white rounded-lg sm:rounded-xl flex-1 sm:flex-none"
+                        size="sm"
+                      >
+                        <Trash2 className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+                        <span className="text-xs sm:text-sm">
+                          {session?.user.role === "admin"
+                            ? "Delete Plant"
+                            : "Request Delete"}
+                        </span>
+                      </Button>
+                    )}
+                  </div>
                 </div>
               </CardHeader>
-              <CardContent className="p-8">
-                <div className="space-y-4">
+              <CardContent className="p-4 sm:p-6 lg:p-8">
+                <div className="space-y-3 sm:space-y-4">
                   {plantData.history.map((item, index) => (
                     <div
                       key={index}
-                      className="flex gap-4 p-6 bg-white/60 rounded-2xl border border-[#324D3E]/10 hover:bg-white/80 transition-all duration-300"
+                      className="flex gap-3 sm:gap-4 p-4 sm:p-6 bg-white/60 rounded-xl sm:rounded-2xl border border-[#324D3E]/10 hover:bg-white/80 transition-all duration-300"
                     >
-                      <div className="w-20 h-20 bg-[#324D3E]/10 rounded-2xl flex items-center justify-center flex-shrink-0">
+                      <div className="w-16 h-16 sm:w-20 sm:h-20 bg-[#324D3E]/10 rounded-xl sm:rounded-2xl flex items-center justify-center flex-shrink-0">
                         {item.imageUrl ? (
                           isVideoUrl(item.imageUrl) ? (
                             <video
                               src={item.imageUrl}
-                              className="w-full h-full object-cover rounded-2xl"
+                              className="w-full h-full object-cover rounded-xl sm:rounded-2xl"
                               controls
-                              preload="metadata"
+                              preload="none"
+                              aria-label={`Video for ${item.type} on ${item.date}`}
                             />
                           ) : (
                             <Image
-                              unoptimized
                               src={item.imageUrl || "/placeholder.svg"}
-                              alt="Plant media"
-                              className="w-full h-full object-cover rounded-2xl"
+                              alt={`Plant media for ${item.type} on ${item.date}`}
+                              className="w-full h-full object-cover rounded-xl sm:rounded-2xl"
                               width={80}
                               height={80}
+                              quality={75}
                             />
                           )
                         ) : (
-                          <Camera className="w-6 h-6 text-[#889063]" />
+                          <Camera className="w-4 h-4 sm:w-6 sm:h-6 text-[#889063]" />
                         )}
                       </div>
-                      <div className="flex-1">
-                        <div className="flex items-center justify-between mb-2">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-2">
                           <Badge
                             className={`${
                               statusColors[item.type] ||
                               "bg-gray-100 text-gray-800"
-                            } rounded-xl px-3 py-1`}
+                            } rounded-lg sm:rounded-xl px-2 sm:px-3 py-1 text-xs sm:text-sm self-start`}
                           >
                             {item.type}
                           </Badge>
 
-                          <div className="flex items-center gap-2 text-sm text-[#889063]">
-                            <span className="flex items-center gap-1">
-                              <User className="w-3 h-3" />
-                              {item.addedBy}
+                          <div className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm text-[#889063]">
+                            <span className="flex items-center gap-1 truncate">
+                              <User className="w-3 h-3 flex-shrink-0" />
+                              <span className="truncate">{item.addedBy}</span>
                             </span>
-                            <span className="text-[#324D3E]/30">•</span>
+                            <span className="text-[#324D3E]/30 hidden sm:inline">•</span>
                             <span className="flex items-center gap-1">
-                              <Clock className="w-3 h-3" />
+                              <Clock className="w-3 h-3 flex-shrink-0" />
                               {item.date}
                             </span>
                           </div>
                         </div>
-                        <p className="text-sm text-[#324D3E] mb-3">
+                        <p className="text-xs sm:text-sm text-[#324D3E] mb-3 break-words">
                           {item.description}
                         </p>
-                        <div className="flex items-center justify-between">
-                          <div className="flex gap-2">
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-0">
+                          <div className="flex flex-wrap gap-1 sm:gap-2">
                             <Button
                               size="sm"
                               variant="outline"
                               onClick={() => handleViewDetail(item)}
-                              className="bg-blue-500 hover:bg-blue-600 text-white border-blue-500 rounded-xl"
+                              className="bg-blue-500 hover:bg-blue-600 text-white border-blue-500 rounded-lg sm:rounded-xl text-xs sm:text-sm px-2 sm:px-3 py-1"
                             >
                               <Eye className="w-3 h-3 mr-1" />
-                              Detail
+                              <span className="hidden sm:inline">Detail</span>
+                              <span className="sm:hidden">View</span>
                             </Button>
                             {(session?.user.role === "admin" ||
                               session?.user.role === "spv_staff") && (
@@ -1163,12 +1309,15 @@ export default function PlantDetail({
                                     handleRequestHistoryUpdate(item);
                                   }
                                 }}
-                                className="bg-yellow-500 hover:bg-yellow-600 text-white border-yellow-500 rounded-xl"
+                                className="bg-yellow-500 hover:bg-yellow-600 text-white border-yellow-500 rounded-lg sm:rounded-xl text-xs sm:text-sm px-2 sm:px-3 py-1"
                               >
                                 <Edit className="w-3 h-3 mr-1" />
-                                {session?.user.role === "admin"
-                                  ? "Update"
-                                  : "Request Update"}
+                                <span className="hidden sm:inline">
+                                  {session?.user.role === "admin"
+                                    ? "Update"
+                                    : "Request Update"}
+                                </span>
+                                <span className="sm:hidden">Edit</span>
                               </Button>
                             )}
                           </div>
@@ -1178,7 +1327,7 @@ export default function PlantDetail({
                               size="sm"
                               variant="outline"
                               onClick={() => handleDeleteHistoryItem(item.id)}
-                              className="bg-red-500 hover:bg-red-600 text-white border-red-500 p-2 min-w-0 rounded-xl"
+                              className="bg-red-500 hover:bg-red-600 text-white border-red-500 p-1.5 sm:p-2 min-w-0 rounded-lg sm:rounded-xl self-start sm:self-auto"
                               title={
                                 session?.user.role === "admin"
                                   ? "Delete"
@@ -1199,11 +1348,11 @@ export default function PlantDetail({
 
           {/* Modal Detail */}
           {showModal && selectedHistory && (
-            <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-              <div className="bg-white/95 backdrop-blur-xl rounded-3xl max-w-4xl w-full max-h-[90vh] overflow-y-auto shadow-2xl border border-[#324D3E]/10">
-                <div className="p-8">
-                  <div className="flex justify-between items-center mb-8">
-                    <h2 className="text-2xl font-bold text-[#324D3E]">
+            <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-2 sm:p-4">
+              <div className="bg-white/95 backdrop-blur-xl rounded-2xl sm:rounded-3xl max-w-4xl w-full max-h-[95vh] sm:max-h-[90vh] overflow-y-auto shadow-2xl border border-[#324D3E]/10">
+                <div className="p-4 sm:p-6 lg:p-8">
+                  <div className="flex justify-between items-center mb-4 sm:mb-6 lg:mb-8">
+                    <h2 className="text-lg sm:text-xl lg:text-2xl font-bold text-[#324D3E] truncate pr-2">
                       {isEditing ? "Edit Riwayat" : "Detail Riwayat"}
                     </h2>
                     <Button
@@ -1213,13 +1362,13 @@ export default function PlantDetail({
                         setShowModal(false);
                         setIsEditing(false);
                       }}
-                      className="text-[#889063] hover:text-[#324D3E] hover:bg-[#324D3E]/10 rounded-xl"
+                      className="text-[#889063] hover:text-[#324D3E] hover:bg-[#324D3E]/10 rounded-lg sm:rounded-xl p-2 flex-shrink-0"
                     >
-                      <X className="w-5 h-5" />
+                      <X className="w-4 h-4 sm:w-5 sm:h-5" />
                     </Button>
                   </div>
 
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
                     <div className="space-y-4">
                       <div className="aspect-square bg-gray-100 rounded-lg overflow-hidden">
                         {selectedHistory.imageUrl ? (
@@ -1228,16 +1377,17 @@ export default function PlantDetail({
                               src={selectedHistory.imageUrl}
                               className="w-full h-full object-cover"
                               controls
-                              preload="metadata"
+                              preload="none"
+                              aria-label={`Video for ${selectedHistory.type} on ${selectedHistory.date}`}
                             />
                           ) : (
                             <Image
-                              unoptimized
                               src={selectedHistory.imageUrl || "/placeholder.svg"}
-                              alt="Plant media"
+                              alt={`Plant media for ${selectedHistory.type} on ${selectedHistory.date}`}
                               className="w-full h-full object-cover"
-                              width={64}
-                              height={64}
+                              fill
+                              sizes="(max-width: 1024px) 100vw, 50vw"
+                              quality={85}
                             />
                           )
                         ) : (
@@ -1337,20 +1487,20 @@ export default function PlantDetail({
 
           {/* Request Modal */}
           {showRequestModal && (
-            <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-              <div className="bg-white/95 backdrop-blur-xl rounded-3xl max-w-md w-full max-h-[90vh] overflow-y-auto shadow-2xl border border-[#324D3E]/10">
-                <div className="p-6">
-                  <div className="flex justify-between items-center mb-6">
-                    <h2 className="text-xl font-bold text-[#324D3E]">
+            <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-2 sm:p-4">
+              <div className="bg-white/95 backdrop-blur-xl rounded-2xl sm:rounded-3xl max-w-md w-full max-h-[95vh] sm:max-h-[90vh] overflow-y-auto shadow-2xl border border-[#324D3E]/10">
+                <div className="p-4 sm:p-6">
+                  <div className="flex justify-between items-center mb-4 sm:mb-6">
+                    <h2 className="text-lg sm:text-xl font-bold text-[#324D3E] truncate pr-2">
                       Ajukan Permintaan
                     </h2>
                     <Button
                       variant="ghost"
                       size="sm"
                       onClick={() => setShowRequestModal(false)}
-                      className="text-[#889063] hover:text-[#324D3E] hover:bg-[#324D3E]/10 rounded-xl"
+                      className="text-[#889063] hover:text-[#324D3E] hover:bg-[#324D3E]/10 rounded-lg sm:rounded-xl p-2 flex-shrink-0"
                     >
-                      <X className="w-5 h-5" />
+                      <X className="w-4 h-4 sm:w-5 sm:h-5" />
                     </Button>
                   </div>
 

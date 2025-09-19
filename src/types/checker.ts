@@ -51,6 +51,7 @@ export type PlantInstance = {
   operationalCosts: OperationalCost[];
   incomeRecords: IncomeRecord[];
   location?: string;
+  kavling?: string;
   lastUpdate: string;
   status: string;
   owner: string;

@@ -1,8 +1,82 @@
 import { authOptions } from "@/lib/auth";
 import connectDB from "@/lib/mongodb";
+import { PlantInstance } from "@/models";
 import PlantRequest from "@/models/PlantRequest";
 import { getServerSession } from "next-auth/next";
 import { NextRequest, NextResponse } from "next/server";
+
+async function performApprovedAction(request: any) {
+  switch (request.requestType) {
+    case "update_history":
+      await updatePlantHistory(request);
+      break;
+    case "delete_history":
+      await deletePlantHistory(request);
+      break;
+    case "delete":
+      await deletePlant(request);
+      break;
+    default:
+      console.warn(`Unknown request type: ${request.requestType}`);
+  }
+}
+
+async function updatePlantHistory(request: any) {
+  console.log('updatePlantHistory called with:', {
+    plantId: request.plantId,
+    historyId: request.historyId,
+    newDescription: request.newDescription
+  });
+
+  const plant = await PlantInstance.findOne({ id: request.plantId });
+  if (!plant) {
+    console.error(`Plant not found: ${request.plantId}`);
+    throw new Error(`Plant not found: ${request.plantId}`);
+  }
+
+  console.log('Plant found, history items:', plant.history.map((h: any) => ({ id: h.id, type: typeof h.id })));
+
+  const historyItem = plant.history.find((h: any) => h.id.toString() === request.historyId.toString());
+  if (!historyItem) {
+    console.error(`History item not found: ${request.historyId}, available IDs:`, plant.history.map((h: any) => h.id));
+    throw new Error(`History item not found: ${request.historyId}`);
+  }
+
+  console.log('Found history item:', historyItem);
+  console.log('Updating description from:', historyItem.description, 'to:', request.newDescription);
+
+  // Use MongoDB's positional operator to update nested array element
+  // Convert historyId to number since it's stored as number in DB
+  const historyIdAsNumber = parseInt(request.historyId);
+  await PlantInstance.updateOne(
+    { id: request.plantId, "history.id": historyIdAsNumber },
+    { $set: { "history.$.description": request.newDescription } }
+  );
+
+  console.log('Plant updated successfully using $set operator');
+
+  // Verify the change was persisted
+  const verifyPlant = await PlantInstance.findOne({ id: request.plantId });
+  const verifyHistoryItem = verifyPlant?.history.find((h: any) => h.id.toString() === request.historyId.toString());
+  console.log('Verification - Updated description in DB:', verifyHistoryItem?.description);
+}
+
+async function deletePlantHistory(request: any) {
+  const plant = await PlantInstance.findOne({ id: request.plantId });
+  if (!plant) {
+    throw new Error(`Plant not found: ${request.plantId}`);
+  }
+
+  plant.history = plant.history.filter((h: any) => h.id.toString() !== request.historyId.toString());
+  await plant.save();
+}
+
+async function deletePlant(request: any) {
+  const plant = await PlantInstance.findOneAndDelete({ id: request.plantId });
+  if (!plant) {
+    throw new Error(`Plant not found: ${request.plantId}`);
+  }
+}
 
 export async function GET(request: NextRequest) {
   try {
@@ -214,6 +288,18 @@ export async function PUT(request: NextRequest) {
 
     if (!updatedRequest) {
       return NextResponse.json({ error: "Request not found" }, { status: 404 });
+    }
+
+    // If approved, perform the actual operation
+    if (status === "approved") {
+      try {
+        console.log('Performing approved action for request:', updatedRequest.requestType);
+        await performApprovedAction(updatedRequest);
+        console.log('Approved action completed successfully');
+      } catch (error) {
+        console.error("Error performing approved action:", error);
+        // Still return success since the request was updated, but log the error
+      }
     }
 
     return NextResponse.json({

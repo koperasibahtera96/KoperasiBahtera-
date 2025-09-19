@@ -51,6 +51,35 @@ export async function PUT(
   }
 }
 
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    await ensureConnection();
+    const body = await request.json();
+    const { id } = await params;
+
+    const plant = await PlantInstance.findOneAndUpdate(
+      { id },
+      { $set: body },
+      { new: true }
+    );
+
+    if (!plant) {
+      return NextResponse.json({ error: "Plant not found" }, { status: 404 });
+    }
+
+    return NextResponse.json(plant);
+  } catch (error) {
+    console.error("Error updating plant:", error);
+    return NextResponse.json(
+      { error: "Failed to update plant" },
+      { status: 500 }
+    );
+  }
+}
+
 export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }

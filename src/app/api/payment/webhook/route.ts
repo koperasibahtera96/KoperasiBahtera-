@@ -14,26 +14,18 @@ import { NextRequest, NextResponse } from "next/server";
 // Helper function to extract tree count from product name
 function extractTreeCount(productName: string): number {
   if (!productName) return 1; // Default fallback
-
-  // Look for "1 Pohon" or "10 Pohon" in the product name
-  if (productName.includes("1 Pohon")) {
-    return 1;
-  } else if (productName.includes("10 Pohon")) {
-    return 10;
-  }
-
-  // Default to 10 if pattern not found (backward compatibility)
+  if (productName.includes("1 Pohon")) return 1;
+  if (productName.includes("10 Pohon")) return 10;
   return 10;
 }
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-
     console.log("Midtrans webhook received:", body);
 
     // Handle test notifications from Midtrans Dashboard
-    if (body.order_id && body.order_id.includes("payment_notif_test")) {
+    if (body.order_id?.includes("payment_notif_test")) {
       console.log("🧪 Test notification received from Midtrans Dashboard");
       return NextResponse.json({
         success: true,
@@ -42,37 +34,24 @@ export async function POST(request: NextRequest) {
     }
 
     // Verify the notification
-    const _verifiedNotification = await midtransService.verifyNotification(
-      body
-    );
+    await midtransService.verifyNotification(body);
 
-    // Use original notification body for field extraction (verified notification might have different structure)
     const orderId = body.order_id;
     const transactionId = body.transaction_id;
     const transactionStatus = body.transaction_status;
     const fraudStatus = body.fraud_status;
 
-    console.log(`🔍 RAW BODY order_id: "${body.order_id}"`);
-    console.log(`🔍 RAW BODY transaction_id: "${body.transaction_id}"`);
-    console.log(`🔍 EXTRACTED orderId: "${orderId}"`);
-    console.log(`🔍 EXTRACTED transactionId: "${transactionId}"`);
+    console.log(`🔍 orderId: ${orderId}, transactionId: ${transactionId}`);
     console.log(
       `Transaction ${orderId} status: ${transactionStatus}, fraud: ${fraudStatus}`
     );
-    console.log(`🔍 Looking for payment with orderId: "${orderId}"`);
-    console.log(`🔍 Transaction ID: "${transactionId}"`);
 
     await dbConnect();
 
     // Find the payment record
     const payment = await Payment.findOne({ orderId });
-
     if (!payment) {
-      console.error(`Payment record not found for order: "${orderId}"`);
-      console.log(
-        `🔍 Available payments in DB:`,
-        await Payment.find({}).select("orderId").lean()
-      );
+      console.error(`Payment not found for order: "${orderId}"`);
       return NextResponse.json(
         { error: "Payment record not found" },
         { status: 404 }
@@ -83,13 +62,13 @@ export async function POST(request: NextRequest) {
     payment.transactionId = transactionId;
     payment.transactionStatus = transactionStatus;
     payment.fraudStatus = fraudStatus;
-    // Note: Don't update paymentType - it's our internal type, not Midtrans payment method
     payment.transactionTime = new Date(body.transaction_time);
     payment.midtransResponse = body;
 
     let message = "";
     let shouldCreateUser = false;
 
+    // Transaction status handling
     if (transactionStatus === "capture") {
       if (fraudStatus === "challenge") {
         message = "Transaction is challenged by FDS";
@@ -103,427 +82,230 @@ export async function POST(request: NextRequest) {
       message = "Transaction successful";
       shouldCreateUser = true;
       payment.settlementTime = new Date();
-    } else if (
-      transactionStatus === "cancel" ||
-      transactionStatus === "deny" ||
-      transactionStatus === "expire"
-    ) {
+    } else if (["cancel", "deny", "expire"].includes(transactionStatus)) {
       message = "Transaction failed";
       payment.processingError = `Transaction ${transactionStatus}`;
     } else if (transactionStatus === "pending") {
       message = "Transaction pending";
     }
 
-    // Create user account if payment is successful and not already processed
-    // Only for registration payments (REG-*), not investment payments (INV-*)
+    // REG user creation
     if (
       shouldCreateUser &&
       !payment.isProcessed &&
       payment.customerData &&
       orderId.startsWith("REG-")
     ) {
-      try {
-        // Check if user already exists
-        const existingUser = await User.findOne({
-          $or: [
-            { email: payment.customerData.email },
-            { phoneNumber: payment.customerData.phoneNumber },
-          ],
-        });
+      const existingUser = await User.findOne({
+        $or: [
+          { email: payment.customerData.email },
+          { phoneNumber: payment.customerData.phoneNumber },
+        ],
+      });
 
-        if (existingUser) {
-          console.log("User already exists, skipping creation");
-          payment.processingError = "User already exists";
-        } else {
-          // Password is already hashed from payment creation
-          const hashedPassword = payment.customerData.password;
-
-          // Get occupation code
-          const occupationData = occupationOptions.find(
-            (opt) => opt.value === payment.customerData.occupation
-          );
-          const occupationCode = occupationData?.code || "999";
-
-          // Generate user code - format: BMS-{Year}{OccupationCode}.{Sequential}
-          const currentYear = new Date().getFullYear().toString().slice(-2);
-
-          // Find the last user with any user code to get the highest sequential number
-          const lastUser = await User.findOne({})
-            .sort({ userCode: -1 })
-            .select("userCode");
-
-          let sequential = 1;
-          if (lastUser && lastUser.userCode) {
-            // Extract sequential number from format BMS-2599.0017
-            const match = lastUser.userCode.match(/BMS-\d+\.(\d+)$/);
-            if (match) {
-              sequential = parseInt(match[1]) + 1;
-            }
-          }
-
-          const userCode = `BMS-${currentYear}${occupationCode}.${sequential.toString().padStart(4, "0")}`;
-
-          // Create user
-          const user = new User({
-            email: payment.customerData.email,
-            password: hashedPassword,
-            fullName: payment.customerData.fullName,
-            nik: payment.customerData.nik,
-            phoneNumber: payment.customerData.phoneNumber,
-            dateOfBirth: payment.customerData.dateOfBirth,
-            ktpAddress: payment.customerData.ktpAddress,
-            ktpVillage: payment.customerData.ktpVillage,
-            ktpCity: payment.customerData.ktpCity,
-            ktpProvince: payment.customerData.ktpProvince,
-            ktpPostalCode: payment.customerData.ktpPostalCode,
-            domisiliAddress: payment.customerData.domisiliAddress,
-            domisiliVillage: payment.customerData.domisiliVillage,
-            domisiliCity: payment.customerData.domisiliCity,
-            domisiliProvince: payment.customerData.domisiliProvince,
-            domisiliPostalCode: payment.customerData.domisiliPostalCode,
-            occupation: payment.customerData.occupation,
-            occupationCode: occupationCode,
-            userCode: userCode,
-            ktpImageUrl: payment.customerData.ktpImageUrl,
-            faceImageUrl: payment.customerData.faceImageUrl,
-            role: "user",
-            isEmailVerified: false,
-            isPhoneVerified: false,
-            isActive: true,
-          });
-
-          await user.save();
-
-          payment.userId = user._id;
-          payment.isProcessed = true;
-          message = `Transaction successful - User account created: ${userCode}`;
-
-          console.log("User created successfully:", {
-            id: user._id,
-            email: user.email,
-            userCode: user.userCode,
-            orderId: orderId,
-          });
-        }
-      } catch (userCreationError) {
-        console.error("Error creating user:", userCreationError);
-        payment.processingError = `User creation failed: ${
-          userCreationError instanceof Error
-            ? userCreationError.message
-            : "Unknown error"
-        }`;
-        message = "Transaction successful but user creation failed";
-      }
-    } else if (shouldCreateUser && !payment.isProcessed && orderId.startsWith("CONTRACT-")) {
-      // Investment payments - create PlantInstance and investor record
-      console.log(
-        "Investment payment successful - creating PlantInstance and investor record for:",
-        orderId
-      );
-
-      // Start MongoDB transaction to prevent duplicates
-      const mongoSession = await mongoose.startSession();
-      const transactionId = `TXN-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-      
-      try {
-        console.log(`🔄 [${transactionId}] Starting transaction for ${orderId}`);
-        await mongoSession.withTransaction(async () => {
-          console.log(`📦 [${transactionId}] Inside transaction callback for ${orderId}`);
-
-          // Find the user for this payment
-          const user = await User.findById(payment.userId).session(mongoSession);
-          if (!user) {
-            console.error(`❌ [${transactionId}] User not found for payment.userId: ${payment.userId}`);
-            throw new Error("User not found for investment payment");
-          }
-          console.log(`👤 [${transactionId}] Found user: ${user._id} (${user.fullName})`);
-
-          // Check if this investment has already been processed to prevent duplicates
-          console.log(`🔍 [${transactionId}] Checking for existing investment ${orderId} for user ${user._id}`);
-          const existingInvestment = await Investor.findOne({ 
-            userId: user._id,
-            "investments.investmentId": orderId
-          }).session(mongoSession);
-
-          if (existingInvestment) {
-            console.log(`⚠️ [${transactionId}] Investment ${orderId} already processed, skipping duplicate creation`);
-            // Don't return early - still need to update contract status
-          } else {
-            console.log(`✅ [${transactionId}] No existing investment found, proceeding with creation for ${orderId}`);
-
-            // Map product name to plant type
-            const getPlantType = (
-              productName: string
-            ): "gaharu" | "alpukat" | "jengkol" | "aren" => {
-              const name = productName.toLowerCase();
-              if (name.includes("gaharu")) return "gaharu";
-              if (name.includes("alpukat")) return "alpukat";
-              if (name.includes("jengkol")) return "jengkol";
-              if (name.includes("aren")) return "aren";
-              return "gaharu"; // default
-            };
-
-            const getBaseROI = (
-              plantType: "gaharu" | "alpukat" | "jengkol" | "aren"
-            ): number => {
-              const roiMap = {
-                gaharu: 0.15,
-                alpukat: 0.12,
-                jengkol: 0.1,
-                aren: 0.18,
-              };
-              return roiMap[plantType] || 0.12;
-            };
-
-            // Check if PlantInstance already exists to prevent duplicates
-            console.log(`🌱 [${transactionId}] Checking for existing PlantInstance with contractNumber: ${orderId}`);
-            let savedPlantInstance = await PlantInstance.findOne({
-              contractNumber: orderId // orderId is already CONTRACT-... format
-            }).session(mongoSession);
-
-            if (!savedPlantInstance) {
-              console.log(`🌱 [${transactionId}] No existing PlantInstance found, creating new one`);
-              // Create new PlantInstance with FULLY deterministic data to prevent duplicates on transaction retries
-              const plantInstanceId = `PLANT-${payment.orderId}-${orderId.slice(-8)}`;
-              
-              const productName = payment.productName || "gaharu";
-              const plantType = getPlantType(productName);
-              const instanceName = `${
-                plantType.charAt(0).toUpperCase() + plantType.slice(1)
-              } - ${user.fullName}`;
-              const adminName = await getFirstAdminName();
-
-              // Use deterministic history ID based on orderId to prevent duplicates on retries
-              const deterministicHistoryId = `HISTORY-${orderId}-NEW`;
-              
-              const plantInstance = new PlantInstance({
-                id: plantInstanceId,
-                plantType,
-                instanceName,
-                baseAnnualROI: getBaseROI(plantType),
-                operationalCosts: [],
-                incomeRecords: [],
-                qrCode: `QR-${productName}`,
-                owner: user.fullName,
-                fotoGambar: null,
-                memberId: user._id.toString(),
-                contractNumber: orderId, // orderId is already CONTRACT-... format
-                location: "TBD",
-                status: "active", // Payment succeeded, plant is now active
-                approvalStatus: "approved", // Full payment = auto-approved
-                lastUpdate: new Date().toLocaleDateString("id-ID", {
-                  day: "2-digit",
-                  month: "2-digit",
-                  year: "numeric",
-                }),
-                history: [
-                  {
-                    id: deterministicHistoryId,
-                    action: "Kontrak Baru",
-                    type: "Kontrak Baru",
-                    date: new Date().toLocaleDateString("id-ID", {
-                      day: "2-digit",
-                      month: "2-digit",
-                      year: "numeric",
-                    }),
-                    description: `Tanaman baru dibuat dengan pembayaran full untuk user ${user.fullName}`,
-                    addedBy: adminName,
-                  },
-                ],
-              });
-
-              try {
-                console.log(`🌱 [${transactionId}] Attempting to save PlantInstance with data:`, {
-                  id: plantInstanceId,
-                  plantType,
-                  instanceName,
-                  contractNumber: orderId,
-                  owner: user.fullName,
-                  memberId: user._id.toString(),
-                  approvalStatus: "approved"
-                });
-
-                savedPlantInstance = await plantInstance.save({ session: mongoSession });
-                console.log(`🌱 [${transactionId}] ✅ Successfully created PlantInstance for ${orderId}: ${savedPlantInstance._id}`);
-              } catch (duplicateError: any) {
-                console.error(`🌱 [${transactionId}] ❌ PlantInstance creation failed with error:`, {
-                  error: duplicateError.message,
-                  name: duplicateError.name,
-                  code: duplicateError.code,
-                  stack: duplicateError.stack
-                });
-
-                // If save fails due to duplicate key (transaction retry), try to find existing one
-                console.log(`🌱 [${transactionId}] Searching for existing PlantInstance with contractNumber: ${orderId}`);
-                savedPlantInstance = await PlantInstance.findOne({
-                  contractNumber: orderId // orderId is already CONTRACT-... format
-                }).session(mongoSession);
-
-                if (!savedPlantInstance) {
-                  console.error(`🌱 [${transactionId}] ❌ No existing PlantInstance found, re-throwing error`);
-                  throw duplicateError; // Re-throw if it's not a duplicate issue
-                }
-                console.log(`🌱 [${transactionId}] ✅ Found existing PlantInstance after creation failure: ${savedPlantInstance._id}`);
-              }
-            } else {
-              console.log(`🌱 [${transactionId}] PlantInstance already exists for ${orderId}, reusing: ${savedPlantInstance._id}`);
-            }
-
-            // Create investment record for investor collection
-            const productName = payment.productName || "gaharu";
-
-            console.log(`🏗️ [${transactionId}] Creating investment record with savedPlantInstance:`, {
-              savedPlantInstanceExists: !!savedPlantInstance,
-              savedPlantInstanceId: savedPlantInstance?._id,
-              savedPlantInstanceType: typeof savedPlantInstance?._id
-            });
-
-            const investmentRecord = {
-              investmentId: orderId,
-              productName: productName,
-              plantInstanceId: savedPlantInstance._id.toString(),
-              totalAmount: payment.amount,
-              amountPaid: payment.amount, // Full payment completed
-              paymentType: "full" as const,
-              status: "completed" as const, // Payment succeeded
-              installments: undefined,
-              fullPaymentProofUrl: null, // Midtrans handles the payment proof
-              investmentDate: new Date(),
-              completionDate: new Date(),
-            };
-
-            console.log(`🏗️ [${transactionId}] Investment record created with plantInstanceId: ${investmentRecord.plantInstanceId}`);
-
-            // Check if investor already exists
-            console.log(`💰 [${transactionId}] Checking for existing investor for user: ${user._id}`);
-            let existingInvestor = await Investor.findOne({ userId: user._id }).session(mongoSession);
-
-            if (existingInvestor) {
-              // Update existing investor
-              console.log(`💰 [${transactionId}] Found existing investor: ${existingInvestor._id}, updating with investment`);
-              existingInvestor.name = user.fullName;
-              existingInvestor.phoneNumber = user.phoneNumber;
-              existingInvestor.status = "active";
-              existingInvestor.investments.push(investmentRecord);
-              existingInvestor.totalInvestasi += payment.amount;
-              existingInvestor.totalPaid += payment.amount;
-              existingInvestor.jumlahPohon += extractTreeCount(payment.productName);
-              await existingInvestor.save({ session: mongoSession });
-              console.log(`💰 [${transactionId}] Updated existing investor for ${orderId}: ${existingInvestor._id} (${existingInvestor.investments.length} total investments)`);
-            } else {
-              // Create new investor
-              console.log(`💰 [${transactionId}] No existing investor found, creating new one`);
-              existingInvestor = new Investor({
-                userId: user._id,
-                name: user.fullName,
-                email: user.email,
-                phoneNumber: user.phoneNumber,
-                status: "active",
-                investments: [investmentRecord],
-                totalInvestasi: payment.amount,
-                totalPaid: payment.amount,
-                jumlahPohon: extractTreeCount(payment.productName),
-              });
-              await existingInvestor.save({ session: mongoSession });
-              console.log(`💰 [${transactionId}] Created new investor for ${orderId}: ${existingInvestor._id}`);
-            }
-
-            console.log(`✅ [${transactionId}] Investment processing completed successfully for ${orderId}`);
-          }
-
-
-            const contract = await Contract.findOne({ contractId: orderId }).session(mongoSession);
-            if (contract) {
-              contract.paymentCompleted = true;
-              await contract.save({ session: mongoSession });
-              console.log(`📄 [${transactionId}] Contract ${orderId} marked as paymentCompleted: true`);
-            } else {
-              console.log(`⚠️ [${transactionId}] Contract not found for ${orderId}, payment successful but contract status not updated`);
-            }
-      
-            const investorToUpdate = await Investor.findOne({ 
-              userId: user._id,
-              "investments.investmentId": orderId
-            }).session(mongoSession);
-
-            if (investorToUpdate) {
-              // Find and update the specific investment
-              const investment = investorToUpdate.investments.find(
-                (inv: any) => inv.investmentId === orderId
-              );
-              if (investment) {
-                // Check if this investment was previously unpaid (to avoid double-counting)
-                const wasUnpaid = investment.amountPaid === 0;
-
-                investment.amountPaid = payment.amount;
-                investment.status = "approved";
-                investment.completionDate = new Date();
-
-                // Update investor totals only if this was previously unpaid
-                if (wasUnpaid) {
-                  investorToUpdate.totalPaid += payment.amount;
-                  investorToUpdate.jumlahPohon += extractTreeCount(payment.productName);
-                  console.log(`💰 [${transactionId}] Updated investor totals - totalPaid: ${investorToUpdate.totalPaid}, jumlahPohon: ${investorToUpdate.jumlahPohon}`);
-                }
-
-                await investorToUpdate.save({ session: mongoSession });
-                console.log(`💰 [${transactionId}] Updated investor amountPaid for ${orderId}: ${payment.amount}`);
-              }
-            }
-
-          console.log(`✅ [${transactionId}] All updates completed successfully for ${orderId}`);
-
-          // Set contract redirect URL for successful payment
-          payment.contractRedirectUrl = `/contract/${orderId}`;
-        });
-        console.log(`🎯 [${transactionId}] Transaction successfully committed for ${orderId}`);
-      } catch (investorError) {
-        console.error(
-          `❌ [${transactionId}] Error in transaction for ${orderId}:`,
-          investorError
+      if (existingUser) {
+        console.log("User already exists, skipping creation");
+        payment.processingError = "User already exists";
+      } else {
+        const hashedPassword = payment.customerData.password;
+        const occupationData = occupationOptions.find(
+          (opt) => opt.value === payment.customerData.occupation
         );
-        payment.processingError = `Investment processing failed: ${
-          investorError instanceof Error
-            ? investorError.message
-            : "Unknown error"
-        }`;
-      } finally {
-        await mongoSession.endSession();
-        console.log(`🔚 [${transactionId}] Transaction session ended for ${orderId}`);
-      }
+        const occupationCode = occupationData?.code || "999";
+        const currentYear = new Date().getFullYear().toString().slice(-2);
 
-      payment.isProcessed = true;
-      payment.status = "completed"; // Mark payment as completed
+        const lastUser = await User.findOne({})
+          .sort({ userCode: -1 })
+          .select("userCode");
+
+        let sequential = 1;
+        if (lastUser?.userCode) {
+          const match = lastUser.userCode.match(/BMS-\d+\.(\d+)$/);
+          if (match) sequential = parseInt(match[1]) + 1;
+        }
+
+        const userCode = `BMS-${currentYear}${occupationCode}.${sequential
+          .toString()
+          .padStart(4, "0")}`;
+
+        const user = new User({
+          ...payment.customerData,
+          password: hashedPassword,
+          occupationCode,
+          userCode,
+          role: "user",
+          isEmailVerified: false,
+          isPhoneVerified: false,
+          isActive: true,
+        });
+
+        await user.save();
+
+        payment.userId = user._id;
+        payment.isProcessed = true;
+        message = `Transaction successful - User created: ${userCode}`;
+      }
+    }
+
+    // CONTRACT payments
+    if (
+      (transactionStatus === "settlement" ||
+        (transactionStatus === "capture" && fraudStatus === "accept")) &&
+      orderId.startsWith("CONTRACT-")
+    ) {
+      const mongoSession = await mongoose.startSession();
+      const txnId = `TXN-${Date.now()}-${Math.random()
+        .toString(36)
+        .substring(2, 9)}`;
+
+      await mongoSession.withTransaction(async () => {
+        const user = await User.findById(payment.userId).session(mongoSession);
+        if (!user) throw new Error("User not found for investment payment");
+
+        const getPlantType = (
+          productName: string
+        ): "gaharu" | "alpukat" | "jengkol" | "aren" => {
+          const name = productName.toLowerCase();
+          if (name.includes("gaharu")) return "gaharu";
+          if (name.includes("alpukat")) return "alpukat";
+          if (name.includes("jengkol")) return "jengkol";
+          if (name.includes("aren")) return "aren";
+          return "gaharu";
+        };
+
+        const getBaseROI = (plantType: "gaharu" | "alpukat" | "jengkol" | "aren") => {
+          const roiMap = { gaharu: 0.15, alpukat: 0.12, jengkol: 0.1, aren: 0.18 };
+          return roiMap[plantType] || 0.12;
+        };
+
+        let savedPlantInstance = await PlantInstance.findOne({
+          contractNumber: orderId,
+        }).session(mongoSession);
+
+        if (!savedPlantInstance) {
+          const plantInstanceId = `PLANT-${payment.orderId}-${orderId.slice(-8)}`;
+          const productName = payment.productName || "gaharu";
+          const plantType = getPlantType(productName);
+          const instanceName = `${plantType.charAt(0).toUpperCase() + plantType.slice(1)} - ${
+            user.fullName
+          }`;
+          const adminName = await getFirstAdminName();
+
+          const deterministicHistoryId = `HISTORY-${orderId}-NEW`;
+
+          const plantInstance = new PlantInstance({
+            id: plantInstanceId,
+            plantType,
+            instanceName,
+            baseAnnualROI: getBaseROI(plantType),
+            operationalCosts: [],
+            incomeRecords: [],
+            qrCode: `QR-${productName}`,
+            owner: user.fullName,
+            fotoGambar: null,
+            memberId: user._id.toString(),
+            contractNumber: orderId,
+            location: "TBD",
+            kavling: "-",
+            status: "active",
+            approvalStatus: "approved",
+            lastUpdate: new Date().toLocaleDateString("id-ID"),
+            history: [
+              {
+                id: deterministicHistoryId,
+                action: "Kontrak Baru",
+                type: "Kontrak Baru",
+                date: new Date().toLocaleDateString("id-ID"),
+                description: `Tanaman baru dibuat dengan pembayaran full untuk user ${user.fullName}`,
+                addedBy: adminName,
+              },
+            ],
+          });
+
+          savedPlantInstance = await plantInstance.save({ session: mongoSession });
+        }
+
+        const investmentRecord = {
+          investmentId: orderId,
+          productName: payment.productName,
+          plantInstanceId: savedPlantInstance._id.toString(),
+          totalAmount: payment.amount,
+          amountPaid: payment.amount,
+          paymentType: "full" as const,
+          status: "completed" as const,
+          investmentDate: new Date(),
+          completionDate: new Date(),
+        };
+
+        let investor = await Investor.findOne({ userId: user._id }).session(mongoSession);
+        if (investor) {
+          const existingIndex = investor.investments.findIndex(
+            (inv: any) => inv.investmentId === orderId
+          );
+
+          if (existingIndex !== -1) {
+            const existingInvestment = investor.investments[existingIndex];
+            existingInvestment.plantInstanceId = investmentRecord.plantInstanceId;
+            existingInvestment.status = "approved";
+
+            if (existingInvestment.amountPaid === 0) {
+              existingInvestment.amountPaid = payment.amount;
+              investor.totalPaid += payment.amount;
+              investor.jumlahPohon += extractTreeCount(payment.productName);
+            }
+            
+            existingInvestment.completionDate = new Date();
+          } else {
+            investor.investments.push(investmentRecord);
+            investor.totalInvestasi += payment.amount;
+            investor.totalPaid += payment.amount;
+            investor.jumlahPohon += extractTreeCount(payment.productName);
+          }
+          await investor.save({ session: mongoSession });
+        } else {
+          investor = new Investor({
+            userId: user._id,
+            name: user.fullName,
+            email: user.email,
+            phoneNumber: user.phoneNumber,
+            status: "active",
+            investments: [investmentRecord],
+            totalInvestasi: payment.amount,
+            totalPaid: payment.amount,
+            jumlahPohon: extractTreeCount(payment.productName),
+          });
+          await investor.save({ session: mongoSession });
+        }
+
+        const contract = await Contract.findOne({ contractId: orderId }).session(mongoSession);
+        if (contract) {
+          contract.paymentCompleted = true;
+          await contract.save({ session: mongoSession });
+          console.log(`📄 [${txnId}] Contract ${orderId} marked as paymentCompleted`);
+        }
+
+        payment.contractRedirectUrl = `/contract/${orderId}`;
+        payment.isProcessed = true;
+        payment.status = "completed";
+
+        if (payment.referralCode && payment.paymentType === "full-investment") {
+          const commissionResult = await createCommissionRecord(payment._id.toString());
+          console.log(`Commission for ${orderId}: ${commissionResult.message}`);
+        }
+
+        await payment.save({ session: mongoSession });
+      });
+
+      await mongoSession.endSession();
       message = "Investment payment successful - Contract ready for signing";
     }
 
     await payment.save();
     console.log(`Processed transaction ${orderId}: ${message}`);
 
-    // Create commission record if payment is successful and has referral code
-    if ((transactionStatus === "settlement" || (transactionStatus === "capture" && fraudStatus === "accept")) &&
-        payment.referralCode &&
-        payment.paymentType === 'full-investment') {
-      try {
-        const commissionResult = await createCommissionRecord(payment._id.toString());
-        if (commissionResult.success) {
-          console.log(`Commission created for payment ${orderId}: ${commissionResult.message}`);
-        } else {
-          console.log(`Commission creation skipped for payment ${orderId}: ${commissionResult.message}`);
-        }
-      } catch (commissionError) {
-        console.error(`Error creating commission for payment ${orderId}:`, commissionError);
-        // Don't fail the webhook for commission errors
-      }
-    }
-
-    return NextResponse.json({
-      success: true,
-      message,
-    });
+    return NextResponse.json({ success: true, message });
   } catch (error) {
     console.error("Webhook processing error:", error);
-
     return NextResponse.json(
       {
         error: "Failed to process webhook",

@@ -209,7 +209,6 @@ export async function POST(
           productName: contract.productName,
           paymentType: 'full-investment',
           status: 'pending',
-          adminStatus: 'pending',
           transactionStatus: 'pending',
           customerData: {
             email: user.email,
@@ -298,10 +297,19 @@ export async function POST(
       });
     }
 
-    investor.investments.push(investment);
+    // Check if this investment already exists to prevent duplicates
+    const existingInvestmentIndex = investor.investments.findIndex(
+      (inv: any) => inv.investmentId === contract.contractId
+    );
 
-    // Update totals (don't increment jumlahPohon until PlantInstance is created)
-    investor.totalInvestasi = (investor.totalInvestasi || 0) + contract.totalAmount;
+    if (existingInvestmentIndex === -1) {
+      // Only add the investment and update totals if it doesn't already exist
+      investor.investments.push(investment);
+      investor.totalInvestasi = (investor.totalInvestasi || 0) + contract.totalAmount;
+      console.log("Added new investment to investor record");
+    } else {
+      console.log("Investment already exists in investor record, skipping duplicate");
+    }
 
     await investor.save();
 
