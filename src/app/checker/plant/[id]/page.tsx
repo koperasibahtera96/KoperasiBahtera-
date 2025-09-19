@@ -35,7 +35,6 @@ import {
   FileText,
   Leaf,
   MapPin,
-  QrCode,
   Trash2,
   Upload,
   User,
@@ -916,8 +915,9 @@ export default function PlantDetail({
           </header>
 
           <section className="bg-white/90 backdrop-blur-xl rounded-2xl sm:rounded-3xl shadow-xl border border-[#324D3E]/10 p-4 sm:p-6 lg:p-8 mb-4 sm:mb-6 lg:mb-8" aria-label="Plant Information">
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
-              <div className="flex items-center gap-3 sm:gap-4 md:col-span-2 xl:col-span-1">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 lg:gap-8">
+              {/* Main plant info (spans full width) */}
+              <div className="flex items-center gap-3 sm:gap-4 md:col-span-2">
                 <div className="relative w-12 h-12 sm:w-16 sm:h-16 bg-gradient-to-br from-[#324D3E] to-[#4C3D19] rounded-xl sm:rounded-2xl overflow-hidden shadow-lg flex-shrink-0">
                   {plantData.fotoGambar ? (
                     <Image
@@ -941,17 +941,10 @@ export default function PlantDetail({
                   </h2>
                 </div>
               </div>
-
-              <div className="space-y-3 sm:space-y-4">
-                <div className="bg-white/60 rounded-xl sm:rounded-2xl p-3 sm:p-4 border border-[#324D3E]/10">
-                  <p className="text-xs sm:text-sm text-[#889063] mb-1">QR Code</p>
-                  <div className="flex items-center gap-2">
-                    <QrCode className="w-3 h-3 sm:w-4 sm:h-4 text-[#4C3D19] flex-shrink-0" />
-                    <span className="font-semibold text-[#324D3E] text-sm sm:text-base truncate">
-                      {plantData.qrCode}
-                    </span>
-                  </div>
-                </div>
+              
+              {/* 2x2 Grid for the four cards */}
+              <div className="grid grid-cols-1 sm:grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4 md:col-span-2">
+                {/* Card 1: No. Kontrak */}
                 <div className="bg-white/60 rounded-xl sm:rounded-2xl p-3 sm:p-4 border border-[#324D3E]/10">
                   <p className="text-xs sm:text-sm text-[#889063] mb-1">No. Kontrak</p>
                   <div className="flex items-center gap-2">
@@ -961,9 +954,8 @@ export default function PlantDetail({
                     </span>
                   </div>
                 </div>
-              </div>
-
-              <div className="space-y-3 sm:space-y-4 md:col-span-2 xl:col-span-1">
+                
+                {/* Card 2: Pemilik */}
                 <div className="bg-white/60 rounded-xl sm:rounded-2xl p-3 sm:p-4 border border-[#324D3E]/10">
                   <p className="text-xs sm:text-sm text-[#889063] mb-1">Pemilik</p>
                   <div className="flex items-center gap-2">
@@ -973,7 +965,8 @@ export default function PlantDetail({
                     </span>
                   </div>
                 </div>
-
+                
+                {/* Card 3: Lokasi Tanam */}
                 <div className="bg-white/60 rounded-xl sm:rounded-2xl p-3 sm:p-4 border border-[#324D3E]/10">
                   <p className="text-xs sm:text-sm text-[#889063] mb-1">Lokasi Tanam</p>
                   <div className="flex items-center gap-2 min-w-0">
@@ -993,7 +986,8 @@ export default function PlantDetail({
                     )}
                   </div>
                 </div>
-
+                
+                {/* Card 4: Kavling */}
                 <div className="bg-white/60 rounded-xl sm:rounded-2xl p-3 sm:p-4 border border-[#324D3E]/10">
                   <p className="text-xs sm:text-sm text-[#889063] mb-1">Kavling</p>
                   <div className="flex items-center gap-2 min-w-0">
