@@ -12,6 +12,10 @@ export async function POST(request: NextRequest) {
     const { amount, customerDetails, orderId, itemDetails, registrationData } =
       body;
 
+    // Debug: Log received data
+    console.log("🔍 Payment API received:", { amount, customerDetails, orderId, itemDetails });
+    console.log("🔍 Registration data received:", registrationData);
+
     // Validate required fields
     if (!amount || !customerDetails || !orderId) {
       return NextResponse.json(

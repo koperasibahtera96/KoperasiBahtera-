@@ -208,6 +208,10 @@ export default function RegisterPage() {
         },
       };
 
+      // Debug: Log the payment data being sent
+      console.log("🚀 Payment data being sent:", paymentData);
+      console.log("🚀 Registration data:", paymentData.registrationData);
+
       const response = await fetch("/api/payment/create", {
         method: "POST",
         headers: {

@@ -49,14 +49,22 @@ export interface IPayment extends Document {
   // Customer details for registration
   customerData?: {
     fullName: string;
+    nik: string;
     email: string;
     phoneNumber: string;
     dateOfBirth: Date;
-    address: string;
-    village: string;
-    city: string;
-    province: string;
-    postalCode: string;
+    // KTP Address
+    ktpAddress: string;
+    ktpVillage: string;
+    ktpCity: string;
+    ktpProvince: string;
+    ktpPostalCode: string;
+    // Domisili Address
+    domisiliAddress: string;
+    domisiliVillage: string;
+    domisiliCity: string;
+    domisiliProvince: string;
+    domisiliPostalCode: string;
     occupation: string;
     password: string;
     ktpImageUrl: string;
@@ -204,14 +212,22 @@ const PaymentSchema: Schema = new Schema(
     // Customer details for registration
     customerData: {
       fullName: String,
+      nik: String,
       email: String,
       phoneNumber: String,
       dateOfBirth: Date,
-      address: String,
-      village: String,
-      city: String,
-      province: String,
-      postalCode: String,
+      // KTP Address
+      ktpAddress: String,
+      ktpVillage: String,
+      ktpCity: String,
+      ktpProvince: String,
+      ktpPostalCode: String,
+      // Domisili Address
+      domisiliAddress: String,
+      domisiliVillage: String,
+      domisiliCity: String,
+      domisiliProvince: String,
+      domisiliPostalCode: String,
       occupation: String,
       password: String,
       ktpImageUrl: String,
