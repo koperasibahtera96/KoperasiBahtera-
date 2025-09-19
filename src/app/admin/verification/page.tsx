@@ -9,15 +9,25 @@ import Image from 'next/image';
 interface PendingUser {
   _id: string;
   fullName: string;
+  nik: string;
   email: string;
   phoneNumber: string;
   ktpImageUrl?: string;
   faceImageUrl?: string;
   verificationStatus: 'pending' | 'approved' | 'rejected';
   createdAt: string;
-  address: string;
-  city: string;
-  province: string;
+  // KTP Address
+  ktpAddress: string;
+  ktpVillage: string;
+  ktpCity: string;
+  ktpProvince: string;
+  ktpPostalCode: string;
+  // Domisili Address
+  domisiliAddress: string;
+  domisiliVillage: string;
+  domisiliCity: string;
+  domisiliProvince: string;
+  domisiliPostalCode: string;
 }
 
 export default function UserVerificationPage() {
@@ -244,11 +254,14 @@ export default function UserVerificationPage() {
 
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4 text-xs sm:text-sm">
                           <div className="space-y-1">
+                            <p className="text-[#889063] dark:text-gray-200 truncate transition-colors duration-300">NIK: {user.nik}</p>
                             <p className="text-[#889063] dark:text-gray-200 truncate transition-colors duration-300">Telepon: {user.phoneNumber}</p>
-                            <p className="text-[#889063] dark:text-gray-200 truncate transition-colors duration-300">Alamat: {user.address}</p>
-                            <p className="text-[#889063] dark:text-gray-200 truncate transition-colors duration-300">Kota: {user.city}, {user.province}</p>
+                            <p className="text-[#889063] dark:text-gray-200 truncate transition-colors duration-300">Alamat KTP: {user.ktpAddress}</p>
+                            <p className="text-[#889063] dark:text-gray-200 truncate transition-colors duration-300">Kota KTP: {user.ktpCity}, {user.ktpProvince}</p>
                           </div>
-                          <div>
+                          <div className="space-y-1">
+                            <p className="text-[#889063] dark:text-gray-200 truncate transition-colors duration-300">Alamat Domisili: {user.domisiliAddress}</p>
+                            <p className="text-[#889063] dark:text-gray-200 truncate transition-colors duration-300">Kota Domisili: {user.domisiliCity}, {user.domisiliProvince}</p>
                             <p className="text-[#889063] dark:text-gray-200 transition-colors duration-300">
                               Tanggal Daftar: {new Date(user.createdAt).toLocaleDateString('id-ID')}
                             </p>
@@ -345,16 +358,32 @@ export default function UserVerificationPage() {
                 {/* User Details */}
                 <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg transition-colors duration-300">
                   <h4 className="font-semibold text-[#324D3E] dark:text-white mb-3 text-sm sm:text-base transition-colors duration-300">Informasi User</h4>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs sm:text-sm">
-                    <div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs sm:text-sm">
+                    <div className="space-y-2">
                       <p className="text-gray-600 dark:text-gray-200 transition-colors duration-300">Nama: <span className="font-medium">{selectedUser.fullName}</span></p>
+                      <p className="text-gray-600 dark:text-gray-200 transition-colors duration-300">NIK: <span className="font-medium">{selectedUser.nik}</span></p>
                       <p className="text-gray-600 dark:text-gray-200 transition-colors duration-300">Email: <span className="font-medium">{selectedUser.email}</span></p>
                       <p className="text-gray-600 dark:text-gray-200 transition-colors duration-300">Telepon: <span className="font-medium">{selectedUser.phoneNumber}</span></p>
                     </div>
-                    <div>
-                      <p className="text-gray-600 dark:text-gray-200 transition-colors duration-300">Alamat: <span className="font-medium">{selectedUser.address}</span></p>
-                      <p className="text-gray-600 dark:text-gray-200 transition-colors duration-300">Kota: <span className="font-medium">{selectedUser.city}</span></p>
-                      <p className="text-gray-600 dark:text-gray-200 transition-colors duration-300">Provinsi: <span className="font-medium">{selectedUser.province}</span></p>
+                    <div className="space-y-2">
+                      <h5 className="font-semibold text-[#324D3E] dark:text-white text-xs sm:text-sm">Alamat KTP:</h5>
+                      <p className="text-gray-600 dark:text-gray-200 transition-colors duration-300">Alamat: <span className="font-medium">{selectedUser.ktpAddress}</span></p>
+                      <p className="text-gray-600 dark:text-gray-200 transition-colors duration-300">Desa/Kelurahan: <span className="font-medium">{selectedUser.ktpVillage}</span></p>
+                      <p className="text-gray-600 dark:text-gray-200 transition-colors duration-300">Kota: <span className="font-medium">{selectedUser.ktpCity}</span></p>
+                      <p className="text-gray-600 dark:text-gray-200 transition-colors duration-300">Provinsi: <span className="font-medium">{selectedUser.ktpProvince}</span></p>
+                      <p className="text-gray-600 dark:text-gray-200 transition-colors duration-300">Kode Pos: <span className="font-medium">{selectedUser.ktpPostalCode}</span></p>
+                    </div>
+                  </div>
+
+                  {/* Domisili Address */}
+                  <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-600">
+                    <h5 className="font-semibold text-[#324D3E] dark:text-white mb-2 text-xs sm:text-sm">Alamat Domisili:</h5>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs sm:text-sm">
+                      <p className="text-gray-600 dark:text-gray-200 transition-colors duration-300">Alamat: <span className="font-medium">{selectedUser.domisiliAddress}</span></p>
+                      <p className="text-gray-600 dark:text-gray-200 transition-colors duration-300">Desa/Kelurahan: <span className="font-medium">{selectedUser.domisiliVillage}</span></p>
+                      <p className="text-gray-600 dark:text-gray-200 transition-colors duration-300">Kota: <span className="font-medium">{selectedUser.domisiliCity}</span></p>
+                      <p className="text-gray-600 dark:text-gray-200 transition-colors duration-300">Provinsi: <span className="font-medium">{selectedUser.domisiliProvince}</span></p>
+                      <p className="text-gray-600 dark:text-gray-200 transition-colors duration-300">Kode Pos: <span className="font-medium">{selectedUser.domisiliPostalCode}</span></p>
                     </div>
                   </div>
                 </div>

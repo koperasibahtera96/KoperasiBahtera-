@@ -229,13 +229,14 @@ export async function POST(request: NextRequest) {
         console.log(`🔄 [${transactionId}] Starting transaction for ${orderId}`);
         await mongoSession.withTransaction(async () => {
           console.log(`📦 [${transactionId}] Inside transaction callback for ${orderId}`);
-          
+
           // Find the user for this payment
           const user = await User.findById(payment.userId).session(mongoSession);
           if (!user) {
+            console.error(`❌ [${transactionId}] User not found for payment.userId: ${payment.userId}`);
             throw new Error("User not found for investment payment");
           }
-          console.log(`👤 [${transactionId}] Found user: ${user._id}`);
+          console.log(`👤 [${transactionId}] Found user: ${user._id} (${user.fullName})`);
 
           // Check if this investment has already been processed to prevent duplicates
           console.log(`🔍 [${transactionId}] Checking for existing investment ${orderId} for user ${user._id}`);
@@ -309,6 +310,7 @@ export async function POST(request: NextRequest) {
                 contractNumber: orderId, // orderId is already CONTRACT-... format
                 location: "TBD",
                 status: "active", // Payment succeeded, plant is now active
+                approvalStatus: "approved", // Full payment = auto-approved
                 lastUpdate: new Date().toLocaleDateString("id-ID", {
                   day: "2-digit",
                   month: "2-digit",
@@ -331,19 +333,37 @@ export async function POST(request: NextRequest) {
               });
 
               try {
+                console.log(`🌱 [${transactionId}] Attempting to save PlantInstance with data:`, {
+                  id: plantInstanceId,
+                  plantType,
+                  instanceName,
+                  contractNumber: orderId,
+                  owner: user.fullName,
+                  memberId: user._id.toString(),
+                  approvalStatus: "approved"
+                });
+
                 savedPlantInstance = await plantInstance.save({ session: mongoSession });
-                console.log(`🌱 [${transactionId}] Created new PlantInstance for ${orderId}: ${savedPlantInstance._id}`);
-              } catch (duplicateError) {
+                console.log(`🌱 [${transactionId}] ✅ Successfully created PlantInstance for ${orderId}: ${savedPlantInstance._id}`);
+              } catch (duplicateError: any) {
+                console.error(`🌱 [${transactionId}] ❌ PlantInstance creation failed with error:`, {
+                  error: duplicateError.message,
+                  name: duplicateError.name,
+                  code: duplicateError.code,
+                  stack: duplicateError.stack
+                });
+
                 // If save fails due to duplicate key (transaction retry), try to find existing one
-                console.log(`🌱 [${transactionId}] PlantInstance creation failed (likely duplicate), searching for existing one`);
+                console.log(`🌱 [${transactionId}] Searching for existing PlantInstance with contractNumber: ${orderId}`);
                 savedPlantInstance = await PlantInstance.findOne({
                   contractNumber: orderId // orderId is already CONTRACT-... format
                 }).session(mongoSession);
-                
+
                 if (!savedPlantInstance) {
+                  console.error(`🌱 [${transactionId}] ❌ No existing PlantInstance found, re-throwing error`);
                   throw duplicateError; // Re-throw if it's not a duplicate issue
                 }
-                console.log(`🌱 [${transactionId}] Found existing PlantInstance after creation failure: ${savedPlantInstance._id}`);
+                console.log(`🌱 [${transactionId}] ✅ Found existing PlantInstance after creation failure: ${savedPlantInstance._id}`);
               }
             } else {
               console.log(`🌱 [${transactionId}] PlantInstance already exists for ${orderId}, reusing: ${savedPlantInstance._id}`);
@@ -351,6 +371,13 @@ export async function POST(request: NextRequest) {
 
             // Create investment record for investor collection
             const productName = payment.productName || "gaharu";
+
+            console.log(`🏗️ [${transactionId}] Creating investment record with savedPlantInstance:`, {
+              savedPlantInstanceExists: !!savedPlantInstance,
+              savedPlantInstanceId: savedPlantInstance?._id,
+              savedPlantInstanceType: typeof savedPlantInstance?._id
+            });
+
             const investmentRecord = {
               investmentId: orderId,
               productName: productName,
@@ -364,6 +391,8 @@ export async function POST(request: NextRequest) {
               investmentDate: new Date(),
               completionDate: new Date(),
             };
+
+            console.log(`🏗️ [${transactionId}] Investment record created with plantInstanceId: ${investmentRecord.plantInstanceId}`);
 
             // Check if investor already exists
             console.log(`💰 [${transactionId}] Checking for existing investor for user: ${user._id}`);

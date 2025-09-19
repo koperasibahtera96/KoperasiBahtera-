@@ -32,13 +32,21 @@ export async function GET() {
         _id: user._id,
         email: user.email,
         fullName: user.fullName,
+        nik: user.nik,
         phoneNumber: user.phoneNumber,
         dateOfBirth: user.dateOfBirth,
-        address: user.address,
-        village: user.village,
-        city: user.city,
-        province: user.province,
-        postalCode: user.postalCode,
+        // KTP Address
+        ktpAddress: user.ktpAddress,
+        ktpVillage: user.ktpVillage,
+        ktpCity: user.ktpCity,
+        ktpProvince: user.ktpProvince,
+        ktpPostalCode: user.ktpPostalCode,
+        // Domisili Address
+        domisiliAddress: user.domisiliAddress,
+        domisiliVillage: user.domisiliVillage,
+        domisiliCity: user.domisiliCity,
+        domisiliProvince: user.domisiliProvince,
+        domisiliPostalCode: user.domisiliPostalCode,
         occupation: user.occupation,
         occupationCode: user.occupationCode,
         userCode: user.userCode,
@@ -72,7 +80,7 @@ export async function PUT(request: Request) {
     }
 
     const body = await request.json();
-    const allowedUpdates = ['phoneNumber', 'fullName', 'address', 'city', 'province', 'occupation'];
+    const allowedUpdates = ['phoneNumber', 'fullName', 'ktpAddress', 'ktpVillage', 'ktpCity', 'ktpProvince', 'ktpPostalCode', 'domisiliAddress', 'domisiliVillage', 'domisiliCity', 'domisiliProvince', 'domisiliPostalCode', 'occupation'];
     const updates: any = {};
 
     // Filter only allowed updates
@@ -131,13 +139,21 @@ export async function PUT(request: Request) {
         _id: updatedUser._id,
         email: updatedUser.email,
         fullName: updatedUser.fullName,
+        nik: updatedUser.nik,
         phoneNumber: updatedUser.phoneNumber,
         dateOfBirth: updatedUser.dateOfBirth,
-        address: updatedUser.address,
-        village: updatedUser.village,
-        city: updatedUser.city,
-        province: updatedUser.province,
-        postalCode: updatedUser.postalCode,
+        // KTP Address
+        ktpAddress: updatedUser.ktpAddress,
+        ktpVillage: updatedUser.ktpVillage,
+        ktpCity: updatedUser.ktpCity,
+        ktpProvince: updatedUser.ktpProvince,
+        ktpPostalCode: updatedUser.ktpPostalCode,
+        // Domisili Address
+        domisiliAddress: updatedUser.domisiliAddress,
+        domisiliVillage: updatedUser.domisiliVillage,
+        domisiliCity: updatedUser.domisiliCity,
+        domisiliProvince: updatedUser.domisiliProvince,
+        domisiliPostalCode: updatedUser.domisiliPostalCode,
         occupation: updatedUser.occupation,
         occupationCode: updatedUser.occupationCode,
         userCode: updatedUser.userCode,

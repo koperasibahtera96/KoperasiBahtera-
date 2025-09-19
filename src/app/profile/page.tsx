@@ -733,30 +733,114 @@ export default function ProfilePage() {
                   </p>
                 </div>
               </div>
-              <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Address
-                </label>
-                <div className="p-3 bg-gray-50 rounded-lg">
-                  <p className="text-gray-900">{user.address}</p>
-                </div>
-              </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  City
+                  NIK
                 </label>
                 <div className="p-3 bg-gray-50 rounded-lg">
-                  <p className="text-gray-900">{user.city}</p>
+                  <p className="text-gray-900">{user.nik}</p>
                 </div>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Province
-                </label>
-                <div className="p-3 bg-gray-50 rounded-lg">
-                  <p className="text-gray-900">
-                    {getProvinceName(user.province)}
-                  </p>
+
+              {/* KTP Address Section */}
+              <div className="md:col-span-3">
+                <h4 className="text-md font-semibold text-gray-800 mb-3 border-b border-gray-200 pb-2">
+                  Alamat KTP
+                </h4>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="md:col-span-3">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Alamat Lengkap
+                    </label>
+                    <div className="p-3 bg-gray-50 rounded-lg">
+                      <p className="text-gray-900">{user.ktpAddress}</p>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Desa/Kelurahan
+                    </label>
+                    <div className="p-3 bg-gray-50 rounded-lg">
+                      <p className="text-gray-900">{user.ktpVillage}</p>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Kota/Kabupaten
+                    </label>
+                    <div className="p-3 bg-gray-50 rounded-lg">
+                      <p className="text-gray-900">{user.ktpCity}</p>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Provinsi
+                    </label>
+                    <div className="p-3 bg-gray-50 rounded-lg">
+                      <p className="text-gray-900">
+                        {getProvinceName(user.ktpProvince)}
+                      </p>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Kode Pos
+                    </label>
+                    <div className="p-3 bg-gray-50 rounded-lg">
+                      <p className="text-gray-900">{user.ktpPostalCode}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Domisili Address Section */}
+              <div className="md:col-span-3">
+                <h4 className="text-md font-semibold text-gray-800 mb-3 border-b border-gray-200 pb-2">
+                  Alamat Domisili
+                </h4>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="md:col-span-3">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Alamat Lengkap
+                    </label>
+                    <div className="p-3 bg-gray-50 rounded-lg">
+                      <p className="text-gray-900">{user.domisiliAddress}</p>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Desa/Kelurahan
+                    </label>
+                    <div className="p-3 bg-gray-50 rounded-lg">
+                      <p className="text-gray-900">{user.domisiliVillage}</p>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Kota/Kabupaten
+                    </label>
+                    <div className="p-3 bg-gray-50 rounded-lg">
+                      <p className="text-gray-900">{user.domisiliCity}</p>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Provinsi
+                    </label>
+                    <div className="p-3 bg-gray-50 rounded-lg">
+                      <p className="text-gray-900">
+                        {getProvinceName(user.domisiliProvince)}
+                      </p>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Kode Pos
+                    </label>
+                    <div className="p-3 bg-gray-50 rounded-lg">
+                      <p className="text-gray-900">{user.domisiliPostalCode}</p>
+                    </div>
+                  </div>
                 </div>
               </div>
               <div>
