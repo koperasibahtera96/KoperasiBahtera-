@@ -201,6 +201,8 @@ export function useAlert() {
       title: string;
       message: string;
       id: number;
+      autoClose?: boolean;
+      duration?: number;
     }>
   >([]);
 
@@ -225,25 +227,31 @@ export function useAlert() {
     (
       type: "success" | "error" | "warning" | "info",
       title: string,
-      message: string
+      message: string,
+      options: { autoClose?: boolean; duration?: number } = {}
     ) => {
-      console.log("🚨 showAlert called with:", { type, title, message });
+      console.log("🚨 showAlert called with:", { type, title, message, options });
       console.trace("Call stack:");
 
+      const { autoClose = true, duration = 3000 } = options;
       const newId = Date.now();
       const newAlert = {
         type,
         title,
         message,
         id: newId,
+        autoClose,
+        duration,
       };
 
       setAlerts((prev) => [...prev, newAlert]);
 
-      // Auto remove after 3 seconds
-      setTimeout(() => {
-        setAlerts((prev) => prev.filter((alert) => alert.id !== newId));
-      }, 3000);
+      // Auto remove after duration if autoClose is enabled
+      if (autoClose && duration > 0) {
+        setTimeout(() => {
+          setAlerts((prev) => prev.filter((alert) => alert.id !== newId));
+        }, duration);
+      }
     },
     []
   );
@@ -253,8 +261,8 @@ export function useAlert() {
   };
 
   const showSuccess = useCallback(
-    (title: string, message: string = "") => {
-      showAlert("success", title, message);
+    (title: string, message: string = "", options: { autoClose?: boolean; duration?: number } = {}) => {
+      showAlert("success", title, message, options);
     },
     [showAlert]
   );
@@ -335,6 +343,7 @@ export function useAlert() {
                   message={alert.message}
                   isOpen={true}
                   onClose={() => hideAlert(alert.id)}
+                  duration={alert.autoClose === false ? 0 : (alert.duration || 3000)}
                 />
               );
             })}

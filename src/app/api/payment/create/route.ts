@@ -47,7 +47,7 @@ export async function POST(request: NextRequest) {
       customerDetails,
       itemDetails,
       callbacks: {
-        finish: `${process.env.NEXT_PUBLIC_BASE_URL}/payments`,
+        finish: `${process.env.NEXT_PUBLIC_BASE_URL}/payment/success`,
         error: `${process.env.NEXT_PUBLIC_BASE_URL}/payment/error`,
         pending: `${process.env.NEXT_PUBLIC_BASE_URL}/payment/pending`,
       },

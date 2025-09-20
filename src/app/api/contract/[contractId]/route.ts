@@ -157,7 +157,7 @@ export async function POST(
         const firstInstallmentDueDate = new Date();
         firstInstallmentDueDate.setMonth(firstInstallmentDueDate.getMonth() + 1);
 
-        const firstInstallmentOrderId = `CIC-CONTRACT-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
+        const firstInstallmentOrderId = `INSTALLMENT-${contract.contractId}-1`;
 
         const firstInstallmentPayment = new Payment({
           orderId: firstInstallmentOrderId,

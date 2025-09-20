@@ -19,7 +19,7 @@ export default function PaymentSuccessPage() {
 
     // Start countdown
     const interval = setInterval(() => {
-      setCountdown((prev) => prev - 1);
+      setCountdown((prev) => prev > 0 ? prev - 1 : 0);
     }, 1000);
 
     return () => clearInterval(interval);

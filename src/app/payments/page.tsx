@@ -64,6 +64,21 @@ export default function PaymentsPage() {
     "all" | "active" | "completed" | "overdue" | "full-payment" | "installment"
   >("all");
   const [searchTerm, setSearchTerm] = useState("");
+  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
+
+  // Function to toggle group expansion
+  const toggleGroupExpansion = (groupId: string) => {
+    setExpandedGroups(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(groupId)) {
+        newSet.delete(groupId);
+      } else {
+        newSet.add(groupId);
+      }
+      return newSet;
+    });
+  };
+
   const [uploadModal, setUploadModal] = useState<{
     isOpen: boolean;
     installment: Installment | null;
@@ -163,6 +178,37 @@ export default function PaymentsPage() {
     }
   }, [status, router]);
 
+  // Handle payment success/error/pending from Midtrans redirect
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const paymentSuccess = urlParams.get('paymentSuccess');
+    const paymentError = urlParams.get('paymentError');
+    const paymentPending = urlParams.get('paymentPending');
+
+    if (paymentSuccess) {
+      showSuccess("Pembayaran Berhasil!", "Cicilan Anda telah berhasil dibayar. Data sedang diperbarui...", { autoClose: false });
+      // Refresh data after successful payment
+      setTimeout(() => {
+        fetchInstallments();
+      }, 2000);
+
+      // Clean URL parameters
+      const newUrl = window.location.pathname;
+      window.history.replaceState({}, document.title, newUrl);
+    } else if (paymentError) {
+      showError("Pembayaran Gagal", "Terjadi kesalahan saat memproses pembayaran. Silakan coba lagi.");
+      // Clean URL parameters
+      const newUrl = window.location.pathname;
+      window.history.replaceState({}, document.title, newUrl);
+    } else if (paymentPending) {
+      showSuccess("Pembayaran Pending", "Pembayaran Anda sedang diproses. Mohon tunggu konfirmasi.", { autoClose: false });
+      // Clean URL parameters
+      const newUrl = window.location.pathname;
+      window.history.replaceState({}, document.title, newUrl);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // Fix scroll height calculation issues
   useEffect(() => {
     // Ensure proper scroll behavior and prevent layout issues
@@ -251,6 +297,42 @@ export default function PaymentsPage() {
     }
   };
 
+  // New function to handle Midtrans payment for installments
+  const handlePayInstallment = async (paymentId: string, installmentNumber: number) => {
+    try {
+      setUploadingProof(paymentId); // Reuse loading state
+
+      const response = await fetch("/api/payment/create-installment-payment", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ paymentId }),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        // Open Midtrans payment page in new tab
+        window.open(data.data.paymentUrl, "_blank");
+        showSuccess(
+          "Pembayaran Dibuka!",
+          `Halaman pembayaran cicilan ${installmentNumber} telah dibuka di tab baru. Selesaikan pembayaran untuk melanjutkan.`
+        );
+      } else {
+        showError("Gagal Membuat Pembayaran", data.error);
+      }
+    } catch (error) {
+      console.error("Error creating installment payment:", error);
+      showError(
+        "Kesalahan",
+        "Terjadi kesalahan saat membuat pembayaran"
+      );
+    } finally {
+      setUploadingProof(null);
+    }
+  };
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case "pending":
@@ -258,6 +340,7 @@ export default function PaymentsPage() {
       case "submitted":
         return "bg-gradient-to-r from-yellow-100 to-amber-100 text-amber-800 border border-amber-200";
       case "approved":
+      case "completed":
         return "bg-gradient-to-r from-emerald-100 to-green-100 text-emerald-800 border border-emerald-200";
       case "rejected":
         return "bg-gradient-to-r from-red-100 to-rose-100 text-red-800 border border-red-200";
@@ -278,6 +361,8 @@ export default function PaymentsPage() {
         return "Menunggu Review";
       case "approved":
         return "Disetujui";
+      case "completed":
+        return "Selesai";
       case "rejected":
         return "Ditolak";
       case "overdue":
@@ -296,7 +381,29 @@ export default function PaymentsPage() {
     );
   };
 
+  const canPayInstallment = (installment: Installment, group?: any) => {
+    // Don't allow payment if contract is permanently rejected
+    if (group?.isPermanentlyRejected) {
+      return false;
+    }
+
+    // Don't allow payment if contract hasn't been signed yet
+    if (!group?.hasEverSigned) {
+      return false;
+    }
+
+    // Only allow payment for pending installments that exist
+    return (
+      installment.status === "pending" &&
+      (installment as any).exists !== false
+    );
+  };
+
+  // Keep old function for backward compatibility with existing proof uploads
   const canSubmitProof = (installment: Installment, group?: any) => {
+    // This function is now only for old manual upload system
+    // New cicilan should use canPayInstallment instead
+
     // Don't allow upload if contract is permanently rejected
     if (group?.isPermanentlyRejected) {
       return false;
@@ -305,6 +412,14 @@ export default function PaymentsPage() {
     // Don't allow upload if contract hasn't been signed yet
     if (!group?.hasEverSigned) {
       return false;
+    }
+
+    // Only show for old cicilan orders that still use manual upload
+    // New orders will use Midtrans payment
+    const isOldOrder = installment.orderId && installment.orderId.startsWith("CIC-CONTRACT-");
+
+    if (!isOldOrder) {
+      return false; // New orders use Midtrans payment
     }
 
     // Don't show upload button if proof is already uploaded and pending review
@@ -337,10 +452,10 @@ export default function PaymentsPage() {
       return (
         sum +
         group.installments
-          .filter((inst) => inst.status === "approved")
+          .filter((inst) => inst.status === "approved" || inst.status === "completed")
           .reduce((installSum, inst) => installSum + inst.amount, 0)
       );
-    }, 0) + fullPaymentContracts.reduce((sum, contract) => 
+    }, 0) + fullPaymentContracts.reduce((sum, contract) =>
       sum + (contract.paymentCompleted ? contract.totalAmount : 0), 0);
 
     const allInstallments = groupedInstallments.flatMap(
@@ -378,7 +493,7 @@ export default function PaymentsPage() {
     if (filter !== "all" && filter !== "full-payment") {
       filtered = filtered.filter((group) => {
         const approvedCount = group.installments.filter(
-          (inst) => inst.status === "approved"
+          (inst) => inst.status === "approved" || inst.status === "completed"
         ).length;
         const totalCount = group.installments.length;
         const hasOverdue = group.installments.some(
@@ -580,7 +695,7 @@ export default function PaymentsPage() {
                           <div className="text-2xl font-bold text-[#324D3E] font-poppins">
                             {
                               group.installments.filter(
-                                (i) => i.status === "approved"
+                                (i) => i.status === "approved" || i.status === "completed"
                               ).length
                             }
                             /{group.installments.length}
@@ -591,7 +706,7 @@ export default function PaymentsPage() {
                               style={{
                                 width: `${
                                   (group.installments.filter(
-                                    (i) => i.status === "approved"
+                                    (i) => i.status === "approved" || i.status === "completed"
                                   ).length /
                                     group.installments.length) *
                                   100
@@ -747,7 +862,7 @@ export default function PaymentsPage() {
                       investmentId={group.cicilanOrderId}
                       currentReferralCode={(group as any).referralCode}
                       onSetReferralCode={handleSetReferralCode}
-                      hasPayments={group.installments.some(inst => inst.status === "approved")}
+                      hasPayments={group.installments.some(inst => inst.status === "approved" || inst.status === "completed")}
                     />
 
                     {/* Individual Installment Cards */}
@@ -756,14 +871,13 @@ export default function PaymentsPage() {
                         Jadwal Angsuran ({group.installments.length} angsuran)
                       </h3>
                       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                        {group.installments
-                          .sort(
-                            (a, b) => a.installmentNumber - b.installmentNumber
-                          )
-                          .filter((installment) => {
+                        {(() => {
+                          // Filter installments first
+                          const filteredInstallments = group.installments.filter((installment) => {
                             // Show all paid/submitted/rejected installments
                             if (
                               installment.status === "approved" ||
+                              installment.status === "completed" ||
                               installment.status === "submitted" ||
                               installment.status === "rejected"
                             ) {
@@ -808,8 +922,39 @@ export default function PaymentsPage() {
                             }
 
                             return false;
-                          })
-                          .map((installment) => {
+                          });
+
+                          // Sort installments: unpaid first (ascending), then paid ones at the end (descending)
+                          const sortedInstallments = filteredInstallments.sort((a, b) => {
+                            const aIsPaid = a.status === "approved" || a.status === "completed";
+                            const bIsPaid = b.status === "approved" || b.status === "completed";
+
+                            // If payment status is different, unpaid comes first
+                            if (aIsPaid !== bIsPaid) {
+                              return aIsPaid ? 1 : -1;
+                            }
+
+                            // If same payment status
+                            if (aIsPaid && bIsPaid) {
+                              // For paid installments, sort in descending order (newest first)
+                              return b.installmentNumber - a.installmentNumber;
+                            } else {
+                              // For unpaid installments, sort in ascending order (oldest first)
+                              return a.installmentNumber - b.installmentNumber;
+                            }
+                          });
+
+                          // Determine if we should show limited or all installments
+                          const isExpanded = expandedGroups.has(group.cicilanOrderId);
+                          const maxVisibleCards = 6; // Show max 6 cards initially
+                          const shouldShowLimitedView = sortedInstallments.length > maxVisibleCards && !isExpanded;
+                          const visibleInstallments = shouldShowLimitedView
+                            ? sortedInstallments.slice(0, maxVisibleCards)
+                            : sortedInstallments;
+
+                          return (
+                            <>
+                              {visibleInstallments.map((installment) => {
                             const overdue = installment.dueDate
                               ? isOverdue(installment.dueDate)
                               : false;
@@ -886,28 +1031,42 @@ export default function PaymentsPage() {
                                   </div>
                                 )}
 
-                                {installment.submissionDate && (
+                                {installment.submissionDate && installment.orderId && installment.orderId.startsWith("CIC-CONTRACT-") && (
                                   <div className="text-sm text-gray-600 mb-2 font-poppins">
                                     📤 Dikirim:{" "}
                                     {formatDate(installment.submissionDate)}
                                   </div>
                                 )}
 
-                                {installment.adminReviewDate && (
-                                  <div className="text-sm text-gray-600 mb-2 font-poppins">
-                                    👨‍💼 Review:{" "}
-                                    {formatDate(installment.adminReviewDate)}
-                                  </div>
-                                )}
 
-                                {installment.adminNotes && (
+                                {installment.adminNotes && installment.orderId && installment.orderId.startsWith("CIC-CONTRACT-") && (
                                   <div className="bg-yellow-50/80 p-2 rounded-lg text-xs text-yellow-800 mb-3 font-poppins">
                                     <strong>Catatan Admin:</strong>{" "}
                                     {installment.adminNotes}
                                   </div>
                                 )}
 
-                                {/* Action Button */}
+                                {/* Action Buttons */}
+                                {canPayInstallment(installment, group) && (
+                                  <button
+                                    onClick={() =>
+                                      handlePayInstallment(installment._id!, installment.installmentNumber!)
+                                    }
+                                    className="w-full px-3 py-2 bg-gradient-to-r from-[#324D3E] to-[#4C3D19] text-white text-sm rounded-full hover:shadow-lg transition-all duration-300 font-poppins font-medium"
+                                    disabled={
+                                      uploadingProof === installment._id
+                                    }
+                                  >
+                                    <span className="flex items-center justify-center gap-2">
+                                      <CreditCard size={16} />
+                                      {uploadingProof === installment._id
+                                        ? "Membuat Pembayaran..."
+                                        : "Bayar Sekarang"}
+                                    </span>
+                                  </button>
+                                )}
+
+                                {/* Old upload button for backward compatibility */}
                                 {canSubmitProof(installment, group) && (
                                   <button
                                     onClick={() =>
@@ -954,6 +1113,49 @@ export default function PaymentsPage() {
                               </div>
                             );
                           })}
+
+                              {/* Lihat Semua Button */}
+                              {shouldShowLimitedView && (
+                                <div className="col-span-full flex justify-center mt-6">
+                                  <button
+                                    onClick={() => toggleGroupExpansion(group.cicilanOrderId)}
+                                    className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-[#324D3E] to-[#4C3D19] text-white rounded-full hover:shadow-lg transition-all duration-300 font-poppins font-medium"
+                                  >
+                                    <span>Lihat Semua ({sortedInstallments.length - maxVisibleCards} lainnya)</span>
+                                    <svg
+                                      className="w-4 h-4 transform transition-transform duration-200"
+                                      fill="none"
+                                      stroke="currentColor"
+                                      viewBox="0 0 24 24"
+                                    >
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                    </svg>
+                                  </button>
+                                </div>
+                              )}
+
+                              {/* Show Less Button */}
+                              {isExpanded && sortedInstallments.length > maxVisibleCards && (
+                                <div className="col-span-full flex justify-center mt-6">
+                                  <button
+                                    onClick={() => toggleGroupExpansion(group.cicilanOrderId)}
+                                    className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-gray-500 to-gray-600 text-white rounded-full hover:shadow-lg transition-all duration-300 font-poppins font-medium"
+                                  >
+                                    <span>Lihat Lebih Sedikit</span>
+                                    <svg
+                                      className="w-4 h-4 transform rotate-180 transition-transform duration-200"
+                                      fill="none"
+                                      stroke="currentColor"
+                                      viewBox="0 0 24 24"
+                                    >
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                    </svg>
+                                  </button>
+                                </div>
+                              )}
+                            </>
+                          );
+                        })()}
                       </div>
                     </div>
                   </div>
@@ -1642,6 +1844,7 @@ function ReferralCodeInput({ investmentId, currentReferralCode, onSetReferralCod
     }
   };
 
+  // Show referral code if one was used
   if (currentReferralCode) {
     return (
       <div className="max-w-md bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl p-3 border border-green-200 mb-4">
@@ -1662,6 +1865,7 @@ function ReferralCodeInput({ investmentId, currentReferralCode, onSetReferralCod
     );
   }
 
+  // If user has made payments (first installment paid), lock referral input
   if (hasPayments) {
     return (
       <div className="max-w-md bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl p-3 border border-gray-200 mb-4">
@@ -1841,7 +2045,7 @@ function SearchAndFilter({
       key: "active",
       label: "Aktif",
       count: groupedInstallments.filter(group => {
-        const approvedCount = group.installments.filter(inst => inst.status === "approved").length;
+        const approvedCount = group.installments.filter(inst => inst.status === "approved" || inst.status === "completed").length;
         return approvedCount < group.installments.length;
       }).length + fullPaymentContracts.filter(contract => !contract.paymentCompleted).length,
     },
@@ -1854,7 +2058,7 @@ function SearchAndFilter({
       key: "completed",
       label: "Selesai",
       count: groupedInstallments.filter(group => {
-        const approvedCount = group.installments.filter(inst => inst.status === "approved").length;
+        const approvedCount = group.installments.filter(inst => inst.status === "approved" || inst.status === "completed").length;
         return approvedCount === group.installments.length;
       }).length + fullPaymentContracts.filter(contract => contract.paymentCompleted).length,
     },

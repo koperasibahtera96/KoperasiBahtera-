@@ -301,6 +301,422 @@ export async function POST(request: NextRequest) {
       message = "Investment payment successful - Contract ready for signing";
     }
 
+    // INSTALLMENT payments (cicilan)
+    if (
+      (transactionStatus === "settlement" ||
+        (transactionStatus === "capture" && fraudStatus === "accept")) &&
+      orderId.startsWith("INSTALLMENT-")
+    ) {
+      const mongoSession = await mongoose.startSession();
+      const txnId = `TXN-${Date.now()}-${Math.random()
+        .toString(36)
+        .substring(2, 9)}`;
+
+      await mongoSession.withTransaction(async () => {
+        // Parse orderId to get cicilanOrderId and installmentNumber
+        // Format: INSTALLMENT-{contractId}-{installmentNumber}
+        // Example: INSTALLMENT-CONTRACT-1758386808086-3YLW1XW-1
+        const orderParts = orderId.split("-");
+        const installmentNumber = parseInt(orderParts[orderParts.length - 1]); // Last part is installment number
+        const cicilanOrderId = orderParts.slice(1, -1).join("-"); // Everything between INSTALLMENT and installment number
+
+        console.log(`🔍 [${txnId}] Processing installment payment: ${orderId}`);
+        console.log(`🔍 [${txnId}] CicilanOrderId: ${cicilanOrderId}, Installment: ${installmentNumber}`);
+
+        // Find the payment record by cicilanOrderId and installmentNumber
+        const installmentPayment = await Payment.findOne({
+          cicilanOrderId: cicilanOrderId,
+          installmentNumber: installmentNumber,
+          paymentType: "cicilan-installment"
+        }).session(mongoSession);
+
+        if (!installmentPayment) {
+          throw new Error(`Installment payment not found for ${orderId}`);
+        }
+
+        // Update installment payment status
+        installmentPayment.transactionId = transactionId;
+        installmentPayment.transactionStatus = transactionStatus;
+        installmentPayment.fraudStatus = fraudStatus;
+        installmentPayment.transactionTime = new Date(body.transaction_time);
+        installmentPayment.midtransResponse = body;
+        installmentPayment.status = "completed";
+        installmentPayment.adminStatus = "approved"; // Auto-approve Midtrans payments
+        installmentPayment.adminReviewDate = new Date();
+        installmentPayment.settlementTime = new Date();
+
+        const user = await User.findById(installmentPayment.userId).session(mongoSession);
+        if (!user) throw new Error("User not found for installment payment");
+
+        // Helper functions (same as admin approval logic)
+        const getPlantType = (
+          productName: string
+        ): "gaharu" | "alpukat" | "jengkol" | "aren" => {
+          const name = productName.toLowerCase();
+          if (name.includes("gaharu")) return "gaharu";
+          if (name.includes("alpukat")) return "alpukat";
+          if (name.includes("jengkol")) return "jengkol";
+          if (name.includes("aren")) return "aren";
+          return "gaharu";
+        };
+
+        const getBaseROI = (plantType: "gaharu" | "alpukat" | "jengkol" | "aren") => {
+          const roiMap = { gaharu: 0.15, alpukat: 0.12, jengkol: 0.1, aren: 0.18 };
+          return roiMap[plantType] || 0.12;
+        };
+
+        const extractTreeCount = (productName: string): number => {
+          if (!productName) return 1;
+          if (productName.includes("1 Pohon")) return 1;
+          if (productName.includes("10 Pohon")) return 10;
+          return 10;
+        };
+
+        // Process based on installment number
+        if (installmentNumber === 1) {
+          // FIRST INSTALLMENT: Create PlantInstance and Investor record with FULL amounts
+          console.log(`📄 [${txnId}] First installment paid for cicilan ${cicilanOrderId} - creating PlantInstance and investor record`);
+
+          // Check if PlantInstance already exists
+          const existingPlantInstance = await PlantInstance.findOne({
+            contractNumber: cicilanOrderId,
+          }).session(mongoSession);
+
+          let savedPlantInstance = existingPlantInstance;
+
+          if (!savedPlantInstance) {
+            // Create new PlantInstance
+            const plantInstanceId = `PLANT-${cicilanOrderId}-${Date.now()}`;
+            const productName = installmentPayment.productName || "gaharu";
+            const plantType = getPlantType(productName);
+            const instanceName = `${plantType.charAt(0).toUpperCase() + plantType.slice(1)} - ${user.fullName}`;
+            const adminName = await getFirstAdminName();
+
+            const deterministicHistoryId = `HISTORY-${cicilanOrderId}-NEW`;
+
+            const plantInstance = new PlantInstance({
+              id: plantInstanceId,
+              plantType,
+              instanceName,
+              baseAnnualROI: getBaseROI(plantType),
+              operationalCosts: [],
+              incomeRecords: [],
+              qrCode: `QR-${productName}`,
+              owner: user.fullName,
+              fotoGambar: null,
+              memberId: user._id.toString(),
+              contractNumber: cicilanOrderId,
+              location: "Musi Rawas Utara",
+              kavling: "-",
+              status: "active",
+              approvalStatus: "approved",
+              lastUpdate: new Date().toLocaleDateString("id-ID"),
+              history: [
+                {
+                  id: deterministicHistoryId,
+                  action: "Kontrak Baru",
+                  type: "Kontrak Baru",
+                  date: new Date().toLocaleDateString("id-ID"),
+                  description: `Tanaman baru dibuat dengan cicilan untuk user ${user.fullName}`,
+                  addedBy: adminName,
+                },
+              ],
+            });
+
+            savedPlantInstance = await plantInstance.save({ session: mongoSession });
+            console.log(`🌱 [${txnId}] PlantInstance created: ${plantInstanceId} for cicilan ${cicilanOrderId}`);
+          }
+
+          // Find or create Investor record
+          let investor = await Investor.findOne({ userId: user._id }).session(mongoSession);
+
+          if (investor) {
+            // Update existing investor with FULL contract amounts
+            const existingInvestmentIndex = investor.investments.findIndex(
+              (inv: any) => inv.investmentId === cicilanOrderId
+            );
+
+            if (existingInvestmentIndex !== -1) {
+              // Update existing investment
+              const existingInvestment = investor.investments[existingInvestmentIndex];
+              existingInvestment.plantInstanceId = savedPlantInstance._id.toString();
+              existingInvestment.status = "active";
+
+              // Only update if not already paid (prevent double-counting)
+              if (existingInvestment.amountPaid === 0) {
+                // Add FULL contract amount to totals (business logic requirement)
+                const fullContractAmount = installmentPayment.installmentAmount * installmentPayment.totalInstallments;
+                investor.totalInvestasi += fullContractAmount;
+                investor.totalPaid += installmentPayment.amount; // Only actual payment
+                investor.jumlahPohon += extractTreeCount(installmentPayment.productName);
+
+                existingInvestment.totalAmount = fullContractAmount;
+                existingInvestment.amountPaid = installmentPayment.amount; // Only actual payment
+              }
+
+              // Add/update first installment record
+              if (!existingInvestment.installments) {
+                existingInvestment.installments = [];
+              }
+
+              const installmentIndex = existingInvestment.installments.findIndex(
+                (inst: any) => inst.installmentNumber === installmentNumber
+              );
+
+              const installmentRecord = {
+                installmentNumber: installmentNumber,
+                amount: installmentPayment.amount,
+                dueDate: installmentPayment.dueDate,
+                isPaid: true,
+                paidDate: new Date(),
+                status: "approved",
+                proofImageUrl: null, // Midtrans payment, no proof needed
+              };
+
+              if (installmentIndex !== -1) {
+                existingInvestment.installments[installmentIndex] = installmentRecord;
+              } else {
+                existingInvestment.installments.push(installmentRecord);
+              }
+
+              existingInvestment.completionDate = new Date();
+            } else {
+              // Create new investment record
+              const fullContractAmount = installmentPayment.installmentAmount * installmentPayment.totalInstallments;
+
+              const investmentRecord = {
+                investmentId: cicilanOrderId,
+                productName: installmentPayment.productName,
+                plantInstanceId: savedPlantInstance._id.toString(),
+                totalAmount: fullContractAmount, // FULL contract amount
+                amountPaid: installmentPayment.amount, // Only actual payment
+                paymentType: "cicilan" as const,
+                status: "active" as const,
+                investmentDate: new Date(),
+                completionDate: new Date(),
+                installments: [{
+                  installmentNumber: installmentNumber,
+                  amount: installmentPayment.amount,
+                  dueDate: installmentPayment.dueDate,
+                  isPaid: true,
+                  paidDate: new Date(),
+                  status: "approved",
+                  proofImageUrl: null,
+                }]
+              };
+
+              investor.investments.push(investmentRecord);
+              investor.totalInvestasi += fullContractAmount; // FULL contract amount
+              investor.totalPaid += installmentPayment.amount; // Only actual payment
+              investor.jumlahPohon += extractTreeCount(installmentPayment.productName);
+            }
+
+            await investor.save({ session: mongoSession });
+          } else {
+            // Create new investor record
+            const fullContractAmount = installmentPayment.installmentAmount * installmentPayment.totalInstallments;
+
+            const investmentRecord = {
+              investmentId: cicilanOrderId,
+              productName: installmentPayment.productName,
+              plantInstanceId: savedPlantInstance._id.toString(),
+              totalAmount: fullContractAmount, // FULL contract amount
+              amountPaid: installmentPayment.amount, // Only actual payment
+              paymentType: "cicilan" as const,
+              status: "active" as const,
+              investmentDate: new Date(),
+              completionDate: new Date(),
+              installments: [{
+                installmentNumber: installmentNumber,
+                amount: installmentPayment.amount,
+                dueDate: installmentPayment.dueDate,
+                isPaid: true,
+                paidDate: new Date(),
+                status: "approved",
+                proofImageUrl: null,
+              }]
+            };
+
+            investor = new Investor({
+              userId: user._id,
+              name: user.fullName,
+              email: user.email,
+              phoneNumber: user.phoneNumber,
+              status: "active",
+              investments: [investmentRecord],
+              totalInvestasi: fullContractAmount, // FULL contract amount
+              totalPaid: installmentPayment.amount, // Only actual payment
+              jumlahPohon: extractTreeCount(installmentPayment.productName),
+            });
+
+            await investor.save({ session: mongoSession });
+          }
+
+          console.log(`💰 [${txnId}] Investor record created/updated for first cicilan installment`);
+        } else {
+          // SUBSEQUENT INSTALLMENTS: Only update totalPaid and add installment record
+          console.log(`📄 [${txnId}] Subsequent installment ${installmentNumber} paid for cicilan ${cicilanOrderId}`);
+
+          const investor = await Investor.findOne({
+            userId: installmentPayment.userId,
+          }).session(mongoSession);
+
+          if (investor) {
+            // Find the investment and installment
+            const investment = investor.investments.find(
+              (inv: any) => inv.investmentId === cicilanOrderId
+            );
+
+            if (investment) {
+              // Add/update installment record
+              if (!investment.installments) {
+                investment.installments = [];
+              }
+
+              const installmentIndex = investment.installments.findIndex(
+                (inst: any) => inst.installmentNumber === installmentNumber
+              );
+
+              const installmentRecord = {
+                installmentNumber: installmentNumber,
+                amount: installmentPayment.amount,
+                dueDate: installmentPayment.dueDate,
+                isPaid: true,
+                paidDate: new Date(),
+                status: "approved",
+                proofImageUrl: null,
+              };
+
+              if (installmentIndex !== -1) {
+                investment.installments[installmentIndex] = installmentRecord;
+              } else {
+                investment.installments.push(installmentRecord);
+              }
+
+              // Update investment amount paid incrementally
+              investment.amountPaid += installmentPayment.amount;
+            }
+
+            // Update total paid amount for the investor incrementally
+            investor.totalPaid += installmentPayment.amount;
+            await investor.save({ session: mongoSession });
+          }
+
+          console.log(`💰 [${txnId}] Investor record updated for subsequent installment`);
+        }
+
+        // Create next installment Payment record (sequential logic)
+        if (installmentNumber < installmentPayment.totalInstallments) {
+          const nextInstallmentNumber = installmentNumber + 1;
+
+          // Check if next installment already exists
+          const existingNextPayment = await Payment.findOne({
+            cicilanOrderId: cicilanOrderId,
+            installmentNumber: nextInstallmentNumber,
+          }).session(mongoSession);
+
+          if (!existingNextPayment) {
+            // Calculate next installment due date
+            const termToMonths = {
+              monthly: 1,
+              quarterly: 3,
+              semiannual: 6,
+              annual: 12,
+            };
+            const paymentTermMonths =
+              termToMonths[
+                installmentPayment.paymentTerm as keyof typeof termToMonths
+              ] || 1;
+
+            const nextDueDate = new Date(installmentPayment.dueDate);
+            nextDueDate.setMonth(nextDueDate.getMonth() + paymentTermMonths);
+
+            // Create next installment payment record
+            const nextInstallmentOrderId = `INSTALLMENT-${cicilanOrderId}-${nextInstallmentNumber}`;
+            const nextInstallment = new Payment({
+              orderId: nextInstallmentOrderId,
+              userId: installmentPayment.userId,
+              amount: installmentPayment.installmentAmount,
+              currency: "IDR",
+              paymentType: "cicilan-installment",
+              cicilanOrderId: cicilanOrderId,
+              installmentNumber: nextInstallmentNumber,
+              totalInstallments: installmentPayment.totalInstallments,
+              installmentAmount: installmentPayment.installmentAmount,
+              paymentTerm: installmentPayment.paymentTerm,
+              dueDate: nextDueDate,
+              productName: installmentPayment.productName,
+              productId: installmentPayment.productId,
+              adminStatus: "pending",
+              status: "pending",
+              isProcessed: false,
+              customerData: installmentPayment.customerData,
+            });
+
+            await nextInstallment.save({ session: mongoSession });
+            console.log(`📅 [${txnId}] Next installment created: ${nextInstallmentOrderId} due ${nextDueDate.toISOString()}`);
+
+            // Also add the next installment to the investor record
+            const investorForNextInstallment = await Investor.findOne({
+              userId: installmentPayment.userId,
+            }).session(mongoSession);
+
+            if (investorForNextInstallment) {
+              const investmentForNextInstallment =
+                investorForNextInstallment.investments.find(
+                  (inv: any) => inv.investmentId === cicilanOrderId
+                );
+
+              if (
+                investmentForNextInstallment &&
+                investmentForNextInstallment.installments
+              ) {
+                // Check if this installment already exists in investor record
+                const existingInstallmentInInvestor =
+                  investmentForNextInstallment.installments.find(
+                    (inst: any) =>
+                      inst.installmentNumber === nextInstallmentNumber
+                  );
+
+                if (!existingInstallmentInInvestor) {
+                  investmentForNextInstallment.installments.push({
+                    installmentNumber: nextInstallmentNumber,
+                    amount: installmentPayment.installmentAmount,
+                    dueDate: nextDueDate,
+                    isPaid: false,
+                    paidDate: null,
+                    status: "pending",
+                    proofImageUrl: null,
+                  });
+
+                  await investorForNextInstallment.save({
+                    session: mongoSession,
+                  });
+                  console.log(`📊 [${txnId}] Added installment ${nextInstallmentNumber} to investor record`);
+                }
+              }
+            }
+          }
+        }
+
+        // Create commission record if it's the first installment and has referral code
+        if (installmentNumber === 1 && installmentPayment.referralCode) {
+          try {
+            const commissionResult = await createCommissionRecord(installmentPayment._id.toString());
+            console.log(`💰 [${txnId}] Commission for installment ${orderId}: ${commissionResult.message}`);
+          } catch (commissionError) {
+            console.error(`❌ [${txnId}] Commission error for ${orderId}:`, commissionError);
+            // Don't fail the payment for commission errors
+          }
+        }
+
+        await installmentPayment.save({ session: mongoSession });
+      });
+
+      await mongoSession.endSession();
+      message = "Installment payment successful - Investment updated";
+    }
+
     await payment.save();
     console.log(`Processed transaction ${orderId}: ${message}`);
 
