@@ -81,33 +81,68 @@ export function CicilanModal({
     }
   };
 
-  // Generate contract details on frontend (no database creation yet)
-  const generateContractDetails = (packageData: any, paymentTermData: any) => {
-    const year = new Date().getFullYear();
-    const randomId = Math.random().toString(36).substring(2, 8).toUpperCase();
-    const contractNumber = `CONTRACT-${year}-${randomId}`;
-    
-    const contractId = `CONTRACT-${Date.now()}-${Math.random()
-      .toString(36)
-      .substring(2, 9)
-      .toUpperCase()}`;
+  // Generate contract details using API
+  const generateContractDetails = async (packageData: any, paymentTermData: any) => {
+    const productName = `${plan.investmentPlan?.name || plan.name || "Paket"} (${
+      packageData?.name || "Paket"
+    })`;
 
-    return {
-      contractId,
-      contractNumber,
-      productName: `${plan.investmentPlan?.name || plan.name || "Paket"} (${
-        packageData?.name || "Paket"
-      })`,
-      productId: (plan.investmentPlan?.name || plan.name || "paket")
-        .toLowerCase()
-        .replace(/\s+/g, "-"),
-      totalAmount: currentPrice,
-      paymentType: "cicilan",
-      paymentTerm: convertPaymentTerm(paymentTermData.period),
-      totalInstallments: getInstallmentCount(paymentTermData.period),
-      installmentAmount: installmentAmount,
-      status: 'draft'
-    };
+    try {
+      const response = await fetch('/api/contract/generate-number', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ productName }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to generate contract number');
+      }
+
+      const result = await response.json();
+
+      return {
+        contractId: result.data.contractId,
+        contractNumber: result.data.contractNumber,
+        productName,
+        productId: (plan.investmentPlan?.name || plan.name || "paket")
+          .toLowerCase()
+          .replace(/\s+/g, "-"),
+        totalAmount: currentPrice,
+        paymentType: "cicilan",
+        paymentTerm: convertPaymentTerm(paymentTermData.period),
+        totalInstallments: getInstallmentCount(paymentTermData.period),
+        installmentAmount: installmentAmount,
+        status: 'draft'
+      };
+    } catch (error) {
+      console.error('Error generating contract details:', error);
+      // Fallback to old method if API fails
+      const year = new Date().getFullYear();
+      const randomId = Math.random().toString(36).substring(2, 8).toUpperCase();
+      const contractNumber = `CONTRACT-${year}-${randomId}`;
+
+      const contractId = `CONTRACT-${Date.now()}-${Math.random()
+        .toString(36)
+        .substring(2, 9)
+        .toUpperCase()}`;
+
+      return {
+        contractId,
+        contractNumber,
+        productName,
+        productId: (plan.investmentPlan?.name || plan.name || "paket")
+          .toLowerCase()
+          .replace(/\s+/g, "-"),
+        totalAmount: currentPrice,
+        paymentType: "cicilan",
+        paymentTerm: convertPaymentTerm(paymentTermData.period),
+        totalInstallments: getInstallmentCount(paymentTermData.period),
+        installmentAmount: installmentAmount,
+        status: 'draft'
+      };
+    }
   };
 
   const handleCreateCicilan = async () => {
@@ -117,7 +152,7 @@ export function CicilanModal({
     
     try {
       // Generate contract details on frontend only
-      const frontendContractDetails = generateContractDetails(selectedPackage, selectedTermDetails);
+      const frontendContractDetails = await generateContractDetails(selectedPackage, selectedTermDetails);
       
       // Show order confirmation modal with frontend-generated details
       setContractDetails(frontendContractDetails);
@@ -150,7 +185,8 @@ export function CicilanModal({
           paymentType: contractDetails.paymentType,
           paymentTerm: contractDetails.paymentTerm,
           totalInstallments: contractDetails.totalInstallments,
-          installmentAmount: contractDetails.installmentAmount
+          installmentAmount: contractDetails.installmentAmount,
+          contractNumber: contractDetails.contractNumber
         }),
       });
 
@@ -210,7 +246,7 @@ export function CicilanModal({
           }}
         >
           <motion.div
-            className="bg-[#FFFCE3] rounded-3xl shadow-2xl max-w-md w-full max-h-[85vh] flex flex-col border-2 border-[#324D3E]/20"
+            className="bg-[#FFFCE3] rounded-3xl shadow-2xl max-w-lg w-full max-h-[85vh] flex flex-col border-2 border-[#324D3E]/20"
             initial={{ scale: 0.9, opacity: 0, y: 20 }}
             animate={{ scale: 1, opacity: 1, y: 0 }}
             exit={{ scale: 0.9, opacity: 0, y: 20 }}
@@ -256,43 +292,43 @@ export function CicilanModal({
                 Detail Kontrak
               </h4>
               <div className="space-y-3 text-sm">
-                <div className="flex justify-between items-center">
+                <div className="flex flex-col gap-2">
                   <span className="text-[#324D3E]/80 font-medium">
                     No. Kontrak:
                   </span>
-                  <span className="font-bold text-[#324D3E] text-lg">
+                  <span className="font-bold text-[#324D3E] text-base font-mono break-all">
                     {contractDetails.contractNumber}
                   </span>
                 </div>
-                <div className="flex justify-between items-center">
+                <div className="flex flex-col gap-2">
                   <span className="text-[#324D3E]/80 font-medium">
                     Jenis Paket:
                   </span>
-                  <span className="font-bold text-[#324D3E] text-lg">
+                  <span className="font-bold text-[#324D3E] text-base font-mono break-all">
                     {contractDetails.productName}
                   </span>
                 </div>
-                <div className="flex justify-between items-center">
+                <div className="flex flex-col gap-2">
                   <span className="text-[#324D3E]/80 font-medium">
                     Harga Paket:
                   </span>
-                  <span className="font-bold text-[#324D3E] text-lg">
+                  <span className="font-bold text-[#324D3E] text-base font-mono break-all">
                     Rp {contractDetails.totalAmount.toLocaleString("id-ID")}
                   </span>
                 </div>
-                <div className="flex justify-between items-center">
+                <div className="flex flex-col gap-2">
                   <span className="text-[#324D3E]/80 font-medium">
                     Tipe Pembayaran:
                   </span>
-                  <span className="font-bold text-[#324D3E] text-lg capitalize">
+                  <span className="font-bold text-[#324D3E] text-base font-mono break-all capitalize">
                     {contractDetails.paymentType}
                   </span>
                 </div>
-                <div className="flex justify-between items-center">
+                <div className="flex flex-col gap-2">
                   <span className="text-[#324D3E]/80 font-medium">
                     Angsuran per {selectedTermDetails?.period}:
                   </span>
-                  <span className="font-bold text-emerald-600 text-lg">
+                  <span className="font-bold text-emerald-600 text-base font-mono break-all">
                     Rp {installmentAmount.toLocaleString("id-ID")}
                   </span>
                 </div>
@@ -462,11 +498,11 @@ export function CicilanModal({
                     {selectedPackage?.name || "-"}
                   </span>
                 </div>
-                <div className="flex justify-between items-center">
+                <div className="flex flex-col gap-2">
                   <span className="text-[#324D3E]/80 font-medium">
                     Jumlah Pohon:
                   </span>
-                  <span className="font-bold text-[#324D3E] text-lg">
+                  <span className="font-bold text-[#324D3E] text-base font-mono break-all">
                     {selectedPackage?.treeCount || "-"} Pohon
                   </span>
                 </div>

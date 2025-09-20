@@ -14,13 +14,13 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { productName, productId, totalAmount, paymentType, paymentTerm, totalInstallments, installmentAmount } = await req.json();
+    const { productName, productId, totalAmount, paymentType, paymentTerm, totalInstallments, installmentAmount, contractNumber } = await req.json();
 
     // Validate required fields
-    if (!productName || !productId || !totalAmount || !paymentType) {
+    if (!productName || !productId || !totalAmount || !paymentType || !contractNumber) {
       return NextResponse.json(
         {
-          error: "Missing required fields: productName, productId, totalAmount, paymentType",
+          error: "Missing required fields: productName, productId, totalAmount, paymentType, contractNumber",
         },
         { status: 400 }
       );
@@ -70,10 +70,7 @@ export async function POST(req: NextRequest) {
       .substring(2, 9)
       .toUpperCase()}`;
 
-    // Generate contract number
-    const year = new Date().getFullYear();
-    const randomId = Math.random().toString(36).substring(2, 8).toUpperCase();
-    const contractNumber = `CONTRACT-${year}-${randomId}`;
+    // Contract number will be generated automatically by the pre-save hook
 
     // For full payment contracts, generate Midtrans payment URL
     let paymentUrl = undefined;

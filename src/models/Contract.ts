@@ -174,14 +174,5 @@ ContractSchema.index({ adminApprovalStatus: 1 });
 ContractSchema.index({ userId: 1, status: 1 });
 ContractSchema.index({ createdAt: -1 });
 
-// Generate contract number before saving
-ContractSchema.pre('save', function(next) {
-  if (this.isNew && !this.contractNumber) {
-    const year = new Date().getFullYear();
-    const randomId = Math.random().toString(36).substring(2, 8).toUpperCase();
-    this.contractNumber = `CONTRACT-${year}-${randomId}`;
-  }
-  next();
-});
 
 export default mongoose.models.Contract || mongoose.model<IContract>('Contract', ContractSchema);

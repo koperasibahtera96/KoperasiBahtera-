@@ -185,28 +185,60 @@ export default function PlantShowcaseSection() {
     }));
   };
 
-  // Generate contract details on frontend (no database creation yet)
-  const generateContractDetails = (plant: any, selectedPackage: any) => {
-    const year = new Date().getFullYear();
-    const randomId = Math.random().toString(36).substring(2, 8).toUpperCase();
-    const contractNumber = `CONTRACT-${year}-${randomId}`;
-    
-    const contractId = `CONTRACT-${Date.now()}-${Math.random()
-      .toString(36)
-      .substring(2, 9)
-      .toUpperCase()}`;
+  // Generate contract details using API
+  const generateContractDetails = async (plant: any, selectedPackage: any) => {
+    const productName = `${plant.investmentPlan.name} - ${selectedPackage.name}`;
 
-    return {
-      contractId,
-      contractNumber,
-      productName: `${plant.investmentPlan.name} - ${selectedPackage.name}`,
-      productId: `${plant.investmentPlan.name}-${selectedPackage.treeCount}`.toLowerCase().replace(/\s+/g, "-"),
-      totalAmount: selectedPackage.price,
-      paymentType: "full",
-      selectedPackage: selectedPackage,
-      plant: plant,
-      status: 'draft'
-    };
+    try {
+      const response = await fetch('/api/contract/generate-number', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ productName }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to generate contract number');
+      }
+
+      const result = await response.json();
+
+      return {
+        contractId: result.data.contractId,
+        contractNumber: result.data.contractNumber,
+        productName,
+        productId: `${plant.investmentPlan.name}-${selectedPackage.treeCount}`.toLowerCase().replace(/\s+/g, "-"),
+        totalAmount: selectedPackage.price,
+        paymentType: "full",
+        selectedPackage: selectedPackage,
+        plant: plant,
+        status: 'draft'
+      };
+    } catch (error) {
+      console.error('Error generating contract details:', error);
+      // Fallback to old method if API fails
+      const year = new Date().getFullYear();
+      const randomId = Math.random().toString(36).substring(2, 8).toUpperCase();
+      const contractNumber = `CONTRACT-${year}-${randomId}`;
+
+      const contractId = `CONTRACT-${Date.now()}-${Math.random()
+        .toString(36)
+        .substring(2, 9)
+        .toUpperCase()}`;
+
+      return {
+        contractId,
+        contractNumber,
+        productName,
+        productId: `${plant.investmentPlan.name}-${selectedPackage.treeCount}`.toLowerCase().replace(/\s+/g, "-"),
+        totalAmount: selectedPackage.price,
+        paymentType: "full",
+        selectedPackage: selectedPackage,
+        plant: plant,
+        status: 'draft'
+      };
+    }
   };
 
   const handleConfirmTreeSelection = async () => {
@@ -220,7 +252,7 @@ export default function PlantShowcaseSection() {
 
     try {
       // Generate contract details on frontend only
-      const frontendContractDetails = generateContractDetails(plant, selectedPackage);
+      const frontendContractDetails = await generateContractDetails(plant, selectedPackage);
       
       // Show order confirmation modal with frontend-generated details
       setContractDetails(frontendContractDetails);
@@ -256,7 +288,8 @@ export default function PlantShowcaseSection() {
           productName: contractDetails.productName,
           productId: contractDetails.productId,
           totalAmount: contractDetails.totalAmount,
-          paymentType: contractDetails.paymentType
+          paymentType: contractDetails.paymentType,
+          contractNumber: contractDetails.contractNumber
         }),
       });
 
@@ -1082,7 +1115,7 @@ export default function PlantShowcaseSection() {
             }}
           >
             <motion.div
-              className="bg-[#FFFCE3] rounded-3xl shadow-2xl max-w-md w-full max-h-[85vh] flex flex-col border-2 border-[#324D3E]/20"
+              className="bg-[#FFFCE3] rounded-3xl shadow-2xl max-w-lg w-full max-h-[85vh] flex flex-col border-2 border-[#324D3E]/20"
               initial={{ scale: 0.9, opacity: 0, y: 20 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.9, opacity: 0, y: 20 }}
@@ -1128,44 +1161,44 @@ export default function PlantShowcaseSection() {
                     Detail Kontrak
                   </h4>
                   <div className="space-y-3 text-sm">
-                    <div className="flex justify-between items-center">
+                    <div className="flex flex-col gap-2">
                       <span className="text-[#324D3E]/80 font-medium">
                         No. Kontrak:
                       </span>
-                      <span className="font-bold text-[#324D3E] text-lg">
+                      <span className="font-bold text-[#324D3E] text-base font-mono break-all">
                         {contractDetails.contractNumber}
                       </span>
                     </div>
-                    <div className="flex justify-between items-center">
+                    <div className="flex flex-col gap-2">
                       <span className="text-[#324D3E]/80 font-medium">
                         Jenis Paket:
                       </span>
-                      <span className="font-bold text-[#324D3E] text-lg">
+                      <span className="font-bold text-[#324D3E] text-base font-mono break-all">
                         {contractDetails.productName}
                       </span>
                     </div>
-                    <div className="flex justify-between items-center">
+                    <div className="flex flex-col gap-2">
                       <span className="text-[#324D3E]/80 font-medium">
                         Harga Paket:
                       </span>
-                      <span className="font-bold text-[#324D3E] text-lg">
+                      <span className="font-bold text-[#324D3E] text-base font-mono break-all">
                         Rp {contractDetails.totalAmount.toLocaleString("id-ID")}
                       </span>
                     </div>
-                    <div className="flex justify-between items-center">
+                    <div className="flex flex-col gap-2">
                       <span className="text-[#324D3E]/80 font-medium">
                         Tipe Pembayaran:
                       </span>
-                      <span className="font-bold text-[#324D3E] text-lg capitalize">
+                      <span className="font-bold text-[#324D3E] text-base font-mono break-all capitalize">
                         {contractDetails.paymentType === "full" ? "Lunas" : contractDetails.paymentType}
                       </span>
                     </div>
                     {contractDetails.selectedPackage && (
-                      <div className="flex justify-between items-center">
+                      <div className="flex flex-col gap-2">
                         <span className="text-[#324D3E]/80 font-medium">
                           Jumlah Pohon:
                         </span>
-                        <span className="font-bold text-emerald-600 text-lg">
+                        <span className="font-bold text-emerald-600 text-base font-mono break-all">
                           {contractDetails.selectedPackage.treeCount} Pohon
                         </span>
                       </div>
