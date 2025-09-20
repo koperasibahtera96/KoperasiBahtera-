@@ -1,0 +1,283 @@
+[{
+  "_id": {
+    "$oid": "68cda41a42b6e2cb5838d63f"
+  },
+  "id": "PLANT-CONTRACT-1758307318868-9MFC1GR-1758307354214",
+  "plantType": "alpukat",
+  "instanceName": "Alpukat - raga",
+  "baseAnnualROI": 0.12,
+  "operationalCosts": [],
+  "incomeRecords": [],
+  "qrCode": "QR-Paket 10 Pohon Alpukat (1 Pohon)",
+  "owner": "raga",
+  "fotoGambar": null,
+  "memberId": "68cda39a6af7af928d96665c",
+  "contractNumber": "CONTRACT-CONTRACT-1758307318868-9MFC1GR",
+  "location": "TBD",
+  "status": "Kontrak Baru",
+  "approvalStatus": "pending",
+  "lastUpdate": "19/09/2025",
+  "history": [
+    {
+      "id": "HISTORY-1758307354436-8s610b9",
+      "action": "Kontrak Baru",
+      "type": "Kontrak Baru",
+      "date": "19/09/2025",
+      "description": "Tanaman baru dibuat dengan cicilan untuk user raga",
+      "addedBy": "Super Admin"
+    }
+  ],
+  "createdAt": {
+    "$date": "2025-09-19T18:42:34.438Z"
+  },
+  "updatedAt": {
+    "$date": "2025-09-19T18:42:34.438Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "68ce89fbd9524a1832bb9254"
+  },
+  "id": "PLANT-CONTRACT-1758366177157-CB4HMZ2--CB4HMZ2",
+  "plantType": "gaharu",
+  "instanceName": "Gaharu - raga",
+  "baseAnnualROI": 0.15,
+  "operationalCosts": [],
+  "incomeRecords": [],
+  "qrCode": "QR-Paket 10 Pohon Gaharu - 10 Pohon",
+  "owner": "raga",
+  "fotoGambar": null,
+  "memberId": "68cda39a6af7af928d96665c",
+  "contractNumber": "CONTRACT-1758366177157-CB4HMZ2",
+  "location": "TBD",
+  "kavling": "KAV 003",
+  "status": "Cek kesehatan",
+  "approvalStatus": "approved",
+  "lastUpdate": "20/09/2025",
+  "history": [
+    {
+      "id": 1758366316740,
+      "type": "Cek kesehatan",
+      "action": "Cek kesehatan",
+      "date": "20/09/2025",
+      "description": "Cek Sehat",
+      "hasImage": true,
+      "imageUrl": "https://ik.imagekit.io/niyfabfxr/plant-photos/WhatsApp_Video_2025-09-17_at_21.06.31_9e81ac78_qDyyozsTN.mp4",
+      "addedBy": "SPV STAFF",
+      "addedAt": "20/09/2025"
+    },
+    {
+      "id": "HISTORY-CONTRACT-1758366177157-CB4HMZ2-NEW",
+      "action": "Kontrak Baru",
+      "type": "Kontrak Baru",
+      "date": "20/9/2025",
+      "description": "Tanaman baru dibuat dengan pembayaran full untuk user raga",
+      "addedBy": "Super Admin"
+    }
+  ],
+  "createdAt": {
+    "$date": "2025-09-20T11:03:23.755Z"
+  },
+  "updatedAt": {
+    "$date": "2025-09-20T13:26:19.715Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "68ce955b6283ade3dfe360a9"
+  },
+  "id": "PLANT-CONTRACT-1758369036808-MK5RYNK-1758369115096",
+  "plantType": "alpukat",
+  "instanceName": "Alpukat - ben",
+  "baseAnnualROI": 0.12,
+  "operationalCosts": [],
+  "incomeRecords": [],
+  "qrCode": "QR-Paket 10 Pohon Alpukat (10 Pohon)",
+  "owner": "ben",
+  "fotoGambar": null,
+  "memberId": "68cd238a7ff5595e0801e540",
+  "contractNumber": "CONTRACT-CONTRACT-1758369036808-MK5RYNK",
+  "location": "Musi Rawa Utara",
+  "status": "Kontrak Baru",
+  "approvalStatus": "pending",
+  "lastUpdate": "20/09/2025",
+  "history": [
+    {
+      "id": "HISTORY-1758369115167-z4vrwej",
+      "action": "Kontrak Baru",
+      "type": "Kontrak Baru",
+      "date": "20/09/2025",
+      "description": "Tanaman baru dibuat dengan cicilan untuk user ben",
+      "addedBy": "Super Admin"
+    }
+  ],
+  "createdAt": {
+    "$date": "2025-09-20T11:51:55.168Z"
+  },
+  "updatedAt": {
+    "$date": "2025-09-20T11:51:55.168Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "68ce976b3f69eba8f4bf7de5"
+  },
+  "id": "PLANT-CONTRACT-1758369374939-DFCDC7F--DFCDC7F",
+  "plantType": "jengkol",
+  "instanceName": "Jengkol - raga",
+  "baseAnnualROI": 0.1,
+  "operationalCosts": [],
+  "incomeRecords": [],
+  "qrCode": "QR-Paket 10 Pohon Jengkol - 10 Pohon",
+  "owner": "raga",
+  "fotoGambar": null,
+  "memberId": "68cda39a6af7af928d96665c",
+  "contractNumber": "CONTRACT-1758369374939-DFCDC7F",
+  "location": "TBD",
+  "kavling": "-",
+  "status": "active",
+  "approvalStatus": "approved",
+  "lastUpdate": "20/9/2025",
+  "history": [
+    {
+      "id": "HISTORY-CONTRACT-1758369374939-DFCDC7F-NEW",
+      "action": "Kontrak Baru",
+      "type": "Kontrak Baru",
+      "date": "20/9/2025",
+      "description": "Tanaman baru dibuat dengan pembayaran full untuk user raga",
+      "addedBy": "Super Admin"
+    }
+  ],
+  "createdAt": {
+    "$date": "2025-09-20T12:00:43.018Z"
+  },
+  "updatedAt": {
+    "$date": "2025-09-20T12:00:43.018Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "68cec422a786751280abeee8"
+  },
+  "id": "PLANT-CONTRACT-1758380923740-ZKDUGDX--ZKDUGDX",
+  "plantType": "jengkol",
+  "instanceName": "Jengkol - raga",
+  "baseAnnualROI": 0.1,
+  "operationalCosts": [],
+  "incomeRecords": [],
+  "qrCode": "QR-Paket 10 Pohon Jengkol - 10 Pohon",
+  "owner": "raga",
+  "fotoGambar": null,
+  "memberId": "68cda39a6af7af928d96665c",
+  "contractNumber": "CONTRACT-1758380923740-ZKDUGDX",
+  "location": "Musi Rawas Utara",
+  "kavling": "-",
+  "status": "active",
+  "approvalStatus": "approved",
+  "lastUpdate": "20/9/2025",
+  "history": [
+    {
+      "id": "HISTORY-CONTRACT-1758380923740-ZKDUGDX-NEW",
+      "action": "Kontrak Baru",
+      "type": "Kontrak Baru",
+      "date": "20/9/2025",
+      "description": "Tanaman baru dibuat dengan pembayaran full untuk user raga",
+      "addedBy": "Super Admin"
+    }
+  ],
+  "createdAt": {
+    "$date": "2025-09-20T15:11:30.801Z"
+  },
+  "updatedAt": {
+    "$date": "2025-09-20T15:11:30.801Z"
+  },
+  "__v": 0
+},
+{
+  "_id": {
+    "$oid": "68cef35fae929962daf187dc"
+  },
+  "id": "PLANT-CONTRACT-1758393152761-UZMPMLB--UZMPMLB",
+  "plantType": "alpukat",
+  "instanceName": "Alpukat - bendua",
+  "baseAnnualROI": 0.12,
+  "operationalCosts": [],
+  "incomeRecords": [],
+  "qrCode": "QR-Paket 10 Pohon Alpukat - 10 Pohon",
+  "owner": "bendua",
+  "fotoGambar": null,
+  "memberId": "68cd3de89a9fc202f5d852f3",
+  "contractNumber": "CONTRACT-1758393152761-UZMPMLB",
+  "location": "Musi Rawas Utara",
+  "kavling": "-",
+  "status": "Kontrak Baru",
+  "approvalStatus": "approved",
+  "lastUpdate": "21/9/2025",
+  "history": [
+    {
+      "id": "HISTORY-CONTRACT-1758393152761-UZMPMLB-NEW",
+      "action": "Pending Contract Approval",
+      "type": "Pending Contract Approval",
+      "date": "21/09/2025",
+      "description": "Tanaman dibuat, menunggu persetujuan kontrak untuk user bendua",
+      "addedBy": "Super Admin"
+    },
+    {
+      "id": "HISTORY-1758393215214-ddnkqwb",
+      "action": "Kontrak Disetujui",
+      "type": "Contract Approval",
+      "date": "21/09/2025",
+      "description": "Status diubah dari Pending ke Kontrak Baru setelah kontrak disetujui admin",
+      "addedBy": "Super Admin"
+    }
+  ],
+  "createdAt": {
+    "$date": "2025-09-20T18:33:03.004Z"
+  },
+  "updatedAt": {
+    "$date": "2025-09-20T18:33:35.216Z"
+  },
+  "__v": 1
+},
+{
+  "_id": {
+    "$oid": "68cef3dfe1c925334b2e27b9"
+  },
+  "id": "PLANT-CONTRACT-1758393252105-UR5P3O1--UR5P3O1",
+  "plantType": "aren",
+  "instanceName": "Aren - bendua",
+  "baseAnnualROI": 0.18,
+  "operationalCosts": [],
+  "incomeRecords": [],
+  "qrCode": "QR-Paket 10 Pohon Aren - 10 Pohon",
+  "owner": "bendua",
+  "fotoGambar": null,
+  "memberId": "68cd3de89a9fc202f5d852f3",
+  "contractNumber": "CONTRACT-1758393252105-UR5P3O1",
+  "location": "Musi Rawas Utara",
+  "kavling": "-",
+  "status": "active",
+  "approvalStatus": "approved",
+  "lastUpdate": "20/9/2025",
+  "history": [
+    {
+      "id": "HISTORY-CONTRACT-1758393252105-UR5P3O1-NEW",
+      "action": "Kontrak Baru",
+      "type": "Kontrak Baru",
+      "date": "20/9/2025",
+      "description": "Tanaman baru dibuat dengan pembayaran full untuk user bendua",
+      "addedBy": "Super Admin"
+    }
+  ],
+  "createdAt": {
+    "$date": "2025-09-20T18:35:11.010Z"
+  },
+  "updatedAt": {
+    "$date": "2025-09-20T18:35:11.010Z"
+  },
+  "__v": 0
+}]

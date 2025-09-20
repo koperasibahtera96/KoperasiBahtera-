@@ -57,8 +57,6 @@ export async function GET() {
     // Find investor record for the current user
     const investor = await Investor.findOne({ userId: session.user.id }).populate('investments.plantInstanceId');
 
-    console.log(investor, 'investor')
-
     if (!investor) {
       // Return empty data instead of error for users with no investments yet
       return NextResponse.json({

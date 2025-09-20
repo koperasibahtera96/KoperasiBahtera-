@@ -184,6 +184,10 @@ export async function POST(request: NextRequest) {
         }).session(mongoSession);
 
         if (!savedPlantInstance) {
+          // Get contract to check approval status
+          const contract = await Contract.findOne({ contractId: orderId }).session(mongoSession);
+          const isContractApproved = contract?.adminApprovalStatus === 'approved';
+
           const plantInstanceId = `PLANT-${payment.orderId}-${orderId.slice(-8)}`;
           const productName = payment.productName || "gaharu";
           const plantType = getPlantType(productName);
@@ -193,6 +197,13 @@ export async function POST(request: NextRequest) {
           const adminName = await getFirstAdminName();
 
           const deterministicHistoryId = `HISTORY-${orderId}-NEW`;
+
+          // Set status based on contract approval
+          const plantStatus = isContractApproved ? "Kontrak Baru" : "Pending";
+          const historyAction = isContractApproved ? "Kontrak Baru" : "Pending Contract Approval";
+          const historyDescription = isContractApproved
+            ? `Tanaman baru dibuat dengan pembayaran full untuk user ${user.fullName}`
+            : `Tanaman dibuat, menunggu persetujuan kontrak untuk user ${user.fullName}`;
 
           const plantInstance = new PlantInstance({
             id: plantInstanceId,
@@ -208,16 +219,24 @@ export async function POST(request: NextRequest) {
             contractNumber: orderId,
             location: "Musi Rawas Utara",
             kavling: "-",
-            status: "active",
+            status: plantStatus,
             approvalStatus: "approved",
-            lastUpdate: new Date().toLocaleDateString("id-ID"),
+            lastUpdate: new Date().toLocaleDateString("id-ID", {
+              day: "2-digit",
+              month: "2-digit",
+              year: "numeric"
+            }),
             history: [
               {
                 id: deterministicHistoryId,
-                action: "Kontrak Baru",
-                type: "Kontrak Baru",
-                date: new Date().toLocaleDateString("id-ID"),
-                description: `Tanaman baru dibuat dengan pembayaran full untuk user ${user.fullName}`,
+                action: historyAction,
+                type: historyAction,
+                date: new Date().toLocaleDateString("id-ID", {
+                  day: "2-digit",
+                  month: "2-digit",
+                  year: "numeric"
+                }),
+                description: historyDescription,
                 addedBy: adminName,
               },
             ],
@@ -385,6 +404,10 @@ export async function POST(request: NextRequest) {
           let savedPlantInstance = existingPlantInstance;
 
           if (!savedPlantInstance) {
+            // Get contract to check approval status
+            const contract = await Contract.findOne({ contractId: cicilanOrderId }).session(mongoSession);
+            const isContractApproved = contract?.adminApprovalStatus === 'approved';
+
             // Create new PlantInstance
             const plantInstanceId = `PLANT-${cicilanOrderId}-${Date.now()}`;
             const productName = installmentPayment.productName || "gaharu";
@@ -393,6 +416,13 @@ export async function POST(request: NextRequest) {
             const adminName = await getFirstAdminName();
 
             const deterministicHistoryId = `HISTORY-${cicilanOrderId}-NEW`;
+
+            // Set status based on contract approval
+            const plantStatus = isContractApproved ? "Kontrak Baru" : "Pending";
+            const historyAction = isContractApproved ? "Kontrak Baru" : "Pending Contract Approval";
+            const historyDescription = isContractApproved
+              ? `Tanaman baru dibuat dengan cicilan untuk user ${user.fullName}`
+              : `Tanaman dibuat, menunggu persetujuan kontrak untuk user ${user.fullName}`;
 
             const plantInstance = new PlantInstance({
               id: plantInstanceId,
@@ -408,16 +438,24 @@ export async function POST(request: NextRequest) {
               contractNumber: cicilanOrderId,
               location: "Musi Rawas Utara",
               kavling: "-",
-              status: "active",
+              status: plantStatus,
               approvalStatus: "approved",
-              lastUpdate: new Date().toLocaleDateString("id-ID"),
+              lastUpdate: new Date().toLocaleDateString("id-ID", {
+                day: "2-digit",
+                month: "2-digit",
+                year: "numeric"
+              }),
               history: [
                 {
                   id: deterministicHistoryId,
-                  action: "Kontrak Baru",
-                  type: "Kontrak Baru",
-                  date: new Date().toLocaleDateString("id-ID"),
-                  description: `Tanaman baru dibuat dengan cicilan untuk user ${user.fullName}`,
+                  action: historyAction,
+                  type: historyAction,
+                  date: new Date().toLocaleDateString("id-ID", {
+                    day: "2-digit",
+                    month: "2-digit",
+                    year: "numeric"
+                  }),
+                  description: historyDescription,
                   addedBy: adminName,
                 },
               ],

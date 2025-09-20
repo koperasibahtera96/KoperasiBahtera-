@@ -2,6 +2,7 @@ import dbConnect from "@/lib/mongodb";
 import Contract from "@/models/Contract";
 import User from "@/models/User";
 import { Investor } from "@/models";
+import PlantInstance from "@/models/PlantInstance";
 import { getServerSession } from "next-auth/next";
 import { NextRequest, NextResponse } from "next/server";
 import { sendEmail, emailTemplates } from "@/lib/email";
@@ -76,6 +77,43 @@ export async function POST(
     }
 
     await contract.save();
+
+    // Check if user has already paid and update PlantInstance status if needed
+    try {
+      const existingPlantInstance = await PlantInstance.findOne({
+        contractNumber: contract.contractId
+      });
+
+      if (existingPlantInstance && existingPlantInstance.status === "Pending") {
+        // User has already paid but contract was just approved - update status
+        existingPlantInstance.status = "Kontrak Baru";
+        existingPlantInstance.lastUpdate = new Date().toLocaleDateString("id-ID");
+
+        // Update history
+        existingPlantInstance.history.push({
+          id: `HISTORY-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
+          action: "Kontrak Disetujui",
+          type: "Contract Approval",
+          date: new Date().toLocaleDateString("id-ID", {
+            day: "2-digit",
+            month: "2-digit",
+            year: "numeric"
+          }),
+          description: `Status diubah dari Pending ke Kontrak Baru setelah kontrak disetujui admin`,
+          addedBy: adminUser.fullName || adminUser.email,
+        });
+
+        await existingPlantInstance.save();
+
+        console.log("PlantInstance status updated from Pending to Kontrak Baru:", {
+          contractId: contract.contractId,
+          plantInstanceId: existingPlantInstance.id
+        });
+      }
+    } catch (plantError) {
+      console.error("Error updating PlantInstance status:", plantError);
+      // Continue with contract approval even if PlantInstance update fails
+    }
 
     // Note: PlantInstance will be created after payment, not after contract approval
     console.log("Contract approved - PlantInstance will be created after user makes payment:", {
