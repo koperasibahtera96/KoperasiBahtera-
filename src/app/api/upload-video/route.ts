@@ -10,11 +10,13 @@ const imagekit = new ImageKit({
   publicKey:
     process.env.NEXT_PUBLIC_IMAGEKIT_PUBLIC_KEY ||
     process.env.IMAGEKIT_PUBLIC_KEY ||
+    process.env.NEXT_IMAGEKIT_PUBLIC_KEY ||
     "",
   privateKey: process.env.IMAGEKIT_PRIVATE_KEY || "",
   urlEndpoint:
     process.env.NEXT_PUBLIC_IMAGEKIT_URL_ENDPOINT ||
     process.env.IMAGEKIT_URL_ENDPOINT ||
+    process.env.NEXT_IMAGEKIT_URL_ENDPOINT ||
     "",
 });
 
@@ -22,16 +24,18 @@ function ensureEnv() {
   if (
     !(
       process.env.NEXT_PUBLIC_IMAGEKIT_PUBLIC_KEY ||
-      process.env.IMAGEKIT_PUBLIC_KEY
+      process.env.IMAGEKIT_PUBLIC_KEY ||
+      process.env.NEXT_IMAGEKIT_PUBLIC_KEY
     ) ||
     !process.env.IMAGEKIT_PRIVATE_KEY ||
     !(
       process.env.NEXT_PUBLIC_IMAGEKIT_URL_ENDPOINT ||
-      process.env.IMAGEKIT_URL_ENDPOINT
+      process.env.IMAGEKIT_URL_ENDPOINT ||
+      process.env.NEXT_IMAGEKIT_URL_ENDPOINT
     )
   ) {
     throw new Error(
-      "ENV ImageKit belum lengkap. Wajib: IMAGEKIT_PRIVATE_KEY, dan salah satu dari (NEXT_PUBLIC_IMAGEKIT_PUBLIC_KEY/IMAGEKIT_PUBLIC_KEY) serta (NEXT_PUBLIC_IMAGEKIT_URL_ENDPOINT/IMAGEKIT_URL_ENDPOINT)."
+      "ENV ImageKit belum lengkap. Wajib: IMAGEKIT_PRIVATE_KEY, dan salah satu dari (NEXT_PUBLIC_IMAGEKIT_PUBLIC_KEY/IMAGEKIT_PUBLIC_KEY/NEXT_IMAGEKIT_PUBLIC_KEY) serta (NEXT_PUBLIC_IMAGEKIT_URL_ENDPOINT/IMAGEKIT_URL_ENDPOINT/NEXT_IMAGEKIT_URL_ENDPOINT)."
     );
   }
 }
@@ -65,7 +69,7 @@ export async function POST(req: Request) {
     const nodeStream = Readable.fromWeb(webStream as any);
     const originalName = (file as any).name || "upload-video.mp4";
 
-    const uploaded = await imagekit.upload({
+    const uploaded = await (imagekit as any).upload({
       file: nodeStream, // kirim stream, bukan Buffer
       fileName: originalName,
       folder,

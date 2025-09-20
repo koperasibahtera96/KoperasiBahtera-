@@ -79,7 +79,7 @@ export async function GET(_request: NextRequest) {
             plantType: plantInstance.plantType,
             instanceName: plantInstance.instanceName,
             baseAnnualROI: plantInstance.baseAnnualROI,
-            location: plantInstance.location || 'TBD',
+            location: plantInstance.location || 'Musi Rawas Utara',
             status: plantInstance.status,
             qrCode: plantInstance.qrCode,
             fotoGambar: plantInstance.fotoGambar,

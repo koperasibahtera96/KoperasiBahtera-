@@ -285,39 +285,10 @@ export async function POST(
       };
 
       investment.installments = [firstInstallment]; // Only first installment
-
-      // Individual installment Payment records will be created when user submits payment proof
-      // This is handled by the existing cicilan logic
-
-      console.log("Created first installment only:", {
-        contractId: contract.contractId,
-        installmentAmount: installmentAmount,
-        dueDate: firstInstallmentDueDate,
-        totalInstallments: totalInstallments
-      });
     }
 
-    // Check if this investment already exists to prevent duplicates
-    const existingInvestmentIndex = investor.investments.findIndex(
-      (inv: any) => inv.investmentId === contract.contractId
-    );
-
-    if (existingInvestmentIndex === -1) {
-      // Only add the investment and update totals if it doesn't already exist
-      investor.investments.push(investment);
-      investor.totalInvestasi = (investor.totalInvestasi || 0) + contract.totalAmount;
-      console.log("Added new investment to investor record");
-    } else {
-      console.log("Investment already exists in investor record, skipping duplicate");
-    }
 
     await investor.save();
-
-    console.log("Investor record created/updated (no PlantInstance yet):", {
-      investorId: investor._id,
-      contractId: contract.contractId,
-      message: "Payment record created, PlantInstance will be created after payment"
-    });
 
     // Update contract
     contract.signatureAttempts.push(signatureAttempt);

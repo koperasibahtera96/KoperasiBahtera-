@@ -34,12 +34,8 @@ const nextConfig: NextConfig = {
     optimizeCss: true,
   },
 
-  // Jika Anda masih punya API di /pages/api, ini akan mengatur limitnya juga
-  api: {
-    bodyParser: {
-      sizeLimit: "100mb",
-    },
-  },
+  // For App Router, bodyParser is now controlled by serverActions.bodySizeLimit
+  // api configuration removed as it's not supported in Next.js App Router
 
   compiler: {
     removeConsole: process.env.NODE_ENV === "production",
@@ -47,17 +43,22 @@ const nextConfig: NextConfig = {
   poweredByHeader: false,
   compress: true,
 
-  // Bundle analyzer (opsional) di dev
+  // Bundle analyzer (opsional) di dev - commented out to fix ESLint issues
+  // If you need bundle analyzer, uncomment and install @next/bundle-analyzer
+  /*
   ...(process.env.ANALYZE === "true" && {
-    webpack: (config: any) => {
+    webpack: async (config: any) => {
+      // Dynamic import for ESLint compatibility
+      const { default: BundleAnalyzerPlugin } = await import('@next/bundle-analyzer');
       config.plugins.push(
-        new (require("@next/bundle-analyzer")({
+        new BundleAnalyzerPlugin({
           enabled: true,
-        }))()
+        })()
       );
       return config;
     },
   }),
+  */
 };
 
 export default nextConfig;

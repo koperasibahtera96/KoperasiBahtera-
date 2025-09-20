@@ -161,7 +161,7 @@ export async function POST(request: NextRequest) {
                 fotoGambar: null,
                 memberId: user._id.toString(),
                 contractNumber: `CONTRACT-${payment.cicilanOrderId}`,
-                location: "TBD",
+                location: "Musi Rawa Utara",
                 status: "Kontrak Baru", // First installment approved, plant is now active
                 lastUpdate: new Date().toLocaleDateString("id-ID", {
                   day: "2-digit",

@@ -64,6 +64,7 @@ export async function POST(request: NextRequest) {
     payment.fraudStatus = fraudStatus;
     payment.transactionTime = new Date(body.transaction_time);
     payment.midtransResponse = body;
+    payment.status = "completed";
 
     let message = "";
     let shouldCreateUser = false;
@@ -205,7 +206,7 @@ export async function POST(request: NextRequest) {
             fotoGambar: null,
             memberId: user._id.toString(),
             contractNumber: orderId,
-            location: "TBD",
+            location: "Musi Rawas Utara",
             kavling: "-",
             status: "active",
             approvalStatus: "approved",
