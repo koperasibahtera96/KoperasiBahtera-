@@ -4,7 +4,7 @@ import LandingNavbar from "@/components/landing/LandingNavbar";
 import { Badge } from "@/components/ui-staff/badge";
 import { Button } from "@/components/ui-staff/button";
 import { Input } from "@/components/ui-staff/input";
-import type { PlantInstance } from "@/types/checker";
+import type { PlantInstance, PlantHistory } from "@/types/checker";
 import {
   Calendar,
   ChevronLeft,
@@ -20,22 +20,99 @@ import type React from "react";
 import { useEffect, useState } from "react";
 
 const statusColors: Record<string, string> = {
-  "Tanam Bibit": "bg-[#4C3D19]/10 text-[#4C3D19] border border-[#4C3D19]/20",
-  "Kontrak Baru": "bg-[#324D3E]/10 text-[#324D3E] border border-[#324D3E]/20",
-  Panen: "bg-red-50 text-red-600 border border-red-200",
+  // === General ===
+  "Kontrak Baru": "bg-gray-100 text-gray-800 border border-gray-300",
+
+  // === Alpukat, Aren, Jengkol, Gaharu (ada overlap status) ===
+  Penanaman: "bg-green-50 text-green-600 border border-green-200",
+  Penyiraman: "bg-cyan-50 text-cyan-600 border border-cyan-200",
   Pemupukan: "bg-yellow-50 text-yellow-600 border border-yellow-200",
+  "Penyiangan Gulma": "bg-lime-50 text-lime-700 border border-lime-200",
+  "Penyemprotan Hama": "bg-red-50 text-red-600 border border-red-200",
+  "Pemangkasan cabang": "bg-purple-50 text-purple-600 border border-purple-200",
+  "Pemangkasan daun": "bg-emerald-50 text-emerald-600 border border-emerald-200",
+  "Perawatan pelepah": "bg-teal-50 text-teal-600 border border-teal-200",
+  "Cek kesehatan": "bg-indigo-50 text-indigo-600 border border-indigo-200",
+  Panen: "bg-pink-50 text-pink-600 border border-pink-200",
+  Sakit: "bg-rose-50 text-rose-600 border border-rose-200",
+  Lainnya: "bg-slate-50 text-slate-600 border border-slate-200",
+
+  // === Gaharu specific ===
+  "Inokulasi gaharu": "bg-orange-50 text-orange-600 border border-orange-200",
+
+  // === Bibit & Lahan (khusus awal) ===
+  "Tanam Bibit": "bg-amber-50 text-amber-700 border border-amber-200",
+  "Persiapan Bibit": "bg-sky-50 text-sky-600 border border-sky-200",
+  "Buka Lahan": "bg-fuchsia-50 text-fuchsia-600 border border-fuchsia-200",
 };
 
 const PLANTS_PER_PAGE = 9;
 
+/* ===================== Helpers ===================== */
+const parseIDDate = (d: string): Date => {
+  // format dd/mm/yyyy
+  const [dd, mm, yyyy] = d.split("/");
+  return new Date(Number(yyyy), Number(mm) - 1, Number(dd));
+};
+const isWithinDays = (dateStr: string, days: number): boolean => {
+  const d = parseIDDate(dateStr);
+  const now = new Date();
+  const diff = now.getTime() - d.getTime();
+  const limit = days * 24 * 60 * 60 * 1000;
+  return diff >= 0 && diff <= limit;
+};
+const getLatestHistoryByDate = (history: PlantHistory[] = []) => {
+  if (!history.length) return undefined;
+  return [...history].sort((a, b) => {
+    const ta = parseIDDate(a.date).getTime();
+    const tb = parseIDDate(b.date).getTime();
+    if (ta !== tb) return tb - ta; // terbaru dulu
+    return (b.id ?? 0) - (a.id ?? 0);
+  })[0];
+};
+
+// cek status "baru" (ada Kontrak Baru < 14 hari)
+const isPlantNew = (p: PlantInstance): boolean => {
+  const kontrakBaru = (p.history || []).find(
+    (h: PlantHistory) => (h.type || "").toLowerCase() === "kontrak baru"
+  );
+  return !!(kontrakBaru && kontrakBaru.date && isWithinDays(kontrakBaru.date, 14));
+};
+
+// cek status "bermasalah" (riwayat terakhir adalah Sakit)
+const isPlantProblem = (p: PlantInstance): boolean => {
+  const last = getLatestHistoryByDate(p.history || []);
+  return !!(last && (last.type || "").toLowerCase() === "sakit");
+};
+
+// avatar default berbasis plantType (mengarah ke /public/*.jpg)
+const getPlantTypeImage = (plantType?: string): string | null => {
+  const pt = (plantType || "").toLowerCase();
+  if (pt === "alpukat") return "/alpukat1.jpg";
+  if (pt === "aren") return "/aren.jpg";
+  if (pt === "jengkol") return "/jengkol.jpg";
+  if (pt === "gaharu") return "/gaharu.jpg";
+  return null;
+};
+/* =================================================== */
+
 export default function StaffDashboard() {
   const [plants, setPlants] = useState<PlantInstance[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Filter utama
   const [activeFilter, setActiveFilter] = useState("Semua Tanaman");
+
+  // Filter berdasarkan plantType (Aren, Alpukat, Jengkol, Gaharu)
+  const [selectedPlantType, setSelectedPlantType] = useState("");
+
+  // Filter dari kartu statistik: all | new | problem
+  const [statsFilter, setStatsFilter] = useState<"all" | "new" | "problem">(
+    "all"
+  );
+
   const [searchQuery, setSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
-  const [selectedPlantName, setSelectedPlantName] = useState("");
-  const [plantFilterScrollPosition, setPlantFilterScrollPosition] = useState(0);
 
   useEffect(() => {
     fetchPlants();
@@ -54,22 +131,24 @@ export default function StaffDashboard() {
         ? json.data
         : [];
 
-      // Normalisasi properti yang dipakai UI (tanpa mengubah layout/logic lain)
+      // Normalisasi properti yang dipakai UI
       const normalized = raw.map((p: any) => ({
         ...p,
-        name: p.name ?? p.instanceName ?? "", // UI pakai 'name'
+        name: p.name ?? p.instanceName ?? "",
         owner: p.owner ?? "",
         memberId: p.memberId ?? "",
         location: p.location ?? "",
         status: p.status ?? "Kontrak Baru",
         lastUpdate: p.lastUpdate ?? "",
         fotoGambar: p.fotoGambar ?? "",
+        plantType: p.plantType ?? "",
+        history: Array.isArray(p.history) ? p.history : [],
       }));
 
       setPlants(normalized);
     } catch (err) {
       console.error("Error fetching plants:", err);
-      setPlants([]); // biar UI tetap jalan
+      setPlants([]);
     } finally {
       setLoading(false);
     }
@@ -79,26 +158,41 @@ export default function StaffDashboard() {
     setSearchQuery(e.target.value);
   };
 
-  const getUniquePlantNames = (): string[] => {
-    const uniqueNames = [
-      ...new Set(plants.map((plant) => plant.instanceName)),
-    ].sort();
-    return uniqueNames;
+  // Kumpulan plantType yang ada (dibatasi ke 4 kategori)
+  const getPlantTypes = (): string[] => {
+    const ALLOWED = ["Aren", "Alpukat", "Jengkol", "Gaharu"];
+    const found = new Set<string>();
+    for (const p of plants) {
+      const t = (p.plantType || "").toLowerCase();
+      if (t === "aren") found.add("Aren");
+      if (t === "alpukat") found.add("Alpukat");
+      if (t === "jengkol") found.add("Jengkol");
+      if (t === "gaharu") found.add("Gaharu");
+    }
+    return ALLOWED.filter((x) => found.has(x));
   };
 
   const filteredPlants = plants.filter((plant) => {
     const matchesSearch =
-      plant.instanceName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      plant.owner.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      plant.memberId.toLowerCase().includes(searchQuery.toLowerCase());
+      (plant.instanceName || "")
+        .toLowerCase()
+        .includes(searchQuery.toLowerCase()) ||
+      (plant.owner || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (plant.memberId || "").toLowerCase().includes(searchQuery.toLowerCase());
 
-    if (activeFilter === "Semua Tanaman") return matchesSearch;
-    if (activeFilter === "Berdasarkan Tanaman") {
-      if (selectedPlantName) {
-        return matchesSearch && plant.instanceName === selectedPlantName;
+    // Filter tab utama
+    if (activeFilter === "Semua Tanaman") {
+      // ok
+    } else if (activeFilter === "Berdasarkan Tanaman") {
+      if (selectedPlantType) {
+        const type = (plant.plantType || "").toLowerCase();
+        if (type !== selectedPlantType.toLowerCase()) return false;
       }
-      return matchesSearch;
     }
+
+    // Filter dari kartu statistik
+    if (statsFilter === "new" && !isPlantNew(plant)) return false;
+    if (statsFilter === "problem" && !isPlantProblem(plant)) return false;
 
     return matchesSearch;
   });
@@ -112,35 +206,49 @@ export default function StaffDashboard() {
     setActiveFilter(filter);
     setCurrentPage(1);
     if (filter !== "Berdasarkan Tanaman") {
-      setSelectedPlantName("");
+      setSelectedPlantType("");
     }
   };
 
-  const handlePlantNameFilter = (plantName: string) => {
-    setSelectedPlantName(selectedPlantName === plantName ? "" : plantName);
+  const handlePlantTypeFilter = (plantType: string) => {
+    setSelectedPlantType(selectedPlantType === plantType ? "" : plantType);
     setCurrentPage(1);
   };
 
-  const scrollPlantFilters = (direction: "left" | "right") => {
-    const buttonWidth = 136; // 128px width + 8px gap
-    const visibleButtons = 8;
-    const maxScroll = Math.max(
-      0,
-      (getUniquePlantNames().length - visibleButtons) * buttonWidth
-    );
+  // ====== KARTU STAT: perhitungan ======
+  const totalPaket = plants.length;
+  const paketAktif = plants.length;
 
-    let newPosition = plantFilterScrollPosition;
+  const paketBaru = plants.reduce((acc, p) => (isPlantNew(p) ? acc + 1 : acc), 0);
+  const paketBermasalah = plants.reduce(
+    (acc, p) => (isPlantProblem(p) ? acc + 1 : acc),
+    0
+  );
 
-    if (direction === "left") {
-      newPosition = Math.max(0, plantFilterScrollPosition - buttonWidth * 2);
-    } else {
-      newPosition = Math.min(
-        maxScroll,
-        plantFilterScrollPosition + buttonWidth * 2
-      );
-    }
-
-    setPlantFilterScrollPosition(newPosition);
+  // ====== Handlers klik kartu (jadi filter) ======
+  const clickTotal = () => {
+    setStatsFilter("all");
+    setActiveFilter("Semua Tanaman");
+    setSelectedPlantType("");
+    setCurrentPage(1);
+  };
+  const clickAktif = () => {
+    setStatsFilter("all"); // sesuai permintaan, menampilkan keseluruhan
+    setActiveFilter("Semua Tanaman");
+    setSelectedPlantType("");
+    setCurrentPage(1);
+  };
+  const clickBaru = () => {
+    setStatsFilter("new");
+    setActiveFilter("Semua Tanaman");
+    setSelectedPlantType("");
+    setCurrentPage(1);
+  };
+  const clickBermasalah = () => {
+    setStatsFilter("problem");
+    setActiveFilter("Semua Tanaman");
+    setSelectedPlantType("");
+    setCurrentPage(1);
   };
 
   if (loading) {
@@ -193,57 +301,90 @@ export default function StaffDashboard() {
             </p>
           </div>
 
-          {/* Stats Cards */}
+          {/* Stats Cards - warna + klik = filter */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
-            <div className="group bg-white/90 backdrop-blur-xl rounded-3xl shadow-xl border border-[#324D3E]/10 p-6 hover:shadow-2xl hover:scale-105 transition-all duration-300">
+            {/* Total Paket Tanaman (kuning) */}
+            <button
+              onClick={clickTotal}
+              className={`group bg-yellow-50 backdrop-blur-xl rounded-3xl shadow-xl border p-6 hover:shadow-2xl hover:scale-105 transition-all duration-300 text-left ${
+                statsFilter === "all"
+                  ? "border-yellow-400 ring-2 ring-yellow-300"
+                  : "border-yellow-200"
+              }`}
+            >
               <div className="text-center">
-                <p className="text-sm font-medium text-[#889063] mb-2">
-                  Total Tanaman
+                <p className="text-sm font-medium text-yellow-700 mb-2">
+                  Total Paket Tanaman
                 </p>
-                <p className="text-3xl font-bold text-[#324D3E] group-hover:text-[#4C3D19] transition-colors">
-                  {plants.length}
+                <p className="text-3xl font-bold text-yellow-700">
+                  {totalPaket}
                 </p>
               </div>
-            </div>
+            </button>
 
-            <div className="group bg-white/90 backdrop-blur-xl rounded-3xl shadow-xl border border-[#324D3E]/10 p-6 hover:shadow-2xl hover:scale-105 transition-all duration-300">
+            {/* Paket Tanaman Aktif (hijau) */}
+            <button
+              onClick={clickAktif}
+              className={`group bg-green-50 backdrop-blur-xl rounded-3xl shadow-xl border p-6 hover:shadow-2xl hover:scale-105 transition-all duration-300 text-left ${
+                statsFilter === "all"
+                  ? "border-green-400 ring-2 ring-green-300"
+                  : "border-green-200"
+              }`}
+              title="Klik untuk menampilkan semua tanaman"
+            >
               <div className="text-center">
-                <p className="text-sm font-medium text-[#889063] mb-2">
-                  Tanaman Sehat
+                <p className="text-sm font-medium text-green-700 mb-2">
+                  Paket Tanaman Aktif
                 </p>
-                <p className="text-3xl font-bold text-[#4C3D19] group-hover:text-green-600 transition-colors">
-                  {
-                    plants.filter(
-                      (p) =>
-                        p.status === "Tanam Bibit" ||
-                        p.status === "Tumbuh Sehat"
-                    ).length
-                  }
+                <p className="text-3xl font-bold text-green-700">
+                  {paketAktif}
                 </p>
               </div>
-            </div>
+            </button>
 
-            <div className="group bg-white/90 backdrop-blur-xl rounded-3xl shadow-xl border border-[#324D3E]/10 p-6 hover:shadow-2xl hover:scale-105 transition-all duration-300">
+            {/* Paket Tanaman Baru (biru) */}
+            <button
+              onClick={clickBaru}
+              className={`group bg-blue-50 backdrop-blur-xl rounded-3xl shadow-xl border p-6 hover:shadow-2xl hover:scale-105 transition-all duration-300 text-left ${
+                statsFilter === "new"
+                  ? "border-blue-400 ring-2 ring-blue-300"
+                  : "border-blue-200"
+              }`}
+              title="Klik untuk menampilkan tanaman baru (14 hari terakhir)"
+            >
               <div className="text-center">
-                <p className="text-sm font-medium text-[#889063] mb-2">
-                  Perlu Perawatan
+                <p className="text-sm font-medium text-blue-700 mb-2">
+                  Paket Tanaman Baru
                 </p>
-                <p className="text-3xl font-bold text-yellow-600 group-hover:text-orange-600 transition-colors">
-                  {plants.filter((p) => p.status === "Perlu Perawatan").length}
+                <p className="text-3xl font-bold text-blue-700">
+                  {paketBaru}
+                  {paketBaru > 0 ? "+" : ""}
+                </p>
+                <p className="text-xs text-blue-600 mt-1">
+                  Penambahan dalam 14 hari terakhir
                 </p>
               </div>
-            </div>
+            </button>
 
-            <div className="group bg-white/90 backdrop-blur-xl rounded-3xl shadow-xl border border-[#324D3E]/10 p-6 hover:shadow-2xl hover:scale-105 transition-all duration-300">
+            {/* Paket Tanaman Bermasalah (merah) */}
+            <button
+              onClick={clickBermasalah}
+              className={`group bg-rose-50 backdrop-blur-xl rounded-3xl shadow-xl border p-6 hover:shadow-2xl hover:scale-105 transition-all duration-300 text-left ${
+                statsFilter === "problem"
+                  ? "border-rose-400 ring-2 ring-rose-300"
+                  : "border-rose-200"
+              }`}
+              title="Klik untuk menampilkan tanaman bermasalah (riwayat terakhir Sakit)"
+            >
               <div className="text-center">
-                <p className="text-sm font-medium text-[#889063] mb-2">
-                  Update Terbaru
+                <p className="text-sm font-medium text-rose-700 mb-2">
+                  Paket Tanaman Bermasalah
                 </p>
-                <p className="text-3xl font-bold text-[#324D3E] group-hover:text-blue-600 transition-colors">
-                  {plants.filter((p) => isRecentlyUpdated(p.lastUpdate)).length}
+                <p className="text-3xl font-bold text-rose-700">
+                  {paketBermasalah}
                 </p>
               </div>
-            </div>
+            </button>
           </div>
 
           {/* Filters and Search */}
@@ -287,70 +428,37 @@ export default function StaffDashboard() {
                 </Button>
               </div>
 
-              {/* Plant Name Filters */}
+              {/* PlantType Filters (Aren, Alpukat, Jengkol, Gaharu) */}
               {activeFilter === "Berdasarkan Tanaman" && (
                 <div className="flex flex-col gap-4">
                   <h3 className="text-lg font-semibold text-[#324D3E] text-center">
                     Pilih Jenis Tanaman
                   </h3>
-                  <div className="flex items-center gap-4">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => scrollPlantFilters("left")}
-                      className="h-12 w-12 p-0 border-2 border-[#324D3E]/30 hover:bg-[#324D3E]/10 hover:border-[#324D3E] flex-shrink-0 rounded-2xl group transition-all duration-300"
-                      disabled={plantFilterScrollPosition === 0}
-                    >
-                      <ChevronLeft className="w-6 h-6 group-hover:scale-110 transition-transform" />
-                    </Button>
-
-                    <div className="flex-1 overflow-hidden">
-                      <div
-                        id="plant-filters-container"
-                        className="flex gap-4 overflow-x-hidden transition-transform duration-500 ease-out"
-                        style={{
-                          transform: `translateX(-${plantFilterScrollPosition}px)`,
-                          width: "max-content",
-                        }}
+                  <div className="flex flex-wrap items-center justify-center gap-3">
+                    {getPlantTypes().map((pt) => (
+                      <Button
+                        key={pt}
+                        variant={
+                          selectedPlantType === pt ? "default" : "outline"
+                        }
+                        onClick={() => handlePlantTypeFilter(pt)}
+                        className={`whitespace-nowrap px-4 py-2 rounded-xl font-medium transition-all duration-300 ${
+                          selectedPlantType === pt
+                            ? "bg-gradient-to-r from-[#324D3E] to-[#4C3D19] text-white shadow-lg"
+                            : "border border-[#324D3E]/30 text-[#324D3E] hover:bg-[#324D3E]/10 hover:border-[#324D3E]"
+                        }`}
                       >
-                        {getUniquePlantNames().map((plantName) => (
-                          <Button
-                            key={plantName}
-                            variant={
-                              selectedPlantName === plantName
-                                ? "default"
-                                : "outline"
-                            }
-                            onClick={() => handlePlantNameFilter(plantName)}
-                            className={`whitespace-nowrap flex-shrink-0 px-4 py-2 rounded-xl font-medium transition-all duration-300 min-w-[120px] ${
-                              selectedPlantName === plantName
-                                ? "bg-gradient-to-r from-[#324D3E] to-[#4C3D19] text-white shadow-lg"
-                                : "border border-[#324D3E]/30 text-[#324D3E] hover:bg-[#324D3E]/10 hover:border-[#324D3E]"
-                            }`}
-                          >
-                            <div className="flex items-center gap-2">
-                              <MapPin className="w-3 h-3" />
-                              <span className="truncate text-sm">
-                                {plantName}
-                              </span>
-                            </div>
-                          </Button>
-                        ))}
+                        <div className="flex items-center gap-2">
+                          <MapPin className="w-3 h-3" />
+                          <span className="truncate text-sm">{pt}</span>
+                        </div>
+                      </Button>
+                    ))}
+                    {getPlantTypes().length === 0 && (
+                      <div className="text-sm text-[#889063]">
+                        Belum ada data jenis tanaman.
                       </div>
-                    </div>
-
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => scrollPlantFilters("right")}
-                      className="h-12 w-12 p-0 border-2 border-[#324D3E]/30 hover:bg-[#324D3E]/10 hover:border-[#324D3E] flex-shrink-0 rounded-2xl group transition-all duration-300"
-                      disabled={
-                        plantFilterScrollPosition >=
-                        (getUniquePlantNames().length - 8) * 136
-                      }
-                    >
-                      <ChevronRight className="w-6 h-6 group-hover:scale-110 transition-transform" />
-                    </Button>
+                    )}
                   </div>
                 </div>
               )}
@@ -379,7 +487,7 @@ export default function StaffDashboard() {
                 {filteredPlants.length} tanaman
               </p>
               <p className="text-[#889063]">
-                Halaman {currentPage} dari {totalPages}
+                Halaman {currentPage} dari {Math.max(totalPages, 1)}
               </p>
             </div>
           </div>
@@ -391,6 +499,9 @@ export default function StaffDashboard() {
               const cardBgColor = isRecent
                 ? "bg-gradient-to-br from-[#4C3D19]/5 via-white/90 to-green-50/80 border-[#4C3D19]/30"
                 : "bg-gradient-to-br from-white/90 via-white/80 to-gray-50/80 border-[#324D3E]/20";
+
+              // avatar source: fotoGambar -> default plantType image -> Leaf icon
+              const typeImage = getPlantTypeImage(plant.plantType);
 
               return (
                 <Link key={plant.id} href={`/checker/plant/${plant.id}`}>
@@ -410,6 +521,15 @@ export default function StaffDashboard() {
                                 fill
                                 sizes="48px"
                                 className="object-cover"
+                              />
+                            ) : typeImage ? (
+                              <Image
+                                src={typeImage}
+                                alt={plant.plantType || "Plant type"}
+                                fill
+                                sizes="48px"
+                                className="object-cover"
+                                priority={false}
                               />
                             ) : (
                               <Leaf className="w-6 h-6 text-white absolute inset-0 m-auto" />
@@ -462,7 +582,7 @@ export default function StaffDashboard() {
                             </span>
                           </div>
                           <div className="text-xs text-[#889063]">
-                            Contract ID: {plant.contractNumber.slice(-9)}
+                            Contract ID: {String(plant.contractNumber || "").slice(-9)}
                           </div>
                         </div>
 
@@ -547,6 +667,7 @@ export default function StaffDashboard() {
 }
 
 const isRecentlyUpdated = (lastUpdate: string): boolean => {
+  if (!lastUpdate) return false;
   const updateDate = new Date(lastUpdate.split("/").reverse().join("-"));
   const oneMonthAgo = new Date();
   oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
