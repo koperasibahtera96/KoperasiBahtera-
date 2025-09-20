@@ -40,6 +40,13 @@ export async function GET(req: NextRequest) {
       .populate("adminReviewBy", "fullName email")
       .sort({ cicilanOrderId: 1, installmentNumber: 1 });
 
+    // Get cicilan contracts that don't have payment records yet (unsigned contracts)
+    const unsignedCicilanContracts = await Contract.find({
+      userId: user._id,
+      paymentType: "cicilan",
+      status: "draft" // Only draft contracts (not yet signed)
+    }).sort({ createdAt: -1 });
+
     // Get full payment contracts
     const fullPaymentContracts = await Contract.find({
       userId: user._id,
@@ -186,9 +193,41 @@ export async function GET(req: NextRequest) {
       };
     });
 
+    // Add unsigned cicilan contracts (draft status) to the groups
+    const unsignedCicilanGroups = unsignedCicilanContracts.map(contract => ({
+      cicilanOrderId: contract.contractId,
+      productName: contract.productName,
+      productId: contract.productId,
+      totalInstallments: contract.totalInstallments || 12,
+      installmentAmount: contract.installmentAmount || Math.ceil(contract.totalAmount / (contract.totalInstallments || 12)),
+      paymentTerm: contract.paymentTerm || 'monthly',
+      totalAmount: contract.totalAmount,
+      installments: [], // No installments created yet since contract isn't signed
+      createdAt: contract.createdAt,
+
+      // Contract admin approval status
+      contractApprovalStatus: contract.adminApprovalStatus || 'pending',
+      contractStatus: contract.status || 'draft',
+      contractApprovedDate: contract.adminApprovedDate,
+      paymentAllowed: contract.paymentAllowed || false,
+
+      // Add retry attempt information
+      contractId: contract.contractId,
+      currentAttempt: contract.currentAttempt || 0,
+      maxAttempts: contract.maxAttempts || 3,
+      signatureAttemptsCount: contract.signatureAttempts?.length || 0,
+      hasEverSigned: (contract.signatureAttempts?.length || 0) > 0,
+      isMaxRetryReached: (contract.currentAttempt || 0) >= (contract.maxAttempts || 3),
+      isPermanentlyRejected: contract.adminApprovalStatus === 'permanently_rejected',
+      referralCode: null, // No referral code yet since no payments made
+    }));
+
+    // Combine signed cicilan groups with unsigned cicilan groups
+    const allCicilanGroups = [...cicilanGroups, ...unsignedCicilanGroups];
+
     return NextResponse.json({
       success: true,
-      cicilanGroups,
+      cicilanGroups: allCicilanGroups,
       fullPaymentContracts: fullPaymentContracts.map(contract => ({
         contractId: contract.contractId,
         productName: contract.productName,

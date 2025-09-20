@@ -82,6 +82,23 @@ export default function ContractPage() {
         return fetchContractData(retryCount + 1);
       } else {
         console.error("Failed to fetch contract data");
+
+        // Check if it's a 400 error (contract already signed)
+        if (response.status === 400) {
+          const errorData = await response.json();
+          if (errorData.error?.includes("no longer available for signing")) {
+            showError(
+              "Kontrak Sudah Ditandatangani",
+              "Kontrak ini sudah ditandatangani. Anda akan diarahkan ke halaman pembayaran."
+            );
+            // Redirect to payments page after 3 seconds
+            setTimeout(() => {
+              window.location.href = "/payments";
+            }, 3000);
+            return;
+          }
+        }
+
         showError(
           "Error",
           "Failed to load contract data. Please refresh the page."

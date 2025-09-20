@@ -33,6 +33,14 @@ export async function GET(
       );
     }
 
+    // Check if contract is already signed or no longer available for signing
+    if (contract.status !== 'draft') {
+      return NextResponse.json(
+        { success: false, error: "Contract is no longer available for signing", contractStatus: contract.status },
+        { status: 400 }
+      );
+    }
+
     // Format contract data to match the interface expected by the frontend
     const contractData = {
       investor: {

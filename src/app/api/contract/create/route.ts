@@ -128,7 +128,7 @@ export async function POST(req: NextRequest) {
       contractNumber,
       status: 'draft',
       adminApprovalStatus: 'pending',
-      paymentAllowed: paymentType === 'full', // Allow immediate payment for full payments
+      paymentAllowed: true, // Allow immediate payment for both full and cicilan after signing
       paymentCompleted: false,
       signatureAttempts: [],
       currentAttempt: 0,

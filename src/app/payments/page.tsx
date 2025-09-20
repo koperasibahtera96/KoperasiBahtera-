@@ -857,13 +857,15 @@ export default function PaymentsPage() {
                       </>
                     )}
 
-                    {/* Referral Code Section */}
-                    <ReferralCodeInput
-                      investmentId={group.cicilanOrderId}
-                      currentReferralCode={(group as any).referralCode}
-                      onSetReferralCode={handleSetReferralCode}
-                      hasPayments={group.installments.some(inst => inst.status === "approved" || inst.status === "completed")}
-                    />
+                    {/* Referral Code Section - Only show if contract is signed */}
+                    {group.hasEverSigned && (
+                      <ReferralCodeInput
+                        investmentId={group.cicilanOrderId}
+                        currentReferralCode={(group as any).referralCode}
+                        onSetReferralCode={handleSetReferralCode}
+                        hasPayments={group.installments.some(inst => inst.status === "approved" || inst.status === "completed")}
+                      />
+                    )}
 
                     {/* Individual Installment Cards */}
                     <div className="space-y-4">
@@ -1359,13 +1361,15 @@ export default function PaymentsPage() {
                       </>
                     )}
 
-                    {/* Referral Code Section */}
-                    <ReferralCodeInput
-                      investmentId={contract.contractId}
-                      currentReferralCode={(contract as any).referralCode}
-                      onSetReferralCode={handleSetReferralCode}
-                      hasPayments={contract.paymentCompleted}
-                    />
+                    {/* Referral Code Section - Only show if contract is signed */}
+                    {contract.hasEverSigned && (
+                      <ReferralCodeInput
+                        investmentId={contract.contractId}
+                        currentReferralCode={(contract as any).referralCode}
+                        onSetReferralCode={handleSetReferralCode}
+                        hasPayments={contract.paymentCompleted}
+                      />
+                    )}
 
                     {/* Payment Section */}
                     <div className="space-y-4">
@@ -1414,7 +1418,7 @@ export default function PaymentsPage() {
                           )}
 
                           {/* Action Button */}
-                          {!contract.paymentCompleted && contract.paymentUrl && !contract.isPermanentlyRejected && contract.hasEverSigned && (
+                          {!contract.paymentCompleted && !contract.isPermanentlyRejected && contract.hasEverSigned && (
                             <button
                               onClick={() => handleFullPayment(contract)}
                               className="w-full px-3 py-2 bg-gradient-to-r from-[#324D3E] to-[#4C3D19] text-white text-sm rounded-full hover:shadow-lg transition-all duration-300 font-poppins font-medium"
@@ -1427,7 +1431,7 @@ export default function PaymentsPage() {
                           )}
 
                           {/* Disabled Payment Button for Permanently Rejected Contracts */}
-                          {!contract.paymentCompleted && contract.paymentUrl && (contract.isPermanentlyRejected || !contract.hasEverSigned) && (
+                          {!contract.paymentCompleted && (contract.isPermanentlyRejected || !contract.hasEverSigned) && (
                             <button
                               disabled
                               className="w-full px-3 py-2 bg-gray-400 text-gray-200 text-sm rounded-full cursor-not-allowed font-poppins font-medium opacity-60"
@@ -1439,20 +1443,6 @@ export default function PaymentsPage() {
                             </button>
                           )}
 
-                          {!contract.paymentUrl && !contract.paymentCompleted && (
-                            <div className="text-center">
-                              <p className={`text-sm font-poppins ${
-                                contract.isPermanentlyRejected
-                                  ? 'text-red-600'
-                                  : 'text-gray-600'
-                              }`}>
-                                {contract.isPermanentlyRejected
-                                  ? 'Pembayaran dinonaktifkan - Kontrak ditolak permanen'
-                                  : 'URL pembayaran belum tersedia'
-                                }
-                              </p>
-                            </div>
-                          )}
                         </div>
                       </div>
                     </div>
