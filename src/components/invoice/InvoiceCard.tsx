@@ -1,13 +1,12 @@
 "use client";
 
-import { toJpeg } from "html-to-image";
+// import { toJpeg } from "html-to-image";
 import { downloadInvoiceImage } from "@/lib/invoiceImage";
 import {
   BadgeCheck,
   CalendarClock,
   ChevronDown,
   CreditCard,
-  Download,
   Hash,
   ReceiptText,
   User as UserIcon,
@@ -127,46 +126,46 @@ export default function InvoiceCard({ payment }: Props) {
   const userImage = (payment as any)?.userImage as string | undefined;
 
   // Saat download: buka sementara panel Detail, capture, lalu kembalikan  Tolong check pada bagian ini !! 
-  async function handleDownload() {
-    if (!cardRef.current) return;
-    const wasOpen = open;
-    if (!wasOpen) {
-      setOpen(true);
-      await new Promise<void>((resolve) =>
-        requestAnimationFrame(() => requestAnimationFrame(() => resolve()))
-      );
-    }
+  // async function handleDownload() {
+  //   if (!cardRef.current) return;
+  //   const wasOpen = open;
+  //   if (!wasOpen) {
+  //     setOpen(true);
+  //     await new Promise<void>((resolve) =>
+  //       requestAnimationFrame(() => requestAnimationFrame(() => resolve()))
+  //     );
+  //   }
 
-    // Detect current theme at export time (safe: runs only on client event)
-    const dark =
-      typeof document !== "undefined" &&
-      document.documentElement.classList.contains("dark");
+  //   // Detect current theme at export time (safe: runs only on client event)
+  //   const dark =
+  //     typeof document !== "undefined" &&
+  //     document.documentElement.classList.contains("dark");
 
-    const dataUrl = await toJpeg(cardRef.current, {
-      quality: 0.95,
-      pixelRatio: 2,
-      backgroundColor: dark ? "#111827" : "#FFFFFF",
-      filter: (node) =>
-        !(
-          node instanceof HTMLElement && node.dataset.hideOnPrint !== undefined
-        ),
-      style: {
-        color: dark ? "#F9FAFB" : "#0F172A",
-        backgroundColor: dark ? "#111827" : tone.bg,
-      },
-      skipFonts: true,
-    });
+  //   const dataUrl = await toJpeg(cardRef.current, {
+  //     quality: 0.95,
+  //     pixelRatio: 2,
+  //     backgroundColor: dark ? "#111827" : "#FFFFFF",
+  //     filter: (node) =>
+  //       !(
+  //         node instanceof HTMLElement && node.dataset.hideOnPrint !== undefined
+  //       ),
+  //     style: {
+  //       color: dark ? "#F9FAFB" : "#0F172A",
+  //       backgroundColor: dark ? "#111827" : tone.bg,
+  //     },
+  //     skipFonts: true,
+  //   });
 
-    if (!wasOpen) setOpen(false);
+  //   if (!wasOpen) setOpen(false);
 
-    const a = document.createElement("a");
-    const name = `Invoice_${String(payment?.paymentType || "payment")}_${String(
-      payment?.orderId || refCode
-    )}.jpg`;
-    a.href = dataUrl;
-    a.download = name;
-    a.click();
-  }
+  //   const a = document.createElement("a");
+  //   const name = `Invoice_${String(payment?.paymentType || "payment")}_${String(
+  //     payment?.orderId || refCode
+  //   )}.jpg`;
+  //   a.href = dataUrl;
+  //   a.download = name;
+  //   a.click();
+  // }
 
   return (
     <div

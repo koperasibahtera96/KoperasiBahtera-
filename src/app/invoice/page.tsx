@@ -1,7 +1,7 @@
 // src/app/invoice/page.tsx
 "use client";
 
-import InvoiceCard from "@/components/invoice/InvoiceCard";
+// import InvoiceCard from "@/components/invoice/InvoiceCard";
 import InvoiceControls from "@/components/invoice/InvoiceControls";
 import { InvoiceLayout } from "@/components/invoice/InvoiceLayout";
 import { downloadInvoiceImage } from "@/lib/invoiceImage";
