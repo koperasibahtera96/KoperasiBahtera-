@@ -74,7 +74,7 @@ export async function GET(req: NextRequest) {
     
     const contracts = await Contract.find({
       contractId: { $in: contractIds }
-    }).select('contractId adminApprovalStatus status adminApprovedDate paymentAllowed signatureAttempts currentAttempt maxAttempts');
+    }).select('contractId adminApprovalStatus status adminApprovedDate paymentAllowed signatureAttempts currentAttempt maxAttempts totalAmount');
 
     // Group by cicilanOrderId
     const groupedPayments = installments.reduce((acc, payment) => {
@@ -92,8 +92,8 @@ export async function GET(req: NextRequest) {
         };
       }
 
-      // Add up total amount
-      acc[key].totalAmount += payment.amount;
+      // Total amount should be from contract, not sum of installments
+      // We'll set this properly when we match with contract data
       acc[key].installments.push(payment);
       return acc;
     }, {} as any);
@@ -164,7 +164,7 @@ export async function GET(req: NextRequest) {
         cicilanOrderId: group.cicilanOrderId,
         productName: group.productName,
         productId: group.productId,
-        totalAmount: group.totalAmount,
+        totalAmount: contract?.totalAmount || investorInvestment?.totalAmount || (group.installmentAmount * group.totalInstallments),
         totalInstallments: group.totalInstallments,
         installmentAmount: group.installmentAmount,
         paymentTerm: group.paymentTerm,
