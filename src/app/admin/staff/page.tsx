@@ -200,7 +200,31 @@ export default function StaffPage() {
 
   const handleDelete = async (_staff: StaffUser) => {
     await showDeleteConfirm(_staff.fullName, async () => {
-      showError("Info", "Fitur hapus belum tersedia");
+      try {
+        // Optimistic UI: disable while deleting
+        setLoading(true);
+
+        const response = await fetch(`/api/admin/staff`, {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ id: _staff._id }),
+        });
+
+        if (response.ok) {
+          showSuccess("Berhasil", "Staff berhasil dihapus");
+          // Refresh list and stats
+          fetchStaffUsers();
+          fetchStats();
+        } else {
+          const errorData = await response.json().catch(() => null);
+          showError("Gagal", errorData?.error || "Gagal menghapus staff");
+        }
+      } catch (error) {
+        console.error("Error deleting staff:", error);
+        showError("Error", "Terjadi kesalahan saat menghapus staff");
+      } finally {
+        setLoading(false);
+      }
     });
   };
 

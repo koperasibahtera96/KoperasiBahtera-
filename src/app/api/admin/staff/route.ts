@@ -559,3 +559,67 @@ export async function PUT(request: NextRequest) {
     );
   }
 }
+
+export async function DELETE(request: NextRequest) {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
+    }
+
+    const body = await request.json();
+    const { id } = body;
+
+    if (!id) {
+      return NextResponse.json({ error: 'ID is required' }, { status: 400 });
+    }
+
+    // Prevent deleting self
+    if (session.user.id === id) {
+      return NextResponse.json({ error: 'You cannot delete your own account' }, { status: 403 });
+    }
+
+    await dbConnect();
+
+    const userToDelete = await User.findById(id);
+    if (!userToDelete) {
+      return NextResponse.json({ error: 'Staff not found' }, { status: 404 });
+    }
+
+    // Only allow deleting staff/admin roles (safety)
+    const allowedRoles = ['staff', 'spv_staff', 'admin', 'finance', 'staff_finance', 'marketing', 'ketua', 'marketing_head'];
+    if (!allowedRoles.includes(userToDelete.role)) {
+      return NextResponse.json({ error: 'Deleting this user role is not allowed' }, { status: 403 });
+    }
+
+    await User.findByIdAndDelete(id);
+
+    // Log admin action
+    await logAdminAction({
+      adminId: session.user.id,
+      adminName: session.user.name || 'Unknown',
+      adminEmail: session.user.email || 'Unknown',
+      action: 'delete_staff',
+      description: `Deleted staff: ${userToDelete.fullName} (${userToDelete.userCode})`,
+      targetType: 'staff',
+      targetId: id,
+      targetName: userToDelete.fullName,
+      oldData: {
+        fullName: userToDelete.fullName,
+        email: userToDelete.email,
+        phoneNumber: userToDelete.phoneNumber,
+        role: userToDelete.role,
+      },
+      request
+    });
+
+    return NextResponse.json({ success: true, message: 'Staff deleted' }, { status: 200 });
+  } catch (error: unknown) {
+    console.error('Error deleting staff user:', error);
+    if (isMongooseError(error)) {
+      const mongooseResponse = handleMongooseError(error);
+      if (mongooseResponse) return mongooseResponse;
+    }
+    return NextResponse.json({ success: false, error: (error as any)?.message || 'Internal server error' }, { status: 500 });
+  }
+}
