@@ -277,7 +277,7 @@ export async function GET(request: NextRequest) {
     const searchQuery = search
       ? {
           $and: [
-            { $or: [{ role: "staff" }, { role: "spv_staff" }, { role: "admin" }, { role: "finance" }, { role: "staff_finance" }, { role: "marketing" }] },
+            { $or: [{ role: "staff" }, { role: "spv_staff" }, { role: "admin" }, { role: "finance" }, { role: "staff_finance" }, { role: "marketing" }, { role: "marketing_head" }] },
             {
               $or: [
                 { fullName: { $regex: search, $options: "i" } },
@@ -288,7 +288,7 @@ export async function GET(request: NextRequest) {
             },
           ],
         }
-      : { $or: [{ role: "staff" }, { role: "spv_staff" }, { role: "admin" }, { role: "finance" }, { role: "staff_finance" }, { role: "ketua" }, { role: "marketing" }] };
+      : { $or: [{ role: "staff" }, { role: "spv_staff" }, { role: "admin" }, { role: "finance" }, { role: "staff_finance" }, { role: "ketua" }, { role: "marketing" }, { role: "marketing_head" }] };
 
     // Get total count
     const total = await User.countDocuments(searchQuery);
