@@ -123,9 +123,29 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Generate a unique 16-digit NIK for staff users
+    const generateNik = () => {
+      // create a 16-digit numeric string
+      let nik = "";
+      for (let i = 0; i < 16; i++) {
+        nik += Math.floor(Math.random() * 10).toString();
+      }
+      return nik;
+    };
+
+    let nik = generateNik();
+    // Ensure uniqueness in DB with a few attempts
+    let tries = 0;
+    while (tries < 5) {
+      const existingNik = await User.findOne({ nik });
+      if (!existingNik) break;
+      nik = generateNik();
+      tries++;
+    }
+
     const user = new User({
       fullName: fullName.trim(),
-      nik: "0000000000000000", // Default NIK for staff - should be updated later
+      nik: nik, // Generated unique 16-digit NIK for staff
       phoneNumber: phoneNumber.trim(),
       password: hashedPassword,
       email: email.trim().toLowerCase(),
