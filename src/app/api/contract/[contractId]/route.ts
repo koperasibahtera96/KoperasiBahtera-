@@ -1,4 +1,5 @@
 import dbConnect from "@/lib/mongodb";
+import { generateInvoiceNumber } from "@/lib/invoiceNumberGenerator";
 import Contract from "@/models/Contract";
 import Payment from "@/models/Payment";
 import { Investor } from "@/models";
@@ -165,7 +166,11 @@ export async function POST(
         const firstInstallmentDueDate = new Date();
         firstInstallmentDueDate.setMonth(firstInstallmentDueDate.getMonth() + 1);
 
-        const firstInstallmentOrderId = `INSTALLMENT-${contract.contractId}-1`;
+        const firstInstallmentOrderId = await generateInvoiceNumber({
+          productName: contract.productName,
+          installmentNumber: 1,
+          paymentType: 'cicilan-installment'
+        });
 
         const firstInstallmentPayment = new Payment({
           orderId: firstInstallmentOrderId,
@@ -204,15 +209,19 @@ export async function POST(
       }
     } else {
       // For full payments, create single payment record
-      const orderId = contract.contractId; // Use contractId directly as orderId
-      
-      // Check if payment already exists
-      const existingPayment = await Payment.findOne({ orderId });
+      // Use the existing contractId which already has the correct invoice format
+      const orderId = contract.contractId;
+
+      // Check if payment already exists for this contract
+      const existingPayment = await Payment.findOne({
+        orderId: orderId,
+        userId: user._id,
+        paymentType: 'full-investment'
+      });
       if (!existingPayment) {
         const payment = new Payment({
           orderId: orderId,
           userId: user._id,
-          contractId: contract.contractId,
           amount: contract.totalAmount,
           productName: contract.productName,
           paymentType: 'full-investment',

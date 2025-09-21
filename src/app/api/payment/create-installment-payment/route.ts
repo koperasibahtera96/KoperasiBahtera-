@@ -57,8 +57,8 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Generate unique orderId for Midtrans
-    const orderId = `INSTALLMENT-${payment.cicilanOrderId}-${payment.installmentNumber}`;
+    // Use the existing payment's orderId (already has correct invoice format)
+    const orderId = payment.orderId;
 
     // Create Midtrans transaction
     const transaction = await midtransService.createTransaction({

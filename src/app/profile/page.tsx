@@ -9,6 +9,7 @@ import { useSession } from "next-auth/react";
 import Image from "next/image";
 import { redirect } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+import { toPng } from "html-to-image";
 
 const containerVariants: any = {
   hidden: { opacity: 0 },
@@ -195,10 +196,348 @@ export default function ProfilePage() {
     }
   };
 
-  const handleGenerateKartuAnggota = () => {
-    // Always redirect to the kartu anggota page
-    window.location.href = '/kartu-anggota';
+  const handleGenerateKartuAnggota = async () => {
+    try {
+      setIsLoading(true);
+
+      // Generate kartu anggota data
+      const response = await fetch('/api/user/generate-kartu-anggota');
+
+      if (!response.ok) {
+        throw new Error('Failed to generate kartu anggota');
+      }
+
+      const data = await response.json();
+
+      if (data.success) {
+        // Create temporary container with exact same structure as kartu-anggota page
+        await generateKartuAnggotaImage(data);
+      } else {
+        showError("Error", data.error || 'Failed to generate kartu anggota');
+      }
+    } catch (err) {
+      console.error('Error generating kartu anggota:', err);
+      showError("Error", 'Failed to generate kartu anggota');
+    } finally {
+      setIsLoading(false);
+    }
   };
+
+  const generateKartuAnggotaImage = async (kartuData: any) => {
+    // Add overlay background
+    const overlay = document.createElement('div');
+    overlay.style.cssText = `
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(0, 0, 0, 0.8);
+      z-index: 9998;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    `;
+
+    // Create container that's properly sized and centered
+    const container = document.createElement('div');
+    container.style.cssText = `
+      padding: 20px;
+      background: #f0f0f0;
+      font-family: Arial, sans-serif;
+      display: flex;
+      gap: 32px;
+      border-radius: 12px;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+      max-width: 95vw;
+      max-height: 95vh;
+      overflow: hidden;
+    `;
+
+    // Create front card with exact structure from kartu-anggota page
+    const frontCard = document.createElement('div');
+    frontCard.style.cssText = `
+      filter: drop-shadow(0px 4px 10px rgba(0,0,0,0.15));
+      background-image: url(/assets/kartu-anggota-front.jpg);
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      width: 360px;
+      height: 540px;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+      flex-shrink: 0;
+    `;
+
+    // Front card header
+    const frontHeader = document.createElement('div');
+    frontHeader.style.cssText = `
+      color: white;
+      text-align: center;
+      padding: 18px 18px;
+      padding-left: 74px;
+      padding-top: 18px;
+      position: relative;
+      height: 140px;
+      box-sizing: border-box;
+    `;
+
+    // Logo
+    const logo = document.createElement('img');
+    logo.src = '/images/koperasi-logo-kartu-anggota.png';
+    logo.style.cssText = `
+      position: absolute;
+      left: 15px;
+      top: 25px;
+      width: 68px;
+      height: 68px;
+    `;
+    logo.onerror = () => { logo.src = '/images/koperasi-logo-removebg.png'; };
+
+    const title = document.createElement('h2');
+    title.style.cssText = `
+      margin: 0;
+      font-size: 14px;
+      font-weight: bold;
+      line-height: 1.2;
+    `;
+    title.innerHTML = '<span style="display: block;">KOPERASI</span><span style="display: block;">BINTANG MERAH SEJAHTERA</span>';
+
+    const hr = document.createElement('hr');
+    hr.style.cssText = `
+      border: 0;
+      margin: 8px 20px;
+      border-top: 1px solid rgba(255,255,255,0.6);
+    `;
+
+    const akta = document.createElement('p');
+    akta.style.cssText = `
+      margin: 6px;
+      font-size: 9px;
+      line-height: 1.3;
+      text-align: center;
+    `;
+    akta.innerHTML = '<span style="display: block;">Akta Notaris TEDDY YUNADI, SH No: 01/AP-04.09/2016</span><span style="display: block; white-space: nowrap;">SK KEMENKUMHAM No : AHU-0005960.AH.01.28.TAHUN 2022</span>';
+
+    frontHeader.appendChild(logo);
+    frontHeader.appendChild(title);
+    frontHeader.appendChild(hr);
+    frontHeader.appendChild(akta);
+
+    // Front card body
+    const frontBody = document.createElement('div');
+    frontBody.style.cssText = `
+      padding: 15px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      height: 240px;
+      box-sizing: border-box;
+    `;
+
+    const kartuTitle = document.createElement('h3');
+    kartuTitle.style.cssText = 'margin: 0; color: black; font-weight: bold;';
+    kartuTitle.textContent = 'KARTU ANGGOTA';
+
+    const photoContainer = document.createElement('div');
+    photoContainer.style.cssText = `
+      width: 90px;
+      height: 90px;
+      border-radius: 50%;
+      overflow: hidden;
+      background-color: #f8c3a7;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    `;
+
+    if (kartuData.user.faceImageUrl) {
+      const photo = document.createElement('img');
+      photo.src = kartuData.user.faceImageUrl;
+      photo.style.cssText = 'width: 100%; height: 100%; object-fit: cover;';
+      photoContainer.appendChild(photo);
+    } else {
+      const photoText = document.createElement('span');
+      photoText.style.cssText = 'color: #666; font-size: 14px;';
+      photoText.textContent = 'FOTO';
+      photoContainer.appendChild(photoText);
+    }
+
+    const userName = document.createElement('div');
+    userName.style.cssText = 'font-weight: bold; font-size: 12px; text-align: center; color: black;';
+    userName.textContent = kartuData.user.fullName;
+
+    const userCode = document.createElement('div');
+    userCode.style.cssText = 'margin-top: 4px; font-size: 10px; text-align: center; color: black;';
+    userCode.textContent = `No Anggota : ${kartuData.user.userCode}`;
+
+    frontBody.appendChild(kartuTitle);
+    frontBody.appendChild(photoContainer);
+    frontBody.appendChild(userName);
+    frontBody.appendChild(userCode);
+
+    // QR Section
+    const qrSection = document.createElement('div');
+    qrSection.style.cssText = `
+      display: flex;
+      align-items: center;
+      padding: 5px 8px;
+      gap: 8px;
+      height: 80px;
+      box-sizing: border-box;
+    `;
+
+    const qrContainer = document.createElement('div');
+    qrContainer.style.cssText = 'width: 50px; height: 50px; flex-shrink: 0; margin-left: 3px;';
+
+    const qrImage = document.createElement('img');
+    qrImage.src = `https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(window.location.origin + '/kartu-anggota')}`;
+    qrImage.style.cssText = 'width: 100%; height: 100%; display: block;';
+
+    qrContainer.appendChild(qrImage);
+    qrSection.appendChild(qrContainer);
+
+    // Front footer
+    const frontFooter = document.createElement('div');
+    frontFooter.style.cssText = `
+      color: white;
+      text-align: center;
+      padding: 0px 8px;
+      font-size: 11px;
+      font-weight: bold;
+      line-height: 1.3;
+      height: 80px;
+      box-sizing: border-box;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      margin-top: -10px;
+    `;
+    frontFooter.innerHTML = 'Bintaro Business Center<br />Jl RC Veteran Raya No 1i, Bintaro – Kec Pesanggrahan<br />Kota Jakarta Selatan DKI Jakarta 12330<br />Telp: 0811 1889 3679 | Email: bintangmerahsejahtera@gmail.com';
+
+    frontCard.appendChild(frontHeader);
+    frontCard.appendChild(frontBody);
+    frontCard.appendChild(qrSection);
+    frontCard.appendChild(frontFooter);
+
+    // Create back card with exact structure from kartu-anggota page
+    const backCard = document.createElement('div');
+    backCard.style.cssText = `
+      filter: drop-shadow(0px 4px 10px rgba(0,0,0,0.15));
+      background-image: url(/assets/kartu-anggota-back.jpg);
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      width: 360px;
+      height: 540px;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+      flex-shrink: 0;
+    `;
+
+    // Back card header (same as front)
+    const backHeader = frontHeader.cloneNode(true);
+
+    // Back card body
+    const backBody = document.createElement('div');
+    backBody.style.cssText = `
+      padding: 15px 18px;
+      display: flex;
+      flex-direction: column;
+      height: 320px;
+      box-sizing: border-box;
+    `;
+
+    const ketentuanTitle = document.createElement('h3');
+    ketentuanTitle.style.cssText = 'margin: 0; color: black; font-weight: bold; text-align: center; margin-bottom: 12px; font-size: 14px;';
+    ketentuanTitle.textContent = 'KETENTUAN';
+
+    const rulesContainer = document.createElement('div');
+    rulesContainer.style.cssText = 'color: black; font-weight: 900; font-size: 10px; line-height: 1.3; text-align: left;';
+
+    const rules = [
+      '1. Kartu ini merupakan kartu anggota Koperasi Bintang Merah Sejahtera.',
+      '2. Penggunaan kartu ini tunduk pada ketentuan yang berlaku sebagaimana di atur dalam Anggaran Dasar (AD) dan Anggaran Rumah Tangga (ART) Koperasi Bintang Merah Sejahtera.',
+      '3. Kartu anggota tidak dapat dipindah tangankan, pemindahan hak dan kewajiban di atur dalam AD/ART Koperasi Bintang Merah Sejahtera.',
+      '4. Penggunaan kartu anggota sepenuhnya menjadi tanggung jawab anggota',
+      '5. Koperasi Bintang Merah Sejahtera tidak bertanggung jawab terhadap penggunaan kartu anggota diluar ketentuan yang berlaku.'
+    ];
+
+    rules.forEach(rule => {
+      const p = document.createElement('p');
+      p.style.cssText = 'margin-bottom: 6px;';
+      p.textContent = rule;
+      rulesContainer.appendChild(p);
+    });
+
+    backBody.appendChild(ketentuanTitle);
+    backBody.appendChild(rulesContainer);
+
+    // Back footer
+    const backFooter = document.createElement('div');
+    backFooter.style.cssText = `
+      color: white;
+      text-align: center;
+      padding: 0px 8px;
+      font-size: 11px;
+      font-weight: bold;
+      line-height: 1.3;
+      height: 80px;
+      box-sizing: border-box;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      margin-top: -10px;
+    `;
+    backFooter.innerHTML = 'Bintaro Business Center<br />Jl RC Veteran Raya No 1i, Bintaro – Kec Pesanggrahan<br />Kota Jakarta Selatan DKI Jakarta 12330<br />Telp: 0811 1889 3679 | Email: bintangmerahsejahtera@gmail.com';
+
+    backCard.appendChild(backHeader);
+    backCard.appendChild(backBody);
+    backCard.appendChild(backFooter);
+
+    container.appendChild(frontCard);
+    container.appendChild(backCard);
+
+    // Add to DOM
+    document.body.appendChild(overlay);
+    overlay.appendChild(container);
+
+    // Wait for images to load and background images to be applied
+    await new Promise(resolve => setTimeout(resolve, 2000));
+
+    // Convert to PNG
+    const dataUrl = await toPng(container, {
+      pixelRatio: 2,
+      quality: 1,
+      cacheBust: true,
+      backgroundColor: "#f0f0f0",
+      skipFonts: true,
+      fontEmbedCSS: "",
+      width: 792, // 360 + 360 + 32 gap + 40 padding
+      height: 580, // 540 + 40 padding
+    });
+
+    // Download the image
+    const link = document.createElement('a');
+    link.download = `kartu-anggota-${kartuData.user?.userCode || 'user'}.png`;
+    link.href = dataUrl;
+    link.click();
+
+    // Clean up
+    document.body.removeChild(overlay);
+  };
+
+
 
   const handleNameChangeRequest = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -414,21 +753,10 @@ export default function ProfilePage() {
             variants={itemVariants}
             className="bg-white rounded-2xl shadow-lg p-8"
           >
-            <div className="flex items-center justify-between mb-6">
+            <div className="mb-6">
               <h2 className="text-2xl font-bold text-gray-900">
                 Profile Information
               </h2>
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={handleGenerateKartuAnggota}
-                  className="flex items-center gap-1 sm:gap-2 px-2 py-1.5 sm:px-4 sm:py-2 bg-[#324D3E] text-white rounded-lg sm:rounded-xl font-medium sm:font-semibold hover:bg-[#4C3D19] transition-all duration-200 hover:scale-[1.02] shadow-md sm:shadow-lg shadow-[#324D3E]/25 text-xs sm:text-base"
-                >
-                  <FileText size={14} className="sm:hidden" />
-                  <FileText size={16} className="hidden sm:block" />
-                  <span className="hidden xs:inline">{userData.kartuAnggotaUrl ? 'View Kartu Anggota' : 'Buat Kartu Anggota'}</span>
-                  <span className="sm:hidden">{userData.kartuAnggotaUrl ? 'View' : 'Buat'}</span>
-                </button>
-              </div>
             </div>
             <div className="relative">
               <div className="flex items-center gap-6">
@@ -474,20 +802,30 @@ export default function ProfilePage() {
             </div>
 
             <div className="mt-6">
-              <button
-                onClick={() => fileInputRef.current?.click()}
-                disabled={isLoading}
-                className="px-6 py-2 bg-[#324D3E] text-white rounded-xl font-semibold hover:bg-[#4C3D19] transition-all duration-200 hover:scale-[1.02] disabled:opacity-50 disabled:hover:scale-100 shadow-lg shadow-[#324D3E]/25"
-              >
-                {isLoading ? (
-                  <span className="flex items-center gap-2">
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                    Uploading...
-                  </span>
-                ) : (
-                  "Change Profile Photo"
-                )}
-              </button>
+              <div className="flex flex-col sm:flex-row gap-3">
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={isLoading}
+                  className="px-6 py-2 bg-[#324D3E] text-white rounded-xl font-semibold hover:bg-[#4C3D19] transition-all duration-200 hover:scale-[1.02] disabled:opacity-50 disabled:hover:scale-100 shadow-lg shadow-[#324D3E]/25"
+                >
+                  {isLoading ? (
+                    <span className="flex items-center gap-2">
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      Uploading...
+                    </span>
+                  ) : (
+                    "Change Profile Photo"
+                  )}
+                </button>
+                <button
+                  onClick={handleGenerateKartuAnggota}
+                  disabled={isLoading}
+                  className="flex items-center gap-2 px-6 py-2 bg-[#324D3E] text-white rounded-xl font-semibold hover:bg-[#4C3D19] transition-all duration-200 hover:scale-[1.02] disabled:opacity-50 disabled:hover:scale-100 shadow-lg shadow-[#324D3E]/25"
+                >
+                  <FileText size={16} />
+                  Generate Kartu Anggota
+                </button>
+              </div>
               <input
                 ref={fileInputRef}
                 type="file"

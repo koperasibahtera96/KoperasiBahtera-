@@ -2,6 +2,7 @@ import { occupationOptions } from "@/constant/OCCUPATION";
 import { midtransService } from "@/lib/midtrans";
 import dbConnect from "@/lib/mongodb";
 import { createCommissionRecord } from "@/lib/commission";
+import { generateInvoiceNumber } from "@/lib/invoiceNumberGenerator";
 import { getFirstAdminName } from "@/lib/utils/admin";
 import { Investor } from "@/models";
 import Contract from "@/models/Contract";
@@ -148,11 +149,11 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // CONTRACT payments
+    // FULL INVESTMENT payments (INV-BMS format)
     if (
       (transactionStatus === "settlement" ||
         (transactionStatus === "capture" && fraudStatus === "accept")) &&
-      orderId.startsWith("CONTRACT-")
+      orderId.startsWith("INV-BMS-")
     ) {
       const mongoSession = await mongoose.startSession();
       const txnId = `TXN-${Date.now()}-${Math.random()
@@ -179,13 +180,16 @@ export async function POST(request: NextRequest) {
           return roiMap[plantType] || 0.12;
         };
 
+        // Use payment.contractId to find the actual contract
+        const contractId = payment.contractId;
+
         let savedPlantInstance = await PlantInstance.findOne({
-          contractNumber: orderId,
+          contractNumber: contractId,
         }).session(mongoSession);
 
         if (!savedPlantInstance) {
           // Get contract to check approval status
-          const contract = await Contract.findOne({ contractId: orderId }).session(mongoSession);
+          const contract = await Contract.findOne({ contractId: contractId }).session(mongoSession);
           const isContractApproved = contract?.adminApprovalStatus === 'approved';
 
           const plantInstanceId = `PLANT-${payment.orderId}-${orderId.slice(-8)}`;
@@ -297,6 +301,7 @@ export async function POST(request: NextRequest) {
           await investor.save({ session: mongoSession });
         }
 
+        // For new invoice format, contractId equals orderId
         const contract = await Contract.findOne({ contractId: orderId }).session(mongoSession);
         if (contract) {
           contract.paymentCompleted = true;
@@ -320,11 +325,11 @@ export async function POST(request: NextRequest) {
       message = "Investment payment successful - Contract ready for signing";
     }
 
-    // INSTALLMENT payments (cicilan)
+    // INSTALLMENT payments (cicilan) - CIC-INV-BMS format
     if (
       (transactionStatus === "settlement" ||
         (transactionStatus === "capture" && fraudStatus === "accept")) &&
-      orderId.startsWith("INSTALLMENT-")
+      orderId.startsWith("CIC-INV-BMS-")
     ) {
       const mongoSession = await mongoose.startSession();
       const txnId = `TXN-${Date.now()}-${Math.random()
@@ -332,26 +337,22 @@ export async function POST(request: NextRequest) {
         .substring(2, 9)}`;
 
       await mongoSession.withTransaction(async () => {
-        // Parse orderId to get cicilanOrderId and installmentNumber
-        // Format: INSTALLMENT-{contractId}-{installmentNumber}
-        // Example: INSTALLMENT-CONTRACT-1758386808086-3YLW1XW-1
-        const orderParts = orderId.split("-");
-        const installmentNumber = parseInt(orderParts[orderParts.length - 1]); // Last part is installment number
-        const cicilanOrderId = orderParts.slice(1, -1).join("-"); // Everything between INSTALLMENT and installment number
-
-        console.log(`🔍 [${txnId}] Processing installment payment: ${orderId}`);
-        console.log(`🔍 [${txnId}] CicilanOrderId: ${cicilanOrderId}, Installment: ${installmentNumber}`);
-
-        // Find the payment record by cicilanOrderId and installmentNumber
+        // Find the payment record by orderId directly (since it's unique)
         const installmentPayment = await Payment.findOne({
-          cicilanOrderId: cicilanOrderId,
-          installmentNumber: installmentNumber,
+          orderId: orderId,
           paymentType: "cicilan-installment"
         }).session(mongoSession);
 
         if (!installmentPayment) {
           throw new Error(`Installment payment not found for ${orderId}`);
         }
+
+        // Get values from the payment record
+        const installmentNumber = installmentPayment.installmentNumber;
+        const cicilanOrderId = installmentPayment.cicilanOrderId;
+
+        console.log(`🔍 [${txnId}] Processing installment payment: ${orderId}`);
+        console.log(`🔍 [${txnId}] CicilanOrderId: ${cicilanOrderId}, Installment: ${installmentNumber}`);
 
         // Update installment payment status
         installmentPayment.transactionId = transactionId;
@@ -670,7 +671,11 @@ export async function POST(request: NextRequest) {
             nextDueDate.setMonth(nextDueDate.getMonth() + paymentTermMonths);
 
             // Create next installment payment record
-            const nextInstallmentOrderId = `INSTALLMENT-${cicilanOrderId}-${nextInstallmentNumber}`;
+            const nextInstallmentOrderId = await generateInvoiceNumber({
+              productName: installmentPayment.productName || 'Investment',
+              installmentNumber: nextInstallmentNumber,
+              paymentType: 'cicilan-installment'
+            });
             const nextInstallment = new Payment({
               orderId: nextInstallmentOrderId,
               userId: installmentPayment.userId,

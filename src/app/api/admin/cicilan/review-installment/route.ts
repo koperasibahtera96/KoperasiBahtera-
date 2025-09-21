@@ -1,6 +1,7 @@
 import { authOptions } from "@/lib/auth";
 import dbConnect from "@/lib/mongodb";
 import { createCommissionRecord } from "@/lib/commission";
+import { generateInvoiceNumber } from "@/lib/invoiceNumberGenerator";
 import { getFirstAdminName } from "@/lib/utils/admin";
 import Investor from "@/models/Investor";
 import Payment from "@/models/Payment";
@@ -307,7 +308,11 @@ export async function POST(request: NextRequest) {
               nextDueDate.setMonth(nextDueDate.getMonth() + paymentTermMonths);
 
               // Create next installment payment record
-              const nextInstallmentOrderId = `${payment.cicilanOrderId}-INST-${nextInstallmentNumber}`;
+              const nextInstallmentOrderId = await generateInvoiceNumber({
+                productName: payment.productName || 'Investment',
+                installmentNumber: nextInstallmentNumber,
+                paymentType: 'cicilan-installment'
+              });
               const nextInstallment = new Payment({
                 orderId: nextInstallmentOrderId,
                 userId: payment.userId,

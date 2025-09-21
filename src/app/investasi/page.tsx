@@ -243,16 +243,22 @@ export default function InvestasiPage() {
 
   // formatDate is now imported from date utility
 
+  // Helper function to check if URL is a video
+  const isVideoUrl = (url?: string) =>
+    !!url && /\.(mp4|webm|mov|m4v|ogg)(\?|#|$)/i.test(url);
+
   const handleDownloadHistoryPDF = async (investment: any) => {
     if (!investment?.plantInstance) return;
 
+    const plantData = investment.plantInstance;
+
     try {
-      const plantData = investment.plantInstance;
       const pdf = new jsPDF();
       const pageWidth = pdf.internal.pageSize.getWidth();
       const pageHeight = pdf.internal.pageSize.getHeight();
-      let yPosition = 20;
+      let y = 20;
 
+      // ===== HEADER (tetap)
       try {
         const logoResponse = await fetch("/images/koperasi-logo.jpg");
         const logoBlob = await logoResponse.blob();
@@ -261,7 +267,7 @@ export default function InvestasiPage() {
         await new Promise<void>((resolve) => {
           logoReader.onload = () => {
             const logoData = logoReader.result as string;
-            pdf.addImage(logoData, "JPEG", 20, yPosition, 30, 30);
+            pdf.addImage(logoData, "JPEG", 20, y, 30, 30);
             resolve();
           };
           logoReader.readAsDataURL(logoBlob);
@@ -269,118 +275,149 @@ export default function InvestasiPage() {
 
         pdf.setFontSize(16);
         pdf.setFont("helvetica", "bold");
-        pdf.text("Koperasi Bintang Merah Sejahtera", 60, yPosition + 15);
+        pdf.text("Koperasi Bintang Merah Sejahtera", 60, y + 15);
 
-        yPosition += 40;
-        pdf.line(20, yPosition, pageWidth - 20, yPosition);
-        yPosition += 15;
+        y += 40;
+        pdf.line(20, y, pageWidth - 20, y);
+        y += 12; // sedikit dirapatkan
       } catch {
         pdf.setFontSize(16);
         pdf.setFont("helvetica", "bold");
-        pdf.text("Koperasi Bintang Merah Sejahtera", 20, yPosition);
-        yPosition += 20;
+        pdf.text("Koperasi Bintang Merah Sejahtera", 20, y);
+        y += 18;
       }
 
+      // ===== Info tanaman (tetap)
       pdf.setFontSize(18);
       pdf.setFont("helvetica", "bold");
-      pdf.text(
-        `Riwayat Tanaman: ${plantData.instanceName || ""}`,
-        20,
-        yPosition
-      );
-      yPosition += 10;
+      pdf.text(`Riwayat Tanaman: ${plantData.instanceName || ""}`, 20, y);
+      y += 9;
 
       pdf.setFontSize(12);
       pdf.setFont("helvetica", "normal");
-      pdf.text(`QR Code: ${plantData.qrCode}`, 20, yPosition);
-      yPosition += 6;
-      pdf.text(`Pemilik: ${plantData.owner}`, 20, yPosition);
-      yPosition += 6;
-      pdf.text(`Lokasi: ${plantData.location}`, 20, yPosition);
-      yPosition += 15;
+      pdf.text(`Jumlah Tanam: ${plantData.qrCode}`, 20, y);
+      y += 5;
+      pdf.text(`Pemilik: ${plantData.owner}`, 20, y);
+      y += 5;
+      pdf.text(`Lokasi: ${plantData.location}`, 20, y);
+      y += 10;
 
+      // ===== Sort: "Kontrak Baru" selalu paling atas, sisanya tanggal paling awal
       const sortedHistory = [...(plantData.history || [])].sort((a, b) => {
+        const aIsKontrak = (a.type || a.action || "").toLowerCase() === "kontrak baru";
+        const bIsKontrak = (b.type || b.action || "").toLowerCase() === "kontrak baru";
+
+        if (aIsKontrak && !bIsKontrak) return -1;
+        if (!aIsKontrak && bIsKontrak) return 1;
+
+        // Jika keduanya "Kontrak Baru" atau keduanya bukan, sort by date
         return parseDateString(a.date).getTime() - parseDateString(b.date).getTime();
       });
+
+      // Layout config
+      const left = 24;
+      const right = pageWidth - 24;
+      const cardX = 20;
+      const cardW = pageWidth - 40;
+      const mediaW = 45;
+      const mediaH = 35;
+      const verticalGap = 6;
 
       for (let i = 0; i < sortedHistory.length; i++) {
         const item = sortedHistory[i];
 
-        if (yPosition > pageHeight - 60) {
+        // estimasi tinggi minimum card agar kira-kira bisa 3 per halaman
+        const minNeeded = 75;
+        if (y + minNeeded > pageHeight - 20) {
           pdf.addPage();
-          yPosition = 20;
+          y = 18; // margin atas halaman baru
         }
 
+        const cardTop = y;
+        let cursor = y + 7;
+
+        // Title kiri & tanggal kanan (geser 4pt dari tepi)
         pdf.setFontSize(14);
         pdf.setFont("helvetica", "bold");
-        pdf.text(`${i + 1}. ${item.action || item.type}`, 20, yPosition);
-        yPosition += 8;
+        pdf.text(`${i + 1}. ${item.type || item.action}`, left, cursor);
 
         pdf.setFontSize(10);
         pdf.setFont("helvetica", "normal");
-        pdf.text(`Tanggal: ${formatDate(item.date)}`, 20, yPosition);
-        yPosition += 8;
+        const dateText = `Tanggal: ${item.date}`;
+        const dateW = pdf.getTextWidth(dateText);
+        pdf.text(dateText, right - dateW - 4, cursor); // <= geser dari tepi
+
+        cursor += 5;
+
+        // Frame media (hitam pekat)
+        pdf.setDrawColor(0);
+        pdf.setLineWidth(0.4);
+        pdf.rect(left, cursor, mediaW, mediaH);
 
         if (item.imageUrl) {
-          try {
-            const response = await fetch(item.imageUrl);
-            const blob = await response.blob();
-            const reader = new FileReader();
+          if (isVideoUrl(item.imageUrl)) {
+            pdf.setFontSize(9);
+            pdf.text("VIDEO (lihat di aplikasi)", left + 3, cursor + 10);
+          } else {
+            try {
+              const response = await fetch(item.imageUrl);
+              const blob = await response.blob();
+              const reader = new FileReader();
 
-            await new Promise<void>((resolve) => {
-              reader.onload = () => {
-                const imgData = reader.result as string;
-                const imgWidth = 60;
-                const imgHeight = 60;
-
-                if (yPosition + imgHeight > pageHeight - 20) {
-                  pdf.addPage();
-                  yPosition = 20;
-                }
-
-                pdf.addImage(
-                  imgData,
-                  "JPEG",
-                  20,
-                  yPosition,
-                  imgWidth,
-                  imgHeight
-                );
-                resolve();
-              };
-              reader.readAsDataURL(blob);
-            });
-
-            yPosition += 65;
-          } catch {
-            pdf.text("Gambar tidak dapat dimuat", 20, yPosition);
-            yPosition += 8;
+              await new Promise<void>((resolve) => {
+                reader.onload = () => {
+                  const imgData = reader.result as string;
+                  pdf.addImage(
+                    imgData,
+                    "JPEG",
+                    left + 1.5,
+                    cursor + 1.5,
+                    mediaW - 3,
+                    mediaH - 3
+                  );
+                  resolve();
+                };
+                reader.readAsDataURL(blob);
+              });
+            } catch {
+              pdf.setFontSize(9);
+              pdf.text("Gambar tidak dapat dimuat", left + 3, cursor + 10);
+            }
           }
+        } else {
+          pdf.setFontSize(9);
+          pdf.text("Tidak ada media", left + 3, cursor + 10);
         }
 
+        // Catatan di samping media
+        const textLeft = left + mediaW + 8;
         pdf.setFontSize(10);
         pdf.setFont("helvetica", "bold");
-        pdf.text("Catatan =", 20, yPosition);
-        yPosition += 6;
+        pdf.text("Catatan =", textLeft, cursor + 7);
 
         pdf.setFont("helvetica", "normal");
-        const splitDescription = pdf.splitTextToSize(
-          item.description,
-          pageWidth - 40
-        );
-        pdf.text(splitDescription, 20, yPosition);
-        yPosition += splitDescription.length * 5 + 10;
+        const maxWidth = right - textLeft;
+        const wrapped = pdf.splitTextToSize(item.description || "-", maxWidth);
+        pdf.text(wrapped, textLeft, cursor + 13);
 
-        pdf.line(20, yPosition, pageWidth - 20, yPosition);
-        yPosition += 10;
+        // hitung tinggi konten
+        const textHeight = (wrapped.length ? wrapped.length : 1) * 5 + 18;
+        const contentHeight = Math.max(mediaH + 6, textHeight);
+        const cardBottom = cardTop + contentHeight + 8;
+
+        // Border card (hitam pekat & lebih tegas)
+        pdf.setDrawColor(0);
+        pdf.setLineWidth(0.8);
+        pdf.rect(cardX, cardTop, cardW, cardBottom - cardTop, "S");
+
+        // pindah Y (jarak antar card diperkecil)
+        y = cardBottom + verticalGap;
       }
 
-      pdf.save(
-        `Riwayat-${plantData.instanceName || ""}-${plantData.qrCode}.pdf`
-      );
-    } catch (error) {
-      console.error("Error generating PDF:", error);
-      // You might want to show an error message to user
+      pdf.save(`Riwayat-${plantData.instanceName || ""}-${plantData.qrCode}.pdf`);
+    } catch {
+      console.error("Error generating PDF");
+      // showError("Gagal membuat PDF", "Gagal membuat PDF. Silakan coba lagi.");
     }
   };
 
@@ -1100,19 +1137,32 @@ export default function InvestasiPage() {
                                       )}
                                       {historyItem.imageUrl && (
                                         <div className="mb-3">
-                                          <Image
-                                            src={historyItem.imageUrl}
-                                            alt={`Gambar untuk ${historyItem.action}`}
-                                            width={300}
-                                            height={200}
-                                            className="w-full max-w-xs h-48 object-cover rounded-lg border cursor-pointer hover:opacity-75 transition-opacity"
-                                            onClick={() =>
-                                              window.open(
-                                                historyItem.imageUrl,
-                                                "_blank"
-                                              )
-                                            }
-                                          />
+                                          {isVideoUrl(historyItem.imageUrl) ? (
+                                            <video
+                                              controls
+                                              className="w-full max-w-xs h-48 object-cover rounded-lg border"
+                                              preload="metadata"
+                                              aria-label={`Video untuk ${historyItem.action}`}
+                                            >
+                                              <source src={historyItem.imageUrl} type="video/mp4" />
+                                              <source src={historyItem.imageUrl} type="video/webm" />
+                                              Browser Anda tidak mendukung video HTML5.
+                                            </video>
+                                          ) : (
+                                            <Image
+                                              src={historyItem.imageUrl}
+                                              alt={`Gambar untuk ${historyItem.action}`}
+                                              width={300}
+                                              height={200}
+                                              className="w-full max-w-xs h-48 object-cover rounded-lg border cursor-pointer hover:opacity-75 transition-opacity"
+                                              onClick={() =>
+                                                window.open(
+                                                  historyItem.imageUrl,
+                                                  "_blank"
+                                                )
+                                              }
+                                            />
+                                          )}
                                         </div>
                                       )}
                                       {historyItem.addedBy && (

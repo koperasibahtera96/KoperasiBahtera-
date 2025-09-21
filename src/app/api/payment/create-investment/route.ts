@@ -59,8 +59,43 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Use contract ID as order ID to link payment to contract
-    const orderId = contractId;
+    // Find existing payment record created during contract signing
+    // The contract.contractId should now match the payment.orderId
+    const targetContract = await Contract.findOne({ contractId });
+    if (!targetContract) {
+      return NextResponse.json(
+        { error: "Contract not found" },
+        { status: 404 }
+      );
+    }
+
+    console.log("Searching for payment with orderId:", contractId);
+
+    const existingPayment = await Payment.findOne({
+      orderId: contractId, // contractId should match payment orderId
+      userId: dbUser._id,
+      paymentType: "full-investment"
+    });
+
+    if (!existingPayment) {
+      // Debug: Check if there are any payments for this user
+      const userPayments = await Payment.find({ userId: dbUser._id }).select('orderId contractId paymentType');
+      console.log("User payments found:", userPayments);
+
+      return NextResponse.json(
+        { error: "Payment record not found. Please sign the contract first." },
+        { status: 404 }
+      );
+    }
+
+    console.log("Found existing payment:", {
+      orderId: existingPayment.orderId,
+      contractId: existingPayment.contractId,
+      paymentType: existingPayment.paymentType
+    });
+
+    // Use the orderId from the existing payment record
+    const orderId = existingPayment.orderId;
 
     const transaction = await midtransService.createTransaction({
       orderId,
@@ -85,79 +120,32 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    // Check if Payment record already exists for this contract
-    const existingPayment = await Payment.findOne({
-      orderId: contractId,
-      userId: dbUser._id,
-      paymentType: "full-investment"
-    });
-
-    if (existingPayment) {
-      // Update existing payment record
-      existingPayment.amount = plan.price;
-      existingPayment.productName = plan.name;
-      existingPayment.productId = plan.name.toLowerCase().replace(/\s+/g, "-");
-      if (referralCode) {
-        existingPayment.referralCode = referralCode;
-      }
-      existingPayment.customerData = {
-        fullName: dbUser.fullName,
-        email: dbUser.email,
-        phoneNumber: dbUser.phoneNumber,
-        dateOfBirth: dbUser.dateOfBirth,
-        address: dbUser.address,
-        village: dbUser.village,
-        city: dbUser.city,
-        province: dbUser.province,
-        postalCode: dbUser.postalCode,
-        occupation: dbUser.occupation,
-        password: "", // Not needed for investment payments
-        ktpImageUrl: "",
-        faceImageUrl: "",
-      };
-      existingPayment.midtransResponse = transaction;
-      existingPayment.isProcessed = false;
-      existingPayment.status = "pending";
-      existingPayment.transactionStatus = "pending";
-
-      await existingPayment.save();
-      console.log("Investment payment record updated:", orderId, "for contract:", contractId);
-    } else {
-      // Create new payment record
-      const payment = new Payment({
-        orderId,
-        userId: dbUser._id,
-        amount: plan.price,
-        currency: "IDR",
-        paymentType: "full-investment",
-        transactionStatus: "pending",
-        productName: plan.name,
-        productId: plan.name.toLowerCase().replace(/\s+/g, "-"),
-        contractId: contractId, // Link to contract
-        ...(referralCode && { referralCode }),
-        customerData: {
-          fullName: dbUser.fullName,
-          email: dbUser.email,
-          phoneNumber: dbUser.phoneNumber,
-          dateOfBirth: dbUser.dateOfBirth,
-          address: dbUser.address,
-          village: dbUser.village,
-          city: dbUser.city,
-          province: dbUser.province,
-          postalCode: dbUser.postalCode,
-          occupation: dbUser.occupation,
-          password: "", // Not needed for investment payments
-          ktpImageUrl: "",
-          faceImageUrl: "",
-        },
-        midtransResponse: transaction,
-        isProcessed: false,
-        status: "pending",
-      });
-
-      await payment.save();
-      console.log("Investment payment record created:", orderId, "for contract:", contractId);
+    // Update existing payment record with additional details and Midtrans response
+    if (referralCode) {
+      existingPayment.referralCode = referralCode;
     }
+    existingPayment.customerData = {
+      fullName: dbUser.fullName,
+      email: dbUser.email,
+      phoneNumber: dbUser.phoneNumber,
+      dateOfBirth: dbUser.dateOfBirth,
+      address: dbUser.address,
+      village: dbUser.village,
+      city: dbUser.city,
+      province: dbUser.province,
+      postalCode: dbUser.postalCode,
+      occupation: dbUser.occupation,
+      password: "", // Not needed for investment payments
+      ktpImageUrl: "",
+      faceImageUrl: "",
+    };
+    existingPayment.midtransResponse = transaction;
+    existingPayment.isProcessed = false;
+    existingPayment.status = "pending";
+    existingPayment.transactionStatus = "pending";
+
+    await existingPayment.save();
+    console.log("Investment payment record updated for Midtrans:", orderId, "for contract:", contractId);
 
     return NextResponse.json({
       success: true,

@@ -323,6 +323,8 @@ export async function downloadInvoiceImage(
       quality: 1,
       cacheBust: true,
       backgroundColor: "#ffffff",
+      skipFonts: true,
+      fontEmbedCSS: "",
     });
 
     const a = document.createElement("a");

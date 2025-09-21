@@ -67,7 +67,10 @@ export default function ContractPage() {
 
       if (response.ok) {
         const result = await response.json();
-        setContractData(result.data);
+        setContractData(result.contractData || result.data);
+        if (result.signatureData) {
+          setSignatureData(result.signatureData);
+        }
       } else if (response.status === 404 && retryCount < 10) {
         // Contract data not ready yet, webhook might still be processing
         setLoadingMessage(
@@ -131,15 +134,19 @@ export default function ContractPage() {
   };
 
   const generatePDF = async () => {
-    if (!contractData || !signatureData) {
-      showError("Tanda Tangan Diperlukan", "Silakan buat tanda tangan Anda terlebih dahulu");
+    if (!contractData) {
+      showError("Data kontrak tidak ditemukan", "Silakan refresh halaman.");
+      return;
+    }
+    if (!signatureData) {
+      showError("Tanda Tangan Tidak Tersedia", "Tanda tangan digital tidak ditemukan untuk kontrak ini.");
       return;
     }
 
     setSigning(true);
 
     try {
-      // Use the signature data from the dual signature component
+      // Use the signature data from the backend if available
       const signatureDataURL = signatureData;
 
       // Create PDF
@@ -404,14 +411,23 @@ export default function ContractPage() {
 
       // Add investor signature
       if (signatureDataURL) {
-        pdf.addImage(
-          signatureDataURL,
-          "PNG",
-          leftMargin + 95,
-          yPosition + 12,
-          70,
-          15
-        );
+        try {
+          // Show alert with the first 100 chars for debugging
+          showError("Signature Data (first 100 chars)", signatureDataURL.slice(0, 100));
+          if (!signatureDataURL.startsWith("data:image/png;base64,")) {
+            throw new Error("signatureDataURL is not a valid PNG base64 string");
+          }
+          pdf.addImage(
+            signatureDataURL,
+            "PNG",
+            leftMargin + 95,
+            yPosition + 12,
+            70,
+            15
+          );
+        } catch (err: any) {
+          showError("Failed to add signature image to PDF", err?.message || String(err));
+        }
       }
 
       yPosition += 50;

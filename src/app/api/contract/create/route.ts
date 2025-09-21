@@ -1,4 +1,5 @@
 import dbConnect from "@/lib/mongodb";
+import { generateInvoiceNumber } from "@/lib/invoiceNumberGenerator";
 import Contract from "@/models/Contract";
 import User from "@/models/User";
 import { midtransService } from "@/lib/midtrans";
@@ -64,11 +65,11 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Generate unique contract ID
-    const contractId = `CONTRACT-${Date.now()}-${Math.random()
-      .toString(36)
-      .substring(2, 9)
-      .toUpperCase()}`;
+    // Generate unique contract ID using new invoice format
+    const contractId = await generateInvoiceNumber({
+      productName,
+      paymentType: paymentType === 'cicilan' ? 'cicilan-installment' : 'full-investment'
+    });
 
     // Contract number will be generated automatically by the pre-save hook
 

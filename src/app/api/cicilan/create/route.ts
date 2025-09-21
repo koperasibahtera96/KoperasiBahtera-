@@ -1,4 +1,5 @@
 import dbConnect from "@/lib/mongodb";
+import { generateInvoiceNumber } from "@/lib/invoiceNumberGenerator";
 import Contract from "@/models/Contract";
 import Investor from "@/models/Investor";
 import Payment from "@/models/Payment";
@@ -115,7 +116,11 @@ export async function POST(req: NextRequest) {
       const cicilanOrderId = contractId;
 
       // Create only the first installment Payment record (due 24 hours from now)
-      const firstInstallmentOrderId = `${cicilanOrderId}-INST-1`;
+      const firstInstallmentOrderId = await generateInvoiceNumber({
+        productName,
+        installmentNumber: 1,
+        paymentType: 'cicilan-installment'
+      });
       const firstDueDate = new Date();
       firstDueDate.setHours(firstDueDate.getHours() + 24); // Due 24 hours from now
 

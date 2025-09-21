@@ -388,8 +388,6 @@ export async function GET(_request: NextRequest) {
     await dbConnect();
     const user = await User.findOne({ email: session.user.email });
 
-    console.log(user, 'user')
-
     if (!user) {
       return NextResponse.json(
         { error: 'User not found' },

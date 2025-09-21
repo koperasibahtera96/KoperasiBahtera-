@@ -3,7 +3,9 @@
 import LandingHeader from "@/components/landing/LandingHeader";
 import { useAlert } from "@/components/ui/Alert";
 import { DualSignatureInput } from "@/components/ui/dual-signature-input";
+import { downloadInvoiceImage } from "@/lib/invoiceImage";
 import { CicilanGroup, CicilanInstallmentWithPayment } from "@/types/cicilan";
+import jsPDF from "jspdf";
 import {
   Calendar,
   CheckCircle,
@@ -15,6 +17,7 @@ import {
   Upload,
   Edit3,
   X,
+  Download,
 } from "lucide-react";
 import { useSession } from "next-auth/react";
 import Image from "next/image";
@@ -164,6 +167,384 @@ export default function PaymentsPage() {
     } catch (error) {
       console.error("Error saving referral code:", error);
       showError("Kesalahan", "Terjadi kesalahan saat menyimpan kode referral");
+    }
+  };
+
+  const handleDownloadInvoice = (installment: Installment, group: CicilanGroup) => {
+    // Prepare payment data for invoice
+    const paymentData = {
+      orderId: installment.orderId || group.cicilanOrderId,
+      userName: session?.user?.name || "—",
+      userCode: session?.user?.userCode || "—",
+      amount: installment.amount,
+      itemName: `${group.productName} - Cicilan #${installment.installmentNumber}`,
+      paymentType: "cicilan-installment",
+      transactionStatus: installment.status === "approved" ? "settlement" : installment.status,
+      updatedAt: installment.paidDate || installment.updatedAt,
+      createdAt: installment.createdAt,
+      installmentNumber: installment.installmentNumber,
+      totalInstallments: group.installments.length,
+      billingPeriod: group.paymentTerm === "monthly" ? "Bulanan" : group.paymentTerm === "quarterly" ? "Triwulan" : "Tahunan",
+      ref: installment._id,
+    };
+
+    downloadInvoiceImage(paymentData);
+  };
+
+  const handleDownloadFullPaymentInvoice = (contract: FullPaymentContract) => {
+    // Prepare payment data for invoice
+    const paymentData = {
+      orderId: contract.contractId,
+      userName: session?.user?.name || "—",
+      userCode: session?.user?.userCode || "—",
+      amount: contract.totalAmount,
+      itemName: contract.productName,
+      paymentType: "full-investment",
+      transactionStatus: contract.paymentCompleted ? "settlement" : "pending",
+      updatedAt: contract.updatedAt,
+      createdAt: contract.createdAt,
+      ref: contract.contractId,
+    };
+
+    downloadInvoiceImage(paymentData);
+  };
+  
+  const handleDownloadContract = async (contractId: string) => {
+    try {
+      // First get the contract data to generate the PDF
+      const response = await fetch(`/api/contract/${contractId}/download`, {
+        method: "GET",
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        
+        if (data.success) {
+          // Create PDF with the signature data (may be null for some contracts)
+          await generateContractPDF(data.contractData, data.signatureData);
+        } else {
+          showError("Error", data.error || "Failed to download contract");
+        }
+      } else {
+        showError("Error", "Failed to fetch contract data");
+      }
+    } catch (error) {
+      console.error("Error downloading contract:", error);
+      showError("Error", "An error occurred while downloading the contract");
+    }
+  };
+  
+  // Function to generate PDF from contract data
+  const generateContractPDF = async (contractData: any, signatureData: string | null) => {
+    if (!contractData) {
+      showError("Error", "Contract data not available");
+      return;
+    }
+    
+    try {
+      // Create PDF
+      const pdf = new jsPDF();
+
+      // Set font
+      pdf.setFont("helvetica");
+
+      // Add logo header - positioned first
+      let headerYPosition = 15;
+
+      try {
+        // Load logo image
+        const logoResponse = await fetch("/images/koperasi-logo.jpg");
+        const logoBlob = await logoResponse.blob();
+        const logoDataURL = await new Promise<string>((resolve) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result as string);
+          reader.readAsDataURL(logoBlob);
+        });
+
+        // Add logo centered at top (40x40 for better visibility)
+        pdf.addImage(logoDataURL, "JPEG", 85, headerYPosition, 40, 40);
+        headerYPosition += 45; // Move down after logo
+      } catch (logoError) {
+        console.warn("Could not load logo:", logoError);
+        headerYPosition += 10; // Small space if no logo
+      }
+
+      // Header text positioned below logo
+      pdf.setFontSize(18);
+      pdf.setTextColor(50, 77, 62); // #324D3E
+      pdf.text("SURAT PERJANJIAN HAK KEPEMILIKAN POHON", 105, headerYPosition, {
+        align: "center",
+      });
+
+      pdf.setFontSize(14);
+      pdf.text("KOPERASI BINTANG MERAH SEJAHTERA", 105, headerYPosition + 10, {
+        align: "center",
+      });
+
+      // Start content below header
+      let yPosition = headerYPosition + 20;
+      const leftMargin = 20;
+      const rightMargin = 190;
+
+      // Header separator line
+      pdf.setLineWidth(0.5);
+      pdf.setDrawColor(50, 77, 62);
+      pdf.line(leftMargin, yPosition, rightMargin, yPosition);
+      yPosition += 15;
+
+      // Contract Information Box
+      pdf.setFillColor(50, 77, 62);
+      pdf.rect(leftMargin, yPosition, 170, 25, "F");
+
+      pdf.setTextColor(255, 255, 255);
+      pdf.setFontSize(14);
+      pdf.setFont("helvetica", "bold");
+      pdf.text("INFORMASI KONTRAK", leftMargin + 5, yPosition + 8);
+
+      pdf.setFontSize(10);
+      pdf.setFont("helvetica", "normal");
+      pdf.text(
+        `Nomor: ${contractData.contractNumber}`,
+        leftMargin + 5,
+        yPosition + 16
+      );
+      pdf.text(
+        `Tanggal: ${new Date(contractData.contractDate).toLocaleDateString(
+          "id-ID"
+        )}`,
+        leftMargin + 90,
+        yPosition + 16
+      );
+
+      yPosition += 35;
+
+      // Investor Information Section
+      pdf.setTextColor(0, 0, 0);
+      pdf.setFillColor(245, 245, 245);
+      pdf.rect(leftMargin, yPosition, 170, 35, "F");
+
+      pdf.setFontSize(12);
+      pdf.setFont("helvetica", "bold");
+      pdf.text("DATA INVESTOR", leftMargin + 5, yPosition + 8);
+
+      pdf.setFontSize(10);
+      pdf.setFont("helvetica", "normal");
+      pdf.text(
+        `Nama: ${contractData.investor.name}`,
+        leftMargin + 5,
+        yPosition + 18
+      );
+      pdf.text(
+        `Email: ${contractData.investor.email}`,
+        leftMargin + 5,
+        yPosition + 26
+      );
+      if (contractData.investor.phoneNumber) {
+        pdf.text(
+          `Telepon: ${contractData.investor.phoneNumber}`,
+          leftMargin + 90,
+          yPosition + 18
+        );
+      }
+
+      yPosition += 45;
+
+      // Investment Details Section
+      pdf.setFillColor(240, 248, 255);
+      pdf.rect(leftMargin, yPosition, 170, 45, "F");
+
+      pdf.setFontSize(12);
+      pdf.setFont("helvetica", "bold");
+      pdf.text("DETAIL INVESTASI", leftMargin + 5, yPosition + 8);
+
+      pdf.setFontSize(10);
+      pdf.setFont("helvetica", "normal");
+      pdf.text(
+        `ID Investasi: ${contractData.investment.investmentId}`,
+        leftMargin + 5,
+        yPosition + 18
+      );
+      pdf.text(
+        `Produk: ${contractData.investment.productName}`,
+        leftMargin + 5,
+        yPosition + 26
+      );
+      pdf.text(
+        `Jenis Pohon: ${contractData.plantInstance.plantType.toUpperCase()}`,
+        leftMargin + 5,
+        yPosition + 34
+      );
+
+      pdf.text(
+        `Total Investasi: Rp ${contractData.investment.totalAmount.toLocaleString(
+          "id-ID"
+        )}`,
+        leftMargin + 90,
+        yPosition + 18
+      );
+      pdf.text(
+        `ROI Tahunan: ${contractData.plantInstance.baseAnnualROI}%`,
+        leftMargin + 90,
+        yPosition + 26
+      );
+      pdf.text(
+        `Status: ${
+          contractData.investment.paymentType === "full" ? "LUNAS" : "CICILAN"
+        }`,
+        leftMargin + 90,
+        yPosition + 34
+      );
+
+      yPosition += 55;
+
+      // Terms and Conditions Section
+      // Check if we have enough space for header + at least 10 lines of content (about 70 units)
+      if (yPosition > 200) {
+        pdf.addPage();
+        yPosition = 20;
+      }
+
+      pdf.setFillColor(255, 248, 240);
+      pdf.rect(leftMargin, yPosition, 170, 8, "F");
+
+      pdf.setFontSize(12);
+      pdf.setFont("helvetica", "bold");
+      pdf.text("KETENTUAN DAN SYARAT", leftMargin + 5, yPosition + 6);
+
+      yPosition += 15;
+
+      // Terms content with proper formatting
+      const termsContent = [
+        "HAK KEPEMILIKAN INVESTOR:",
+        "• Berhak atas hasil panen sesuai persentase investasi yang dibayarkan",
+        "• Mendapat laporan perkembangan pohon secara berkala",
+        "• Dapat mengunjungi lokasi pohon dengan pemberitahuan sebelumnya",
+        "• Menerima bagi hasil sesuai persentase kepemilikan",
+        "",
+        "KEWAJIBAN KOPERASI BINTANG MERAH SEJAHTERA:",
+        "• Merawat dan memelihara pohon hingga masa panen",
+        "• Memberikan laporan berkala tentang kondisi pohon",
+        "• Membagikan hasil panen sesuai kesepakatan",
+        "• Menyediakan akses informasi kondisi pohon",
+        "",
+        "KETENTUAN UMUM:",
+        "• Kontrak berlaku hingga masa panen selesai",
+        "• Perselisihan diselesaikan secara musyawarah mufakat",
+        "• Kedua pihak terikat pada ketentuan yang telah disepakati",
+      ];
+
+      pdf.setFontSize(9);
+      termsContent.forEach((line) => {
+        // Only add new page if we're really running out of space (leave room for signatures)
+        if (yPosition > 260) {
+          pdf.addPage();
+          yPosition = 20;
+        }
+
+        if (line.includes(":") && !line.startsWith("•")) {
+          pdf.setFont("helvetica", "bold");
+          pdf.setTextColor(50, 77, 62);
+        } else {
+          pdf.setFont("helvetica", "normal");
+          pdf.setTextColor(0, 0, 0);
+        }
+
+        pdf.text(line, leftMargin + (line.startsWith("•") ? 5 : 0), yPosition);
+        yPosition += 6;
+      });
+
+      yPosition += 10;
+
+      // Signature Section
+      if (yPosition > 220) {
+        pdf.addPage();
+        yPosition = 20;
+      }
+
+      // Signature header
+      pdf.setFillColor(50, 77, 62);
+      pdf.rect(leftMargin, yPosition, 170, 8, "F");
+
+      pdf.setTextColor(255, 255, 255);
+      pdf.setFontSize(12);
+      pdf.setFont("helvetica", "bold");
+      pdf.text("PENANDATANGANAN", leftMargin + 5, yPosition + 6);
+
+      yPosition += 20;
+
+      // Signature boxes
+      pdf.setTextColor(0, 0, 0);
+      pdf.setLineWidth(0.3);
+      pdf.setDrawColor(200, 200, 200);
+
+      // Left signature box - Koperasi
+      pdf.rect(leftMargin, yPosition, 80, 40);
+      pdf.setFontSize(9);
+      pdf.setFont("helvetica", "bold");
+      pdf.text("KOPERASI BINTANG MERAH", leftMargin + 5, yPosition + 6);
+      pdf.text("SEJAHTERA", leftMargin + 5, yPosition + 11);
+
+      pdf.setFont("helvetica", "normal");
+      pdf.text("Ketua Koperasi", leftMargin + 5, yPosition + 32);
+      pdf.text("H. Budi Santoso, S.E.", leftMargin + 5, yPosition + 37);
+
+      // Right signature box - Investor
+      pdf.rect(leftMargin + 90, yPosition, 80, 40);
+      pdf.setFontSize(9);
+      pdf.setFont("helvetica", "bold");
+      pdf.text("PIHAK INVESTOR", leftMargin + 95, yPosition + 8);
+
+      pdf.setFont("helvetica", "normal");
+      pdf.text("Investor", leftMargin + 95, yPosition + 32);
+      pdf.text(
+        `${contractData.investor.name}`,
+        leftMargin + 95,
+        yPosition + 37
+      );
+
+      // Add investor signature
+      if (signatureData) {
+        pdf.addImage(
+          signatureData,
+          "PNG",
+          leftMargin + 95,
+          yPosition + 12,
+          70,
+          15
+        );
+      }
+
+      yPosition += 50;
+
+      // Footer with validation info
+      pdf.setFillColor(250, 250, 250);
+      pdf.rect(leftMargin, yPosition, 170, 15, "F");
+
+      pdf.setFontSize(8);
+      pdf.setTextColor(100, 100, 100);
+      pdf.text(
+        `Ditandatangani secara digital pada: ${new Date(contractData.contractDate).toLocaleString(
+          "id-ID"
+        )}`,
+        leftMargin + 5,
+        yPosition + 5
+      );
+      pdf.text(`Lokasi: Jakarta, Indonesia`, leftMargin + 5, yPosition + 10);
+      pdf.text(
+        `Dokumen ini sah dan mengikat kedua belah pihak`,
+        leftMargin + 90,
+        yPosition + 8
+      );
+
+      // Save PDF with the contract number and investor name
+      pdf.save(
+        `Kontrak_${contractData.contractNumber}_${contractData.investor.name}.pdf`
+      );
+      
+      showSuccess("Berhasil", "Kontrak berhasil diunduh");
+    } catch (error) {
+      console.error("Error generating PDF:", error);
+      showError("Error", "Terjadi kesalahan saat membuat PDF kontrak");
     }
   };
 
@@ -745,18 +1126,31 @@ export default function PaymentsPage() {
                           </div>
                         ) : (
                           <div className="bg-gradient-to-r from-yellow-50 to-amber-50 rounded-2xl p-4 border border-amber-200 mb-6">
-                            <div className="flex items-center gap-3">
-                              <div className="bg-amber-100 rounded-full p-2">
-                                <Clock className="w-5 h-5 text-amber-600" />
+                            <div className="flex items-center justify-between gap-3">
+                              <div className="flex items-center gap-3">
+                                <div className="bg-amber-100 rounded-full p-2">
+                                  <Clock className="w-5 h-5 text-amber-600" />
+                                </div>
+                                <div>
+                                  <h4 className="font-semibold text-amber-800 font-poppins">
+                                    Kontrak Menunggu Persetujuan Admin
+                                  </h4>
+                                  <p className="text-sm text-amber-700 font-poppins">
+                                    Anda sudah dapat melakukan pembayaran cicilan, namun kontrak masih menunggu review admin
+                                  </p>
+                                </div>
                               </div>
-                              <div>
-                                <h4 className="font-semibold text-amber-800 font-poppins">
-                                  Kontrak Menunggu Persetujuan Admin
-                                </h4>
-                                <p className="text-sm text-amber-700 font-poppins">
-                                  Anda sudah dapat melakukan pembayaran cicilan, namun kontrak masih menunggu review admin
-                                </p>
-                              </div>
+                              {group.contractStatus !== "draft" && (
+                                <button
+                                  onClick={() => handleDownloadContract(group.contractId || "")}
+                                  className="px-3 py-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white text-sm rounded-full hover:shadow-lg transition-all duration-300 font-poppins font-medium whitespace-nowrap"
+                                >
+                                  <span className="flex items-center gap-2">
+                                    <Download size={16} />
+                                    Download
+                                  </span>
+                                </button>
+                              )}
                             </div>
                           </div>
                         )}
@@ -765,18 +1159,31 @@ export default function PaymentsPage() {
 
                     {group.contractApprovalStatus === "approved" && (
                       <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-2xl p-4 border border-green-200 mb-6">
-                        <div className="flex items-center gap-3">
-                          <div className="bg-green-100 rounded-full p-2">
-                            <CheckCircle className="w-5 h-5 text-green-600" />
+                        <div className="flex items-center justify-between gap-3">
+                          <div className="flex items-center gap-3">
+                            <div className="bg-green-100 rounded-full p-2">
+                              <CheckCircle className="w-5 h-5 text-green-600" />
+                            </div>
+                            <div>
+                              <h4 className="font-semibold text-green-800 font-poppins">
+                                Kontrak Telah Disetujui Admin
+                              </h4>
+                              <p className="text-sm text-green-700 font-poppins">
+                                Disetujui pada: {group.contractApprovedDate ? formatDate(group.contractApprovedDate) : "Tidak diketahui"}
+                              </p>
+                            </div>
                           </div>
-                          <div>
-                            <h4 className="font-semibold text-green-800 font-poppins">
-                              Kontrak Telah Disetujui Admin
-                            </h4>
-                            <p className="text-sm text-green-700 font-poppins">
-                              Disetujui pada: {group.contractApprovedDate ? formatDate(group.contractApprovedDate) : "Tidak diketahui"}
-                            </p>
-                          </div>
+                          {group.contractStatus !== "draft" && (
+                            <button
+                              onClick={() => handleDownloadContract(group.contractId || "")}
+                              className="px-3 py-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white text-sm rounded-full hover:shadow-lg transition-all duration-300 font-poppins font-medium whitespace-nowrap"
+                            >
+                              <span className="flex items-center gap-2">
+                                <Download size={16} />
+                                Download
+                              </span>
+                            </button>
+                          )}
                         </div>
                       </div>
                     )}
@@ -1054,7 +1461,7 @@ export default function PaymentsPage() {
                                     onClick={() =>
                                       handlePayInstallment(installment._id!, installment.installmentNumber!)
                                     }
-                                    className="w-full px-3 py-2 bg-gradient-to-r from-[#324D3E] to-[#4C3D19] text-white text-sm rounded-full hover:shadow-lg transition-all duration-300 font-poppins font-medium"
+                                    className="w-full px-3 py-2 bg-gradient-to-r from-[#324D3E] to-[#4C3D19] text-white text-sm rounded-full hover:shadow-lg transition-all duration-300 font-poppins font-medium mb-2"
                                     disabled={
                                       uploadingProof === installment._id
                                     }
@@ -1077,7 +1484,7 @@ export default function PaymentsPage() {
                                         installment,
                                       })
                                     }
-                                    className="w-full px-3 py-2 bg-gradient-to-r from-[#324D3E] to-[#4C3D19] text-white text-sm rounded-full hover:shadow-lg transition-all duration-300 font-poppins font-medium"
+                                    className="w-full px-3 py-2 bg-gradient-to-r from-[#324D3E] to-[#4C3D19] text-white text-sm rounded-full hover:shadow-lg transition-all duration-300 font-poppins font-medium mb-2"
                                     disabled={
                                       uploadingProof === installment._id
                                     }
@@ -1087,6 +1494,19 @@ export default function PaymentsPage() {
                                       {uploadingProof === installment._id
                                         ? "Mengunggah..."
                                         : "Upload Bukti Bayar"}
+                                    </span>
+                                  </button>
+                                )}
+
+                                {/* Download Invoice Button for Successful Payments */}
+                                {(installment.status === "approved" || installment.status === "completed") && (
+                                  <button
+                                    onClick={() => handleDownloadInvoice(installment, group)}
+                                    className="w-full px-3 py-2 bg-gradient-to-r from-green-600 to-green-700 text-white text-sm rounded-full hover:shadow-lg transition-all duration-300 font-poppins font-medium"
+                                  >
+                                    <span className="flex items-center justify-center gap-2">
+                                      <Download size={16} />
+                                      Download Invoice
                                     </span>
                                   </button>
                                 )}
@@ -1249,18 +1669,29 @@ export default function PaymentsPage() {
                           </div>
                         ) : (
                           <div className="bg-gradient-to-r from-yellow-50 to-amber-50 rounded-2xl p-4 border border-amber-200 mb-6">
-                            <div className="flex items-center gap-3">
-                              <div className="bg-amber-100 rounded-full p-2">
-                                <Clock className="w-5 h-5 text-amber-600" />
+                            <div className="flex items-center justify-between gap-3">
+                              <div className="flex items-center gap-3">
+                                <div className="bg-amber-100 rounded-full p-2">
+                                  <Clock className="w-5 h-5 text-amber-600" />
+                                </div>
+                                <div>
+                                  <h4 className="font-semibold text-amber-800 font-poppins">
+                                    Kontrak Menunggu Persetujuan Admin
+                                  </h4>
+                                  <p className="text-sm text-amber-700 font-poppins">
+                                    Anda sudah dapat melakukan pembayaran sekarang
+                                  </p>
+                                </div>
                               </div>
-                              <div>
-                                <h4 className="font-semibold text-amber-800 font-poppins">
-                                  Kontrak Menunggu Persetujuan Admin
-                                </h4>
-                                <p className="text-sm text-amber-700 font-poppins">
-                                  Anda sudah dapat melakukan pembayaran sekarang
-                                </p>
-                              </div>
+                              <button
+                                onClick={() => handleDownloadContract(contract.contractId)}
+                                className="px-3 py-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white text-sm rounded-full hover:shadow-lg transition-all duration-300 font-poppins font-medium whitespace-nowrap"
+                              >
+                                <span className="flex items-center gap-2">
+                                  <Download size={16} />
+                                  Download
+                                </span>
+                              </button>
                             </div>
                           </div>
                         )}
@@ -1269,18 +1700,29 @@ export default function PaymentsPage() {
 
                     {contract.adminApprovalStatus === "approved" && (
                       <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-2xl p-4 border border-green-200 mb-6">
-                        <div className="flex items-center gap-3">
-                          <div className="bg-green-100 rounded-full p-2">
-                            <CheckCircle className="w-5 h-5 text-green-600" />
+                        <div className="flex items-center justify-between gap-3">
+                          <div className="flex items-center gap-3">
+                            <div className="bg-green-100 rounded-full p-2">
+                              <CheckCircle className="w-5 h-5 text-green-600" />
+                            </div>
+                            <div>
+                              <h4 className="font-semibold text-green-800 font-poppins">
+                                Kontrak Telah Disetujui Admin
+                              </h4>
+                              <p className="text-sm text-green-700 font-poppins">
+                                Disetujui pada: {contract.adminApprovedDate ? formatDate(contract.adminApprovedDate) : "Tidak diketahui"}
+                              </p>
+                            </div>
                           </div>
-                          <div>
-                            <h4 className="font-semibold text-green-800 font-poppins">
-                              Kontrak Telah Disetujui Admin
-                            </h4>
-                            <p className="text-sm text-green-700 font-poppins">
-                              Disetujui pada: {contract.adminApprovedDate ? formatDate(contract.adminApprovedDate) : "Tidak diketahui"}
-                            </p>
-                          </div>
+                          <button
+                            onClick={() => handleDownloadContract(contract.contractId)}
+                            className="px-3 py-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white text-sm rounded-full hover:shadow-lg transition-all duration-300 font-poppins font-medium whitespace-nowrap"
+                          >
+                            <span className="flex items-center gap-2">
+                              <Download size={16} />
+                              Download
+                            </span>
+                          </button>
                         </div>
                       </div>
                     )}
@@ -1421,7 +1863,7 @@ export default function PaymentsPage() {
                           {!contract.paymentCompleted && !contract.isPermanentlyRejected && contract.hasEverSigned && (
                             <button
                               onClick={() => handleFullPayment(contract)}
-                              className="w-full px-3 py-2 bg-gradient-to-r from-[#324D3E] to-[#4C3D19] text-white text-sm rounded-full hover:shadow-lg transition-all duration-300 font-poppins font-medium"
+                              className="w-full px-3 py-2 bg-gradient-to-r from-[#324D3E] to-[#4C3D19] text-white text-sm rounded-full hover:shadow-lg transition-all duration-300 font-poppins font-medium mb-2"
                             >
                               <span className="flex items-center justify-center gap-2">
                                 <CreditCard size={16} />
@@ -1434,11 +1876,24 @@ export default function PaymentsPage() {
                           {!contract.paymentCompleted && (contract.isPermanentlyRejected || !contract.hasEverSigned) && (
                             <button
                               disabled
-                              className="w-full px-3 py-2 bg-gray-400 text-gray-200 text-sm rounded-full cursor-not-allowed font-poppins font-medium opacity-60"
+                              className="w-full px-3 py-2 bg-gray-400 text-gray-200 text-sm rounded-full cursor-not-allowed font-poppins font-medium opacity-60 mb-2"
                             >
                               <span className="flex items-center justify-center gap-2">
                                 <CreditCard size={16} />
                                 {contract.isPermanentlyRejected ? 'Pembayaran Dinonaktifkan' : 'Kontrak Belum Ditandatangani'}
+                              </span>
+                            </button>
+                          )}
+
+                          {/* Download Invoice Button for Completed Payments */}
+                          {contract.paymentCompleted && (
+                            <button
+                              onClick={() => handleDownloadFullPaymentInvoice(contract)}
+                              className="w-full px-3 py-2 bg-gradient-to-r from-green-600 to-green-700 text-white text-sm rounded-full hover:shadow-lg transition-all duration-300 font-poppins font-medium"
+                            >
+                              <span className="flex items-center justify-center gap-2">
+                                <Download size={16} />
+                                Download Invoice
                               </span>
                             </button>
                           )}

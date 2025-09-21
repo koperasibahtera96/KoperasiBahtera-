@@ -97,6 +97,16 @@ export default function KartuAnggotaPage() {
               page-break-inside: avoid;
               margin-bottom: 20px;
             }
+            /* Make footer text bold with appropriate size */
+            [class*="text-white text-center py-6"] {
+              font-size: 11px !important;
+              font-weight: bold !important;
+            }
+            /* Make ketentuan text bigger and bolder */
+            .text-black.text-base {
+              font-size: 1rem !important;
+              font-weight: 900 !important;
+            }
           }
           @media screen {
             body {
@@ -109,6 +119,11 @@ export default function KartuAnggotaPage() {
               gap: 20px;
               justify-content: center;
               align-items: flex-start;
+            }
+            /* Make footer text bold with appropriate size */
+            [class*="text-white text-center py-6"] {
+              font-size: 11px !important;
+              font-weight: bold !important;
             }
           }
         </style>
@@ -164,6 +179,16 @@ export default function KartuAnggotaPage() {
             text-align: center;
             margin-bottom: 10px;
             color: #333;
+          }
+          /* Make footer text bold with appropriate size */
+          [class*="text-white text-center py-6"] {
+            font-size: 11px !important;
+            font-weight: bold !important;
+          }
+          /* Make ketentuan text bigger and bolder */
+          .text-black.font-extrabold {
+            font-size: 1rem !important;
+            font-weight: 900 !important;
           }
         </style>
       </head>
@@ -267,19 +292,25 @@ export default function KartuAnggotaPage() {
           </CardHeader>
         </Card>
 
-        <div className="flex justify-center">
+        <div className="flex justify-center gap-8 flex-wrap">
+          {/* Front Card */}
           <div
-            className="w-[480px] border-2 border-black rounded-xl overflow-hidden bg-white shadow-lg flex flex-col"
+            className="w-[480px] rounded-xl overflow-hidden shadow-lg flex flex-col relative"
             style={{
-              filter: 'drop-shadow(0px 4px 10px rgba(0,0,0,0.15))'
+              filter: 'drop-shadow(0px 4px 10px rgba(0,0,0,0.15))',
+              backgroundImage: 'url(/assets/kartu-anggota-front.jpg)',
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+              backgroundRepeat: 'no-repeat',
+              aspectRatio: '480/720'
             }}
           >
             {/* Card Header */}
             <div
-              className="text-white text-center py-3 px-3 relative"
+              className="text-white text-center py-6 px-6 relative"
               style={{
-                background: 'linear-gradient(to right, #b00000, #ff0000)',
-                paddingLeft: '98px'
+                paddingLeft: '98px',
+                paddingTop: '24px'
               }}
             >
               <Image
@@ -312,7 +343,7 @@ export default function KartuAnggotaPage() {
 
             {/* Card Body */}
             <div className="py-5 px-5 flex flex-col items-center gap-2 flex-grow">
-              <h3 className="m-0">KARTU ANGGOTA</h3>
+              <h3 className="m-0 text-black font-bold">KARTU ANGGOTA</h3>
               <div className="w-[120px] h-[120px] rounded-full overflow-hidden" style={{ backgroundColor: '#f8c3a7' }}>
                 {kartuData.user.faceImageUrl ? (
                   <Image
@@ -328,8 +359,8 @@ export default function KartuAnggotaPage() {
                   </div>
                 )}
               </div>
-              <div className="font-bold text-base text-center">{kartuData.user.fullName}</div>
-              <div className="mt-1.5 text-sm text-center">No Anggota : {kartuData.user.userCode}</div>
+              <div className="font-bold text-base text-center text-black">{kartuData.user.fullName}</div>
+              <div className="mt-1.5 text-sm text-center text-black">No Anggota : {kartuData.user.userCode}</div>
             </div>
 
             {/* Bottom row with QR */}
@@ -348,13 +379,91 @@ export default function KartuAnggotaPage() {
 
             {/* Card Footer */}
             <div
-              className="text-white text-center py-3.5 px-3 text-sm leading-relaxed"
-              style={{ backgroundColor: '#b00000' }}
+              className="text-white text-center py-6 px-6 leading-relaxed font-bold"
+              style={{
+                paddingBottom: '24px',
+                fontSize: '11px'
+              }}
             >
               Bintaro Business Center<br />
               Jl RC Veteran Raya No 1i, Bintaro – Kec Pesanggrahan<br />
               Kota Jakarta Selatan DKI Jakarta 12330<br />
-              Telp : 0811 1889 3679 Email : bintangmerahsejahtera@gmail.com
+              Telp: 0811 1889 3679 | Email: bintangmerahsejahtera@gmail.com
+            </div>
+          </div>
+
+          {/* Back Card */}
+          <div
+            className="w-[480px] rounded-xl overflow-hidden shadow-lg flex flex-col relative"
+            style={{
+              filter: 'drop-shadow(0px 4px 10px rgba(0,0,0,0.15))',
+              backgroundImage: 'url(/assets/kartu-anggota-back.jpg)',
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+              backgroundRepeat: 'no-repeat',
+              aspectRatio: '480/720'
+            }}
+          >
+            {/* Card Header */}
+            <div
+              className="text-white text-center py-6 px-6 relative"
+              style={{
+                paddingLeft: '98px',
+                paddingTop: '24px'
+              }}
+            >
+              <Image
+                src="/images/koperasi-logo-kartu-anggota.png"
+                alt="Logo"
+                width={90}
+                height={90}
+                className="absolute left-1/2 transform -translate-x-1/2 top-1/2 -translate-y-1/2"
+                style={{ left: '49px' }}
+                onError={(e) => {
+                  const target = e.target as HTMLImageElement;
+                  target.src = "/images/koperasi-logo-removebg.png";
+                }}
+              />
+              <h2 className="m-0 text-lg font-bold leading-tight">
+                <span className="block">KOPERASI</span>
+                <span className="block">BINTANG MERAH SEJAHTERA</span>
+              </h2>
+              <hr
+                className="border-0 my-2 mx-5"
+                style={{
+                  borderTop: '1px solid rgba(255,255,255,0.6)'
+                }}
+              />
+              <p className="mx-2 text-xs leading-relaxed text-center">
+                <span className="block">Akta Notaris TEDDY YUNADI, SH No: 01/AP-04.09/2016</span>
+                <span className="block whitespace-nowrap">SK KEMENKUMHAM No : AHU-0005960.AH.01.28.TAHUN 2022</span>
+              </p>
+            </div>
+
+            {/* Card Body - Back Side Content */}
+            <div className="py-5 px-6 flex flex-col flex-grow">
+              <h3 className="m-0 text-black font-bold text-center mb-4 text-lg">KETENTUAN</h3>
+              <div className="text-black font-extrabold text-base leading-relaxed text-left space-y-3">
+                <p>1. Kartu ini merupakan kartu anggota Koperasi Bintang Merah Sejahtera.</p>
+                <p>2. Penggunaan kartu ini tunduk pada ketentuan yang berlaku sebagaimana di atur dalam Anggaran Dasar (AD) dan Anggaran Rumah Tangga (ART) Koperasi Bintang Merah Sejahtera.</p>
+                <p>3. Kartu anggota tidak dapat dipindah tangankan, pemindahan hak dan kewajiban di atur dalam AD/ART Koperasi Bintang Merah Sejahtera.</p>
+                <p>4. Penggunaan kartu anggota sepenuhnya menjadi tanggung jawab anggota</p>
+                <p>5. Koperasi Bintang Merah Sejahtera tidak bertanggung jawab terhadap penggunaan kartu anggota diluar ketentuan yang berlaku.</p>
+              </div>
+            </div>
+
+            {/* Card Footer */}
+            <div
+              className="text-white text-center py-6 px-6 leading-relaxed font-bold"
+              style={{
+                paddingBottom: '24px',
+                fontSize: '11px'
+              }}
+            >
+              Bintaro Business Center<br />
+              Jl RC Veteran Raya No 1i, Bintaro – Kec Pesanggrahan<br />
+              Kota Jakarta Selatan DKI Jakarta 12330<br />
+              Telp: 0811 1889 3679 | Email: bintangmerahsejahtera@gmail.com
             </div>
           </div>
         </div>
