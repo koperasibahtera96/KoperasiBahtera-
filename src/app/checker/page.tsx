@@ -72,12 +72,17 @@ const getLatestHistoryByDate = (history: PlantHistory[] = []) => {
 };
 
 // cek status "baru" (ada Kontrak Baru < 14 hari)
+// cek status "baru" (ada Pending Contract Approval < 14 hari)
 const isPlantNew = (p: PlantInstance): boolean => {
-  const kontrakBaru = (p.history || []).find(
-    (h: PlantHistory) => (h.type || "").toLowerCase() === "kontrak baru"
-  );
-  return !!(kontrakBaru && kontrakBaru.date && isWithinDays(kontrakBaru.date, 14));
+  const pending = (p.history || []).find((h: any) => {
+    const t = String(h?.type || "").toLowerCase();
+    const a = String(h?.action || "").toLowerCase();
+    return t === "pending contract approval" || a === "pending contract approval";
+  });
+
+  return !!(pending && pending.date && isWithinDays(pending.date, 14));
 };
+
 
 // cek status "bermasalah" (riwayat terakhir adalah Sakit)
 const isPlantProblem = (p: PlantInstance): boolean => {

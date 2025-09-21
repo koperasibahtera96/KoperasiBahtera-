@@ -251,40 +251,111 @@ function InvoicePageContent() {
         }).format(d);
   };
 
+  /**
+   * ======== BARU (KHUSUS EXPORT): Ambil SEMUA halaman sesuai filter aktif ========
+   * Tidak mengubah state/list UI. Hanya dipakai saat klik Export.
+   */
+  async function fetchAllInvoicesForExport() {
+    const params = new URLSearchParams();
+    if (q) params.set("q", q);
+    params.set("sort", sort);
+    params.set("page", "1");
+    if (category) params.set("category", category);
+    // Jika API dukung perPage, set besar untuk mengurangi jumlah request (abaikan jika tidak dipakai backend)
+    params.set("perPage", "200");
+
+    const first = await fetch(`/api/invoice?${params.toString()}`, { cache: "no-store" });
+    if (!first.ok) throw new Error(await first.text());
+    const firstJson: InvoiceResponse = await first.json();
+
+    let all: PaymentData[] = Array.isArray(firstJson.payments) ? [...firstJson.payments] : [];
+    const totalPages = Number(firstJson.totalPages || 1);
+
+    for (let p = 2; p <= totalPages; p++) {
+      params.set("page", String(p));
+      const res = await fetch(`/api/invoice?${params.toString()}`, { cache: "no-store" });
+      if (!res.ok) throw new Error(await res.text());
+      const js: InvoiceResponse = await res.json();
+      if (Array.isArray(js.payments)) all = all.concat(js.payments);
+    }
+
+    return all;
+  }
+
   // Export XLS sesuai format yang kamu minta
   const handleExportXLS = async () => {
-    if (!data) return;
+    try {
+      // === KUNCI: Ambil SEMUA data sesuai filter aktif, TANPA mengubah UI/logic lain ===
+      const allPayments = await fetchAllInvoicesForExport();
 
-    // kumpulkan semua rows yang akan diekspor (tiap transaksi = 1 baris)
-    type Row = {
-      "No": number | string;
-      "No.Anggota": string;
-      "Nama Anggota": string;
-      "No.Inv": string;
-      "Tanggal INV": string;
-      "Total Pembayaran": string; // sudah Rp
-      "Status Pembayaran": string;
-    };
-    const rows: Row[] = [];
+      // Replikasi logic grouping yang sama seperti di UI,
+      // tetapi berbasis allPayments agar export mencakup keseluruhan data.
+      const map = new Map<string, PaymentData[]>();
+      const cicilanItems: PaymentData[] = [];
+      const nonCicilanItems: PaymentData[] = [];
 
-    // kumpulkan unique userId untuk prefetch No.Anggota
-    const userIds = new Set<string>();
-    const collectUserId = (p: PaymentData) => {
-      if (p.userId) userIds.add(String(p.userId));
-    };
-    installmentGroups.forEach((g) => g.items.forEach(collectUserId));
-    otherPayments.forEach(collectUserId);
+      for (const p of allPayments) {
+        if (
+          p.paymentType === "cicilan-installment" &&
+          isApproved(p) &&
+          (p as any).cicilanOrderId
+        ) {
+          const oid = String((p as any).cicilanOrderId);
+          if (!map.has(oid)) map.set(oid, []);
+          map.get(oid)!.push(p);
+        } else {
+          nonCicilanItems.push(p);
+        }
+      }
 
-    // prefetch
-    await Promise.all(Array.from(userIds).map((id) => getMemberCode(id)));
+      const groupsAll = Array.from(map.entries()).map(([orderId, items]) => {
+        const sorted = items
+          .slice()
+          .sort(
+            (a, b) =>
+              ((a as any).installmentNumber ?? 0) - ((b as any).installmentNumber ?? 0)
+          );
+        return { orderId, items: sorted };
+      });
 
-    // nomor berurutan (ingat: 1 grup cicilan tetap dihitung satu nomor di UI,
-    // tapi untuk XLS — sesuai permintaan kamu sebelumnya — kita ekspor per transaksi baris)
-    let no = 1;
+      // kumpulkan semua rows yang akan diekspor (tiap transaksi = 1 baris)
+      type Row = {
+        "No": number | string;
+        "No.Anggota": string;
+        "Nama Anggota": string;
+        "No.Inv": string;
+        "Tanggal INV": string;
+        "Total Pembayaran": string; // sudah Rp
+        "Status Pembayaran": string;
+      };
+      const rows: Row[] = [];
 
-    // cicilan: ekspor setiap item cicilan sebagai baris
-    for (const g of installmentGroups) {
-      for (const p of g.items) {
+      // Prefetch member codes (supaya hemat hit API)
+      const userIds = new Set<string>();
+      groupsAll.forEach((g) => g.items.forEach((p) => p.userId && userIds.add(String(p.userId))));
+      nonCicilanItems.forEach((p) => p.userId && userIds.add(String(p.userId)));
+      await Promise.all(Array.from(userIds).map((id) => getMemberCode(id)));
+
+      let no = 1;
+
+      // Cicilan (setiap item cicilan diekspor baris sendiri)
+      for (const g of groupsAll) {
+        for (const p of g.items) {
+          const noAnggota = await getMemberCode(p.userId as any);
+          rows.push({
+            "No": no++,
+            "No.Anggota": noAnggota,
+            "Nama Anggota": String(p.userName ?? "—"),
+            "No.Inv": String(p.orderId || p.ref || p._id),
+            "Tanggal INV": fmtDateShort(p.updatedAt || p.createdAt),
+            "Total Pembayaran": fmtCurrency(nominalOf(p)),
+            "Status Pembayaran": statusForXls(p),
+          });
+        }
+      }
+
+      // Non-cicilan
+      for (const p of nonCicilanItems) {
         const noAnggota = await getMemberCode(p.userId as any);
         rows.push({
           "No": no++,
@@ -296,59 +367,50 @@ function InvoicePageContent() {
           "Status Pembayaran": statusForXls(p),
         });
       }
-    }
 
-    // selain cicilan
-    for (const p of otherPayments) {
-      const noAnggota = await getMemberCode(p.userId as any);
-      rows.push({
-        "No": no++,
-        "No.Anggota": noAnggota,
-        "Nama Anggota": String(p.userName ?? "—"),
-        "No.Inv": String(p.orderId || p.ref || p._id),
-        "Tanggal INV": fmtDateShort(p.updatedAt || p.createdAt),
-        "Total Pembayaran": fmtCurrency(nominalOf(p)),
-        "Status Pembayaran": statusForXls(p),
-      });
-    }
+      // tulis XLS (tetap gunakan styling yang sama)
+      const XLSX = await getXLSX();
+      const ws = XLSX.utils.json_to_sheet(rows);
 
-    // tulis XLS
-    const XLSX = await getXLSX();
-    const ws = XLSX.utils.json_to_sheet(rows);
-const range = XLSX.utils.decode_range(ws["!ref"]);
-    for (let R = range.s.r; R <= range.e.r; ++R) {
-      for (let C = range.s.c; C <= range.e.c; ++C) {
-        const cellAddr = XLSX.utils.encode_cell({ r: R, c: C });
-        if (!ws[cellAddr]) continue;
-        ws[cellAddr].s = {
-          border: {
-            top: { style: "thin", color: { rgb: "000000" } },
-            bottom: { style: "thin", color: { rgb: "000000" } },
-            left: { style: "thin", color: { rgb: "000000" } },
-            right: { style: "thin", color: { rgb: "000000" } },
-          },
-          font:
-            R === 0
-              ? { bold: true, color: { rgb: "000000" } }
-              : { bold: false, color: { rgb: "000000" } },
-        };
+      const range = XLSX.utils.decode_range(ws["!ref"]);
+      for (let R = range.s.r; R <= range.e.r; ++R) {
+        for (let C = range.s.c; C <= range.e.c; ++C) {
+          const cellAddr = XLSX.utils.encode_cell({ r: R, c: C });
+          if (!ws[cellAddr]) continue;
+          ws[cellAddr].s = {
+            border: {
+              top: { style: "thin", color: { rgb: "000000" } },
+              bottom: { style: "thin", color: { rgb: "000000" } },
+              left: { style: "thin", color: { rgb: "000000" } },
+              right: { style: "thin", color: { rgb: "000000" } },
+            },
+            font:
+              R === 0
+                ? { bold: true, color: { rgb: "000000" } }
+                : { bold: false, color: { rgb: "000000" } },
+          };
+        }
       }
-    }
 
-    // optional: auto width
-    const colWidths = [
-      { wch: 6 },  // No
-      { wch: 14 }, // No.Anggota
-      { wch: 28 }, // Nama
-      { wch: 28 }, // No.Inv
-      { wch: 14 }, // Tanggal
-      { wch: 18 }, // Total Pembayaran
-      { wch: 18 }, // Status Pembayaran
-    ];
-    (ws["!cols"] as any) = colWidths;
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Invoice");
-    XLSX.writeFile(wb, `Tarikan_Invoice_${new Date().toISOString().slice(0, 10)}.xlsx`);
+      // optional: auto width
+      const colWidths = [
+        { wch: 6 },  // No
+        { wch: 14 }, // No.Anggota
+        { wch: 28 }, // Nama
+        { wch: 28 }, // No.Inv
+        { wch: 14 }, // Tanggal
+        { wch: 18 }, // Total Pembayaran
+        { wch: 18 }, // Status Pembayaran
+      ];
+      (ws["!cols"] as any) = colWidths;
+
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Invoice");
+      XLSX.writeFile(wb, `Tarikan_Invoice_${new Date().toISOString().slice(0, 10)}.xlsx`);
+    } catch (e) {
+      console.error(e);
+      alert("Gagal mengekspor XLSX.");
+    }
   };
 
   // --- UI states ---

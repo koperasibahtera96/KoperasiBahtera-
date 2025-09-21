@@ -44,6 +44,10 @@ type DailyRow = {
   totalAmount: number;
   amountPaid: number;
   date?: string; // ISO
+
+  // ===== optional fields yang mungkin dipulangkan API backend =====
+  orderId?: string;       // untuk matching ke plantInstances.contractNumber
+  userId?: string;        // untuk ambil No Anggota (member code)
 };
 
 const BRUTALIST_COLORS = [
@@ -233,8 +237,12 @@ export default function DailyIncomingInvestorPage() {
     return String(appliedYear);
   }, [appliedYear, appliedMonth, appliedDay]);
 
-  const handleExport = () => {
+  // =========================
+  // ======== EXPORT =========
+  // =========================
+  const handleExport = async () => {
     try {
+      // agregasi bulanan untuk bagian "Pemasukan Bulanan"
       const monthlyAgg = monthlyTrend.map((t, idx) => {
         const trCount = rows.filter((r) =>
           r.date ? new Date(r.date).getMonth() === idx : false
@@ -242,6 +250,32 @@ export default function DailyIncomingInvestorPage() {
         return { monthName: t.month, value: t.expenses, transactions: trCount };
       });
 
+      // ========== Ambil helper No Anggota + Kode Blok/Paket + Tanaman/Produk ==========
+      const uniq = <T,>(arr: T[]) => Array.from(new Set(arr.filter(Boolean))) as T[];
+      const userIds = uniq(rows.map(r => r.userId || r.investorId)); // tetap kirim—tidak dipakai di tabel
+      const orderIds = uniq(rows.map(r => r.orderId || r.investmentId));
+
+      let memberCodes: Record<string, string> = {};
+      let plantByOrder: Record<string, { kavling?: string; productName?: string }> = {};
+
+      try {
+        const helperRes = await fetch("/api/finance/daily-export-helper", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ userIds, orderIds }),
+        });
+        if (helperRes.ok) {
+          const helperJson = await helperRes.json();
+          memberCodes = helperJson?.memberCodes || {};
+          plantByOrder = helperJson?.plantByOrder || {};
+        } else {
+          console.warn("[daily-export] helper API not ok:", helperRes.status);
+        }
+      } catch (err) {
+        console.warn("[daily-export] helper API failed:", err);
+      }
+
+      // ========== Bangun HTML -> Excel ==========
       let html = `
       <html>
       <head>
@@ -254,6 +288,22 @@ export default function DailyIncomingInvestorPage() {
           .header { font-size: 18px; font-weight: bold; margin: 20px 0 10px 0; }
           .title { font-size: 24px; font-weight: bold; margin-bottom: 10px; }
           .period { font-size: 14px; margin-bottom: 20px; color: #666; }
+
+          /* Bar biru dengan garis untuk detail harian */
+          .bluebar { 
+            background: #6ea7d8; 
+            color: #0b2239; 
+            font-weight: 700;
+            text-align: center;
+            border: 2px solid #0b2239;
+          }
+          .bluebar th {
+            background: #6ea7d8 !important;
+            color: #0b2239 !important;
+            border: 2px solid #0b2239 !important;
+            font-weight: 700 !important;
+          }
+          .tight th, .tight td { border: 1px solid #0b2239; }
         </style>
       </head>
       <body>
@@ -262,35 +312,66 @@ export default function DailyIncomingInvestorPage() {
       html += `<div class="title">Daily Incoming Investor</div>`;
       html += `<div class="period">Periode: ${periodLabel}</div>`;
 
+      // ====== RINGKASAN ======
       html += `<div class="header">RINGKASAN</div>`;
-      html += `<table>`;
+      html += `<table class="tight">`;
       html += `<tr><th>Keterangan</th><th>Nilai</th></tr>`;
       html += `<tr><td>Total pemasukan</td><td>Rp ${summary.totalPemasukan.toLocaleString("id-ID")}</td></tr>`;
       html += `<tr><td>Total pemasukan sudah dibayar</td><td>Rp ${summary.totalSudahDibayar.toLocaleString("id-ID")}</td></tr>`;
       html += `<tr><td>Total pemasukan belum dibayar (Sisa cicilan)</td><td>Rp ${summary.totalBelumDibayar.toLocaleString("id-ID")}</td></tr>`;
       html += `</table>`;
 
+      // ====== PEMASUKAN BULANAN ======
       html += `<div class="header">PEMASUKAN BULANAN ${appliedYear}</div>`;
-      html += `<table>`;
+      html += `<table class="tight">`;
       html += `<tr><th>Bulan</th><th>Total</th><th>Jumlah Transaksi</th></tr>`;
       monthlyAgg.forEach((d) => {
         html += `<tr><td>${d.monthName}</td><td>Rp ${d.value.toLocaleString("id-ID")}</td><td>${d.transactions}</td></tr>`;
       });
       html += `</table>`;
 
-      html += `<div class="header">DETAIL TRANSAKSI</div>`;
+      // ====== DETAIL TARIKAN REPOT HARIAN (tanpa No Anggota) ======
       html += `<table>`;
-      html += `<tr><th>Tanggal</th><th>Investment ID</th><th>Nama Investor</th><th>Jumlah</th><th>Payment Type</th><th>Status</th></tr>`;
-      rows
-        .sort(
-          (a, b) =>
-            new Date(b.date || 0).getTime() - new Date(a.date || 0).getTime()
-        )
-        .forEach((r) => {
-          html += `<tr><td>${r.date ? new Date(r.date).toLocaleDateString("id-ID") : "-"}</td><td>${r.investmentId || "-"}</td><td>${r.investorName || "-"}</td><td>Rp ${(
-            r.totalAmount || 0
-          ).toLocaleString("id-ID")}</td><td>${r.paymentType || "-"}</td><td>${r.status || "-"}</td></tr>`;
-        });
+      html += `<tr class="bluebar"><th colspan="9">Detail Tarikan Repot Harian</th></tr>`;
+      html += `<tr class="tight">
+        <th>No</th>
+        <th>Tanggal</th>
+        <th>Nama Investor</th>
+        <th>Kode Blok/Paket</th>
+        <th>Kode Transaksi/INV ID</th>
+        <th>Jenis Transaksi</th>
+        <th>Tanaman/Produk</th>
+        <th>Jumlah</th>
+        <th>Status</th>
+      </tr>`;
+
+      const sorted = [...rows].sort(
+        (a, b) => new Date(a.date || 0).getTime() - new Date(b.date || 0).getTime()
+      );
+      let no = 1;
+      for (const r of sorted) {
+        const tanggal = r.date ? new Date(r.date).toLocaleDateString("id-ID", { day: "2-digit", month: "short" }) : "-";
+
+        const keyOrder = (r.orderId || r.investmentId || "").trim();
+        const plant = plantByOrder[keyOrder] || {};
+        const kav = plant.kavling || "-";
+        const produk = plant.productName || r.productName || "-";
+
+        const jumlah = `Rp ${Number(r.totalAmount || 0).toLocaleString("id-ID")}`;
+        const status = "Lunas"; // sesuai permintaan, semua "Lunas"
+
+        html += `<tr class="tight">
+          <td>${no++}</td>
+          <td>${tanggal}</td>
+          <td>${r.investorName || "-"}</td>
+          <td>${kav}</td>
+          <td>${r.investmentId || "-"}</td>
+          <td>${(r.paymentType || "").charAt(0).toUpperCase() + (r.paymentType || "").slice(1)}</td>
+          <td>${produk}</td>
+          <td>${jumlah}</td>
+          <td>${status}</td>
+        </tr>`;
+      }
       html += `</table>`;
 
       html += `</body></html>`;

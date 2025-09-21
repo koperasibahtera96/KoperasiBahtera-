@@ -55,7 +55,7 @@ export async function GET(
       );
     }
 
-    // --- ambil user untuk userCode (No Anggota) dan optional data lain ---
+    // --- ambil user untuk userCode (No Anggota)
     let userDoc: any = null;
     if (investor?.userId && mongoose.isValidObjectId(investor.userId)) {
       userDoc = await User.findById(investor.userId)
@@ -117,9 +117,11 @@ export async function GET(
         };
       });
 
-      const totalInvestment =
-        num(investor?.totalInvestasi) ||
-        investments.reduce((s: number, x: any) => s + num(x.amount), 0);
+      // ✅ totalInvestment dihitung dari investments (bukan investor.totalInvestasi)
+      const totalInvestment = investments.reduce(
+        (s: number, x: any) => s + num(x.amount),
+        0
+      );
 
       return NextResponse.json({
         id: String(investor?._id ?? investor?.id ?? ""),
@@ -151,7 +153,7 @@ export async function GET(
       const profit = net * share;
       totalProfit += profit;
 
-      // ⬇️ tambahkan field yang dibutuhkan XLSX (tanpa mengubah perhitungan lama)
+      // field lengkap
       return {
         plantId: pid,
         plantName: p?.instanceName ?? iv?.productName ?? iv?.plantName ?? "—",
@@ -159,33 +161,30 @@ export async function GET(
         profit,
         roi: amount > 0 ? (profit / amount) * 100 : 0,
         investDate: String(iv?.investmentDate ?? iv?.createdAt ?? ""),
-        // field tambahan untuk layout XLSX:
-        productName: iv?.productName ?? "",           // Kode Blok/Paket
-        investmentId: iv?.investmentId ?? "",         // Invoice
-        investmentDate: String(iv?.investmentDate ?? iv?.createdAt ?? ""), // Tanggal (dd/mm/yyyy diproses di client)
+        productName: iv?.productName ?? "",
+        investmentId: iv?.investmentId ?? "",
+        investmentDate: String(iv?.investmentDate ?? iv?.createdAt ?? ""),
         status: iv?.status ?? "Aktif",
         plantInstanceId: pid,
       };
     });
 
-    const totalInvestment =
-      num(investor?.totalInvestasi) ||
-      investments.reduce((s: number, x: any) => s + num(x.amount), 0);
+    // ✅ totalInvestment dihitung dari investments
+    const totalInvestment = investments.reduce(
+      (s: number, x: any) => s + num(x.amount),
+      0
+    );
 
-    // b) pie = distribusi investasi berdasarkan nominal
+    // b) pie
     const pie = investments.map((iv: any) => ({
       name: iv.plantName,
       value: iv.amount,
     }));
 
-    // c) monthly untuk tahun tertentu → alokasikan pemasukan/pengeluaran per share
+    // c) monthly
     const monthlyMap: Record<string, { income: number; expense: number }> = {};
     const mmKey = (m: number) => `${year}-${String(m).padStart(2, "0")}`;
-
-    // init 12 bulan
-    for (let m = 1; m <= 12; m++) {
-      monthlyMap[mmKey(m)] = { income: 0, expense: 0 };
-    }
+    for (let m = 1; m <= 12; m++) monthlyMap[mmKey(m)] = { income: 0, expense: 0 };
 
     for (const iv of invs) {
       const pid = String(iv?.plantInstanceId ?? iv?.instanceId ?? "");
@@ -219,7 +218,7 @@ export async function GET(
         profit: Math.round(v.income - v.expense),
       }));
 
-    // d) daftar instances minimal (untuk dropdown pilih tanaman)
+    // d) instances mini
     const instances = invs.map((iv: any) => {
       const pid = String(iv?.plantInstanceId ?? iv?.instanceId ?? "");
       const p = plantById.get(pid);
@@ -245,8 +244,8 @@ export async function GET(
             amount: num(r?.amount),
             addedBy: r?.addedBy ?? "",
           })),
-        contractNumber: p?.contractNumber || "",       // sudah ada sebelumnya
-        plantType: p?.plantType || "",                 // ⬅️ penting untuk kolom "Tanaman/Produk"
+        contractNumber: p?.contractNumber || "",
+        plantType: p?.plantType || "",
       };
     });
 
@@ -261,7 +260,6 @@ export async function GET(
       totalProfit: Math.round(totalProfit),
       overallROI:
         totalInvestment > 0 ? (totalProfit / totalInvestment) * 100 : 0,
-      // ⬇️ disediakan untuk XLSX (No Anggota)
       userCode: userDoc?.userCode || "",
     };
 

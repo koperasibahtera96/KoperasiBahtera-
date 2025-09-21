@@ -60,7 +60,17 @@ function exportAllAsXls(args: {
   investorCount: number;
   monthlySelectedYear: Array<{ month: string; net: number }>;
   yearlyRows: Array<{ year: number; totalProfit: number }>;
-  perInvestorRows: Array<{ name: string; invest: number; profit: number }>;
+  /** ==== TAMBAHAN BARU ==== */
+  contractsCount: number;
+  detailRows: Array<{
+    no: number;
+    noAnggota: string;
+    namaInvestor: string;
+    kavling: string;
+    totalInvest: number;
+    totalProfit: number;
+    roiIndividuPct: string; // "12.34%"
+  }>;
 }) {
   const {
     plantTypeId,
@@ -71,7 +81,9 @@ function exportAllAsXls(args: {
     investorCount,
     monthlySelectedYear,
     yearlyRows,
-    perInvestorRows,
+    /** baru */
+    contractsCount,
+    detailRows,
   } = args;
 
   const roiPct = totalInvestAll > 0 ? (totalNet / totalInvestAll) * 100 : 0;
@@ -87,6 +99,10 @@ function exportAllAsXls(args: {
       td { padding:8px; border:1px solid #000; }
       .title { font-size:22px; font-weight:700; margin: 0 0 8px 0; }
       .header { font-size:16px; font-weight:700; margin: 18px 0 8px 0; }
+      .small { font-size:12px; }
+      .right { text-align:right; }
+      /* ====== BAR JUDUL BIRU UNTUK TABEL DETAIL ====== */
+      .section-title { background:#7fb3e6; color:#0b2239; border:2px solid #000; text-align:center; padding:6px 8px; font-weight:700; }
     </style>
   </head>
   <body>
@@ -95,10 +111,11 @@ function exportAllAsXls(args: {
     <div class="header">RINGKASAN</div>
     <table>
       <tr><th>Keterangan</th><th>Nilai</th></tr>
-      <tr><td>Total Investasi</td><td>${fmtIDR(totalInvestAll)}</td></tr>
-      <tr><td>Total Profit (Net)</td><td>${fmtIDR(totalNet)}</td></tr>
-      <tr><td>ROI (Profit/Invest)</td><td>${roiPct.toFixed(2)}%</td></tr>
-      <tr><td>Jumlah Investor</td><td>${investorCount}</td></tr>
+      <tr><td>Total Investasi</td><td class="right">${fmtIDR(totalInvestAll)}</td></tr>
+      <tr><td>Total Profit (Net)</td><td class="right">${fmtIDR(totalNet)}</td></tr>
+      <tr><td>ROI (Profit/Invest)</td><td class="right">${roiPct.toFixed(2)}%</td></tr>
+      <tr><td>Jumlah Investor</td><td class="right">${investorCount}</td></tr>
+      <tr><td>Jumlah Kontrak</td><td class="right">${contractsCount}</td></tr>
     </table>
 
     <div class="header">LAPORAN BULANAN ${selectedYear}</div>
@@ -109,7 +126,7 @@ function exportAllAsXls(args: {
           (r) => `
         <tr>
           <td>${r.month}</td>
-          <td>${fmtIDR(r.net)}</td>
+          <td class="right">${fmtIDR(r.net)}</td>
         </tr>`
         )
         .join("")}
@@ -123,25 +140,37 @@ function exportAllAsXls(args: {
           (y) => `
         <tr>
           <td>${y.year}</td>
-          <td>${fmtIDR(y.totalProfit)}</td>
+          <td class="right">${fmtIDR(y.totalProfit)}</td>
         </tr>`
         )
         .join("")}
     </table>
 
-    <div class="header">RINCIAN PER INVESTOR</div>
+    <!-- ====== DETAIL: HEADER BAR BIRU + TABEL ====== -->
     <table>
-      <tr><th>Nama</th><th>Total Investasi</th><th>Total Profit</th><th>ROI Individu</th></tr>
-      ${perInvestorRows
+      <tr>
+        <td class="section-title" colspan="7">Detail Tarikan Repot Per Pohon</td>
+      </tr>
+      <tr>
+        <th>No</th>
+        <th>No Anggota</th>
+        <th>Nama Investor</th>
+        <th>Kode Blok/Paket</th>
+        <th>Total Investasi</th>
+        <th>Total Profit</th>
+        <th>ROI Individu</th>
+      </tr>
+      ${detailRows
         .map(
-          (p) => `
+          (d) => `
         <tr>
-          <td>${p.name}</td>
-          <td>${fmtIDR(p.invest)}</td>
-          <td>${fmtIDR(p.profit)}</td>
-          <td>${
-            p.invest > 0 ? ((p.profit / p.invest) * 100).toFixed(2) + "%" : "0%"
-          }</td>
+          <td>${d.no}</td>
+          <td>${d.noAnggota || ""}</td>
+          <td>${d.namaInvestor}</td>
+          <td>${d.kavling || ""}</td>
+          <td class="right">${fmtIDR(d.totalInvest)}</td>
+          <td class="right">${fmtIDR(d.totalProfit)}</td>
+          <td class="right">${d.roiIndividuPct}</td>
         </tr>`
         )
         .join("")}
@@ -205,6 +234,13 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
   });
   // toggle daftar investor (mengganti Legend bawaan chart)
   const [showInvestorList, setShowInvestorList] = useState(false);
+
+  // ====== TAMBAHAN: data untuk Jumlah Kontrak + No.Anggota + Kavling ======
+  const [contractsCount, setContractsCount] = useState<number>(0);
+  /** map by investor name (lowercased) → {noAnggota, kavlingList} */
+  const [extraIndex, setExtraIndex] = useState<
+    Map<string, { noAnggota?: string; kavlingList: string[] }>
+  >(new Map());
 
   // ---------- FETCH DARI /api/plants?type=...&year=... ----------
   useEffect(() => {
@@ -278,6 +314,47 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
     };
   }, [plantTypeId, selectedYear]);
 
+  // ---------- FETCH TAMBAHAN: /api/tanaman/[id]/extra untuk kontrak + anggota + kavling ----------
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const res = await fetch(
+          `/api/tanaman/${encodeURIComponent(plantTypeId)}/extra`,
+          { cache: "no-store" }
+        );
+        if (!res.ok) throw new Error("extra fail");
+        const js = await res.json();
+
+        if (!mounted) return;
+
+        // jumlah kontrak (panjang plantInstances utk plantType ini)
+        setContractsCount(Number(js?.contractsCount || 0));
+
+        // bangun index by nama investor (lowercase)
+        const m = new Map<string, { noAnggota?: string; kavlingList: string[] }>();
+        for (const d of js?.details || []) {
+          const key = String(d?.namaInvestor || "").toLowerCase();
+          if (!key) continue;
+          const prev = m.get(key) || { noAnggota: undefined, kavlingList: [] };
+          const noA =
+            d?.noAnggota || d?.memberCode || d?.userCode || prev.noAnggota;
+          const kav = (d?.kavling || "").toString().trim();
+          if (kav && !prev.kavlingList.includes(kav)) prev.kavlingList.push(kav);
+          m.set(key, { noAnggota: noA, kavlingList: prev.kavlingList });
+        }
+        setExtraIndex(m);
+      } catch {
+        // biarkan kosong kalau gagal — tidak mengubah logic lain
+        setContractsCount(0);
+        setExtraIndex(new Map());
+      }
+    })();
+    return () => {
+      mounted = false;
+    };
+  }, [plantTypeId]);
+
   if (loading || !ready) {
     return (
       <FinanceSidebar>
@@ -329,7 +406,29 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
 
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-2">
               <motion.button
-                onClick={() =>
+                onClick={() => {
+                  // siapkan detailRows utk tabel baru (gabung data lama + extra)
+                  const details = perInvestor.rows.map((r, idx) => {
+                    const ex = extraIndex.get(String(r.name || "").toLowerCase());
+                    const kav =
+                      ex?.kavlingList && ex.kavlingList.length
+                        ? ex.kavlingList.join(", ")
+                        : "";
+                    const roiPct =
+                      r.invest > 0
+                        ? ((r.profit / r.invest) * 100).toFixed(2) + "%"
+                        : "0%";
+                    return {
+                      no: idx + 1,
+                      noAnggota: ex?.noAnggota || "",
+                      namaInvestor: r.name || "—",
+                      kavling: kav,
+                      totalInvest: r.invest || 0,
+                      totalProfit: r.profit || 0,
+                      roiIndividuPct: roiPct,
+                    };
+                  });
+
                   exportAllAsXls({
                     plantTypeId,
                     plantTypeName: plantTypeMeta.name,
@@ -339,9 +438,11 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
                     investorCount: perInvestor.rows.length,
                     monthlySelectedYear: monthlySeries,
                     yearlyRows,
-                    perInvestorRows: perInvestor.rows,
-                  })
-                }
+                    /** tambahan */
+                    contractsCount,
+                    detailRows: details,
+                  });
+                }}
                 className="inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-green-500 to-[#324D3E] hover:from-green-600 hover:to-[#4C3D19] px-4 py-2 text-sm font-medium text-white transition-all duration-300 shadow-lg hover:shadow-xl"
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}

@@ -52,9 +52,8 @@ export async function GET() {
     const members = investors.map((m: any) => {
       const invs = Array.isArray(m?.investments) ? m.investments : [];
 
-      const totalInvestment =
-        Number(m?.totalInvestasi ?? 0) ||
-        invs.reduce((s: number, iv: any) => s + amt(iv), 0);
+      // ✅ selalu dihitung dari daftar investasi (jangan pakai m.totalInvestasi)
+      const totalInvestment = invs.reduce((s: number, iv: any) => s + amt(iv), 0);
 
       let totalProfit = 0;
       for (const iv of invs) {

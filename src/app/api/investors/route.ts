@@ -27,15 +27,17 @@ export async function GET(req: NextRequest) {
           amount: amt(iv),
           profit: 0,
           roi: 0,
-          investmentId:String(iv.investmentId),
+          investmentId: String(iv?.investmentId ?? ""),
           investDate: String(
             iv?.investmentDate ?? iv?.createdAt ?? m?.createdAt ?? new Date()
           ),
         }));
 
-        const totalInvestment =
-          Number(m?.totalInvestasi ?? 0) ||
-          investments.reduce((s: number, x: any) => s + (x.amount || 0), 0);
+        // ✅ selalu dari SUM investments (jangan pakai m.totalInvestasi)
+        const totalInvestment = investments.reduce(
+          (s: number, x: any) => s + (x.amount || 0),
+          0
+        );
 
         return {
           id: String(m?._id ?? m?.id),
