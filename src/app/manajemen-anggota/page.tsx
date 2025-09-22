@@ -18,8 +18,21 @@ import {
   Phone,
   TrendingUp,
   Users,
+  CheckCircle2,
+  AlertTriangle,
+  X,
 } from "lucide-react";
 import Link from "next/link";
+
+import { Input } from "@/components/ui-staff/input";
+import {
+  Select,
+  SelectTrigger,
+  SelectContent,
+  SelectItem,
+  SelectValue,
+} from "@/components/ui-staff/select";
+import { Checkbox } from "@/components/ui-staff/checkbox";
 
 type Member = {
   id: string;
@@ -35,12 +48,404 @@ type Member = {
     profit: number;
     roi: number;
     investDate: string;
-    investmentId:string
+    investmentId: string;
   }[];
   totalInvestment: number;
   totalProfit: number;
   overallROI: number;
 };
+
+/* ===== util format angka untuk UI saja ===== */
+const toID = (n: number) =>
+  Number.isFinite(n) ? n.toLocaleString("id-ID") : "";
+const fromID = (s: string) => {
+  if (!s) return 0;
+  const clean = s.replace(/[^\d-]/g, "");
+  const num = Number(clean);
+  return Number.isFinite(num) ? num : 0;
+};
+
+/* ===== toast mini (UI) ===== */
+type Toast = {
+  open: boolean;
+  type: "success" | "error";
+  title: string;
+  message?: string;
+};
+function ToastBox({
+  toast,
+  onClose,
+}: {
+  toast: Toast;
+  onClose: () => void;
+}) {
+  if (!toast.open) return null;
+  const isSuccess = toast.type === "success";
+  return (
+    <div className="fixed top-4 right-4 z-[60]">
+      <div
+        className={`flex items-start gap-3 rounded-2xl px-4 py-3 shadow-lg border ${
+          isSuccess
+            ? "bg-emerald-50 border-emerald-200 text-emerald-900"
+            : "bg-red-50 border-red-200 text-red-900"
+        }`}
+      >
+        <div className="mt-0.5">
+          {isSuccess ? (
+            <CheckCircle2 className="w-5 h-5" />
+          ) : (
+            <AlertTriangle className="w-5 h-5" />
+          )}
+        </div>
+        <div className="pr-6">
+          <div className="font-semibold">{toast.title}</div>
+          {toast.message ? (
+            <div className="text-sm opacity-90">{toast.message}</div>
+          ) : null}
+        </div>
+        <button
+          onClick={onClose}
+          className="absolute top-2 right-2 rounded-md p-1 hover:bg-black/5"
+        >
+          <X className="w-4 h-4" />
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/* ==================== Bulk Finance Bar ==================== */
+function BulkFinanceBar() {
+  const [plantType, setPlantType] = useState<string>("");
+  const [loading, setLoading] = useState(false);
+  const [instances, setInstances] = useState<
+    { instanceId: string; memberName: string; memberId: string }[]
+  >([]);
+  const [rows, setRows] = useState<
+    {
+      instanceId: string;
+      income: number;
+      expense: number;
+      note: string;
+      checked: boolean;
+    }[]
+  >([]);
+
+  // UI states: input atas (string terformat) + toast
+  const [bulkIncomeStr, setBulkIncomeStr] = useState("");
+  const [bulkExpenseStr, setBulkExpenseStr] = useState("");
+  const [toast, setToast] = useState<Toast>({
+    open: false,
+    type: "success",
+    title: "",
+    message: "",
+  });
+
+  const showToast = (t: Omit<Toast, "open">) => {
+    setToast({ open: true, ...t });
+    // auto close
+    setTimeout(() => setToast((s) => ({ ...s, open: false })), 2500);
+  };
+
+  const allChecked = rows.length > 0 && rows.every((r) => r.checked);
+  const someChecked = rows.some((r) => r.checked) && !allChecked;
+
+  const toggleAll = () => {
+    const next = !allChecked;
+    setRows((prev) => prev.map((r) => ({ ...r, checked: next })));
+  };
+
+  const applyAll = (
+    field: "income" | "expense" | "note",
+    value: number | string
+  ) => {
+    setRows((prev) =>
+      prev.map((r) => (r.checked ? { ...r, [field]: value } : r))
+    );
+  };
+
+  const fetchInstances = async (pt: string) => {
+    if (!pt) return;
+    setLoading(true);
+    try {
+      const r = await fetch(
+        `/api/manajemen-anggota/instances-by-planttype?plantType=${encodeURIComponent(
+          pt
+        )}`,
+        { cache: "no-store" }
+      );
+      if (!r.ok) throw new Error("gagal load instances");
+      const data: {
+        items: { instanceId: string; memberName: string; memberId: string }[];
+      } = await r.json();
+      setInstances(data.items || []);
+      setRows(
+        (data.items || []).map((x) => ({
+          instanceId: x.instanceId,
+          income: 0,
+          expense: 0,
+          note: "",
+          checked: true,
+        }))
+      );
+      // reset header inputs
+      setBulkIncomeStr("");
+      setBulkExpenseStr("");
+    } catch (e) {
+      console.error(e);
+      setInstances([]);
+      setRows([]);
+      showToast({
+        type: "error",
+        title: "Gagal memuat instance",
+        message: "Coba ganti PlantType atau muat ulang.",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const submitBulk = async () => {
+    const updates = rows
+      .filter((r) => r.checked && (r.income > 0 || r.expense > 0))
+      .map((r) => ({
+        instanceId: r.instanceId,
+        income: r.income,
+        expense: r.expense,
+        note: r.note?.trim() || "Bulk input",
+      }));
+
+    if (!plantType || updates.length === 0) {
+      showToast({
+        type: "error",
+        title: "Belum ada data",
+        message:
+          "Pilih plant type dan centang minimal satu baris dengan nilai > 0.",
+      });
+      return;
+    }
+
+    try {
+      const res = await fetch("/api/manajemen-anggota/bulk-finance", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ updates }),
+      });
+      const j = await res.json();
+      if (!res.ok) {
+        showToast({
+          type: "error",
+          title: "Gagal menyimpan",
+          message: j?.error || j?.details || "Terjadi kesalahan.",
+        });
+        return;
+      }
+      const updated = j?.updated ?? j?.results?.length ?? updates.length;
+      showToast({
+        type: "success",
+        title: "Berhasil",
+        message: `Berhasil update ${updated} instance.`,
+      });
+      // Refresh setelah sukses agar data baru terlihat
+      setTimeout(() => {
+        if (typeof window !== "undefined") window.location.reload();
+      }, 900);
+    } catch (e: any) {
+      showToast({
+        type: "error",
+        title: "Gagal menyimpan",
+        message: e?.message || "Terjadi kesalahan jaringan.",
+      });
+    }
+  };
+
+  return (
+    <>
+      <ToastBox toast={toast} onClose={() => setToast((s) => ({ ...s, open: false }))} />
+      <div className="bg-white/90 dark:bg-gray-800/90 border border-[#324D3E]/10 dark:border-gray-700 rounded-3xl p-4 sm:p-6 mb-6">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:gap-4">
+          <div className="sm:w-60">
+            <label className="block text-sm font-medium text-[#324D3E] dark:text-gray-100 mb-1">
+              Pilih PlantType
+            </label>
+            <Select
+              value={plantType}
+              onValueChange={(v) => {
+                setPlantType(v);
+                fetchInstances(v);
+              }}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Pilih jenis tanaman" />
+              </SelectTrigger>
+              <SelectContent>
+                {/* sesuaikan daftar berikut dengan PlantType di sistemmu */}
+                <SelectItem value="alpukat">Alpukat</SelectItem>
+                <SelectItem value="aren">Aren</SelectItem>
+                <SelectItem value="gaharu">Gaharu</SelectItem>
+                <SelectItem value="jengkol">Jengkol</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="flex-1 grid grid-cols-1 sm:grid-cols-4 gap-3">
+            <div>
+              <label className="block text-sm font-medium text-[#324D3E] dark:text-gray-100 mb-1">
+                Set Pendapatan (semua tercentang)
+              </label>
+              <Input
+                type="text"
+                inputMode="numeric"
+                placeholder="0"
+                value={bulkIncomeStr}
+                onChange={(e) => {
+                  const n = fromID(e.target.value);
+                  setBulkIncomeStr(n ? toID(n) : "");
+                  applyAll("income", n);
+                }}
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-[#324D3E] dark:text-gray-100 mb-1">
+                Set Pengeluaran (semua tercentang)
+              </label>
+              <Input
+                type="text"
+                inputMode="numeric"
+                placeholder="0"
+                value={bulkExpenseStr}
+                onChange={(e) => {
+                  const n = fromID(e.target.value);
+                  setBulkExpenseStr(n ? toID(n) : "");
+                  applyAll("expense", n);
+                }}
+              />
+            </div>
+            <div className="col-span-1 sm:col-span-2">
+              <label className="block text-sm font-medium text-[#324D3E] dark:text-gray-100 mb-1">
+                Set Catatan (semua tercentang)
+              </label>
+              <Input
+                placeholder="Contoh: Panen minggu 3"
+                onChange={(e) => applyAll("note", e.target.value)}
+              />
+            </div>
+            <div className="sm:col-span-4">
+              <Button
+                className="w-full bg-[#324D3E] hover:bg-[#4C3D19] text-white"
+                disabled={loading || !plantType}
+                onClick={submitBulk}
+              >
+                Simpan Bulk
+              </Button>
+            </div>
+          </div>
+        </div>
+
+        {/* Tabel Instance + checkbox header & per baris */}
+        <div className="mt-4 overflow-x-auto rounded-xl border border-[#324D3E]/10 dark:border-gray-700">
+          <table className="min-w-full text-sm">
+            <thead className="bg-[#324D3E]/5 dark:bg-gray-700/50">
+              <tr>
+                <th className="p-3 text-left">
+                  <div className="flex items-center gap-2">
+                    <Checkbox
+                      checked={allChecked}
+                      onCheckedChange={toggleAll}
+                      aria-checked={someChecked ? "mixed" : allChecked}
+                    />
+                    <span className="font-semibold">✔</span>
+                  </div>
+                </th>
+                <th className="p-3 text-left">Instance</th>
+                <th className="p-3 text-left">Anggota</th>
+                <th className="p-3 text-left">Pendapatan</th>
+                <th className="p-3 text-left">Pengeluaran</th>
+                <th className="p-3 text-left">Catatan</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-[#324D3E]/10 dark:divide-gray-700 bg-white/80 dark:bg-gray-800/60">
+              {instances.map((it, i) => {
+                const r = rows[i];
+                return (
+                  <tr key={it.instanceId}>
+                    <td className="p-3">
+                      <Checkbox
+                        checked={r?.checked ?? false}
+                        onCheckedChange={(v: any) =>
+                          setRows((prev) => {
+                            const copy = [...prev];
+                            copy[i] = { ...copy[i], checked: !!v };
+                            return copy;
+                          })
+                        }
+                      />
+                    </td>
+                    <td className="p-3 font-medium">{it.instanceId}</td>
+                    <td className="p-3">{it.memberName}</td>
+                    <td className="p-3">
+                      <Input
+                        type="text"
+                        inputMode="numeric"
+                        value={toID(r?.income ?? 0)}
+                        onChange={(e) =>
+                          setRows((prev) => {
+                            const copy = [...prev];
+                            copy[i] = {
+                              ...copy[i],
+                              income: fromID(e.target.value),
+                            };
+                            return copy;
+                          })
+                        }
+                      />
+                    </td>
+                    <td className="p-3">
+                      <Input
+                        type="text"
+                        inputMode="numeric"
+                        value={toID(r?.expense ?? 0)}
+                        onChange={(e) =>
+                          setRows((prev) => {
+                            const copy = [...prev];
+                            copy[i] = {
+                              ...copy[i],
+                              expense: fromID(e.target.value),
+                            };
+                            return copy;
+                          })
+                        }
+                      />
+                    </td>
+                    <td className="p-3">
+                      <Input
+                        value={r?.note ?? ""}
+                        placeholder="Catatan baris ini"
+                        onChange={(e) =>
+                          setRows((prev) => {
+                            const copy = [...prev];
+                            copy[i] = { ...copy[i], note: e.target.value };
+                            return copy;
+                          })
+                        }
+                      />
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+          {rows.length === 0 && (
+            <div className="p-4 text-sm text-[#889063] dark:text-gray-300">
+              Pilih PlantType terlebih dahulu untuk menampilkan daftar instance.
+            </div>
+          )}
+        </div>
+      </div>
+    </>
+  );
+}
+/* ================== END BulkFinanceBar ================== */
 
 export default function ManajemenAnggotaPage() {
   const [currentPage, setCurrentPage] = useState(1);
@@ -274,6 +679,9 @@ export default function ManajemenAnggotaPage() {
             </div>
           )}
         </motion.header>
+
+        {/* === Bulk Input === */}
+        <BulkFinanceBar />
 
         {/* Member List */}
         <div>
