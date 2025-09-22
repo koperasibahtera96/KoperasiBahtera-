@@ -180,8 +180,8 @@ export async function POST(request: NextRequest) {
           return roiMap[plantType] || 0.12;
         };
 
-        // Use payment.contractId to find the actual contract
-        const contractId = payment.contractId;
+        // For new invoice format, contractId equals orderId
+        const contractId = orderId;
 
         let savedPlantInstance = await PlantInstance.findOne({
           contractNumber: contractId,
@@ -190,7 +190,7 @@ export async function POST(request: NextRequest) {
         if (!savedPlantInstance) {
           // Get contract to check approval status
           const contract = await Contract.findOne({ contractId: contractId }).session(mongoSession);
-          const isContractApproved = contract?.adminApprovalStatus === 'approved';
+          const isContractApproved = contract?.adminApprovalStatus === 'approved' && contract?.status === 'approved';
 
           const plantInstanceId = `PLANT-${payment.orderId}-${orderId.slice(-8)}`;
           const productName = payment.productName || "gaharu";
@@ -407,7 +407,7 @@ export async function POST(request: NextRequest) {
           if (!savedPlantInstance) {
             // Get contract to check approval status
             const contract = await Contract.findOne({ contractId: cicilanOrderId }).session(mongoSession);
-            const isContractApproved = contract?.adminApprovalStatus === 'approved';
+            const isContractApproved = contract?.adminApprovalStatus === 'approved' && contract?.status === 'approved';
 
             // Create new PlantInstance
             const plantInstanceId = `PLANT-${cicilanOrderId}-${Date.now()}`;

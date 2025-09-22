@@ -29,6 +29,8 @@ type Installment = CicilanInstallmentWithPayment;
 
 interface FullPaymentContract {
   contractId: string;
+  // corresponding payment record id (if a payment record was created for this full investment)
+  paymentId?: string;
   productName: string;
   productId: string;
   totalAmount: number;
@@ -203,7 +205,8 @@ export default function PaymentsPage() {
       transactionStatus: contract.paymentCompleted ? "settlement" : "pending",
       updatedAt: contract.updatedAt,
       createdAt: contract.createdAt,
-      ref: contract.contractId,
+      // Prefer the payment record id (if available) as the reference. Fall back to contractId.
+      ref: contract.paymentId || contract.contractId,
     };
 
     downloadInvoiceImage(paymentData);

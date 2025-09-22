@@ -22,10 +22,10 @@ async function connectMongo() {
   await mongoose.connect(MONGODB_URI)
 }
 
-export async function GET(_req: Request, ctx: { params: { id: string } }) {
+export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> }) {
   try {
     await connectMongo()
-    const rawId = decodeURIComponent(ctx.params.id || "").toLowerCase().trim()
+    const rawId = decodeURIComponent((await ctx.params).id || "").toLowerCase().trim()
 
     // cari berdasarkan plantTypeName / plantType yang mengandung [id]
     const instances: any[] = await PlantInstance.find(

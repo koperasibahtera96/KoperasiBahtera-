@@ -230,6 +230,8 @@ export async function GET(req: NextRequest) {
       cicilanGroups: allCicilanGroups,
       fullPaymentContracts: fullPaymentContracts.map(contract => ({
         contractId: contract.contractId,
+        // attach matching payment _id (if any) so frontend can reference the actual payment record
+        paymentId: fullPayments.find(p => p.orderId === contract.contractId)?._id || null,
         productName: contract.productName,
         productId: contract.productId,
         totalAmount: contract.totalAmount,

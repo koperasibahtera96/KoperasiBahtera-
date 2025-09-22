@@ -13,16 +13,12 @@ export default async function middleware(req: NextRequest) {
 
   // If no token, redirect to login for protected routes only
   if (!token) {
-    console.log(`❌ No token found for ${pathname}, redirecting to login`);
     // For mobile QR scans, preserve the URL path for redirect after login
     const callbackUrl = encodeURIComponent(pathname + req.nextUrl.search);
     return NextResponse.redirect(new URL(`/login?callbackUrl=${callbackUrl}`, req.url));
   }
 
-  console.log(`🔍 User ${token.email} (${token.role}) accessing ${pathname}`);
-  console.log(
-    `🔍 Token data: canPurchase=${token.canPurchase}, verificationStatus=${token.verificationStatus}`
-  );
+
 
   const userRole = token.role as string;
 
@@ -113,20 +109,52 @@ export default async function middleware(req: NextRequest) {
     }
   }
 
-  if (pathname.startsWith("/investasi") || pathname.startsWith("/payments")) {
+  // === USER ACCESS ===
+  if (userRole === "user") {
+    // Routes users can always access (regardless of verification status)
+    const alwaysAllowedPaths = [
+      "/profile",
+      "/verification-pending",
+      "/kartu-anggota"
+    ];
+
+    // Routes users can access only when verified
+    const verifiedOnlyPaths = [
+      "/investasi",
+      "/payments",
+      "/cicilan",
+      "/contract"
+    ];
+
+    const isAlwaysAllowed = alwaysAllowedPaths.some(path => pathname.startsWith(path));
+    const isVerifiedOnly = verifiedOnlyPaths.some(path => pathname.startsWith(path));
+
+    if (isAlwaysAllowed) {
+      console.log(`✅ User access granted to ${pathname} (always allowed)`);
+      return NextResponse.next();
+    } else if (isVerifiedOnly) {
       if (token.canPurchase && token.verificationStatus === "approved") {
+        console.log(`✅ User access granted to ${pathname} (verified)`);
         return NextResponse.next();
       } else {
+        console.log(`❌ User access denied to ${pathname} - not verified or cannot purchase`);
         return NextResponse.redirect(new URL("/verification-pending", req.url));
       }
-
+    } else {
+      console.log(`❌ User role denied access to ${pathname} - not in allowed paths`);
+      return NextResponse.redirect(new URL("/login", req.url));
+    }
   }
 
+  // === PUBLIC ACCESS ===
   if (pathname.startsWith("/public")) {
+    console.log(`✅ Public access granted to ${pathname}`);
     return NextResponse.next();
   }
 
-  return NextResponse.next();
+  // === FALLBACK - DENY ACCESS ===
+  console.log(`❌ Unhandled route ${pathname} for role ${userRole} - access denied`);
+  return NextResponse.redirect(new URL("/", req.url));
 }
 
 export const config = {
@@ -138,6 +166,11 @@ export const config = {
     "/staff/:path*",
     "/investasi/:path*",
     "/payments/:path*",
-    "/public/:path*"
+    "/public/:path*",
+    "/profile/:path*",
+    "/verification-pending/:path*",
+    "/kartu-anggota/:path*",
+    "/cicilan/:path*",
+    "/contract/:path*"
   ],
 };

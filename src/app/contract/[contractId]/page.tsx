@@ -12,7 +12,14 @@ interface ContractData {
     name: string;
     email: string;
     phoneNumber?: string;
+    nik?: string;
+    dateOfBirth?: Date;
+    occupation?: string;
     address?: string;
+    village?: string;
+    city?: string;
+    province?: string;
+    postalCode?: string;
   };
   investment: {
     investmentId: string;
@@ -31,6 +38,63 @@ interface ContractData {
   };
   contractNumber: string;
   contractDate: string;
+}
+
+// Helper function to convert number to Indonesian words
+function convertNumberToWords(num: number): string {
+  if (num === 0) return "nol rupiah";
+
+  const units = ["", "ribu", "juta", "miliar", "triliun"];
+  const ones = ["", "satu", "dua", "tiga", "empat", "lima", "enam", "tujuh", "delapan", "sembilan"];
+  const teens = ["sepuluh", "sebelas", "dua belas", "tiga belas", "empat belas", "lima belas", "enam belas", "tujuh belas", "delapan belas", "sembilan belas"];
+  const tens = ["", "", "dua puluh", "tiga puluh", "empat puluh", "lima puluh", "enam puluh", "tujuh puluh", "delapan puluh", "sembilan puluh"];
+
+  function convertHundreds(n: number): string {
+    let result = "";
+
+    if (n >= 100) {
+      if (Math.floor(n / 100) === 1) {
+        result += "seratus ";
+      } else {
+        result += ones[Math.floor(n / 100)] + " ratus ";
+      }
+      n %= 100;
+    }
+
+    if (n >= 20) {
+      result += tens[Math.floor(n / 10)];
+      if (n % 10 !== 0) {
+        result += " " + ones[n % 10];
+      }
+    } else if (n >= 10) {
+      result += teens[n - 10];
+    } else if (n > 0) {
+      result += ones[n];
+    }
+
+    return result.trim();
+  }
+
+  let result = "";
+  let unitIndex = 0;
+
+  while (num > 0) {
+    const chunk = num % 1000;
+    if (chunk > 0) {
+      let chunkText = convertHundreds(chunk);
+      if (unitIndex === 1 && chunk === 1) {
+        chunkText = "se"; // "seribu" instead of "satu ribu"
+      }
+      if (unitIndex > 0) {
+        chunkText += " " + units[unitIndex];
+      }
+      result = chunkText + (result ? " " + result : "");
+    }
+    num = Math.floor(num / 1000);
+    unitIndex++;
+  }
+
+  return result + " rupiah";
 }
 
 export default function ContractPage() {
@@ -155,6 +219,19 @@ export default function ContractPage() {
       // Set font
       pdf.setFont("helvetica");
 
+      // Function to add page number at bottom center
+      const addPageNumber = () => {
+        const pageNumber = (pdf.internal as any).getNumberOfPages();
+        pdf.setFontSize(8);
+        pdf.setFont("helvetica", "normal");
+        pdf.setTextColor(128, 128, 128); // Gray color
+        const pageText = `- ${pageNumber} -`;
+        const pageWidth = pdf.internal.pageSize.width;
+        const textWidth = pdf.getTextWidth(pageText);
+        pdf.text(pageText, (pageWidth - textWidth) / 2, pdf.internal.pageSize.height - 10);
+        pdf.setTextColor(0, 0, 0); // Reset to black
+      };
+
       // Add logo header - positioned first
       let headerYPosition = 15;
 
@@ -177,258 +254,427 @@ export default function ContractPage() {
       }
 
       // Header text positioned below logo
-      pdf.setFontSize(18);
-      pdf.setTextColor(50, 77, 62); // #324D3E
-      pdf.text("SURAT PERJANJIAN HAK KEPEMILIKAN POHON", 105, headerYPosition, {
+      pdf.setFontSize(12);
+      pdf.setTextColor(0, 0, 0);
+      pdf.setFont("helvetica", "bold");
+      pdf.text("SURAT PERJANJIAN KERJASAMA", 105, headerYPosition, {
+        align: "center",
+      });
+      pdf.text("(KONTRAK)", 105, headerYPosition + 8, {
         align: "center",
       });
 
-      pdf.setFontSize(14);
-      pdf.text("KOPERASI BINTANG MERAH SEJAHTERA", 105, headerYPosition + 10, {
+      pdf.setFontSize(10);
+      pdf.setFont("helvetica", "normal");
+      pdf.text(`Nomor: ${contractData.contractNumber}`, 105, headerYPosition + 18, {
         align: "center",
       });
 
       // Start content below header
-      let yPosition = headerYPosition + 20;
+      let yPosition = headerYPosition + 30;
       const leftMargin = 20;
       const rightMargin = 190;
 
-      // Header separator line
-      pdf.setLineWidth(0.5);
-      pdf.setDrawColor(50, 77, 62);
+      // Add horizontal line
+      pdf.setLineWidth(1);
+      pdf.setDrawColor(0, 0, 0);
       pdf.line(leftMargin, yPosition, rightMargin, yPosition);
       yPosition += 15;
 
-      // Contract Information Box
-      pdf.setFillColor(50, 77, 62);
-      pdf.rect(leftMargin, yPosition, 170, 25, "F");
-
-      pdf.setTextColor(255, 255, 255);
-      pdf.setFontSize(14);
-      pdf.setFont("helvetica", "bold");
-      pdf.text("INFORMASI KONTRAK", leftMargin + 5, yPosition + 8);
+      // Date section with exact format from DOCX
+      const contractDate = new Date(contractData.contractDate);
+      const dayName = contractDate.toLocaleDateString("id-ID", { weekday: "long" });
+      const day = contractDate.getDate();
+      const monthName = contractDate.toLocaleDateString("id-ID", { month: "long" });
+      const year = contractDate.getFullYear();
+      const dayStr = day.toString().padStart(2, '0');
+      const monthStr = (contractDate.getMonth() + 1).toString().padStart(2, '0');
 
       pdf.setFontSize(10);
       pdf.setFont("helvetica", "normal");
-      pdf.text(
-        `Nomor: ${contractData.contractNumber}`,
-        leftMargin + 5,
-        yPosition + 16
-      );
-      pdf.text(
-        `Tanggal: ${new Date(contractData.contractDate).toLocaleDateString(
-          "id-ID"
-        )}`,
-        leftMargin + 90,
-        yPosition + 16
-      );
 
-      yPosition += 35;
+      const dateText = `Pada hari ini, ${dayName} Tanggal ${day} Bulan ${monthName} Tahun ${year}, (${dayStr}-${monthStr}-${year}) yang bertandatangan dibawah ini:`;
+      const dateLines = pdf.splitTextToSize(dateText, rightMargin - leftMargin);
+      pdf.text(dateLines, leftMargin, yPosition);
+      yPosition += 6 * dateLines.length + 8;
 
-      // Investor Information Section
+      // Personal Information Section (exact DOCX format)
       pdf.setTextColor(0, 0, 0);
-      pdf.setFillColor(245, 245, 245);
-      pdf.rect(leftMargin, yPosition, 170, 35, "F");
-
-      pdf.setFontSize(12);
-      pdf.setFont("helvetica", "bold");
-      pdf.text("DATA INVESTOR", leftMargin + 5, yPosition + 8);
-
       pdf.setFontSize(10);
       pdf.setFont("helvetica", "normal");
-      pdf.text(
-        `Nama: ${contractData.investor.name}`,
-        leftMargin + 5,
-        yPosition + 18
-      );
-      pdf.text(
-        `Email: ${contractData.investor.email}`,
-        leftMargin + 5,
-        yPosition + 26
-      );
-      if (contractData.investor.phoneNumber) {
-        pdf.text(
-          `Telepon: ${contractData.investor.phoneNumber}`,
-          leftMargin + 90,
-          yPosition + 18
-        );
+
+      const lineHeight = 5;
+      const colonPosition = leftMargin + 70;
+
+      pdf.text("Nama", leftMargin, yPosition);
+      pdf.text(":", colonPosition, yPosition);
+      pdf.text(`${contractData.investor.name || ""}`, colonPosition + 5, yPosition);
+      yPosition += lineHeight;
+
+      pdf.text("NIK", leftMargin, yPosition);
+      pdf.text(":", colonPosition, yPosition);
+      pdf.text(`${contractData.investor.nik || ""}`, colonPosition + 5, yPosition);
+      yPosition += lineHeight;
+
+      let dobText = "";
+      if (contractData.investor.dateOfBirth) {
+        const dob = new Date(contractData.investor.dateOfBirth);
+        dobText = dob.toLocaleDateString("id-ID");
+      }
+      pdf.text("Tempat/Tgl Lahir", leftMargin, yPosition);
+      pdf.text(":", colonPosition, yPosition);
+      pdf.text(`${dobText}`, colonPosition + 5, yPosition);
+      yPosition += lineHeight;
+
+      pdf.text("Email", leftMargin, yPosition);
+      pdf.text(":", colonPosition, yPosition);
+      pdf.text(`${contractData.investor.email || ""}`, colonPosition + 5, yPosition);
+      yPosition += lineHeight;
+
+      pdf.text("Nomor Kontak", leftMargin, yPosition);
+      pdf.text(":", colonPosition, yPosition);
+      pdf.text(`${contractData.investor.phoneNumber || ""}`, colonPosition + 5, yPosition);
+      yPosition += lineHeight;
+
+      pdf.text("Pekerjaan", leftMargin, yPosition);
+      pdf.text(":", colonPosition, yPosition);
+      pdf.text(`${contractData.investor.occupation || ""}`, colonPosition + 5, yPosition);
+      yPosition += lineHeight;
+
+      let fullAddress = contractData.investor.address || "";
+      if (contractData.investor.village) fullAddress += `, ${contractData.investor.village}`;
+      if (contractData.investor.city) fullAddress += `, ${contractData.investor.city}`;
+      if (contractData.investor.province) fullAddress += `, ${contractData.investor.province}`;
+      if (contractData.investor.postalCode) fullAddress += ` ${contractData.investor.postalCode}`;
+
+      pdf.text("Alamat", leftMargin, yPosition);
+      pdf.text(":", colonPosition, yPosition);
+      const addressLines = pdf.splitTextToSize(`${fullAddress}`, rightMargin - colonPosition - 5);
+      pdf.text(addressLines, colonPosition + 5, yPosition);
+      yPosition += lineHeight * addressLines.length + 8;
+
+      const pihakPertamaText = "Bertindak untuk dan atas nama diri sendiri. selanjutnya disebut sebagai Pihak Pertama.";
+      const pihakPertamaLines = pdf.splitTextToSize(pihakPertamaText, rightMargin - leftMargin);
+      pdf.text(pihakPertamaLines, leftMargin, yPosition);
+      yPosition += lineHeight * pihakPertamaLines.length + 8;
+
+      pdf.text("Nama", leftMargin, yPosition);
+      pdf.text(":", colonPosition, yPosition);
+      pdf.text("Halim Perdana Kusuma, S.H., M.H.", colonPosition + 5, yPosition);
+      yPosition += lineHeight;
+
+      pdf.text("Tempat/Tgl Lahir", leftMargin, yPosition);
+      pdf.text(":", colonPosition, yPosition);
+      pdf.text("Sukaraja, 11 September 1986", colonPosition + 5, yPosition);
+      yPosition += lineHeight;
+
+      pdf.text("Alamat", leftMargin, yPosition);
+      pdf.text(":", colonPosition, yPosition);
+      const koprasi_address = "Komplek Taman Mutiara Indah blok J3 No.17 RT004 RW017 Kaligandu, Kota Serang, Banten";
+      const koperasiAddressLines = pdf.splitTextToSize(koprasi_address, rightMargin - colonPosition - 5);
+      pdf.text(koperasiAddressLines, colonPosition + 5, yPosition);
+      yPosition += lineHeight * koperasiAddressLines.length + 5;
+
+      const pihakKeduaText = "Bertindak untuk dan atas nama KOPERASI BINTANG MERAH SEJAHTERA, selanjutnya disebut sebagai Pihak Kedua.";
+      const pihakKeduaLines = pdf.splitTextToSize(pihakKeduaText, rightMargin - leftMargin);
+      pdf.text(pihakKeduaLines, leftMargin, yPosition);
+      yPosition += lineHeight * pihakKeduaLines.length + 6;
+
+      // Contract preamble with exact formatting
+      const totalAmountText = `Rp${contractData.investment.totalAmount.toLocaleString("id-ID")},-`;
+      const totalAmountWords = convertNumberToWords(contractData.investment.totalAmount);
+
+      // Extract plant type from productName (e.g., "Paket 10 Pohon Alpukat - 10 Pohon" -> "ALPUKAT")
+      let plantTypesText = "GAHARU, ALPUKAT, JENGKOL, AREN"; // Default fallback
+      if (contractData.investment.productName) {
+        const productName = contractData.investment.productName.toLowerCase();
+        if (productName.includes("alpukat")) {
+          plantTypesText = "ALPUKAT";
+        } else if (productName.includes("gaharu")) {
+          plantTypesText = "GAHARU";
+        } else if (productName.includes("jengkol")) {
+          plantTypesText = "JENGKOL";
+        } else if (productName.includes("aren")) {
+          plantTypesText = "AREN";
+        }
       }
 
-      yPosition += 45;
+      const preambleIntroText = "Bahwa sebelum ditandatanganinya Surat Perjanjian ini, Para pihak terlebih dahulu menerangkan hal–hal sebagai berikut:";
+      const preambleIntroLines = pdf.splitTextToSize(preambleIntroText, rightMargin - leftMargin);
+      pdf.text(preambleIntroLines, leftMargin, yPosition);
+      yPosition += lineHeight * preambleIntroLines.length + 3;
 
-      // Investment Details Section
-      pdf.setFillColor(240, 248, 255);
-      pdf.rect(leftMargin, yPosition, 170, 45, "F");
-
-      pdf.setFontSize(12);
-      pdf.setFont("helvetica", "bold");
-      pdf.text("DETAIL INVESTASI", leftMargin + 5, yPosition + 8);
-
-      pdf.setFontSize(10);
-      pdf.setFont("helvetica", "normal");
-      pdf.text(
-        `ID Investasi: ${contractData.investment.investmentId}`,
-        leftMargin + 5,
-        yPosition + 18
-      );
-      pdf.text(
-        `Produk: ${contractData.investment.productName}`,
-        leftMargin + 5,
-        yPosition + 26
-      );
-      pdf.text(
-        `Jenis Pohon: ${contractData.plantInstance.plantType.toUpperCase()}`,
-        leftMargin + 5,
-        yPosition + 34
-      );
-
-      pdf.text(
-        `Total Investasi: Rp ${contractData.investment.totalAmount.toLocaleString(
-          "id-ID"
-        )}`,
-        leftMargin + 90,
-        yPosition + 18
-      );
-      pdf.text(
-        `ROI Tahunan: ${contractData.plantInstance.baseAnnualROI}%`,
-        leftMargin + 90,
-        yPosition + 26
-      );
-      pdf.text(
-        `Status: ${
-          contractData.investment.paymentType === "full" ? "LUNAS" : "CICILAN"
-        }`,
-        leftMargin + 90,
-        yPosition + 34
-      );
-
-      yPosition += 55;
-
-      // Terms and Conditions Section
-      // Check if we have enough space for header + at least 10 lines of content (about 70 units)
-      if (yPosition > 200) {
-        pdf.addPage();
-        yPosition = 20;
-      }
-
-      pdf.setFillColor(255, 248, 240);
-      pdf.rect(leftMargin, yPosition, 170, 8, "F");
-
-      pdf.setFontSize(12);
-      pdf.setFont("helvetica", "bold");
-      pdf.text("KETENTUAN DAN SYARAT", leftMargin + 5, yPosition + 6);
-
-      yPosition += 15;
-
-      // Terms content with proper formatting
-      const termsContent = [
-        "HAK KEPEMILIKAN INVESTOR:",
-        "• Berhak atas hasil panen sesuai persentase investasi yang dibayarkan",
-        "• Mendapat laporan perkembangan pohon secara berkala",
-        "• Dapat mengunjungi lokasi pohon dengan pemberitahuan sebelumnya",
-        "• Menerima bagi hasil sesuai persentase kepemilikan",
-        "",
-        "KEWAJIBAN KOPERASI BINTANG MERAH SEJAHTERA:",
-        "• Merawat dan memelihara pohon hingga masa panen",
-        "• Memberikan laporan berkala tentang kondisi pohon",
-        "• Membagikan hasil panen sesuai kesepakatan",
-        "• Menyediakan akses informasi kondisi pohon",
-        "",
-        "KETENTUAN UMUM:",
-        "• Kontrak berlaku hingga masa panen selesai",
-        "• Perselisihan diselesaikan secara musyawarah mufakat",
-        "• Kedua pihak terikat pada ketentuan yang telah disepakati",
+      const preambleTexts = [
+        `1. Bahwa Pihak Pertama adalah selaku yang memiliki modal sebesar ${totalAmountText} (${totalAmountWords}) untuk selanjutnya disebut sebagai MODAL KERJASAMA untuk project (${plantTypesText});`,
+        `2. Bahwa Pihak Kedua adalah Pengelola Dana Kerjasama untuk project (${plantTypesText}) berlokasi di Kabupten Musi Rawas Utara Provinsi Sumatera Selatan;`,
+        `3. Bahwa Pihak Pertama dan Pihak Kedua setuju untuk saling mengikatkan diri dalam suatu perjanjian Kerjasama di project (${plantTypesText}) sesuai dengan ketentuan hukum yang berlaku.`,
+        `4. Bahwa berdasarkan hal-hal tersebut di atas, kedua belah pihak menyatakan sepakat dan setuju untuk mengadakan Perjanjian Kerjasama ini yang dilaksanakan dengan ketentuan dan syarat-syarat sebagai berikut:`
       ];
 
-      pdf.setFontSize(9);
-      termsContent.forEach((line) => {
-        // Only add new page if we're really running out of space (leave room for signatures)
-        if (yPosition > 260) {
+      preambleTexts.forEach((text) => {
+        if (yPosition > 250) {
+          addPageNumber(); // Add page number to current page before adding new page
           pdf.addPage();
           yPosition = 20;
         }
 
-        if (line.includes(":") && !line.startsWith("•")) {
-          pdf.setFont("helvetica", "bold");
-          pdf.setTextColor(50, 77, 62);
-        } else {
-          pdf.setFont("helvetica", "normal");
-          pdf.setTextColor(0, 0, 0);
+        if (text === "") {
+          yPosition += 2;
+          return;
         }
 
-        pdf.text(line, leftMargin + (line.startsWith("•") ? 5 : 0), yPosition);
-        yPosition += 6;
+        const lines = pdf.splitTextToSize(text, rightMargin - leftMargin);
+        pdf.text(lines, leftMargin, yPosition);
+        yPosition += lineHeight * lines.length + 2;
       });
 
-      yPosition += 10;
+      yPosition += 4;
 
-      // Signature Section
+      // Complete Legal Articles
+      const articles = [
+        {
+          title: "PASAL I\nDEFINISI",
+          content: [
+            "Dalam perjanjian ini, istilah-istilah berikut mempunyai arti sebagai berikut:",
+            "",
+            `Paket Penanaman adalah unit usaha yang terdiri dari 10 (sepuluh) pohon (${plantTypesText}) yang ditanam, dirawat, dan dipanen oleh PIHAK PERTAMA.`,
+            "Dana Investasi adalah sejumlah uang yang diserahkan PIHAK KEDUA kepada PIHAK PERTAMA untuk mendanai pembelian bibit, penanaman, perawatan, serta biaya operasional hingga pemanenan pohon.",
+            "Keuntungan adalah hasil bersih dari penjualan panen setelah dikurangi biaya operasional yang sah.",
+            "Kerugian adalah nilai minus yang timbul akibat berkurangnya hasil panen atau biaya operasional yang lebih besar daripada pendapatan.",
+            "Laporan Usaha adalah laporan tertulis dan/atau elektronik yang disampaikan PIHAK PERTAMA kepada PIHAK KEDUA secara periodik.",
+            "Masa Perawatan adalah periode sejak bibit ditanam hingga pohon siap dipanen.",
+            "Force Majeure adalah keadaan di luar kemampuan Para Pihak yang menyebabkan salah satu pihak tidak dapat melaksanakan kewajibannya.",
+            "Para Pihak adalah PIHAK PERTAMA dan PIHAK KEDUA yang menandatangani perjanjian ini."
+          ]
+        },
+        {
+          title: "PASAL II\nMAKSUD DAN TUJUAN",
+          content: [
+            `Pihak Pertama dalam perjanjian ini memberi DANA KERJASAMA kepada Pihak Kedua sebesar ${totalAmountText} (${totalAmountWords}) untuk 1 (satu) paket penanaman dan Pihak Kedua dengan ini telah menerima penyerahan DANA KERJASAMA tersebut dari Pihak Pertama serta menyanggupi untuk melaksanakan pengelolaan DANA KERJASAMA tersebut.`
+          ]
+        },
+        {
+          title: "PASAL III\nRUANG LINGKUP",
+          content: [
+            `Dalam pelaksanaan perjanjian ini, Pihak Pertama memberi DANA kepada Pihak Kedua sebesar ${totalAmountText} (${totalAmountWords}) untuk 1 (satu) paket penanaman dan Pihak Kedua dengan ini telah menerima penyerahan DANA tersebut dari Pihak Pertama serta menyanggupi untuk melaksanakan pengelolaan DANA.`,
+            `Pihak Kedua dengan ini berjanji dan mengikatkan diri untuk melaksanakan perputaran DANA pada Usaha Peningkatan Modal di project (${plantTypesText}) yang berlokasi di Kabupten Musi Rawas Utara Provinsi Sumatera Selatan setelah ditandatanganinya perjanjian ini.`,
+            "Pihak Kedua dengan ini berjanji dan mengikatkan diri untuk memberikan keuntungan kepada Pihak Pertama di mulai dari setelah masa panen pertama;"
+          ]
+        },
+        {
+          title: "PASAL IV\nJANGKA WAKTU KERJASAMA",
+          content: [
+            "Perjanjian kerjasama ini dilakukan dan diterima untuk jangka waktu 10 (sepuluh puluh) tahun, terhitung sejak tanggal di tanda tanganinya perjanjian ini;"
+          ]
+        },
+        {
+          title: "PASAL V\nHAK DAN KEWAJIBAN PIHAK PERTAMA",
+          content: [
+            "Dalam Perjanjian Kerjasama ini, Pihak Pertama memiliki Hak dan Kewajiban sebagai berikut:",
+            `Memberikan DANA kepada Pihak Kedua sebesar ${totalAmountText} (${totalAmountWords}) untuk 1 (satu) paket penanaman;`,
+            "Menerima hasil keuntungan atas pengelolaan DANA;",
+            "Menerima laporan perkembangan usaha secara berkala;",
+            "Melakukan pengawasan terhadap usaha dengan pemberitahuan terlebih dahulu;",
+            "Tidak melakukan intervensi teknis dalam pengelolaan usaha;",
+            "Menjaga kerahasiaan informasi terkait operasional usaha."
+          ]
+        },
+        {
+          title: "PASAL VI\nHAK DAN KEWAJIBAN PIHAK KEDUA",
+          content: [
+            "Dalam Perjanjian Kerjasama ini, Pihak Kedua memiliki Hak dan Kewajiban sebagai berikut :",
+            `Menerima DANA dari Pihak Pertama sebesar ${totalAmountText} (${totalAmountWords}) untuk 1 (satu) paket penanaman;`,
+            "Memberikan bagian hasil keuntungan kepada Pihak Pertama;",
+            "Memperoleh bagian keuntungan dari pengelolaan usaha;",
+            "Menentukan metode teknis penanaman, perawatan, dan pemanenan pohon;",
+            "Menyediakan bibit pohon sesuai jumlah paket yang dibeli PIHAK KEDUA;",
+            "Melaksanakan penanaman, perawatan, hingga pemanenan pohon sesuai standar;",
+            "Memberikan laporan perkembangan usaha;",
+            "Membagi keuntungan kepada PIHAK KEDUA sesuai dengan jadwal yang ditentukan;",
+            "Menjaga transparansi penggunaan dana dan membuka akses audit."
+          ]
+        },
+        {
+          title: "PASAL VII\nPEMBAGIAN HASIL",
+          content: [
+            "Dalam Perjanjian Kerjasama ini, kedua belah pihak sepakat didalam hal pembagian hasil penyertaan dana sebagai berikut:",
+            `Kedua belah pihak sepakat dan setuju bahwa perjanjian kerjasama ini dilakukan dengan cara pemberian keuntungan yang diperoleh dalam Usaha Peningkatan Modal Usaha di project (${plantTypesText}) berlokasi di Kabupten Musi Rawas Utara Provinsi Sumatera Selatan;`,
+            "Keuntungan yang akan di Terima Pihak Pertama dibagi dengan skema: 70% (tujuh puluh persen) untuk PIHAK PERTAMA dan 30% (tiga puluh persen) untuk PIHAK KEDUA;",
+            "Pembagian keuntungan dilakukan paling lambat 7 (tujuh) hari Kerja setelah masa panen.",
+            "Pembayaran keuntungan dilakukan melalui transfer ke rekening PIHAK KEDUA."
+          ]
+        },
+        {
+          title: "PASAL VIII\nKEADAAN MEMAKSA (FORCE MAJEURE)",
+          content: [
+            "Yang termasuk dalam Force Majeure adalah akibat dari kejadian-kejadian diluar kuasa dan kehendak dari kedua belah pihak diantaranya termasuk tidak terbatas bencana alam, banjir, badai, topan, gempa bumi, kebakaran, perang, huru-hara, pemberontakan, demonstrasi, pemogokan, kegagalan koperasi.",
+            "Pihak yang mengalami Force Majeure wajib memberitahukan secara tertulis kepada pihak lainnya selambat-lambatnya 7 (tujuh) hari sejak terjadinya keadaan tersebut dengan bukti pendukung yang sah.",
+            "Apabila Force Majeure berlangsung tidak lebih dari 30 (tiga puluh) hari, kewajiban para pihak ditunda hingga keadaan berakhir.",
+            "Apabila Force Majeure berlangsung lebih dari 90 (Sembilan puluh) hari sehingga pelaksanaan perjanjian tidak mungkin dilanjutkan, maka para pihak sepakat untuk membicarakan kembali atau mengakhiri perjanjian tanpa tuntutan ganti rugi."
+          ]
+        },
+        {
+          title: "PASAL IX\nWANPRESTASI",
+          content: [
+            "Dalam hal salah satu pihak telah melanggar kewajibannya yang tercantum dalam salah satu Pasal perjanjian ini, telah cukup bukti dan tanpa perlu dibuktikan lebih lanjut, bahwa pihak yang melanggar tersebut telah melakukan tindakan Wanprestasi.",
+            "Pihak yang merasa dirugikan atas tindakan Wanprestasi tersebut dalam ayat 1 diatas, berhak meminta ganti kerugian dari pihak yang melakukan wanprestasi tersebut atas sejumlah kerugian yang dideritanya, kecuali dalam hal kerugian tersebut disebabkan karena adanya suatu keadaan memaksa, seperti tercantum dalam Pasal VIII."
+          ]
+        },
+        {
+          title: "PASAL X\nPERSELISIHAN",
+          content: [
+            "Bilamana dalam pelaksanaan perjanjian Kerjasama ini terdapat perselisihan antara kedua belah pihak baik dalam pelaksanaannya ataupun dalam penafsiran salah satu Pasal dalam perjanjian ini, maka kedua belah pihak sepakat untuk sedapat mungkin menyelesaikan perselisihan tersebut dengan cara musyawarah. Apabila musyawarah telah dilakukan oleh kedua belah pihak, namun ternyata tidak berhasil mencapai suatu kemufakatan maka Para Pihak sepakat bahwa semua sengketa yang timbul dari perjanjian ini akan diselesaikan pada Kantor Kepaniteraan Pengadilan Negeri Jakarta Selatan."
+          ]
+        },
+        {
+          title: "PASAL XI\nATURAN PENUTUP",
+          content: [
+            "Hal-hal yang belum diatur atau belum cukup diatur dalam perjanjian ini apabila dikemudian hari dibutuhkan dan dipandang perlu akan ditetapkan tersendiri secara musyawarah dan selanjutnya akan ditetapkan dalam suatu ADDENDUM yang berlaku mengikat bagi kedua belah pihak, yang akan direkatkan dan merupakan bagian yang tidak terpisahkan dari Perjanjian ini.",
+            "",
+            "Demikianlah surat perjanjian kerjasama ini dibuat dalam rangkap 2 (dua), untuk masing-masing pihak, yang ditandatangani di atas kertas bermaterai cukup, yang masing-masing mempunyai kekuatan hukum yang sama dan berlaku sejak ditandatangani."
+          ]
+        }
+      ];
+
+      // Add all articles
+      pdf.setFontSize(10);
+      articles.forEach((article) => {
+        // Check space for article title
+        if (yPosition > 250) {
+          addPageNumber(); // Add page number to current page before adding new page
+          pdf.addPage();
+          yPosition = 20;
+          // Reset font size after new page
+          pdf.setFontSize(10);
+        }
+
+        // Article title
+        pdf.setFontSize(10); // Ensure consistent font size
+        pdf.setFont("helvetica", "bold");
+        pdf.setTextColor(0, 0, 0);
+        const titleLines = article.title.split('\n');
+        titleLines.forEach((titleLine) => {
+          pdf.text(titleLine, leftMargin, yPosition);
+          yPosition += lineHeight;
+        });
+        yPosition += lineHeight * 0.5;
+
+        // Article content
+        pdf.setFontSize(10); // Ensure consistent font size
+        pdf.setFont("helvetica", "normal");
+        article.content.forEach((paragraph) => {
+          if (paragraph === "") {
+            yPosition += lineHeight * 0.5;
+            return;
+          }
+
+          if (yPosition > 260) {
+            addPageNumber(); // Add page number to current page before adding new page
+            pdf.addPage();
+            yPosition = 20;
+            // Reset font size after new page
+            pdf.setFontSize(10);
+            pdf.setFont("helvetica", "normal");
+          }
+
+          const lines = pdf.splitTextToSize(paragraph, rightMargin - leftMargin);
+          pdf.text(lines, leftMargin, yPosition);
+          yPosition += lineHeight * (lines.length + 0.3);
+        });
+
+        yPosition += lineHeight;
+      });
+
+      // Add closing location and date
+      const closingDate = new Date(contractData.contractDate);
+      const closingDateStr = closingDate.toLocaleDateString("id-ID", {
+        day: "numeric",
+        month: "long",
+        year: "numeric"
+      });
+
       if (yPosition > 220) {
+        addPageNumber(); // Add page number to current page before adding new page
         pdf.addPage();
         yPosition = 20;
       }
 
-      // Signature header
-      pdf.setFillColor(50, 77, 62);
-      pdf.rect(leftMargin, yPosition, 170, 8, "F");
-
-      pdf.setTextColor(255, 255, 255);
-      pdf.setFontSize(12);
-      pdf.setFont("helvetica", "bold");
-      pdf.text("PENANDATANGANAN", leftMargin + 5, yPosition + 6);
-
-      yPosition += 20;
-
-      // Signature boxes
-      pdf.setTextColor(0, 0, 0);
-      pdf.setLineWidth(0.3);
-      pdf.setDrawColor(200, 200, 200);
-
-      // Left signature box - Koperasi
-      pdf.rect(leftMargin, yPosition, 80, 40);
-      pdf.setFontSize(9);
-      pdf.setFont("helvetica", "bold");
-      pdf.text("KOPERASI BINTANG MERAH", leftMargin + 5, yPosition + 6);
-      pdf.text("SEJAHTERA", leftMargin + 5, yPosition + 11);
-
+      pdf.setFontSize(10); // Ensure consistent font size
       pdf.setFont("helvetica", "normal");
-      pdf.text("Ketua Koperasi", leftMargin + 5, yPosition + 32);
-      pdf.text("H. Budi Santoso, S.E.", leftMargin + 5, yPosition + 37);
+      pdf.text(`Jakarta, ${closingDateStr}`, leftMargin, yPosition);
+      yPosition += lineHeight * 2;
 
-      // Right signature box - Investor
-      pdf.rect(leftMargin + 90, yPosition, 80, 40);
-      pdf.setFontSize(9);
-      pdf.setFont("helvetica", "bold");
-      pdf.text("PIHAK INVESTOR", leftMargin + 95, yPosition + 8);
+      // Signature Section (updated format)
+      if (yPosition > 180) {
+        addPageNumber(); // Add page number to current page before adding new page
+        pdf.addPage();
+        yPosition = 20;
+      }
 
+      pdf.setFontSize(10); // Ensure consistent font size
       pdf.setFont("helvetica", "normal");
-      pdf.text("Investor", leftMargin + 95, yPosition + 32);
-      pdf.text(
-        `${contractData.investor.name}`,
-        leftMargin + 95,
-        yPosition + 37
-      );
 
-      // Add investor signature
+      // Main signature headers - align them properly
+      const pihakPertamaX = leftMargin + 30;
+      const pihakKeduaX = leftMargin + 120;
+
+      pdf.text("Pihak Pertama", pihakPertamaX, yPosition);
+      pdf.text("Pihak Kedua", pihakKeduaX, yPosition);
+
+      yPosition += lineHeight * 2; // Space after headers
+
+      // Define the signature area dimensions and position
+      const signatureAreaWidth = 80;
+      const signatureAreaHeight = 25;
+      const signatureAreaX = pihakKeduaX - 25; // Move more to the left
+      const signatureStartY = yPosition;
+
+      // Names position (will be placed after signature area)
+      const nameYPosition = signatureStartY + signatureAreaHeight + (lineHeight * 1);
+
+      // Right side - Investor signature (centered in the allocated space)
       if (signatureDataURL) {
         try {
-          // Show alert with the first 100 chars for debugging
-          showError("Signature Data (first 100 chars)", signatureDataURL.slice(0, 100));
           if (!signatureDataURL.startsWith("data:image/png;base64,")) {
             throw new Error("signatureDataURL is not a valid PNG base64 string");
           }
+
+          // Center the signature both horizontally and vertically in the allocated space
+          // The signature should maintain its canvas positioning but be centered in the area
+          const signatureCenterX = signatureAreaX + (signatureAreaWidth / 2) - (60 / 2); // 60 is signature width
+          const signatureCenterY = signatureStartY + (signatureAreaHeight / 2) - (15 / 2); // 15 is signature height
+
           pdf.addImage(
             signatureDataURL,
             "PNG",
-            leftMargin + 95,
-            yPosition + 12,
-            70,
-            15
+            signatureCenterX,
+            signatureCenterY,
+            60, // Reasonable signature width
+            15  // Reasonable signature height
           );
         } catch (err: any) {
           showError("Failed to add signature image to PDF", err?.message || String(err));
         }
+      } else {
+        // Show placeholder line if no signature
+        const placeholderX = signatureAreaX + (signatureAreaWidth / 2) - 40;
+        const placeholderY = signatureStartY + (signatureAreaHeight / 2);
+        pdf.text("_________________", placeholderX, placeholderY);
       }
+
+      // Names under signatures - left aligned for Halim, aligned for investor with "Pihak Kedua"
+      const halimX = leftMargin + 5;
+      pdf.text("Halim Perdana Kusuma, S.H., M.H.", halimX, nameYPosition);
+
+      // Align investor name to start at the same position as "Pihak Kedua" text
+      pdf.text(`${contractData.investor.name}`, pihakKeduaX, nameYPosition);
+
+      yPosition = nameYPosition;
+
+      yPosition += lineHeight;
+
+      // Align "Ketua Koperasi" with the Halim text (same left position)
+      pdf.text("Ketua Koperasi", halimX, yPosition);
 
       yPosition += 50;
 
@@ -436,7 +682,7 @@ export default function ContractPage() {
       pdf.setFillColor(250, 250, 250);
       pdf.rect(leftMargin, yPosition, 170, 15, "F");
 
-      pdf.setFontSize(8);
+      pdf.setFontSize(8); // Footer uses smaller font size (this is intentional)
       pdf.setTextColor(100, 100, 100);
       pdf.text(
         `Ditandatangani secara digital pada: ${new Date().toLocaleString(
@@ -451,6 +697,9 @@ export default function ContractPage() {
         leftMargin + 90,
         yPosition + 8
       );
+
+      // Add page number to the final page
+      addPageNumber();
 
       // Save PDF
       pdf.save(
@@ -564,124 +813,293 @@ export default function ContractPage() {
           <p className="text-[#889063]">Koperasi Bintang Merah Sejahtera</p>
         </div>
 
-        {/* Contract Preview */}
+        {/* Full Contract Preview */}
         <div className="bg-white rounded-2xl shadow-xl border border-[#324D3E]/10 mb-8">
           <div className="p-8">
             {/* Contract Header */}
-            <div className="border-b border-gray-200 pb-6 mb-6">
-              <div className="flex justify-between items-start">
-                <div>
-                  <h2 className="text-xl font-bold text-[#324D3E]">
-                    Nomor Kontrak: {contractData.contractNumber}
-                  </h2>
-                  <p className="text-[#889063]">
-                    Tanggal:{" "}
-                    {new Date(contractData.contractDate).toLocaleDateString(
-                      "id-ID"
-                    )}
-                  </p>
-                </div>
-                <div className="text-right">
-                  <p className="text-sm text-[#889063]">ID Investasi</p>
-                  <p className="font-semibold text-[#324D3E]">
-                    {contractData.investment.investmentId}
-                  </p>
-                </div>
-              </div>
+            <div className="text-center mb-8">
+              <h1 className="text-2xl font-bold text-[#324D3E] mb-2">
+                SURAT PERJANJIAN KERJASAMA
+              </h1>
+              <h2 className="text-xl font-bold text-[#324D3E] mb-2">(KONTRAK)</h2>
+              <p className="text-[#889063] mb-4">
+                Nomor: {contractData.contractNumber}
+              </p>
+              <hr className="border-[#324D3E] border-t-2 mb-6" />
             </div>
 
-            {/* Investor Info */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+            {/* Contract Content */}
+            <div className="space-y-6 text-sm text-[#324D3E]">
+              {/* Date and Parties */}
               <div>
-                <h3 className="text-lg font-semibold text-[#324D3E] mb-4">
-                  Data Investor
-                </h3>
-                <div className="space-y-2">
-                  <p>
-                    <span className="text-[#889063]">Nama:</span>{" "}
-                    <span className="font-medium">
-                      {contractData.investor.name}
-                    </span>
-                  </p>
-                  <p>
-                    <span className="text-[#889063]">Email:</span>{" "}
-                    <span className="font-medium">
-                      {contractData.investor.email}
-                    </span>
-                  </p>
-                  {contractData.investor.phoneNumber && (
-                    <p>
-                      <span className="text-[#889063]">Telepon:</span>{" "}
-                      <span className="font-medium">
-                        {contractData.investor.phoneNumber}
-                      </span>
-                    </p>
-                  )}
+                <p className="mb-4">
+                  Pada hari ini, {new Date(contractData.contractDate).toLocaleDateString("id-ID", {
+                    weekday: "long",
+                    day: "numeric",
+                    month: "long",
+                    year: "numeric"
+                  })}, ({new Date(contractData.contractDate).toLocaleDateString("id-ID", {
+                    day: "2-digit",
+                    month: "2-digit",
+                    year: "numeric"
+                  })}) yang bertandatangan dibawah ini:
+                </p>
+
+                {/* Pihak Pertama - Investor */}
+                <div className="mb-6 space-y-1">
+                  <div className="grid grid-cols-[120px_1fr]">
+                    <span className="font-medium">Nama</span>
+                    <span>: {contractData.investor.name}</span>
+                  </div>
+                  <div className="grid grid-cols-[120px_1fr]">
+                    <span className="font-medium">NIK</span>
+                    <span>: {contractData.investor.nik || ""}</span>
+                  </div>
+                  <div className="grid grid-cols-[120px_1fr]">
+                    <span className="font-medium">Tempat/Tgl Lahir</span>
+                    <span>: {contractData.investor.dateOfBirth ? new Date(contractData.investor.dateOfBirth).toLocaleDateString("id-ID") : ""}</span>
+                  </div>
+                  <div className="grid grid-cols-[120px_1fr]">
+                    <span className="font-medium">Email</span>
+                    <span>: {contractData.investor.email}</span>
+                  </div>
+                  <div className="grid grid-cols-[120px_1fr]">
+                    <span className="font-medium">Nomor Kontak</span>
+                    <span>: {contractData.investor.phoneNumber || ""}</span>
+                  </div>
+                  <div className="grid grid-cols-[120px_1fr]">
+                    <span className="font-medium">Pekerjaan</span>
+                    <span>: {contractData.investor.occupation || ""}</span>
+                  </div>
+                  <div className="grid grid-cols-[120px_1fr]">
+                    <span className="font-medium">Alamat</span>
+                    <span>: {[
+                      contractData.investor.address,
+                      contractData.investor.village,
+                      contractData.investor.city,
+                      contractData.investor.province,
+                      contractData.investor.postalCode
+                    ].filter(Boolean).join(", ")}</span>
+                  </div>
+                </div>
+
+                <p className="mb-4">
+                  Bertindak untuk dan atas nama diri sendiri. selanjutnya disebut sebagai <strong>Pihak Pertama</strong>.
+                </p>
+
+                {/* Pihak Kedua - Koperasi */}
+                <div className="mb-6 space-y-1">
+                  <div className="grid grid-cols-[120px_1fr]">
+                    <span className="font-medium">Nama</span>
+                    <span>: Halim Perdana Kusuma, S.H., M.H.</span>
+                  </div>
+                  <div className="grid grid-cols-[120px_1fr]">
+                    <span className="font-medium">Tempat/Tgl Lahir</span>
+                    <span>: Sukaraja, 11 September 1986</span>
+                  </div>
+                  <div className="grid grid-cols-[120px_1fr]">
+                    <span className="font-medium">Alamat</span>
+                    <span>: Komplek Taman Mutiara Indah blok J3 No.17 RT004 RW017 Kaligandu, Kota Serang, Banten</span>
+                  </div>
+                </div>
+
+                <p className="mb-6">
+                  Bertindak untuk dan atas nama <strong>KOPERASI BINTANG MERAH SEJAHTERA</strong>, selanjutnya disebut sebagai <strong>Pihak Kedua</strong>.
+                </p>
+
+                {/* Preamble */}
+                <div className="space-y-4">
+                  <p>Bahwa sebelum ditandatanganinya Surat Perjanjian ini, Para pihak terlebih dahulu menerangkan hal–hal sebagai berikut:</p>
+
+                  {(() => {
+                    const totalAmountText = `Rp${contractData.investment.totalAmount.toLocaleString("id-ID")},-`;
+                    const totalAmountWords = convertNumberToWords(contractData.investment.totalAmount);
+                    let plantTypesText = "GAHARU, ALPUKAT, JENGKOL, AREN";
+                    if (contractData.investment.productName) {
+                      const productName = contractData.investment.productName.toLowerCase();
+                      if (productName.includes("alpukat")) plantTypesText = "ALPUKAT";
+                      else if (productName.includes("gaharu")) plantTypesText = "GAHARU";
+                      else if (productName.includes("jengkol")) plantTypesText = "JENGKOL";
+                      else if (productName.includes("aren")) plantTypesText = "AREN";
+                    }
+
+                    return (
+                      <div className="space-y-3">
+                        <p>1. Bahwa Pihak Pertama adalah selaku yang memiliki modal sebesar {totalAmountText} ({totalAmountWords}) untuk selanjutnya disebut sebagai MODAL KERJASAMA untuk project ({plantTypesText});</p>
+                        <p>2. Bahwa Pihak Kedua adalah Pengelola Dana Kerjasama untuk project ({plantTypesText}) berlokasi di Kabupten Musi Rawas Utara Provinsi Sumatera Selatan;</p>
+                        <p>3. Bahwa Pihak Pertama dan Pihak Kedua setuju untuk saling mengikatkan diri dalam suatu perjanjian Kerjasama di project ({plantTypesText}) sesuai dengan ketentuan hukum yang berlaku.</p>
+                        <p>4. Bahwa berdasarkan hal-hal tersebut di atas, kedua belah pihak menyatakan sepakat dan setuju untuk mengadakan Perjanjian Kerjasama ini yang dilaksanakan dengan ketentuan dan syarat-syarat sebagai berikut:</p>
+                      </div>
+                    );
+                  })()}
                 </div>
               </div>
 
-              <div>
-                <h3 className="text-lg font-semibold text-[#324D3E] mb-4">
-                  Detail Investasi
-                </h3>
-                <div className="space-y-2">
-                  <p>
-                    <span className="text-[#889063]">Produk:</span>{" "}
-                    <span className="font-medium">
-                      {contractData.investment.productName}
-                    </span>
+              {/* All Articles in a scrollable area */}
+              <div className="bg-gray-50 rounded-lg p-6 max-h-96 overflow-y-auto">
+                <div className="space-y-6">
+                  {/* Article content will be generated dynamically */}
+                  {(() => {
+                    const totalAmountText = `Rp${contractData.investment.totalAmount.toLocaleString("id-ID")},-`;
+                    const totalAmountWords = convertNumberToWords(contractData.investment.totalAmount);
+                    let plantTypesText = "GAHARU, ALPUKAT, JENGKOL, AREN";
+                    if (contractData.investment.productName) {
+                      const productName = contractData.investment.productName.toLowerCase();
+                      if (productName.includes("alpukat")) plantTypesText = "ALPUKAT";
+                      else if (productName.includes("gaharu")) plantTypesText = "GAHARU";
+                      else if (productName.includes("jengkol")) plantTypesText = "JENGKOL";
+                      else if (productName.includes("aren")) plantTypesText = "AREN";
+                    }
+
+                    const articles = [
+                      {
+                        title: "PASAL I\nDEFINISI",
+                        content: [
+                          "Dalam perjanjian ini, istilah-istilah berikut mempunyai arti sebagai berikut:",
+                          "",
+                          `Paket Penanaman adalah unit usaha yang terdiri dari 10 (sepuluh) pohon (${plantTypesText}) yang ditanam, dirawat, dan dipanen oleh PIHAK PERTAMA.`,
+                          "Dana Investasi adalah sejumlah uang yang diserahkan PIHAK KEDUA kepada PIHAK PERTAMA untuk mendanai pembelian bibit, penanaman, perawatan, serta biaya operasional hingga pemanenan pohon.",
+                          "Keuntungan adalah hasil bersih dari penjualan panen setelah dikurangi biaya operasional yang sah.",
+                          "Kerugian adalah nilai minus yang timbul akibat berkurangnya hasil panen atau biaya operasional yang lebih besar daripada pendapatan.",
+                          "Laporan Usaha adalah laporan tertulis dan/atau elektronik yang disampaikan PIHAK PERTAMA kepada PIHAK KEDUA secara periodik.",
+                          "Masa Perawatan adalah periode sejak bibit ditanam hingga pohon siap dipanen.",
+                          "Force Majeure adalah keadaan di luar kemampuan Para Pihak yang menyebabkan salah satu pihak tidak dapat melaksanakan kewajibannya.",
+                          "Para Pihak adalah PIHAK PERTAMA dan PIHAK KEDUA yang menandatangani perjanjian ini."
+                        ]
+                      },
+                      {
+                        title: "PASAL II\nMAKSUD DAN TUJUAN",
+                        content: [
+                          `Pihak Pertama dalam perjanjian ini memberi DANA KERJASAMA kepada Pihak Kedua sebesar ${totalAmountText} (${totalAmountWords}) untuk 1 (satu) paket penanaman dan Pihak Kedua dengan ini telah menerima penyerahan DANA KERJASAMA tersebut dari Pihak Pertama serta menyanggupi untuk melaksanakan pengelolaan DANA KERJASAMA tersebut.`
+                        ]
+                      },
+                      {
+                        title: "PASAL III\nRUANG LINGKUP",
+                        content: [
+                          `Dalam pelaksanaan perjanjian ini, Pihak Pertama memberi DANA kepada Pihak Kedua sebesar ${totalAmountText} (${totalAmountWords}) untuk 1 (satu) paket penanaman dan Pihak Kedua dengan ini telah menerima penyerahan DANA tersebut dari Pihak Pertama serta menyanggupi untuk melaksanakan pengelolaan DANA.`,
+                          `Pihak Kedua dengan ini berjanji dan mengikatkan diri untuk melaksanakan perputaran DANA pada Usaha Peningkatan Modal di project (${plantTypesText}) yang berlokasi di Kabupten Musi Rawas Utara Provinsi Sumatera Selatan setelah ditandatanganinya perjanjian ini.`,
+                          "Pihak Kedua dengan ini berjanji dan mengikatkan diri untuk memberikan keuntungan kepada Pihak Pertama di mulai dari setelah masa panen pertama;"
+                        ]
+                      },
+                      {
+                        title: "PASAL IV\nJANGKA WAKTU KERJASAMA",
+                        content: [
+                          "Perjanjian kerjasama ini dilakukan dan diterima untuk jangka waktu 10 (sepuluh puluh) tahun, terhitung sejak tanggal di tanda tanganinya perjanjian ini;"
+                        ]
+                      },
+                      {
+                        title: "PASAL V\nHAK DAN KEWAJIBAN PIHAK PERTAMA",
+                        content: [
+                          "Dalam Perjanjian Kerjasama ini, Pihak Pertama memiliki Hak dan Kewajiban sebagai berikut:",
+                          `Memberikan DANA kepada Pihak Kedua sebesar ${totalAmountText} (${totalAmountWords}) untuk 1 (satu) paket penanaman;`,
+                          "Menerima hasil keuntungan atas pengelolaan DANA;",
+                          "Menerima laporan perkembangan usaha secara berkala;",
+                          "Melakukan pengawasan terhadap usaha dengan pemberitahuan terlebih dahulu;",
+                          "Tidak melakukan intervensi teknis dalam pengelolaan usaha;",
+                          "Menjaga kerahasiaan informasi terkait operasional usaha."
+                        ]
+                      },
+                      {
+                        title: "PASAL VI\nHAK DAN KEWAJIBAN PIHAK KEDUA",
+                        content: [
+                          "Dalam Perjanjian Kerjasama ini, Pihak Kedua memiliki Hak dan Kewajiban sebagai berikut :",
+                          `Menerima DANA dari Pihak Pertama sebesar ${totalAmountText} (${totalAmountWords}) untuk 1 (satu) paket penanaman;`,
+                          "Memberikan bagian hasil keuntungan kepada Pihak Pertama;",
+                          "Memperoleh bagian keuntungan dari pengelolaan usaha;",
+                          "Menentukan metode teknis penanaman, perawatan, dan pemanenan pohon;",
+                          "Menyediakan bibit pohon sesuai jumlah paket yang dibeli PIHAK KEDUA;",
+                          "Melaksanakan penanaman, perawatan, hingga pemanenan pohon sesuai standar;",
+                          "Memberikan laporan perkembangan usaha;",
+                          "Membagi keuntungan kepada PIHAK KEDUA sesuai dengan jadwal yang ditentukan;",
+                          "Menjaga transparansi penggunaan dana dan membuka akses audit."
+                        ]
+                      },
+                      {
+                        title: "PASAL VII\nPEMBAGIAN HASIL",
+                        content: [
+                          "Dalam Perjanjian Kerjasama ini, kedua belah pihak sepakat didalam hal pembagian hasil penyertaan dana sebagai berikut:",
+                          `Kedua belah pihak sepakat dan setuju bahwa perjanjian kerjasama ini dilakukan dengan cara pemberian keuntungan yang diperoleh dalam Usaha Peningkatan Modal Usaha di project (${plantTypesText}) berlokasi di Kabupten Musi Rawas Utara Provinsi Sumatera Selatan;`,
+                          "Keuntungan yang akan di Terima Pihak Pertama dibagi dengan skema: 70% (tujuh puluh persen) untuk PIHAK PERTAMA dan 30% (tiga puluh persen) untuk PIHAK KEDUA;",
+                          "Pembagian keuntungan dilakukan paling lambat 7 (tujuh) hari Kerja setelah masa panen.",
+                          "Pembayaran keuntungan dilakukan melalui transfer ke rekening PIHAK KEDUA."
+                        ]
+                      },
+                      {
+                        title: "PASAL VIII\nKEADAAN MEMAKSA (FORCE MAJEURE)",
+                        content: [
+                          "Yang termasuk dalam Force Majeure adalah akibat dari kejadian-kejadian diluar kuasa dan kehendak dari kedua belah pihak diantaranya termasuk tidak terbatas bencana alam, banjir, badai, topan, gempa bumi, kebakaran, perang, huru-hara, pemberontakan, demonstrasi, pemogokan, kegagalan koperasi.",
+                          "Pihak yang mengalami Force Majeure wajib memberitahukan secara tertulis kepada pihak lainnya selambat-lambatnya 7 (tujuh) hari sejak terjadinya keadaan tersebut dengan bukti pendukung yang sah.",
+                          "Apabila Force Majeure berlangsung tidak lebih dari 30 (tiga puluh) hari, kewajiban para pihak ditunda hingga keadaan berakhir.",
+                          "Apabila Force Majeure berlangsung lebih dari 90 (Sembilan puluh) hari sehingga pelaksanaan perjanjian tidak mungkin dilanjutkan, maka para pihak sepakat untuk membicarakan kembali atau mengakhiri perjanjian tanpa tuntutan ganti rugi."
+                        ]
+                      },
+                      {
+                        title: "PASAL IX\nWANPRESTASI",
+                        content: [
+                          "Dalam hal salah satu pihak telah melanggar kewajibannya yang tercantum dalam salah satu Pasal perjanjian ini, telah cukup bukti dan tanpa perlu dibuktikan lebih lanjut, bahwa pihak yang melanggar tersebut telah melakukan tindakan Wanprestasi.",
+                          "Pihak yang merasa dirugikan atas tindakan Wanprestasi tersebut dalam ayat 1 diatas, berhak meminta ganti kerugian dari pihak yang melakukan wanprestasi tersebut atas sejumlah kerugian yang dideritanya, kecuali dalam hal kerugian tersebut disebabkan karena adanya suatu keadaan memaksa, seperti tercantum dalam Pasal VIII."
+                        ]
+                      },
+                      {
+                        title: "PASAL X\nPERSELISIHAN",
+                        content: [
+                          "Bilamana dalam pelaksanaan perjanjian Kerjasama ini terdapat perselisihan antara kedua belah pihak baik dalam pelaksanaannya ataupun dalam penafsiran salah satu Pasal dalam perjanjian ini, maka kedua belah pihak sepakat untuk sedapat mungkin menyelesaikan perselisihan tersebut dengan cara musyawarah. Apabila musyawarah telah dilakukan oleh kedua belah pihak, namun ternyata tidak berhasil mencapai suatu kemufakatan maka Para Pihak sepakat bahwa semua sengketa yang timbul dari perjanjian ini akan diselesaikan pada Kantor Kepaniteraan Pengadilan Negeri Jakarta Selatan."
+                        ]
+                      },
+                      {
+                        title: "PASAL XI\nATURAN PENUTUP",
+                        content: [
+                          "Hal-hal yang belum diatur atau belum cukup diatur dalam perjanjian ini apabila dikemudian hari dibutuhkan dan dipandang perlu akan ditetapkan tersendiri secara musyawarah dan selanjutnya akan ditetapkan dalam suatu ADDENDUM yang berlaku mengikat bagi kedua belah pihak, yang akan direkatkan dan merupakan bagian yang tidak terpisahkan dari Perjanjian ini.",
+                          "",
+                          "Demikianlah surat perjanjian kerjasama ini dibuat dalam rangkap 2 (dua), untuk masing-masing pihak, yang ditandatangani di atas kertas bermaterai cukup, yang masing-masing mempunyai kekuatan hukum yang sama dan berlaku sejak ditandatangani."
+                        ]
+                      }
+                    ];
+
+                    return articles.map((article, index) => (
+                      <div key={index} className="mb-6">
+                        <h3 className="font-bold text-[#324D3E] mb-3 whitespace-pre-line">
+                          {article.title}
+                        </h3>
+                        <div className="space-y-2">
+                          {article.content.map((paragraph, pIndex) => (
+                            <p key={pIndex} className={paragraph === "" ? "h-2" : "text-xs leading-relaxed"}>
+                              {paragraph}
+                            </p>
+                          ))}
+                        </div>
+                      </div>
+                    ));
+                  })()}
+                </div>
+
+                {/* Closing */}
+                <div className="mt-8 pt-6 border-t border-gray-300">
+                  <p className="text-center text-sm">
+                    Jakarta, {new Date(contractData.contractDate).toLocaleDateString("id-ID", {
+                      day: "numeric",
+                      month: "long",
+                      year: "numeric"
+                    })}
                   </p>
-                  <p>
-                    <span className="text-[#889063]">Jenis Pohon:</span>{" "}
-                    <span className="font-medium">
-                      {contractData.plantInstance.plantType.toUpperCase()}
-                    </span>
-                  </p>
-                  <p>
-                    <span className="text-[#889063]">Instansi:</span>{" "}
-                    <span className="font-medium">
-                      {contractData.plantInstance.instanceName}
-                    </span>
-                  </p>
-                  <p>
-                    <span className="text-[#889063]">Total:</span>{" "}
-                    <span className="font-medium">
-                      Rp{" "}
-                      {contractData.investment.totalAmount.toLocaleString(
-                        "id-ID"
-                      )}
-                    </span>
-                  </p>
-                  <p>
-                    <span className="text-[#889063]">ROI:</span>{" "}
-                    <span className="font-medium">
-                      {contractData.plantInstance.baseAnnualROI * 100}%/tahun
-                    </span>
-                  </p>
+
+                  <div className="mt-8 grid grid-cols-2 gap-8">
+                    <div className="text-center">
+                      <p className="font-medium">Pihak Pertama</p>
+                      <div className="h-16 mb-2"></div>
+                      <p className="text-sm">Halim Perdana Kusuma, S.H., M.H.</p>
+                      <p className="text-xs text-gray-600">Ketua Koperasi</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="font-medium">Pihak Kedua</p>
+                      <div className="h-16 mb-2 bg-yellow-50 border-2 border-dashed border-yellow-300 rounded flex items-center justify-center">
+                        <span className="text-xs text-yellow-600">Area Tanda Tangan</span>
+                      </div>
+                      <p className="text-sm">{contractData.investor.name}</p>
+                    </div>
+                  </div>
                 </div>
               </div>
-            </div>
-
-            {/* Contract Terms (Summary) */}
-            <div className="bg-[#324D3E]/5 rounded-xl p-6 mb-8">
-              <h3 className="text-lg font-semibold text-[#324D3E] mb-4">
-                Ringkasan Ketentuan
-              </h3>
-              <ul className="space-y-2 text-sm text-[#324D3E]">
-                <li>
-                  • Investor berhak atas hasil panen sesuai persentase investasi
-                </li>
-                <li>
-                  • Hak kepemilikan berlaku setelah pembayaran lunas dan
-                  penandatanganan kontrak
-                </li>
-                <li>
-                  • Investor berhak mendapat laporan perkembangan pohon secara
-                  berkala
-                </li>
-                <li>• Koperasi berkewajiban merawat pohon hingga masa panen</li>
-                <li>• Hasil panen dibagi sesuai persentase kepemilikan</li>
-              </ul>
             </div>
           </div>
         </div>

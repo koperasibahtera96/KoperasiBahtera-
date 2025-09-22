@@ -255,7 +255,7 @@ export default function DailyIncomingInvestorPage() {
       const userIds = uniq(rows.map(r => r.userId || r.investorId)); // tetap kirim—tidak dipakai di tabel
       const orderIds = uniq(rows.map(r => r.orderId || r.investmentId));
 
-      let memberCodes: Record<string, string> = {};
+  
       let plantByOrder: Record<string, { kavling?: string; productName?: string }> = {};
 
       try {
@@ -266,7 +266,6 @@ export default function DailyIncomingInvestorPage() {
         });
         if (helperRes.ok) {
           const helperJson = await helperRes.json();
-          memberCodes = helperJson?.memberCodes || {};
           plantByOrder = helperJson?.plantByOrder || {};
         } else {
           console.warn("[daily-export] helper API not ok:", helperRes.status);

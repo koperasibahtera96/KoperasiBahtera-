@@ -45,10 +45,17 @@ export async function GET(
     // Format contract data to match the interface expected by the frontend
     const contractData = {
       investor: {
-        name: user.name || user.email.split('@')[0],
+        name: user.fullName || user.name || user.email.split('@')[0],
         email: user.email,
         phoneNumber: user.phoneNumber || undefined,
-        address: user.address || undefined,
+        nik: user.nik || undefined,
+        dateOfBirth: user.dateOfBirth || undefined,
+        occupation: user.occupation || undefined,
+        address: user.ktpAddress || user.address || undefined,
+        village: user.ktpVillage || undefined,
+        city: user.ktpCity || undefined,
+        province: user.ktpProvince || undefined,
+        postalCode: user.ktpPostalCode || undefined,
       },
       investment: {
         investmentId: contract.contractId,
@@ -61,7 +68,16 @@ export async function GET(
       },
       plantInstance: {
         instanceName: "Instansi Pohon",
-        plantType: "pohon",
+        plantType: (() => {
+          if (contract.productName) {
+            const productName = contract.productName.toLowerCase();
+            if (productName.includes("alpukat")) return "ALPUKAT";
+            if (productName.includes("gaharu")) return "GAHARU";
+            if (productName.includes("jengkol")) return "JENGKOL";
+            if (productName.includes("aren")) return "AREN";
+          }
+          return "pohon";
+        })(),
         baseAnnualROI: 0.15, // Default 15%
         location: "Akan ditentukan",
       },

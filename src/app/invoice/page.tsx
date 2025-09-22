@@ -291,7 +291,7 @@ function InvoicePageContent() {
       // Replikasi logic grouping yang sama seperti di UI,
       // tetapi berbasis allPayments agar export mencakup keseluruhan data.
       const map = new Map<string, PaymentData[]>();
-      const cicilanItems: PaymentData[] = [];
+      const _cicilanItems: PaymentData[] = [];
       const nonCicilanItems: PaymentData[] = [];
 
       for (const p of allPayments) {

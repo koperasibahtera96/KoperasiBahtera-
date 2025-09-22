@@ -92,8 +92,8 @@ export async function POST(
         // Update history
         existingPlantInstance.history.push({
           id: `HISTORY-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`,
-          action: "Kontrak Disetujui",
-          type: "Contract Approval",
+          action: "Kontrak Baru",
+          type: "Kontrak Baru",
           date: new Date().toLocaleDateString("id-ID", {
             day: "2-digit",
             month: "2-digit",

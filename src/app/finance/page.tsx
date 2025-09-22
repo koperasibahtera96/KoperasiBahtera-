@@ -230,6 +230,7 @@ export default function FinancePage() {
     }
 
     fetchData()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   // =============== EXPORT: layout seperti contoh, 2 tabel & "Rp" satu sel ===============

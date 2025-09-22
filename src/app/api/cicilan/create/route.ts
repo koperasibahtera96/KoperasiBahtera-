@@ -72,12 +72,14 @@ export async function POST(req: NextRequest) {
         throw new Error("Contract not found");
       }
 
-      if (contract.adminApprovalStatus !== 'approved') {
+      if (contract.adminApprovalStatus !== 'approved' || contract.status !== 'approved') {
         throw new Error(
           contract.adminApprovalStatus === 'pending'
             ? "Your contract is still under review. Please wait for admin approval."
             : contract.adminApprovalStatus === 'rejected'
             ? "Your contract was rejected. Please re-sign the contract."
+            : contract.status !== 'approved'
+            ? "Contract must be signed and approved before creating cicilan."
             : "Contract approval required before creating cicilan."
         );
       }
