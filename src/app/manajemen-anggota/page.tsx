@@ -323,7 +323,7 @@ function BulkFinanceBar() {
 
           <div className="flex-1 grid grid-cols-1 sm:grid-cols-4 gap-3 sm:items-end">
             <div>
-              <label className="block text-sm font-medium text-[#324D3E] dark:text-gray-100 mb-1 min-h-[2.5rem] flex items-end">
+              <label className="text-sm font-medium text-[#324D3E] dark:text-gray-100 mb-1 min-h-[2.5rem] flex items-end">
                 Set Pendapatan (semua tercentang)
               </label>
               <Input
@@ -339,7 +339,7 @@ function BulkFinanceBar() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-[#324D3E] dark:text-gray-100 mb-1 min-h-[2.5rem] flex items-end">
+              <label className="text-sm font-medium text-[#324D3E] dark:text-gray-100 mb-1 min-h-[2.5rem] flex items-end">
                 Set Pengeluaran (semua tercentang)
               </label>
               <Input
@@ -355,7 +355,7 @@ function BulkFinanceBar() {
               />
             </div>
             <div className="sm:col-span-2">
-              <label className="block text-sm font-medium text-[#324D3E] dark:text-gray-100 mb-1 min-h-[2.5rem] flex items-end">
+              <label className="text-sm font-medium text-[#324D3E] dark:text-gray-100 mb-1 min-h-[2.5rem] flex items-end">
                 Set Catatan (semua tercentang)
               </label>
               <Input

@@ -1,6 +1,8 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from "react";
+import { useTheme } from "next-themes";
+import { Trash2, AlertTriangle, Check } from "lucide-react";
 
 interface ConfirmDialogProps {
   isOpen: boolean;
@@ -23,50 +25,62 @@ export function ConfirmDialog({
   onConfirm,
   onCancel
 }: ConfirmDialogProps) {
+  const { theme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => setMounted(true), []);
+
   if (!isOpen) return null;
+
+  const getThemeClasses = (baseClasses: string, pinkClasses: string = "") => {
+    if (mounted && theme === "pink" && pinkClasses) {
+      return `${baseClasses} ${pinkClasses}`;
+    }
+    return baseClasses;
+  };
 
   const getConfirmButtonClasses = () => {
     switch (confirmVariant) {
-      case 'danger':
-        return 'bg-red-600 hover:bg-red-700 text-white';
-      case 'primary':
-        return 'bg-emerald-600 hover:bg-emerald-700 text-white';
-      case 'warning':
-        return 'bg-yellow-600 hover:bg-yellow-700 text-white';
+      case "danger":
+        return getThemeClasses("bg-red-600 hover:bg-red-700 text-white", "!bg-gradient-to-r !from-[#FFC1CC] !to-[#FFDEE9] !text-[#4c1d1d]");
+      case "primary":
+        return getThemeClasses("bg-emerald-600 hover:bg-emerald-700 text-white", "!bg-gradient-to-r !from-[#B5EAD7] !to-[#E6FFF0] !text-[#4c1d1d]");
+      case "warning":
+        return getThemeClasses("bg-yellow-600 hover:bg-yellow-700 text-white", "!bg-gradient-to-r !from-[#C7CEEA] !to-[#EAF0FF] !text-[#4c1d1d]");
       default:
-        return 'bg-red-600 hover:bg-red-700 text-white';
+        return getThemeClasses("bg-red-600 hover:bg-red-700 text-white", "!bg-gradient-to-r !from-[#FFC1CC] !to-[#FFDEE9] !text-[#4c1d1d]");
     }
   };
 
   const getIcon = () => {
     switch (confirmVariant) {
-      case 'danger':
-        return '🗑️';
-      case 'warning':
-        return '⚠️';
-      case 'primary':
-        return '✅';
+      case "danger":
+        return <Trash2 className={getThemeClasses("w-10 h-10", "text-[#4c1d1d]")} />;
+      case "warning":
+        return <AlertTriangle className={getThemeClasses("w-10 h-10", "text-[#4c1d1d]")} />;
+      case "primary":
+        return <Check className={getThemeClasses("w-10 h-10", "text-[#4c1d1d]")} />;
       default:
-        return '❓';
+        return <div className="w-10 h-10" />;
     }
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-[70]">
-      <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full transform animate-in zoom-in duration-200">
+    <div className={getThemeClasses("fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-[70]", "") }>
+      <div className={getThemeClasses("bg-white dark:bg-gray-800 rounded-2xl shadow-2xl max-w-md w-full transform animate-in zoom-in duration-200 border border-gray-200 dark:border-gray-700", "!bg-white/95 !border-[#FFC1CC]/30") }>
         {/* Header */}
-        <div className="p-6 text-center">
-          <div className="text-4xl mb-4">{getIcon()}</div>
-          <h3 className="text-xl font-bold text-gray-900 mb-2">{title}</h3>
-          <p className="text-gray-600 leading-relaxed">{message}</p>
+        <div className={getThemeClasses("p-6 text-center border-b border-gray-200 dark:border-gray-700", "!bg-white/95 !border-b !border-[#FFC1CC]/30") }>
+          <div className="mb-4">{getIcon()}</div>
+          <h3 className={getThemeClasses("text-xl font-bold mb-2 text-gray-900 dark:text-white", "!text-[#4c1d1d]")}>{title}</h3>
+          <p className={getThemeClasses("text-gray-600 dark:text-gray-300 leading-relaxed", "!text-[#6b7280]")}>{message}</p>
         </div>
 
         {/* Actions */}
-        <div className="p-6 bg-gray-50 rounded-b-2xl">
+        <div className={getThemeClasses("p-6 bg-gray-50 dark:bg-gray-900/60 rounded-b-2xl border-t border-gray-100 dark:border-gray-800", "!bg-white/95") }>
           <div className="flex gap-3">
             <button
               onClick={onCancel}
-              className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold py-3 px-4 rounded-lg transition-colors duration-200"
+              className={getThemeClasses("flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-100 font-semibold py-3 px-4 rounded-lg transition-colors duration-200", "!bg-white/80 !text-[#4c1d1d] !border-[#FFC1CC]/30")}
             >
               {cancelText}
             </button>

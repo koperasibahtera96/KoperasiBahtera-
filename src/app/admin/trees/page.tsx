@@ -7,6 +7,7 @@ import { Select } from '@/components/ui/Select';
 import { RefreshCw } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 import { useEffect, useState } from 'react';
+import { useTheme } from 'next-themes';
 
 interface PlantInstance {
   _id: string;
@@ -79,6 +80,15 @@ interface TreesData {
 
 export default function TreesPage() {
   const { data: session } = useSession();
+  const { theme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+  const getThemeClasses = (baseClasses: string, pinkClasses: string = "") => {
+    if (mounted && theme === 'pink' && pinkClasses) {
+      return `${baseClasses} ${pinkClasses}`;
+    }
+    return baseClasses;
+  };
   const [treesData, setTreesData] = useState<TreesData | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedType, setSelectedType] = useState<string>('all');
@@ -175,7 +185,10 @@ export default function TreesPage() {
             <button
               onClick={fetchTreesData}
               disabled={loading}
-              className="bg-[#324D3E]/10 dark:bg-gray-700/50 hover:bg-[#324D3E]/20 dark:hover:bg-gray-700 text-[#324D3E] dark:text-white px-3 sm:px-4 py-2 rounded-xl font-medium transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 text-sm sm:text-base whitespace-nowrap"
+              className={getThemeClasses(
+                "bg-[#324D3E]/10 dark:bg-gray-700/50 hover:bg-[#324D3E]/20 dark:hover:bg-gray-700 text-[#324D3E] dark:text-white px-3 sm:px-4 py-2 rounded-xl font-medium transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 text-sm sm:text-base whitespace-nowrap",
+                '!bg-gradient-to-r !from-[#FFC1CC] !to-[#FFDEE9] !text-[#4c1d1d]'
+              )}
             >
               <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
               <span className="hidden sm:inline">{loading ? 'Memuat...' : 'Refresh'}</span>
@@ -185,28 +198,40 @@ export default function TreesPage() {
 
         {/* Stats Cards */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6 mb-6">
-          <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg rounded-2xl shadow-lg border border-[#324D3E]/10 dark:border-gray-700 p-4 sm:p-6 hover:shadow-xl hover:scale-105 transition-all duration-300">
+          <div className={getThemeClasses(
+            "bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg rounded-2xl shadow-lg border border-[#324D3E]/10 dark:border-gray-700 p-4 sm:p-6 hover:shadow-xl hover:scale-105 transition-all duration-300",
+            '!bg-gradient-to-r !from-[#FFEFF3] !to-[#FFF5F7]'
+          )}>
             <div>
               <p className="text-xs sm:text-sm font-medium text-[#889063] dark:text-gray-300 truncate">🌳 Total Instansi Pohon</p>
               <p className="text-lg sm:text-xl lg:text-2xl font-bold text-[#324D3E] dark:text-white">{treesData?.stats.totalInstances || 0}</p>
             </div>
           </div>
 
-          <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg rounded-2xl shadow-lg border border-[#324D3E]/10 dark:border-gray-700 p-4 sm:p-6 hover:shadow-xl hover:scale-105 transition-all duration-300">
+          <div className={getThemeClasses(
+            "bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg rounded-2xl shadow-lg border border-[#324D3E]/10 dark:border-gray-700 p-4 sm:p-6 hover:shadow-xl hover:scale-105 transition-all duration-300",
+            '!bg-gradient-to-r !from-[#FFEFF3] !to-[#FFF5F7]'
+          )}>
             <div>
               <p className="text-xs sm:text-sm font-medium text-[#889063] dark:text-gray-300 truncate">👥 Total Investor</p>
               <p className="text-lg sm:text-xl lg:text-2xl font-bold text-[#4C3D19] dark:text-emerald-300">{treesData?.stats.totalInvestors || 0}</p>
             </div>
           </div>
 
-          <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg rounded-2xl shadow-lg border border-[#324D3E]/10 dark:border-gray-700 p-4 sm:p-6 hover:shadow-xl hover:scale-105 transition-all duration-300">
+          <div className={getThemeClasses(
+            "bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg rounded-2xl shadow-lg border border-[#324D3E]/10 dark:border-gray-700 p-4 sm:p-6 hover:shadow-xl hover:scale-105 transition-all duration-300",
+            '!bg-gradient-to-r !from-[#FFEFF3] !to-[#FFF5F7]'
+          )}>
             <div>
               <p className="text-xs sm:text-sm font-medium text-[#889063] dark:text-gray-300 truncate">💰 Total Investasi</p>
               <p className="text-lg sm:text-xl lg:text-2xl font-bold text-[#889063] dark:text-blue-300">{formatCurrency(treesData?.stats.totalInvestment || 0)}</p>
             </div>
           </div>
 
-          <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg rounded-2xl shadow-lg border border-[#324D3E]/10 dark:border-gray-700 p-4 sm:p-6 hover:shadow-xl hover:scale-105 transition-all duration-300">
+          <div className={getThemeClasses(
+            "bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg rounded-2xl shadow-lg border border-[#324D3E]/10 dark:border-gray-700 p-4 sm:p-6 hover:shadow-xl hover:scale-105 transition-all duration-300",
+            '!bg-gradient-to-r !from-[#FFEFF3] !to-[#FFF5F7]'
+          )}>
             <div>
               <p className="text-xs sm:text-sm font-medium text-[#889063] dark:text-gray-300 truncate">💵 Total Terbayar</p>
               <p className="text-lg sm:text-xl lg:text-2xl font-bold text-green-600 dark:text-green-400">{formatCurrency(treesData?.stats.totalPaid || 0)}</p>
@@ -248,7 +273,10 @@ export default function TreesPage() {
               <div key={group.plantType} className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg rounded-2xl shadow-lg border border-[#324D3E]/10 dark:border-gray-700 overflow-hidden">
                 {/* Group Header */}
                 <div
-                  className="bg-[#324D3E]/5 dark:bg-gray-700/50 p-4 lg:p-6 cursor-pointer hover:bg-[#324D3E]/10 dark:hover:bg-gray-700 transition-colors"
+                  className={getThemeClasses(
+                    "bg-[#324D3E]/5 dark:bg-gray-700/50 p-4 lg:p-6 cursor-pointer hover:bg-[#324D3E]/10 dark:hover:bg-gray-700 transition-colors",
+                    '!bg-gradient-to-r !from-[#FFF0F3] !to-[#FFF7F9]'
+                  )}
                   onClick={() => toggleExpanded(group.plantType)}
                 >
                   <div className="flex items-center justify-between">
@@ -305,7 +333,10 @@ export default function TreesPage() {
                         <div key={ownerKey} className="bg-white/30 dark:bg-gray-800/30">
                           {/* Owner Header */}
                           <div
-                            className="p-4 lg:p-6 cursor-pointer hover:bg-[#324D3E]/5 dark:hover:bg-gray-700/50 transition-colors border-l-4 border-[#4C3D19] dark:border-emerald-500"
+                            className={getThemeClasses(
+                              "p-4 lg:p-6 cursor-pointer hover:bg-[#324D3E]/5 dark:hover:bg-gray-700/50 transition-colors border-l-4 border-[#4C3D19] dark:border-emerald-500",
+                              '!bg-gradient-to-r !from-[#FFF0F3] !to-[#FFF7F9] !border-[#FFC1CC]/30'
+                            )}
                             onClick={() => toggleOwnerExpanded(ownerKey)}
                           >
                             <div className="flex items-center justify-between">
@@ -395,30 +426,39 @@ export default function TreesPage() {
                               {ownerGroup.relatedInvestor && (
                                 <div className="p-4 lg:p-6">
                                   <h5 className="text-sm font-semibold text-[#324D3E] dark:text-white mb-3">Detail Investor</h5>
-                                  <div className="bg-white dark:bg-gray-700/50 rounded-lg p-4 border border-gray-200 dark:border-gray-600 shadow-sm mb-4">
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                      <div className="space-y-2">
+
+                                  <div className={getThemeClasses(
+                                    "bg-white dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-600 shadow-sm mb-4 overflow-hidden",
+                                    '!bg-gradient-to-r !from-[#FFEFF3] !to-[#FFF5F7] !border-[#FFC1CC]/30'
+                                  )}>
+                                    <div className="divide-y divide-gray-100 dark:divide-gray-700">
+                                      <div className="p-4">
                                         <h6 className="font-medium text-[#324D3E] dark:text-white">{ownerGroup.relatedInvestor.name}</h6>
-                                        <div className="text-sm text-[#889063] dark:text-gray-400 space-y-1">
-                                          <p>Email: {ownerGroup.relatedInvestor.email}</p>
+                                        <div className="text-sm text-[#889063] dark:text-gray-400 mt-2">
+                                          <p className="mb-1">Email: {ownerGroup.relatedInvestor.email}</p>
                                           {ownerGroup.relatedInvestor.phoneNumber && (
                                             <p>Phone: {ownerGroup.relatedInvestor.phoneNumber}</p>
                                           )}
                                         </div>
                                       </div>
-                                      <div className="space-y-2">
-                                        <div className="text-sm">
-                                          <p className="text-[#889063] dark:text-gray-400">Total Investasi: <span className="font-semibold text-[#324D3E] dark:text-white">{formatCurrency(ownerGroup.relatedInvestor.totalInvestasi)}</span></p>
-                                          <p className="text-[#889063] dark:text-gray-400">Total Terbayar: <span className="font-semibold text-green-600 dark:text-green-400">{formatCurrency(ownerGroup.relatedInvestor.totalPaid)}</span></p>
+
+                                      <div className="p-4">
+                                        <div className="text-sm mb-3">
+                                          <p className="text-[#889063] dark:text-gray-400 mb-2">Total Investasi:</p>
+                                          <div className="flex items-baseline gap-3">
+                                            <div className={getThemeClasses("text-2xl font-semibold text-[#324D3E] dark:text-white", "!text-[#4c1d1d]")}>{formatCurrency(ownerGroup.relatedInvestor.totalInvestasi)}</div>
+                                            <div className={getThemeClasses("text-sm text-[#889063] dark:text-gray-400", "!text-[#4c1d1d]")}>Total Terbayar: <span className={getThemeClasses("font-semibold text-green-600 dark:text-green-400", "!text-[#4c1d1d]")}>{formatCurrency(ownerGroup.relatedInvestor.totalPaid)}</span></div>
+                                          </div>
                                         </div>
-                                        <div className="mt-2">
-                                          <div className="bg-gray-200 dark:bg-gray-600 rounded-full h-2">
+
+                                        <div>
+                                          <div className="bg-gray-200 dark:bg-gray-600 rounded-full h-3">
                                             <div
-                                              className="bg-green-500 h-2 rounded-full"
+                                              className="bg-green-500 h-3 rounded-full"
                                               style={{ width: `${ownerGroup.relatedInvestor.totalInvestasi > 0 ? (ownerGroup.relatedInvestor.totalPaid / ownerGroup.relatedInvestor.totalInvestasi) * 100 : 0}%` }}
                                             ></div>
                                           </div>
-                                          <p className="text-xs mt-1 text-[#889063] dark:text-gray-400">
+                                          <p className="text-xs mt-2 text-[#889063] dark:text-gray-400">
                                             Progress: {ownerGroup.relatedInvestor.totalInvestasi > 0 ? Math.round((ownerGroup.relatedInvestor.totalPaid / ownerGroup.relatedInvestor.totalInvestasi) * 100) : 0}%
                                           </p>
                                         </div>
@@ -430,9 +470,12 @@ export default function TreesPage() {
                                   {ownerGroup.relatedInvestments.length > 0 && (
                                     <div>
                                       <h6 className="text-sm font-semibold text-[#324D3E] dark:text-white mb-3">Investasi Terkait ({ownerGroup.relatedInvestments.length})</h6>
-                                      <div className="grid grid-cols-1 gap-3">
+                                      <div className="divide-y divide-gray-100 dark:divide-gray-700 rounded-lg overflow-hidden">
                                         {ownerGroup.relatedInvestments.map((investment) => (
-                                          <div key={investment.investmentId} className="bg-white dark:bg-gray-700/50 rounded-lg p-3 border border-gray-200 dark:border-gray-600 shadow-sm">
+                                          <div key={investment.investmentId} className={getThemeClasses(
+                                            "p-4 bg-white dark:bg-gray-700/50",
+                                            '!bg-gradient-to-r !from-[#FFF0F3] !to-[#FFF7F9]'
+                                          )}>
                                             <div className="flex items-center justify-between">
                                               <div className="space-y-1">
                                                 <p className="font-medium text-[#324D3E] dark:text-white text-sm">{investment.productName}</p>

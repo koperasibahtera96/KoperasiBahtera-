@@ -9,3 +9,14 @@ COLORS:
 #889063 (MOSS GREEN) -> 136,144,99 -> 6%, 0%, 31%, 44%
 #CFBB99 (TAN) -> 207,187,153 -> 0%, 10%, 26%, 19%
 #E5D7C4 (BONE) -> 229, 215, 196 -> 0%, 6%, 14%, 10%N
+
+
+Pink Blush – #FFC1CC
+
+Baby Pink – #FFDEE9
+
+Mint Pastel – #B5EAD7
+
+Lavender Mist – #C7CEEA
+
+Lemon Cream – #FFF5BA

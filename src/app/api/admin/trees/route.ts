@@ -31,23 +31,36 @@ export async function GET() {
         return acc;
       }, {} as Record<string, any[]>);
 
-      // Create owner groups with related investor data
+      // Create owner groups with related investor/investment data
       const ownerGroups = Object.entries(instancesByOwner).map(
         ([ownerName, instances]) => {
-          // Find the investor for this owner
-          const relatedInvestor = investors.find(
-            (investor) => investor.name === ownerName
-          );
+          // Build a set of instance IDs for quick lookup
+          const instanceIdSet = new Set((instances as any).map((i: any) => i._id.toString()));
 
-          // Get investments related to these plant instances
-          const relatedInvestments =
-            relatedInvestor?.investments.filter((investment: any) =>
-              (instances as any).some(
-                (instance: any) =>
-                  investment.plantInstanceId?.toString() ===
-                  instance._id.toString()
-              )
-            ) || [];
+          // Find all investments (from any investor) that reference these instances
+          const matchedInvestments: Array<{ investor: any; investment: any }> = [];
+          investors.forEach((inv) => {
+            (inv.investments || []).forEach((investment: any) => {
+              if (investment.plantInstanceId && instanceIdSet.has(investment.plantInstanceId.toString())) {
+                matchedInvestments.push({ investor: inv, investment });
+              }
+            });
+          });
+
+          // Derive relatedInvestments array and (if any) pick a representative relatedInvestor
+          const relatedInvestments = matchedInvestments.map(({ investment }) => ({
+            investmentId: investment.investmentId,
+            productName: investment.productName,
+            totalAmount: investment.totalAmount,
+            amountPaid: investment.amountPaid,
+            paymentType: investment.paymentType,
+            status: investment.status,
+            investmentDate: investment.investmentDate,
+            completionDate: investment.completionDate,
+          }));
+
+          const uniqueInvestorsForOwner = Array.from(new Set(matchedInvestments.map(mi => mi.investor._id.toString())));
+          const representativeInvestor = matchedInvestments.length > 0 ? matchedInvestments[0].investor : null;
 
           return {
             ownerName,
@@ -65,34 +78,26 @@ export async function GET() {
               createdAt: instance.createdAt,
               updatedAt: instance.updatedAt,
             })),
-            relatedInvestor: relatedInvestor
+            relatedInvestor: representativeInvestor
               ? {
-                  _id: relatedInvestor._id,
-                  name: relatedInvestor.name,
-                  email: relatedInvestor.email,
-                  totalInvestasi: relatedInvestor.totalInvestasi,
-                  totalPaid: relatedInvestor.totalPaid,
-                  phoneNumber: relatedInvestor.phoneNumber,
+                  _id: representativeInvestor._id,
+                  name: representativeInvestor.name,
+                  email: representativeInvestor.email,
+                  totalInvestasi: representativeInvestor.totalInvestasi,
+                  totalPaid: representativeInvestor.totalPaid,
+                  phoneNumber: representativeInvestor.phoneNumber,
                 }
               : null,
-            relatedInvestments: relatedInvestments.map((investment: any) => ({
-              investmentId: investment.investmentId,
-              productName: investment.productName,
-              totalAmount: investment.totalAmount,
-              amountPaid: investment.amountPaid,
-              paymentType: investment.paymentType,
-              status: investment.status,
-              investmentDate: investment.investmentDate,
-              completionDate: investment.completionDate,
-            })),
+            relatedInvestments,
             totalInvestmentAmount: relatedInvestments.reduce(
-              (sum: any, inv: any) => sum + inv.totalAmount,
+              (sum: any, inv: any) => sum + (inv.totalAmount || 0),
               0
             ),
             totalPaidAmount: relatedInvestments.reduce(
-              (sum: any, inv: any) => sum + inv.amountPaid,
+              (sum: any, inv: any) => sum + (inv.amountPaid || 0),
               0
             ),
+            uniqueInvestorCount: uniqueInvestorsForOwner.length,
           };
         }
       );

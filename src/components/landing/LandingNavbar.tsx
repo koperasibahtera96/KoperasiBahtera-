@@ -5,7 +5,8 @@ import { signOut, useSession } from "next-auth/react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
+import { CameraSelfie, CameraSelfieRef } from "@/components/forms/CameraSelfie";
 
 const navVariants: any = {
   hidden: {
@@ -66,10 +67,39 @@ interface LandingNavbarProps {
 export default function LandingNavbar({
   hideNavigation = false,
 }: LandingNavbarProps) {
+  const [showResubmitModal, setShowResubmitModal] = useState(false);
+  const [ktpFile, setKtpFile] = useState<File | null>(null);
+  const [faceFile, setFaceFile] = useState<File | null>(null);
+  const cameraSelfieRef = useRef<CameraSelfieRef | null>(null);
+  const [currentResubmission, setCurrentResubmission] = useState<any | null>(null);
+  const [resubUserData, setResubUserData] = useState<any | null>(null);
+
+
+  // Convert data URL to File object
+  const dataURLtoFile = (dataurl: string, filename: string): File => {
+    const arr = dataurl.split(',');
+    const mime = arr[0].match(/:(.*?);/)?.[1] || 'image/jpeg';
+    const bstr = atob(arr[1]);
+    let n = bstr.length;
+    const u8arr = new Uint8Array(n);
+    while (n--) {
+      u8arr[n] = bstr.charCodeAt(n);
+    }
+    return new File([u8arr], filename, { type: mime });
+  };
+
+  const handleCameraCapture = (imageDataUrl: string) => {
+    const file = dataURLtoFile(imageDataUrl, `selfie_${Date.now()}.jpg`);
+    setFaceFile(file);
+    setResubmitMessage('Foto selfie diambil. Anda dapat mengirim atau ambil ulang.');
+  };
+  const [uploading, setUploading] = useState(false);
+  const [resubmitMessage, setResubmitMessage] = useState<string | null>(null);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const { data: session, status, update } = useSession();
+
   const router = useRouter();
 
   useEffect(() => {
@@ -89,6 +119,24 @@ export default function LandingNavbar({
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, []);
+
+  // Fetch current user's latest resubmission
+  useEffect(() => {
+    const fetchResub = async () => {
+      if (!session?.user) return;
+      try {
+        const res = await fetch('/api/user/resubmit-verification');
+        if (!res.ok) return;
+        const body = await res.json();
+        // API returns { resubmission, user }
+        setCurrentResubmission(body.data?.resubmission || null);
+        setResubUserData(body.data?.user || null);
+      } catch {
+        // ignore the error
+      }
+    };
+    fetchResub();
+  }, [session?.user]);
 
   // Handle hash navigation when component mounts
   useEffect(() => {
@@ -121,7 +169,7 @@ export default function LandingNavbar({
     await signOut({ redirect: true, callbackUrl: "/" });
   };
 
-  const handleRefreshStatus = async () => {
+  const handleRefreshStatus = useCallback(async () => {
     if (!session?.user || isRefreshing) return;
 
     setIsRefreshing(true);
@@ -147,7 +195,13 @@ export default function LandingNavbar({
     } finally {
       setIsRefreshing(false);
     }
-  };
+  }, [session, isRefreshing, update]);
+
+  // Prefer server-returned user data from the resubmit API when available
+  const derivedVerificationStatus = resubUserData?.verificationStatus ?? (session?.user as any)?.verificationStatus;
+  const derivedVerificationNotes = resubUserData?.verificationNotes ?? (session?.user as any)?.verificationNotes;
+  const derivedCanPurchase = resubUserData?.canPurchase ?? (session?.user as any)?.canPurchase;
+
 
   const handleNavigationClick = (item: string) => {
     const sectionId = item.toLowerCase().replace(" ", "-");
@@ -171,15 +225,16 @@ export default function LandingNavbar({
   };
 
   return (
+    <>
     <motion.nav
       className="fixed top-0 left-0 right-0 w-full bg-white/95 backdrop-blur-sm px-3 sm:px-4 lg:px-6 h-16 sm:h-20 lg:h-20 shadow-sm z-50 transition-all duration-300"
       initial="visible"
       animate="visible"
       variants={navVariants}
     >
-      <div className="w-full">
+      <div className="w-full h-full">
         <motion.div
-          className="flex items-center justify-between w-full"
+          className="flex items-center justify-between w-full h-full"
           variants={navVariants}
         >
           {/* Logo and title */}
@@ -187,13 +242,6 @@ export default function LandingNavbar({
             className="flex items-center space-x-2"
             variants={logoVariants}
           >
-            {/* Header text shown on md+ including xl (desktop). Make font smaller on xl and truncate to avoid overflow when full navigation is visible */}
-            <h1
-              className="hidden sm:block text-gray-800 font-semibold text-sm md:text-base lg:text-lg whitespace-nowrap"
-              title="Koperasi BAHTERA"
-            >
-              Koperasi BAHTERA
-            </h1>
             <Image
               src="/images/koperasi-logo.webp"
               alt="Logo"
@@ -201,7 +249,15 @@ export default function LandingNavbar({
               height={64}
               className="rounded-full transition-all duration-300 w-12 h-12 lg:w-16 lg:h-16"
             />
+            {/* Header text shown on md+ including xl (desktop). Make font smaller on xl and truncate to avoid overflow when full navigation is visible */}
+            <h1
+              className="hidden sm:block text-gray-800 font-extrabold text-[10px] sm:text-[10.5px] md:text-[11px] lg:text-[12px] whitespace-nowrap"
+              title="Koperasi BAHTERA"
+            >
+              Koperasi BAHTERA
+            </h1>
           </motion.div>
+      
 
           {/* Navigation - Only visible on very large screens when hideNavigation is false */}
           {!hideNavigation && (
@@ -260,7 +316,7 @@ export default function LandingNavbar({
                 variants={itemVariants}
               >
                 {/* Show buttons only if user can purchase and navigation is not hidden */}
-                {!hideNavigation && session.user.canPurchase ? (
+                {!hideNavigation && derivedCanPurchase ? (
                   <>
                     {/* Investasi Saya Button */}
                     <motion.div
@@ -295,38 +351,53 @@ export default function LandingNavbar({
                     whileHover={{ scale: 1.05 }}
                   >
                     <span>
-                      {session.user.verificationStatus === "pending"
+                        {derivedVerificationStatus === "pending"
                         ? "⏳ Menunggu Verifikasi"
-                        : session.user.verificationStatus === "rejected"
+                          : derivedVerificationStatus === "rejected"
                         ? "❌ Verifikasi Ditolak"
                         : "⏳ Belum Diverifikasi"}
                     </span>
                     <motion.button
                       onClick={handleRefreshStatus}
                       disabled={isRefreshing}
-                      className="ml-1 p-1 hover:bg-yellow-100 rounded-full transition-colors disabled:opacity-50"
-                      whileHover={{ scale: 1.1 }}
-                      whileTap={{ scale: 0.9 }}
+                      className="ml-2 w-9 h-9 flex items-center justify-center bg-yellow-400 hover:bg-yellow-500 rounded-full shadow-md transition-colors disabled:opacity-60"
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
                       title="Periksa Status Terbaru"
                     >
                       {isRefreshing ? (
-                        <div className="w-3 h-3 border border-yellow-600 border-t-transparent rounded-full animate-spin"></div>
+                        <div className="w-4 h-4 border-2 border-yellow-700 border-t-transparent rounded-full animate-spin"></div>
                       ) : (
                         <svg
-                          className="w-3 h-3 text-yellow-600"
+                          className="w-5 h-5 text-white"
+                          viewBox="0 0 24 24"
                           fill="none"
                           stroke="currentColor"
-                          viewBox="0 0 24 24"
+                          strokeWidth={1.5}
                         >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-                          />
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M20 12a8 8 0 10-4.906 7.341" />
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M20 8v4h-4" />
                         </svg>
                       )}
                     </motion.button>
+                    {/* If rejected, show compact icon-only resubmit button (keeps width small) */}
+                      {derivedVerificationStatus === 'rejected' && (
+                      <motion.button
+                        onClick={() => {
+                          setShowResubmitModal(true);
+                          setResubmitMessage(null);
+                        }}
+                        className="ml-1 p-1 hover:bg-red-100 rounded-full transition-colors"
+                        whileHover={{ scale: 1.05 }}
+                        title="Ajukan Ulang Verifikasi"
+                        aria-label="Ajukan Ulang Verifikasi"
+                      >
+                        {/* simple upload icon */}
+                        <svg className="w-3 h-3 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v12m0 0l-4-4m4 4 4-4M21 12v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-6" />
+                        </svg>
+                      </motion.button>
+                      )}
                   </motion.div>
                 ) : null}
 
@@ -517,7 +588,50 @@ export default function LandingNavbar({
 
           {/* Mobile menu - Only show for logged in users */}
           {session?.user && (
-            <div className="sm:hidden relative mobile-menu">
+            <div className="sm:hidden relative mobile-menu flex items-center space-x-2">
+              {/* Mobile compact badge placed next to hamburger so it's always visible on small screens */}
+              {!derivedCanPurchase && (
+              <div className="flex items-center gap-1 px-2 py-1 bg-yellow-50 border border-yellow-200 rounded-full text-xs text-yellow-700">
+                <span>
+                    {derivedVerificationStatus === "pending"
+                    ? "⏳ Menunggu"
+                      : derivedVerificationStatus === "rejected"
+                    ? "❌ Ditolak"
+                    : "⏳ Belum"}
+                </span>
+                <button
+                  onClick={handleRefreshStatus}
+                  disabled={isRefreshing}
+                  className="ml-1 w-7 h-7 flex items-center justify-center bg-yellow-400 hover:bg-yellow-500 rounded-full shadow-md transition-colors disabled:opacity-60"
+                  title="Periksa Status Terbaru"
+                >
+                  {isRefreshing ? (
+                    <div className="w-3 h-3 border-2 border-yellow-700 border-t-transparent rounded-full animate-spin"></div>
+                  ) : (
+                    <svg className="w-4 h-4 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M20 12a8 8 0 10-4.906 7.341" />
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M20 8v4h-4" />
+                    </svg>
+                  )}
+                </button>
+                {derivedVerificationStatus === 'rejected' && (
+                  <button
+                    onClick={() => {
+                      setShowResubmitModal(true);
+                      setResubmitMessage(null);
+                    }}
+                    className="ml-1 p-1 hover:bg-red-100 rounded-full transition-colors"
+                    title="Ajukan Ulang Verifikasi"
+                    aria-label="Ajukan Ulang Verifikasi"
+                  >
+                    <svg className="w-4 h-4 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v12m0 0l-4-4m4 4 4-4M21 12v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-6" />
+                    </svg>
+                  </button>
+                )}
+              </div>
+              )}
+
               <motion.button
                 onClick={() => setShowMobileMenu(!showMobileMenu)}
                 className="p-2 text-gray-700"
@@ -552,11 +666,12 @@ export default function LandingNavbar({
               <AnimatePresence>
                 {showMobileMenu && (
                   <motion.div
-                    className="absolute right-0 mt-2 w-64 bg-white rounded-2xl shadow-2xl border border-gray-200 py-3 z-50"
+                    // Force dropdown to appear below the navbar/hamburger by using explicit top positioning
+                    className="absolute right-2 top-16 w-64 bg-white rounded-2xl shadow-2xl border border-gray-200 py-3 z-50"
                     initial={{
                       opacity: 0,
                       scale: 0.95,
-                      y: -10,
+                      y: -6,
                     }}
                     animate={{
                       opacity: 1,
@@ -566,9 +681,9 @@ export default function LandingNavbar({
                     exit={{
                       opacity: 0,
                       scale: 0.95,
-                      y: -10,
+                      y: -6,
                     }}
-                    transition={{ duration: 0.2 }}
+                    transition={{ duration: 0.18 }}
                   >
                     {/* User Info Section */}
                     <div className="px-4 py-3 border-b border-gray-100">
@@ -633,10 +748,11 @@ export default function LandingNavbar({
                             <span>Profile</span>
                           </div>
                         </motion.div>
+                        
                       </Link>
 
                       {/* Conditional Menu Items for Verified Users */}
-                      {session.user.canPurchase && (
+                      {derivedCanPurchase && (
                         <>
                           <Link href="/investasi">
                             <motion.div
@@ -699,6 +815,22 @@ export default function LandingNavbar({
                       )}
 
                       {/* Logout Button */}
+                      {/* Resubmit entry for small screens when rejected */}
+                      {derivedVerificationStatus === 'rejected' && (
+                        <motion.div
+                          className="w-full px-4 py-3 text-left text-gray-700 hover:bg-gray-50 transition-colors font-medium cursor-pointer"
+                          whileHover={{ x: 5 }}
+                          whileTap={{ scale: 0.98 }}
+                          onClick={() => { setShowMobileMenu(false); setShowResubmitModal(true); setResubmitMessage(null); }}
+                        >
+                          <div className="flex items-center space-x-3">
+                            <svg className="w-4 h-4 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v12m0 0l-4-4m4 4 4-4M21 12v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-6" />
+                            </svg>
+                            <span>Ajukan Ulang Verifikasi</span>
+                          </div>
+                        </motion.div>
+                      )}
                       <motion.button
                         onClick={() => {
                           setShowMobileMenu(false);
@@ -768,5 +900,163 @@ export default function LandingNavbar({
         </motion.div>
       </div>
     </motion.nav>
+    {/* Modal rendered outside the nav to avoid layout constraints */}
+    <AnimatePresence>
+      {showResubmitModal && session?.user && (
+        <motion.div
+          // wrapper: fixed overlay; center on sm+ screens, but on small screens align to top so modal doesn't overflow viewport
+          className="fixed inset-0 bg-black/60 z-[9999] p-4 sm:flex sm:items-center sm:justify-center"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+        >
+          <motion.div
+            // On mobile: absolute near top-right (next to hamburger) but constrained height and scrollable; On sm+: centered modal
+            className="absolute top-16 right-4 w-[92%] max-w-xs bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-2xl sm:static sm:mx-auto sm:w-full sm:max-w-2xl sm:p-6"
+            initial={{ scale: 0.95, y: 10 }}
+            animate={{ scale: 1, y: 0 }}
+            exit={{ scale: 0.95, y: 10 }}
+          >
+            {/* Make inner content scrollable and constrained so modal doesn't render below the screen */}
+            <div className="max-h-[70vh] overflow-auto">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Ajukan Ulang Verifikasi</h3>
+              <button
+                onClick={() => {
+                  cameraSelfieRef.current?.stopCamera();
+                  setShowResubmitModal(false);
+                }}
+                className="text-gray-500 hover:text-gray-700"
+                aria-label="Tutup"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <p className="text-sm text-gray-600 dark:text-gray-300">Silakan unggah ulang foto KTP dan foto selfie Anda. Tim admin akan meninjau ulang data Anda.</p>
+              
+              {/* Show original admin rejection notes from user record, then resubmission-specific notes (if different) */}
+              {derivedVerificationNotes && derivedVerificationStatus === 'rejected' && (
+                <div className="p-3 bg-red-50 border border-red-100 rounded-md text-sm text-red-700">
+                  <strong>Catatan penolakan:</strong>
+                  <p className="mt-1">{derivedVerificationNotes}</p>
+                </div>
+              )}
+
+              {currentResubmission?.status === 'rejected' && currentResubmission.adminNotes && currentResubmission.adminNotes !== derivedVerificationNotes && (
+                <div className="p-3 bg-red-50 border border-red-100 rounded-md text-sm text-red-700">
+                  <strong>Catatan penolakan):</strong>
+                  <p className="mt-1">{currentResubmission.adminNotes || derivedVerificationNotes}</p>
+                </div>
+              )}
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Foto KTP</label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => setKtpFile(e.target.files?.[0] || null)}
+                  className="mt-1"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Foto Selfie (Ambil dari kamera)</label>
+                <div className="mt-2">
+                  <CameraSelfie ref={cameraSelfieRef} onCapture={handleCameraCapture} />
+
+                  {/* selfie preview intentionally removed per UX request */}
+                </div>
+              </div>
+
+              {resubmitMessage && (
+                <div className="text-sm text-green-700">{resubmitMessage}</div>
+              )}
+
+              <div className="flex justify-end gap-2">
+                <button
+                  onClick={() => {
+                    cameraSelfieRef.current?.stopCamera();
+                    setShowResubmitModal(false);
+                  }}
+                  className="px-3 py-2 rounded-md border"
+                >
+                  Batal
+                </button>
+                <button
+                  onClick={async () => {
+                    if (!ktpFile || !faceFile) {
+                      setResubmitMessage('Silakan unggah kedua file terlebih dahulu');
+                      return;
+                    }
+                    setUploading(true);
+                    setResubmitMessage(null);
+                    try {
+                      const upload = async (file: File) => {
+                        const fd = new FormData();
+                        fd.append('file', file);
+                        const res = await fetch('/api/upload', { method: 'POST', body: fd });
+                        if (!res.ok) throw new Error('Upload gagal');
+                        const j = await res.json();
+                        return j.imageUrl;
+                      };
+
+                      const [ktpUrl, faceUrl] = await Promise.all([upload(ktpFile), upload(faceFile)]);
+
+                      const res = await fetch('/api/user/resubmit-verification', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ ktpImageUrl: ktpUrl, faceImageUrl: faceUrl }),
+                      });
+
+                      const body = await res.json();
+                      if (!res.ok) {
+                        throw new Error(body?.error || 'Gagal mengajukan ulang');
+                      }
+
+                      // server returns { resubmission, user }
+                      setCurrentResubmission(body.data?.resubmission || null);
+                      setResubUserData(body.data?.user || null);
+
+                      setResubmitMessage('Permintaan pengajuan ulang berhasil dikirim. Mohon tunggu peninjauan admin.');
+                      // Stop camera, close modal, and prevent further resubmissions in UI until refresh
+                      cameraSelfieRef.current?.stopCamera();
+                      setShowResubmitModal(false);
+                      // Refresh current resubmission from server so UI reflects pending state
+                      try {
+                        const refreshRes = await fetch('/api/user/resubmit-verification');
+                        if (refreshRes.ok) {
+                          const body = await refreshRes.json();
+                          setCurrentResubmission(body.data?.resubmission || null);
+                          setResubUserData(body.data?.user || null);
+                        }
+                      } catch {
+                        // ignore
+                      }
+                      setKtpFile(null);
+                      setFaceFile(null);
+                      // Optionally refresh session user data
+                      try { await handleRefreshStatus(); } catch {}
+                    } catch (err: any) {
+                      console.error(err);
+                      setResubmitMessage(err?.message || 'Terjadi kesalahan saat mengajukan ulang');
+                    } finally {
+                      setUploading(false);
+                    }
+                  }}
+                  disabled={uploading}
+                  className="px-4 py-2 rounded-md bg-[#324D3E] text-white disabled:opacity-60"
+                >
+                  {uploading ? 'Mengunggah...' : 'Kirim Pengajuan Ulang'}
+                </button>
+              </div>
+            </div>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+    </>
   );
 }

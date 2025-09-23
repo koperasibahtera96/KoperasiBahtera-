@@ -544,7 +544,7 @@ function SummaryCard({
 
   const pal = palette[colorClass] ?? palette["card-a"]
   const isNegative = typeof value === "string" && value.trim().startsWith("-")
-  const valueColor = isNegative ? "text-yellow-500" : theme === "pink" ? "text-[#4c1d1d]" : "text-green-800"
+  const valueColor = isNegative ? "text-yellow-500" : theme === "pink" ? "text-[#4c1d1d]" : "text-green-800 dark:text-green-100"
 
   const cardClasses = getCardClasses(pal.card)
   const iconClasses = getIconClasses(pal.iconBg + " " + pal.iconText)

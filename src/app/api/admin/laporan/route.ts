@@ -1,5 +1,6 @@
 import dbConnect from "@/lib/mongodb";
 import Investor from "@/models/Investor";
+import User from "@/models/User";
 import PlantInstance from "@/models/PlantInstance";
 import { NextResponse } from "next/server";
 
@@ -38,7 +39,33 @@ export async function GET(request: Request) {
     const plantInstances = await PlantInstance.find({});
 
     // Group plant instances by investor
+    // Preload user data for the paginated investors to include userCode
+    const userIds = investors.map((inv) => inv.userId);
+    const users = await User.find({ _id: { $in: userIds } }).select('userCode');
+    const usersMap = users.reduce((acc: Record<string, any>, u: any) => {
+      acc[u._id.toString()] = u;
+      return acc;
+    }, {} as Record<string, any>);
+
+  // Preloaded users map (userCode) for investors
+
     const investorReports = investors.map((investor) => {
+      // Compute earliest purchase date from investor.investments if available
+      let earliestPurchaseDate = investor.createdAt;
+      try {
+        const invDates = Array.isArray(investor.investments)
+          ? investor.investments
+              .map((i: any) => i.investmentDate)
+              .filter(Boolean)
+              .map((d: any) => new Date(d))
+          : [];
+        if (invDates.length > 0) {
+          const min = new Date(Math.min(...invDates.map((d: Date) => d.getTime())));
+          earliestPurchaseDate = min.toISOString();
+        }
+      } catch {
+        // ignore and fallback to createdAt
+      }
       // Find plant instances related to this investor through their investments
       const investorPlantInstances = plantInstances.filter((plantInstance) => {
         return investor.investments.some(
@@ -73,10 +100,12 @@ export async function GET(request: Request) {
           _id: investor._id,
           name: investor.name,
           email: investor.email,
+          userCode: usersMap[investor.userId?.toString()]?.userCode,
           totalInvestasi: investor.totalInvestasi,
           jumlahPohon: investor.jumlahPohon,
           status: investor.status,
           createdAt: investor.createdAt,
+          earliestPurchaseDate,
         },
         trees: investorPlantInstances.map((plantInstance) => {
           // Calculate age in months from 'Tanam Bibit' history date

@@ -1,20 +1,12 @@
 // src/app/api/daily-incoming-investor/route.ts
 import { NextResponse } from "next/server";
-import { MongoClient } from "mongodb";
-
-const MONGODB_URI = process.env.MONGODB_URI!;
-const DB_NAME = process.env.MONGODB_DB || "investasi-hijau"; // <- sesuaikan bila perlu
-let client: MongoClient | null = null;
-
-async function getClient() {
-  if (client && (client as any).topology?.isConnected?.()) return client;
-  client = new MongoClient(MONGODB_URI);
-  await client.connect();
-  return client;
-}
+import dbConnect from "@/lib/mongodb";
+import { Investor } from "@/models";
 
 export async function GET(req: Request) {
   try {
+    await dbConnect();
+
     const { searchParams } = new URL(req.url);
     const year = Number(searchParams.get("year")) || new Date().getFullYear();
     const month = searchParams.get("month") ? Number(searchParams.get("month")) : null; // 1..12 or null
@@ -38,24 +30,16 @@ export async function GET(req: Request) {
       end = new Date(Date.UTC(year + 1, 0, 1, 0, 0, 0));
     }
 
-    const cli = await getClient();
-    const db = cli.db(DB_NAME);
-    const col = db.collection("investors");
-
-    const investors = await col
-      .find(
-        {},
-        {
-          projection: {
-            _id: 1,
-            name: 1,
-            email: 1,
-            status: 1,
-            investments: 1,
-          },
-        }
-      )
-      .toArray();
+    const investors = await Investor.find(
+      {},
+      {
+        _id: 1,
+        name: 1,
+        email: 1,
+        status: 1,
+        investments: 1,
+      }
+    ).lean();
 
     type Row = {
       investorId: string;

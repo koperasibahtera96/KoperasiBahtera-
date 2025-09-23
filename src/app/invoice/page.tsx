@@ -8,6 +8,7 @@ import { downloadInvoiceImage } from "@/lib/invoiceImage";
 import { Loader2 } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import React, { Suspense, useEffect, useMemo, useState } from "react";
+import { useTheme } from "next-themes";
 
 // ===== XLSX (dynamic import, tidak ganggu SSR) =====
 let XLSXMod: any;
@@ -53,10 +54,24 @@ function InvoicePageContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
+  const { theme } = useTheme();
+  const [mounted, setMounted] = useState(false);
 
   const [data, setData] = useState<InvoiceResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // Helper function to get theme-aware classes
+  const getThemeClasses = (baseClasses: string, pinkClasses: string = "") => {
+    if (mounted && theme === "pink" && pinkClasses) {
+      return `${baseClasses} ${pinkClasses}`;
+    }
+    return baseClasses;
+  };
 
   // --- read query params ---
   const q = searchParams.get("q") || "";
@@ -195,13 +210,13 @@ function InvoicePageContent() {
     const st = (p.adminStatus || p.status || "").toLowerCase();
     if ((t.includes("cicilan") || t.includes("installment")) && st === "pending") {
       return (
-        <span className="inline-flex rounded-full bg-red-100 text-red-700 px-2 py-1 text-xs font-semibold">
+        <span className={getThemeClasses("inline-flex rounded-full bg-red-100 text-red-700 px-2 py-1 text-xs font-semibold", "!bg-[#FFDEE9]/50 !text-[#dc2626]")}>
           Belum Dibayar
         </span>
       );
     }
     return (
-      <span className="inline-flex rounded-full bg-green-100 text-green-700 px-2 py-1 text-xs font-semibold">
+      <span className={getThemeClasses("inline-flex rounded-full bg-green-100 text-green-700 px-2 py-1 text-xs font-semibold", "!bg-[#B5EAD7]/50 !text-[#059669]")}>
         Lunas
       </span>
     );
@@ -447,10 +462,10 @@ function InvoicePageContent() {
         <header>
           <div className="mb-6 sm:mb-8 flex items-start justify-between gap-4">
             <div>
-              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-[#324D3E] dark:text-white mb-2">
+              <h1 className={getThemeClasses("text-2xl sm:text-3xl lg:text-4xl font-bold text-[#324D3E] dark:text-white mb-2", "!text-[#4c1d1d]")}>
                 Invoice
               </h1>
-              <p className="text-[#889063] dark:text-gray-200">
+              <p className={getThemeClasses("text-[#889063] dark:text-gray-200", "!text-[#6b7280]")}>
                 {new Date().toLocaleDateString("id-ID", {
                   weekday: "long",
                   day: "numeric",
@@ -463,14 +478,14 @@ function InvoicePageContent() {
             {/* Tombol Export XLS (tidak mengubah logic lain) */}
             <button
               onClick={handleExportXLS}
-              className="h-10 px-4 rounded-xl border bg-white hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700 text-sm font-semibold"
+              className={getThemeClasses("h-10 px-4 rounded-xl border bg-white hover:bg-gray-50 dark:bg-gray-800 dark:hover:bg-gray-700 text-sm font-semibold", "!bg-[#FFC1CC] !border-[#FFC1CC]/50 !text-[#4c1d1d] hover:!bg-[#FFDEE9]")}
               title="Export Excel semua baris di halaman ini"
             >
               Export XLS
             </button>
           </div>
 
-          <div className="bg-white/90 dark:bg-gray-800/90 rounded-3xl p-4 sm:p-6 lg:p-8 border shadow-xl">
+          <div className={getThemeClasses("bg-white/90 dark:bg-gray-800/90 rounded-3xl p-4 sm:p-6 lg:p-8 border shadow-xl", "!bg-white/95 !border-[#FFC1CC]/30")}>
             <InvoiceControls
               q={q}
               sort={sort}
@@ -483,14 +498,14 @@ function InvoicePageContent() {
             {/* Filter Kategori (tetap) */}
             <div className="mt-4 sm:mt-6 grid grid-cols-1 md:grid-cols-3 gap-3">
               <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-[#324D3E] dark:text-white mb-2">
+                <label className={getThemeClasses("block text-sm font-medium text-[#324D3E] dark:text-white mb-2", "!text-[#4c1d1d]")}>
                   Filter Kategori
                 </label>
                 <div className="flex items-center gap-3">
                   <select
                     value={catDraft}
                     onChange={(e) => setCatDraft(e.target.value)}
-                    className="min-w-[220px] border rounded-xl px-3 py-2 text-sm"
+                    className={getThemeClasses("min-w-[220px] border rounded-xl px-3 py-2 text-sm", "!bg-white/90 !border-[#FFC1CC]/30 !text-[#4c1d1d]")}
                   >
                     <option value="">Semua</option>
                     <option value="registration">Registration</option>
@@ -502,7 +517,7 @@ function InvoicePageContent() {
                       const qs = buildQS({ category: catDraft });
                       router.push(`${pathname}?${qs}`);
                     }}
-                    className="px-4 py-2 text-sm rounded-xl border"
+                    className={getThemeClasses("px-4 py-2 text-sm rounded-xl border", "!bg-[#FFC1CC] !border-[#FFC1CC]/50 !text-[#4c1d1d] hover:!bg-[#FFDEE9]")}
                   >
                     Terapkan
                   </button>
@@ -512,7 +527,7 @@ function InvoicePageContent() {
                       const qs = buildQS({ category: "" });
                       router.push(`${pathname}?${qs}`);
                     }}
-                    className="px-4 py-2 text-sm rounded-xl border"
+                    className={getThemeClasses("px-4 py-2 text-sm rounded-xl border", "!bg-white !border-[#FFC1CC]/30 !text-[#4c1d1d] hover:!bg-[#FFC1CC]/20")}
                   >
                     Reset
                   </button>
@@ -524,7 +539,7 @@ function InvoicePageContent() {
             <div className="mt-6 sm:mt-8 overflow-x-auto">
               <table className="w-full border-separate border-spacing-y-2">
                 <thead>
-                  <tr className="text-left text-sm text-[#324D3E] dark:text-white">
+                  <tr className={getThemeClasses("text-left text-sm text-[#324D3E] dark:text-white", "!text-[#4c1d1d]")}>
                     <th className="px-4 py-3">No</th>
                     <th className="px-4 py-3">Jenis</th>
                     <th className="px-4 py-3">User</th>
@@ -547,7 +562,7 @@ function InvoicePageContent() {
                       <React.Fragment key={`grpwrap-${g.orderId}`}>
                         <tr
                           key={`grp-${g.orderId}`}
-                          className="bg-white dark:bg-gray-800 rounded-xl shadow border border-[#324D3E]/10 dark:border-gray-700"
+                          className={getThemeClasses("bg-white dark:bg-gray-800 rounded-xl shadow border border-[#324D3E]/10 dark:border-gray-700", "!bg-white/95 !border-[#FFC1CC]/30")}
                         >
                           <td className="px-4 py-3 align-top">{rowNo++}</td>
                           <td className="px-4 py-3 align-top">Pembayaran Cicilan</td>
@@ -559,7 +574,7 @@ function InvoicePageContent() {
                           <td className="px-4 py-3 align-top">
                             <button
                               onClick={() => toggleGroup(g.orderId)}
-                              className="px-3 py-1.5 text-sm rounded-lg border hover:bg-gray-50"
+                              className={getThemeClasses("px-3 py-1.5 text-sm rounded-lg border hover:bg-gray-50", "!border-[#FFC1CC]/30 !bg-white hover:!bg-[#FFC1CC]/20 !text-[#4c1d1d]")}
                             >
                               {expanded[g.orderId] ? "Sembunyikan" : "Lihat detail"}
                             </button>
@@ -570,7 +585,7 @@ function InvoicePageContent() {
                           g.items.map((p, idx) => (
                             <tr
                               key={(p.ref || p._id) + "-sub"}
-                              className="bg-white dark:bg-gray-800 rounded-xl shadow border border-[#324D3E]/10 dark:border-gray-700"
+                              className={getThemeClasses("bg-white dark:bg-gray-800 rounded-xl shadow border border-[#324D3E]/10 dark:border-gray-700", "!bg-white/95 !border-[#FFC1CC]/30")}
                             >
                               <td className="px-4 py-3 align-top" />
                               <td className="px-4 py-3 align-top">
@@ -590,7 +605,7 @@ function InvoicePageContent() {
                               <td className="px-4 py-3 align-top">
                                 <button
                                   onClick={() => downloadInvoiceImage(p)}
-                                  className="px-3 py-1.5 text-sm rounded-lg bg-[#2f3e33] text-white"
+                                  className={getThemeClasses("px-3 py-1.5 text-sm rounded-lg bg-[#2f3e33] text-white", "!bg-[#FFC1CC] !text-[#4c1d1d] hover:!bg-[#FFDEE9]")}
                                 >
                                   Unduh
                                 </button>
@@ -605,7 +620,7 @@ function InvoicePageContent() {
                   {otherPayments.map((p) => (
                     <tr
                       key={p.ref || p._id}
-                      className="bg-white dark:bg-gray-800 rounded-xl shadow border border-[#324D3E]/10 dark:border-gray-700"
+                      className={getThemeClasses("bg-white dark:bg-gray-800 rounded-xl shadow border border-[#324D3E]/10 dark:border-gray-700", "!bg-white/95 !border-[#FFC1CC]/30")}
                     >
                       <td className="px-4 py-3 align-top">{rowNo++}</td>
                       <td className="px-4 py-3 align-top">
@@ -630,7 +645,7 @@ function InvoicePageContent() {
                       <td className="px-4 py-3 align-top">
                         <button
                           onClick={() => downloadInvoiceImage(p)}
-                          className="px-3 py-1.5 text-sm rounded-lg bg-[#2f3e33] text-white"
+                          className={getThemeClasses("px-3 py-1.5 text-sm rounded-lg bg-[#2f3e33] text-white", "!bg-[#FFC1CC] !text-[#4c1d1d] hover:!bg-[#FFDEE9]")}
                         >
                           Unduh
                         </button>
@@ -641,7 +656,7 @@ function InvoicePageContent() {
               </table>
 
               {installmentGroups.length === 0 && otherPayments.length === 0 && (
-                <div className="text-center py-8">Tidak ada invoice yang cocok.</div>
+                <div className={getThemeClasses("text-center py-8", "!text-[#6b7280]")}>Tidak ada invoice yang cocok.</div>
               )}
             </div>
             {/* =================================================== */}

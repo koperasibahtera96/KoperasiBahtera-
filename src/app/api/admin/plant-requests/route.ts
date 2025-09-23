@@ -44,16 +44,36 @@ async function updatePlantHistory(request: any) {
 
   console.log('Found history item:', historyItem);
   console.log('Updating description from:', historyItem.description, 'to:', request.newDescription);
+  // First attempt: use MongoDB positional operator to update nested array element using string id
+  try {
+    const updateResult: any = await PlantInstance.updateOne(
+      { id: request.plantId, "history.id": request.historyId },
+      { $set: { "history.$.description": request.newDescription } }
+    );
 
-  // Use MongoDB's positional operator to update nested array element
-  // Convert historyId to number since it's stored as number in DB
-  const historyIdAsNumber = parseInt(request.historyId);
-  await PlantInstance.updateOne(
-    { id: request.plantId, "history.id": historyIdAsNumber },
-    { $set: { "history.$.description": request.newDescription } }
-  );
+    console.log('updateOne result:', updateResult);
 
-  console.log('Plant updated successfully using $set operator');
+    if (updateResult && (updateResult.modifiedCount === 1 || updateResult.nModified === 1)) {
+      console.log('Plant updated successfully via updateOne');
+    } else {
+      // Fallback: update in-memory and save (handles mixed types and older mongoose versions)
+      console.log('updateOne did not modify document, falling back to in-memory update');
+      historyItem.description = request.newDescription;
+      if (typeof plant.markModified === "function") {
+        plant.markModified("history");
+      }
+      await plant.save();
+      console.log('Plant updated successfully (saved document)');
+    }
+  } catch (err) {
+    console.error('Error performing updateOne, falling back to save:', err);
+    historyItem.description = request.newDescription;
+    if (typeof plant.markModified === "function") {
+      plant.markModified("history");
+    }
+    await plant.save();
+    console.log('Plant updated successfully (saved document after catch)');
+  }
 
   // Verify the change was persisted
   const verifyPlant = await PlantInstance.findOne({ id: request.plantId });

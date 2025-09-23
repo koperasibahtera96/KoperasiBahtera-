@@ -4,6 +4,7 @@ import { AdminLayout } from '@/components/admin/AdminLayout';
 import { motion } from 'framer-motion';
 import { RefreshCw } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { useTheme } from 'next-themes';
 
 interface DashboardData {
   stats: {
@@ -43,6 +44,20 @@ interface DashboardData {
 export default function AdminDashboard() {
   const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
+  const { theme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // Helper function to get theme-aware classes
+  const getThemeClasses = (baseClasses: string, pinkClasses: string = "") => {
+    if (mounted && theme === "pink" && pinkClasses) {
+      return `${baseClasses} ${pinkClasses}`;
+    }
+    return baseClasses;
+  };
 
   // Fetch dashboard data
   const fetchDashboardData = async () => {
@@ -72,14 +87,14 @@ export default function AdminDashboard() {
       <AdminLayout>
         <div className="space-y-8">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Dashboard</h1>
-            <p className="text-gray-600 dark:text-gray-300 mt-2">Memuat data...</p>
+            <h1 className={getThemeClasses("text-3xl font-bold text-gray-900 dark:text-white", "!text-[#4c1d1d] dark:!text-white")}>Dashboard</h1>
+            <p className={getThemeClasses("text-gray-600 dark:text-gray-300 mt-2", "!text-[#6b7280] dark:!text-gray-300")}>Memuat data...</p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 animate-pulse">
-                <div className="h-4 bg-gray-200 rounded w-1/2 mb-2"></div>
-                <div className="h-8 bg-gray-200 rounded w-3/4"></div>
+              <div key={i} className={getThemeClasses("bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 animate-pulse", "!bg-white/80 !border-[#FFC1CC]/30")}>
+                <div className={getThemeClasses("h-4 bg-gray-200 rounded w-1/2 mb-2", "!bg-[#FFC1CC]/30")}></div>
+                <div className={getThemeClasses("h-8 bg-gray-200 rounded w-3/4", "!bg-[#FFC1CC]/30")}></div>
               </div>
             ))}
           </div>
@@ -93,8 +108,8 @@ export default function AdminDashboard() {
       <AdminLayout>
         <div className="space-y-8">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Dashboard</h1>
-            <p className="text-gray-600 dark:text-gray-300 mt-2">Gagal memuat data dashboard</p>
+            <h1 className={getThemeClasses("text-3xl font-bold text-gray-900 dark:text-white", "!text-[#4c1d1d] dark:!text-white")}>Dashboard</h1>
+            <p className={getThemeClasses("text-gray-600 dark:text-gray-300 mt-2", "!text-[#6b7280] dark:!text-gray-300")}>Gagal memuat data dashboard</p>
           </div>
         </div>
       </AdminLayout>
@@ -170,8 +185,8 @@ export default function AdminDashboard() {
       >
         {/* Page Header */}
         <motion.div variants={itemVariants} className="mb-6 sm:mb-8">
-          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-[#324D3E] dark:text-white font-[family-name:var(--font-poppins)] transition-colors duration-300">Dashboard</h1>
-          <p className="text-[#889063] dark:text-gray-400 mt-1 sm:mt-2 text-sm sm:text-base transition-colors duration-300">Selamat datang di panel admin Koperasi BAHTERA</p>
+          <h1 className={getThemeClasses("text-2xl sm:text-3xl lg:text-4xl font-bold text-[#324D3E] dark:text-white font-[family-name:var(--font-poppins)] transition-colors duration-300", "!text-[#4c1d1d] dark:!text-white")}>Dashboard</h1>
+          <p className={getThemeClasses("text-[#889063] dark:text-gray-300 mt-1 sm:mt-2 text-sm sm:text-base transition-colors duration-300", "!text-[#6b7280] dark:!text-gray-300")}>Selamat datang di panel admin Koperasi BAHTERA</p>
         </motion.div>
 
         {/* Stats Grid */}
@@ -182,7 +197,7 @@ export default function AdminDashboard() {
           {stats.map((stat, index) => (
             <motion.div
               key={stat.name}
-              className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg rounded-2xl shadow-lg border border-[#324D3E]/10 dark:border-gray-700 p-4 sm:p-6 hover:shadow-xl hover:scale-105 transition-all duration-300 flex flex-col h-full"
+              className={getThemeClasses("bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg rounded-2xl shadow-lg border border-[#324D3E]/10 dark:border-gray-700 p-4 sm:p-6 hover:shadow-xl hover:scale-105 transition-all duration-300 flex flex-col h-full", "!bg-white/80 !border-[#FFC1CC]/30")}
               variants={itemVariants}
               whileHover={{
                 scale: 1.05,
@@ -191,8 +206,8 @@ export default function AdminDashboard() {
             >
               <div className="flex items-center justify-between flex-1">
                 <div className="min-w-0 flex-1">
-                  <p className="text-xs sm:text-sm font-medium text-[#889063] dark:text-gray-400 truncate transition-colors duration-300">{stat.name}</p>
-                  <p className="text-lg sm:text-xl lg:text-2xl font-bold text-[#324D3E] dark:text-white mt-1 truncate transition-colors duration-300">{stat.value}</p>
+                  <p className={getThemeClasses("text-xs sm:text-sm font-medium text-[#889063] dark:text-gray-400 truncate transition-colors duration-300", "!text-[#6b7280] dark:!text-gray-300")}>{stat.name}</p>
+                  <p className={getThemeClasses("text-lg sm:text-xl lg:text-2xl font-bold text-[#324D3E] dark:text-white mt-1 truncate transition-colors duration-300", "!text-[#4c1d1d] dark:!text-white")}>{stat.value}</p>
                 </div>
                 <motion.div
                   className="text-2xl sm:text-3xl ml-2 flex-shrink-0"
@@ -209,10 +224,10 @@ export default function AdminDashboard() {
                 </motion.div>
               </div>
               <div className="mt-3 sm:mt-4 flex items-center">
-                <span className={`text-xs sm:text-sm font-medium ${stat.changeType === 'positive' ? 'text-[#4C3D19]' : 'text-red-600'}`}>
+                <span className={getThemeClasses(`text-xs sm:text-sm font-medium ${stat.changeType === 'positive' ? 'text-[#4C3D19] dark:text-green-400' : 'text-red-600 dark:text-red-400'}`, stat.changeType === 'positive' ? '!text-[#4c1d1d] dark:!text-green-400' : '!text-[#FF6B9D] dark:!text-red-400')}>
                   {stat.change}
                 </span>
-                <span className="text-xs sm:text-sm text-[#889063] dark:text-gray-400 ml-2 truncate transition-colors duration-300">dari bulan lalu</span>
+                <span className={getThemeClasses("text-xs sm:text-sm text-[#889063] dark:text-gray-400 ml-2 truncate transition-colors duration-300", "!text-[#6b7280] dark:!text-gray-300")}>dari bulan lalu</span>
               </div>
             </motion.div>
           ))}
@@ -224,15 +239,15 @@ export default function AdminDashboard() {
         >
           {/* Recent Investors */}
           <motion.div
-            className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg rounded-2xl shadow-lg border border-[#324D3E]/10 dark:border-gray-700 transition-colors duration-300"
+            className={getThemeClasses("bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg rounded-2xl shadow-lg border border-[#324D3E]/10 dark:border-gray-700 transition-colors duration-300", "!bg-white/80 !border-[#FFC1CC]/30")}
             variants={itemVariants}
           >
-            <div className="p-6 border-b border-[#324D3E]/10 dark:border-gray-700 transition-colors duration-300">
+            <div className={getThemeClasses("p-6 border-b border-[#324D3E]/10 dark:border-gray-700 transition-colors duration-300", "!border-[#FFC1CC]/30")}>
               <div className="flex items-center justify-between">
-                <h2 className="text-xl font-bold text-[#324D3E] dark:text-white font-[family-name:var(--font-poppins)] transition-colors duration-300">Investor Terbaru</h2>
+                <h2 className={getThemeClasses("text-xl font-bold text-[#324D3E] dark:text-white font-[family-name:var(--font-poppins)] transition-colors duration-300", "!text-[#4c1d1d] dark:!text-white")}>Investor Terbaru</h2>
                 <button
                   onClick={() => window.location.href = '/admin/investors'}
-                  className="text-[#4C3D19] hover:text-[#324D3E] font-medium text-sm transition-colors"
+                  className={getThemeClasses("text-[#4C3D19] dark:text-green-400 hover:text-[#324D3E] dark:hover:text-green-300 font-medium text-sm transition-colors", "!text-[#6b7280] hover:!text-[#831843] dark:!text-green-400 dark:hover:!text-green-300")}
                 >
                   Lihat Semua
                 </button>
@@ -241,27 +256,24 @@ export default function AdminDashboard() {
             <div className="p-6">
               <div className="space-y-4">
                 {dashboardData.recentInvestors.length === 0 ? (
-                  <div className="text-center py-8 text-gray-500 dark:text-gray-400 transition-colors duration-300">
-                    Belum ada investor
+                  <div className={getThemeClasses("text-center py-8 text-gray-500 dark:text-gray-400 transition-colors duration-300", "!text-[#6b7280]")}>                    Belum ada investor
                   </div>
                 ) : (
                   dashboardData.recentInvestors.map((investor) => (
-                    <div key={investor.id} className="flex items-center justify-between p-4 bg-gradient-to-r from-[#F8FAF9] to-[#E8F5E8] dark:from-gray-700 dark:to-gray-600 rounded-xl hover:shadow-md transition-all duration-300">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-gradient-to-r from-[#324D3E] to-[#4C3D19] rounded-full flex items-center justify-center">
-                          <span className="text-white font-bold">{investor.name.charAt(0)}</span>
+                    <div key={investor.id} className={getThemeClasses("flex items-center justify-between p-4 bg-gradient-to-r from-[#F8FAF9] to-[#E8F5E8] dark:from-gray-700 dark:to-gray-600 rounded-xl hover:shadow-md transition-all duration-300", "!bg-gradient-to-r !from-[#FFEEF0] !to-[#FFF5F5]")}>                      <div className="flex items-center gap-3">
+                        <div className={getThemeClasses("w-10 h-10 bg-gradient-to-r from-[#324D3E] to-[#4C3D19] rounded-full flex items-center justify-center", "!bg-gradient-to-r !from-[#FFC1CC] !to-[#FFDEE9]")}>                          <span className={getThemeClasses("text-white font-bold", "!text-[#4c1d1d] dark:!text-white")}>{investor.name.charAt(0)}</span>
                         </div>
                         <div>
-                          <p className="font-medium text-[#324D3E] dark:text-white transition-colors duration-300">{investor.name}</p>
-                          <p className="text-sm text-[#889063] dark:text-gray-400 transition-colors duration-300">{investor.email}</p>
+                          <p className={getThemeClasses("font-medium text-[#324D3E] dark:text-white transition-colors duration-300", "!text-[#4c1d1d] dark:!text-white")}>{investor.name}</p>
+                          <p className={getThemeClasses("text-sm text-[#889063] dark:text-gray-400 transition-colors duration-300", "!text-[#6b7280] dark:!text-gray-300")}>{investor.email}</p>
                         </div>
                       </div>
                       <div className="text-right">
-                        <p className="font-medium text-[#324D3E] dark:text-white transition-colors duration-300">{investor.investment}</p>
-                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full transition-colors duration-300 ${investor.status === 'active'
-                          ? 'bg-[#4C3D19]/10 dark:bg-[#4C3D19]/20 text-[#4C3D19] dark:text-[#4C3D19]'
+                        <p className={getThemeClasses("font-medium text-[#324D3E] dark:text-white transition-colors duration-300", "!text-[#4c1d1d] dark:!text-white")}>{investor.investment}</p>
+                        <span className={getThemeClasses(`inline-flex px-2 py-1 text-xs font-semibold rounded-full transition-colors duration-300 ${investor.status === 'active'
+                          ? 'bg-[#4C3D19]/10 dark:bg-[#4C3D19]/20 text-[#4C3D19] dark:text-green-400'
                           : 'bg-red-100 dark:bg-red-900/20 text-red-800 dark:text-red-300'
-                          }`}>
+                          }`, investor.status === 'active' ? '!bg-[#FFC1CC]/20 !text-[#4c1d1d] dark:!text-green-400' : '!bg-[#FFB3C6]/20 !text-[#4c1d1d] dark:!text-red-300')}>
                           {investor.status === 'active' ? 'Aktif' : 'Tidak Aktif'}
                         </span>
                       </div>
@@ -274,15 +286,15 @@ export default function AdminDashboard() {
 
           {/* Tree Statistics */}
           <motion.div
-            className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg rounded-2xl shadow-lg border border-[#324D3E]/10 dark:border-gray-700 transition-colors duration-300"
+            className={getThemeClasses("bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg rounded-2xl shadow-lg border border-[#324D3E]/10 dark:border-gray-700 transition-colors duration-300", "!bg-white/80 !border-[#FFC1CC]/30")}
             variants={itemVariants}
           >
-            <div className="p-6 border-b border-[#324D3E]/10 dark:border-gray-700 transition-colors duration-300">
+            <div className={getThemeClasses("p-6 border-b border-[#324D3E]/10 dark:border-gray-700 transition-colors duration-300", "!border-[#FFC1CC]/30")}>
               <div className="flex items-center justify-between">
-                <h2 className="text-xl font-bold text-[#324D3E] dark:text-white font-[family-name:var(--font-poppins)] transition-colors duration-300">Statistik Pohon</h2>
+                <h2 className={getThemeClasses("text-xl font-bold text-[#324D3E] dark:text-white font-[family-name:var(--font-poppins)] transition-colors duration-300", "!text-[#4c1d1d] dark:!text-white")}>Statistik Pohon</h2>
                 <button
                   onClick={() => window.location.href = '/admin/trees'}
-                  className="text-[#4C3D19] hover:text-[#324D3E] font-medium text-sm transition-colors"
+                  className={getThemeClasses("text-[#4C3D19] dark:text-green-400 hover:text-[#324D3E] dark:hover:text-green-300 font-medium text-sm transition-colors", "!text-[#6b7280] hover:!text-[#831843] dark:!text-green-400 dark:hover:!text-green-300")}
                 >
                   Lihat Semua
                 </button>
@@ -291,8 +303,7 @@ export default function AdminDashboard() {
             <div className="p-6">
               <div className="space-y-6">
                 {dashboardData.treeStats.length === 0 ? (
-                  <div className="text-center py-8 text-gray-500 dark:text-gray-400 transition-colors duration-300">
-                    Belum ada data pohon
+                  <div className={getThemeClasses("text-center py-8 text-gray-500 dark:text-gray-400 transition-colors duration-300", "!text-[#6b7280] dark:!text-gray-300")}>                    Belum ada data pohon
                   </div>
                 ) : (
                   dashboardData.treeStats.map((tree) => (
@@ -302,17 +313,17 @@ export default function AdminDashboard() {
                           tree.color === 'green' ? 'bg-green-500' : 'bg-emerald-500'
                           }`}></div>
                         <div>
-                          <p className="font-medium text-[#324D3E] dark:text-white transition-colors duration-300">{tree.name}</p>
-                          <p className="text-sm text-[#889063] dark:text-gray-400 transition-colors duration-300">{tree.count} pohon</p>
+                          <p className={getThemeClasses("font-medium text-[#324D3E] dark:text-white transition-colors duration-300", "!text-[#4c1d1d] dark:!text-white")}>{tree.name}</p>
+                          <p className={getThemeClasses("text-sm text-[#889063] dark:text-gray-400 transition-colors duration-300", "!text-[#6b7280] dark:!text-gray-300")}>{tree.count} pohon</p>
                         </div>
                       </div>
                       <div className="text-right">
-                        <p className="font-medium text-[#324D3E] dark:text-white transition-colors duration-300">{tree.value}</p>
-                        <p className={`text-sm transition-colors duration-300 ${
-                          tree.growth.startsWith('+') || tree.growth === '0%' 
-                            ? 'text-[#4C3D19] dark:text-[#4C3D19]' 
+                        <p className={getThemeClasses("font-medium text-[#324D3E] dark:text-white transition-colors duration-300", "!text-[#4c1d1d] dark:!text-white")}>{tree.value}</p>
+                        <p className={getThemeClasses(`text-sm transition-colors duration-300 ${
+                          tree.growth.startsWith('+') || tree.growth === '0%'
+                            ? 'text-[#4C3D19] dark:text-green-400'
                             : 'text-red-600 dark:text-red-400'
-                        }`}>{tree.growth}</p>
+                        }`, tree.growth.startsWith('+') || tree.growth === '0%' ? '!text-[#4c1d1d] dark:!text-green-400' : '!text-[#FF6B9D] dark:!text-red-400')}>{tree.growth}</p>
                       </div>
                     </div>
                   ))
@@ -320,19 +331,18 @@ export default function AdminDashboard() {
               </div>
 
               {/* Stats Summary */}
-              <div className="mt-6 p-4 bg-gradient-to-r from-[#F8FAF9] to-[#E8F5E8] dark:from-gray-700 dark:to-gray-600 rounded-xl transition-colors duration-300">
-                <div className="grid grid-cols-3 gap-4 text-center">
+              <div className={getThemeClasses("mt-6 p-4 bg-gradient-to-r from-[#F8FAF9] to-[#E8F5E8] dark:from-gray-700 dark:to-gray-600 rounded-xl transition-colors duration-300", "!bg-gradient-to-r !from-[#FFEEF0] !to-[#FFF5F5]")}>                <div className="grid grid-cols-3 gap-4 text-center">
                   <div>
-                    <p className="text-sm text-[#889063] dark:text-gray-400 transition-colors duration-300">Aktif</p>
-                    <p className="text-lg font-bold text-[#4C3D19] dark:text-[#4C3D19] transition-colors duration-300">{dashboardData.investorStats.active}</p>
+                    <p className={getThemeClasses("text-sm text-[#889063] dark:text-gray-400 transition-colors duration-300", "!text-[#6b7280] dark:!text-gray-300")}>Aktif</p>
+                    <p className={getThemeClasses("text-lg font-bold text-[#4C3D19] dark:text-green-400 transition-colors duration-300", "!text-[#4c1d1d] dark:!text-green-400")}>{dashboardData.investorStats.active}</p>
                   </div>
                   <div>
-                    <p className="text-sm text-[#889063] dark:text-gray-400 transition-colors duration-300">Tidak Aktif</p>
-                    <p className="text-lg font-bold text-red-600 dark:text-red-400 transition-colors duration-300">{dashboardData.investorStats.inactive}</p>
+                    <p className={getThemeClasses("text-sm text-[#889063] dark:text-gray-400 transition-colors duration-300", "!text-[#6b7280] dark:!text-gray-300")}>Tidak Aktif</p>
+                    <p className={getThemeClasses("text-lg font-bold text-red-600 dark:text-red-400 transition-colors duration-300", "!text-[#FF6B9D] dark:!text-red-400")}>{dashboardData.investorStats.inactive}</p>
                   </div>
                   <div>
-                    <p className="text-sm text-[#889063] dark:text-gray-400 transition-colors duration-300">Total</p>
-                    <p className="text-lg font-bold text-[#324D3E] dark:text-white transition-colors duration-300">{dashboardData.investorStats.total}</p>
+                    <p className={getThemeClasses("text-sm text-[#889063] dark:text-gray-400 transition-colors duration-300", "!text-[#6b7280] dark:!text-gray-300")}>Total</p>
+                    <p className={getThemeClasses("text-lg font-bold text-[#324D3E] dark:text-white transition-colors duration-300", "!text-[#4c1d1d] dark:!text-white")}>{dashboardData.investorStats.total}</p>
                   </div>
                 </div>
               </div>
@@ -342,23 +352,22 @@ export default function AdminDashboard() {
 
         {/* Management Tools */}
         <motion.div
-          className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg rounded-2xl shadow-lg border border-[#324D3E]/10 dark:border-gray-700 p-6 transition-colors duration-300 mb-6"
+          className={getThemeClasses("bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg rounded-2xl shadow-lg border border-[#324D3E]/10 dark:border-gray-700 p-6 transition-colors duration-300 mb-6", "!bg-white/80 !border-[#FFC1CC]/30")}
           variants={itemVariants}
         >
           <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 sm:mb-6 gap-3">
-            <h2 className="text-lg sm:text-xl font-bold text-[#324D3E] dark:text-white font-[family-name:var(--font-poppins)] transition-colors duration-300">Tools Manajemen</h2>
+            <h2 className={getThemeClasses("text-lg sm:text-xl font-bold text-[#324D3E] dark:text-white font-[family-name:var(--font-poppins)] transition-colors duration-300", "!text-[#4c1d1d] dark:!text-white")}>Tools Manajemen</h2>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
             <button
               onClick={() => window.location.href = '/admin/plant-showcase'}
-              className="flex items-center gap-3 p-4 border-2 border-dashed border-[#4C3D19]/20 rounded-xl hover:border-[#4C3D19] hover:bg-[#4C3D19]/5 transition-all group"
+              className={getThemeClasses("flex items-center gap-3 p-4 border-2 border-dashed border-[#4C3D19]/20 rounded-xl hover:border-[#4C3D19] hover:bg-[#4C3D19]/5 transition-all group", "!border-[#FFC1CC]/30 hover:!border-[#FFC1CC] hover:!bg-[#FFC1CC]/10")}
             >
-              <div className="w-10 h-10 bg-[#4C3D19]/10 group-hover:bg-[#4C3D19]/20 rounded-xl flex items-center justify-center transition-colors">
-                <span className="text-[#4C3D19]">🌿</span>
+              <div className={getThemeClasses("w-10 h-10 bg-[#4C3D19]/10 group-hover:bg-[#4C3D19]/20 rounded-xl flex items-center justify-center transition-colors", "!bg-[#B5EAD7]/20 group-hover:!bg-[#B5EAD7]/30")}>                <span className={getThemeClasses("text-[#4C3D19]", "!text-[#4c1d1d] dark:!text-white")}>🌿</span>
               </div>
               <div className="text-left">
-                <p className="font-medium text-[#324D3E]">Edit Harga Tanaman</p>
-                <p className="text-sm text-[#889063]">Kelola harga showcase landing page</p>
+                <p className={getThemeClasses("font-medium text-[#324D3E] dark:text-white", "!text-[#4c1d1d] dark:!text-white")}>Edit Harga Tanaman</p>
+                <p className={getThemeClasses("text-sm text-[#889063] dark:text-gray-300", "!text-[#6b7280] dark:!text-gray-300")}>Kelola harga showcase landing page</p>
               </div>
             </button>
           </div>
@@ -366,14 +375,14 @@ export default function AdminDashboard() {
 
         {/* Quick Actions */}
         <motion.div
-          className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg rounded-2xl shadow-lg border border-[#324D3E]/10 dark:border-gray-700 p-6 transition-colors duration-300"
+          className={getThemeClasses("bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg rounded-2xl shadow-lg border border-[#324D3E]/10 dark:border-gray-700 p-6 transition-colors duration-300", "!bg-white/80 !border-[#FFC1CC]/30")}
           variants={itemVariants}
         >
           <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 sm:mb-6 gap-3">
-            <h2 className="text-lg sm:text-xl font-bold text-[#324D3E] dark:text-white font-[family-name:var(--font-poppins)] transition-colors duration-300">Aksi Cepat</h2>
+            <h2 className={getThemeClasses("text-lg sm:text-xl font-bold text-[#324D3E] dark:text-white font-[family-name:var(--font-poppins)] transition-colors duration-300", "!text-[#4c1d1d] dark:!text-white")}>Aksi Cepat</h2>
             <button
               onClick={fetchDashboardData}
-              className="text-[#4C3D19] dark:text-[#4C3D19] hover:text-[#324D3E] dark:hover:text-[#6b5b47] font-medium text-sm flex items-center gap-2 transition-colors self-start sm:self-auto"
+              className={getThemeClasses("text-[#4C3D19] dark:text-green-400 hover:text-[#324D3E] dark:hover:text-green-300 font-medium text-sm flex items-center gap-2 transition-colors self-start sm:self-auto", "!text-[#6b7280] hover:!text-[#831843] dark:!text-green-400 dark:hover:!text-green-300")}
             >
               <RefreshCw className="w-4 h-4" />
               Refresh Data
@@ -382,54 +391,50 @@ export default function AdminDashboard() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
             <button
               onClick={() => window.location.href = '/admin/verification'}
-              className="flex items-center gap-3 p-4 border-2 border-dashed border-[#324D3E]/20 rounded-xl hover:border-[#324D3E] hover:bg-[#324D3E]/5 transition-all group"
+              className={getThemeClasses("flex items-center gap-3 p-4 border-2 border-dashed border-[#324D3E]/20 rounded-xl hover:border-[#324D3E] hover:bg-[#324D3E]/5 transition-all group", "!border-[#FFC1CC]/30 hover:!border-[#FFC1CC] hover:!bg-[#FFC1CC]/10")}
             >
-              <div className="w-10 h-10 bg-[#324D3E]/10 group-hover:bg-[#324D3E]/20 rounded-xl flex items-center justify-center transition-colors">
-                <span className="text-[#324D3E]">✅</span>
+              <div className={getThemeClasses("w-10 h-10 bg-[#324D3E]/10 group-hover:bg-[#324D3E]/20 rounded-xl flex items-center justify-center transition-colors", "!bg-[#FFC1CC]/30 group-hover:!bg-[#FFC1CC]/40")}>                <span className={getThemeClasses("text-[#324D3E]", "!text-[#4c1d1d] dark:!text-white")}>✅</span>
               </div>
               <div className="text-left">
-                <p className="font-medium text-[#324D3E]">Verifikasi User</p>
-                <p className="text-sm text-[#889063]">Verifikasi KTP dan foto user</p>
+                <p className={getThemeClasses("font-medium text-[#324D3E] dark:text-white", "!text-[#4c1d1d] dark:!text-white")}>Verifikasi User</p>
+                <p className={getThemeClasses("text-sm text-[#889063] dark:text-gray-300", "!text-[#6b7280] dark:!text-gray-300")}>Verifikasi KTP dan foto user</p>
               </div>
             </button>
 
             <button
               onClick={() => window.location.href = '/admin/investors'}
-              className="flex items-center gap-3 p-4 border-2 border-dashed border-[#324D3E]/20 rounded-xl hover:border-[#324D3E] hover:bg-[#324D3E]/5 transition-all group"
+              className={getThemeClasses("flex items-center gap-3 p-4 border-2 border-dashed border-[#324D3E]/20 rounded-xl hover:border-[#324D3E] hover:bg-[#324D3E]/5 transition-all group", "!border-[#B5EAD7]/30 hover:!border-[#B5EAD7] hover:!bg-[#B5EAD7]/10")}
             >
-              <div className="w-10 h-10 bg-[#324D3E]/10 group-hover:bg-[#324D3E]/20 rounded-xl flex items-center justify-center transition-colors">
-                <span className="text-[#324D3E]">👥</span>
+              <div className={getThemeClasses("w-10 h-10 bg-[#324D3E]/10 group-hover:bg-[#324D3E]/20 rounded-xl flex items-center justify-center transition-colors", "!bg-[#B5EAD7]/30 group-hover:!bg-[#B5EAD7]/40")}>                <span className={getThemeClasses("text-[#324D3E]", "!text-[#4c1d1d] dark:!text-white")}>👥</span>
               </div>
               <div className="text-left">
-                <p className="font-medium text-[#324D3E]">Kelola Investor</p>
-                <p className="text-sm text-[#889063]">Lihat dan kelola investor</p>
+                <p className={getThemeClasses("font-medium text-[#324D3E] dark:text-white", "!text-[#4c1d1d] dark:!text-white")}>Kelola Investor</p>
+                <p className={getThemeClasses("text-sm text-[#889063] dark:text-gray-300", "!text-[#6b7280] dark:!text-gray-300")}>Lihat dan kelola investor</p>
               </div>
             </button>
 
             <button
               onClick={() => window.location.href = '/admin/trees'}
-              className="flex items-center gap-3 p-4 border-2 border-dashed border-[#4C3D19]/20 rounded-xl hover:border-[#4C3D19] hover:bg-[#4C3D19]/5 transition-all group"
+              className={getThemeClasses("flex items-center gap-3 p-4 border-2 border-dashed border-[#4C3D19]/20 rounded-xl hover:border-[#4C3D19] hover:bg-[#4C3D19]/5 transition-all group", "!border-[#C7CEEA]/30 hover:!border-[#C7CEEA] hover:!bg-[#C7CEEA]/10")}
             >
-              <div className="w-10 h-10 bg-[#4C3D19]/10 group-hover:bg-[#4C3D19]/20 rounded-xl flex items-center justify-center transition-colors">
-                <span className="text-[#4C3D19]">🌳</span>
+              <div className={getThemeClasses("w-10 h-10 bg-[#4C3D19]/10 group-hover:bg-[#4C3D19]/20 rounded-xl flex items-center justify-center transition-colors", "!bg-[#C7CEEA]/30 group-hover:!bg-[#C7CEEA]/40")}>                <span className={getThemeClasses("text-[#4C3D19]", "!text-[#4c1d1d] dark:!text-white")}>🌳</span>
               </div>
               <div className="text-left">
-                <p className="font-medium text-[#324D3E]">Kelola Pohon</p>
-                <p className="text-sm text-[#889063]">Lihat dan kelola data pohon</p>
+                <p className={getThemeClasses("font-medium text-[#324D3E] dark:text-white", "!text-[#4c1d1d] dark:!text-white")}>Kelola Pohon</p>
+                <p className={getThemeClasses("text-sm text-[#889063] dark:text-gray-300", "!text-[#6b7280] dark:!text-gray-300")}>Lihat dan kelola data pohon</p>
               </div>
             </button>
 
 
             <button
               onClick={fetchDashboardData}
-              className="flex items-center gap-3 p-4 border-2 border-dashed border-[#889063]/20 dark:border-[#889063]/40 rounded-xl hover:border-[#889063] hover:bg-[#889063]/5 dark:hover:bg-[#889063]/10 transition-all group"
+              className={getThemeClasses("flex items-center gap-3 p-4 border-2 border-dashed border-[#889063]/20 dark:border-[#889063]/40 rounded-xl hover:border-[#889063] hover:bg-[#889063]/5 dark:hover:bg-[#889063]/10 transition-all group", "!border-[#FFDEE9]/30 hover:!border-[#FFDEE9] hover:!bg-[#FFDEE9]/10")}
             >
-              <div className="w-10 h-10 bg-[#889063]/10 dark:bg-[#889063]/20 group-hover:bg-[#889063]/20 dark:group-hover:bg-[#889063]/30 rounded-xl flex items-center justify-center transition-colors">
-                <RefreshCw className="w-5 h-5 text-[#889063]" />
+              <div className={getThemeClasses("w-10 h-10 bg-[#889063]/10 dark:bg-[#889063]/20 group-hover:bg-[#889063]/20 dark:group-hover:bg-[#889063]/30 rounded-xl flex items-center justify-center transition-colors", "!bg-[#FFDEE9]/30 group-hover:!bg-[#FFDEE9]/40")}>                <RefreshCw className={getThemeClasses("w-5 h-5 text-[#889063]", "!text-[#4c1d1d] dark:!text-white")} />
               </div>
               <div className="text-left">
-                <p className="font-medium text-[#324D3E] dark:text-white transition-colors duration-300">Refresh Dashboard</p>
-                <p className="text-sm text-[#889063] dark:text-gray-400 transition-colors duration-300">Perbarui data terbaru</p>
+                <p className={getThemeClasses("font-medium text-[#324D3E] dark:text-white transition-colors duration-300", "!text-[#4c1d1d] dark:!text-white")}>Refresh Dashboard</p>
+                <p className={getThemeClasses("text-sm text-[#889063] dark:text-gray-400 transition-colors duration-300", "!text-[#6b7280] dark:!text-gray-300")}>Perbarui data terbaru</p>
               </div>
             </button>
           </div>

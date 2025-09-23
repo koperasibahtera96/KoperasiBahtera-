@@ -204,7 +204,7 @@ export async function POST(request: NextRequest) {
 
           // Set status based on contract approval
           const plantStatus = isContractApproved ? "Kontrak Baru" : "Pending";
-          const historyAction = isContractApproved ? "Kontrak Baru" : "Pending Contract Approval";
+          const historyAction = isContractApproved ? "Kontrak Baru" : "Pending Contract";
           const historyDescription = isContractApproved
             ? `Tanaman baru dibuat dengan pembayaran full untuk user ${user.fullName}`
             : `Tanaman dibuat, menunggu persetujuan kontrak untuk user ${user.fullName}`;
@@ -420,7 +420,7 @@ export async function POST(request: NextRequest) {
 
             // Set status based on contract approval
             const plantStatus = isContractApproved ? "Kontrak Baru" : "Pending";
-            const historyAction = isContractApproved ? "Kontrak Baru" : "Pending Contract Approval";
+            const historyAction = isContractApproved ? "Kontrak Baru" : "Pending Contract";
             const historyDescription = isContractApproved
               ? `Tanaman baru dibuat dengan cicilan untuk user ${user.fullName}`
               : `Tanaman dibuat, menunggu persetujuan kontrak untuk user ${user.fullName}`;

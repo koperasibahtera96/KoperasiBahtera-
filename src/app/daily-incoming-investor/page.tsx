@@ -91,6 +91,19 @@ export default function DailyIncomingInvestorPage() {
   const { showError, AlertComponent } = useAlert();
   const { theme, systemTheme } = useTheme();
   const isDark = (theme === "system" ? systemTheme : theme) === "dark";
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // Helper function to get theme-aware classes
+  const getThemeClasses = (baseClasses: string, pinkClasses: string = "") => {
+    if (mounted && theme === "pink" && pinkClasses) {
+      return `${baseClasses} ${pinkClasses}`;
+    }
+    return baseClasses;
+  };
 
   // ===== FETCH (hanya saat applied* berubah) =====
   const load = async () => {
@@ -393,8 +406,8 @@ export default function DailyIncomingInvestorPage() {
       <FinanceSidebar>
         <div className="p-4 sm:p-6 lg:p-8 flex items-center justify-center min-h-[50vh]">
           <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#324D3E] dark:border-white mx-auto mb-4"></div>
-            <p className="text-[#889063] dark:text-gray-200 text-lg">
+            <div className={getThemeClasses("animate-spin rounded-full h-12 w-12 border-b-2 border-[#324D3E] dark:border-white mx-auto mb-4", "!border-[#FFC1CC]")}></div>
+            <p className={getThemeClasses("text-[#889063] dark:text-gray-200 text-lg", "!text-[#6b7280]")}>
               Memuat Daily Incoming Investor...
             </p>
           </div>
@@ -416,7 +429,7 @@ export default function DailyIncomingInvestorPage() {
           <div className="flex items-center gap-4">
             <Link href="/finance">
               <motion.button
-                className="group flex items-center gap-2 px-3 sm:px-4 py-2 bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl rounded-xl sm:rounded-2xl shadow-lg border border-[#324D3E]/10 dark:border-gray-700 text-[#324D3E] dark:text-white hover:bg-[#324D3E] hover:text-white transition-all duration-300 self-start"
+                className={getThemeClasses("group flex items-center gap-2 px-3 sm:px-4 py-2 bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl rounded-xl sm:rounded-2xl shadow-lg border border-[#324D3E]/10 dark:border-gray-700 text-[#324D3E] dark:text-white hover:bg-[#324D3E] hover:text-white transition-all duration-300 self-start", "!bg-white/90 !border-[#FFC1CC]/30 !text-[#4c1d1d] hover:!bg-[#FFC1CC] hover:!text-[#4c1d1d]")}
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
               >
@@ -425,10 +438,10 @@ export default function DailyIncomingInvestorPage() {
               </motion.button>
             </Link>
             <div>
-              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-[#324D3E] dark:text-white transition-colors duration-300">
+              <h1 className={getThemeClasses("text-2xl sm:text-3xl lg:text-4xl font-bold text-[#324D3E] dark:text-white transition-colors duration-300", "!text-[#4c1d1d]")}>
                 Daily Incoming Investor
               </h1>
-              <p className="text-[#889063] dark:text-gray-200 mt-1 text-sm sm:text-base lg:text-lg transition-colors duration-300">
+              <p className={getThemeClasses("text-[#889063] dark:text-gray-200 mt-1 text-sm sm:text-base lg:text-lg transition-colors duration-300", "!text-[#6b7280]")}>
                 Ringkasan pemasukan harian dari investasi baru
               </p>
             </div>
@@ -437,7 +450,7 @@ export default function DailyIncomingInvestorPage() {
           <div className="flex gap-3">
             <motion.button
               onClick={handleExport}
-              className="inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-green-500 to-[#324D3E] hover:from-green-600 hover:to-[#4C3D19] px-4 py-2 text-sm font-medium text-white transition-all duration-300 shadow-lg hover:shadow-xl"
+              className={getThemeClasses("inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-green-500 to-[#324D3E] hover:from-green-600 hover:to-[#4C3D19] px-4 py-2 text-sm font-medium text-white transition-all duration-300 shadow-lg hover:shadow-xl", "!bg-gradient-to-r !from-[#FFC1CC] !to-[#FFDEE9] !text-[#4c1d1d] hover:!from-[#FFDEE9] hover:!to-[#FFF5BA]")}
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
             >
@@ -448,9 +461,9 @@ export default function DailyIncomingInvestorPage() {
         </motion.div>
 
         {/* ===== FILTER (Tahun/Bulan/Tanggal + Reset) ===== */}
-        <Card className="bg-white/90 dark:bg-gray-800/90 mb-6 border border-[#324D3E]/10 dark:border-gray-700 transition-colors duration-300">
+        <Card className={getThemeClasses("bg-white/90 dark:bg-gray-800/90 mb-6 border border-[#324D3E]/10 dark:border-gray-700 transition-colors duration-300", "!bg-white/80 !border-[#FFC1CC]/30")}>
           <CardHeader>
-            <CardTitle className="text-black dark:text-white flex items-center gap-2 transition-colors duration-300">
+            <CardTitle className={getThemeClasses("text-black dark:text-white flex items-center gap-2 transition-colors duration-300", "!text-[#4c1d1d]")}>
               <Filter className="h-5 w-5" />
               Filter Laporan
             </CardTitle>
@@ -459,33 +472,33 @@ export default function DailyIncomingInvestorPage() {
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               {/* Tahun */}
               <div>
-                <label className="block text-sm font-medium text-black dark:text-white mb-2">
+                <label className={getThemeClasses("block text-sm font-medium text-black dark:text-white mb-2", "!text-[#4c1d1d]")}>
                   Tahun
                 </label>
                 <div className="relative">
                   <select
                     value={selectedYear}
                     onChange={(e) => setSelectedYear(Number(e.target.value))}
-                    className="w-full border bg-white/90 dark:bg-gray-700/80 border-gray-200 dark:border-gray-600 text-black dark:text-white px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none cursor-pointer"
+                    className={getThemeClasses("w-full border bg-white/90 dark:bg-gray-700/80 border-gray-200 dark:border-gray-600 text-black dark:text-white px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none cursor-pointer", "!bg-white/90 !border-[#FFC1CC]/30 !text-[#4c1d1d] focus:!ring-[#FFC1CC]/20 focus:!border-[#FFC1CC]")}
                   >
                     {Array.from({ length: 6 }, (_, i) => now.getFullYear() - i).map((y) => (
                       <option key={y} value={y}>{y}</option>
                     ))}
                   </select>
-                  <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 dark:text-gray-300 pointer-events-none" />
+                  <ChevronDown className={getThemeClasses("absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 dark:text-gray-300 pointer-events-none", "!text-[#6b7280]")} />
                 </div>
               </div>
 
               {/* Bulan */}
               <div>
-                <label className="block text-sm font-medium text-black dark:text-white mb-2">
+                <label className={getThemeClasses("block text-sm font-medium text-black dark:text-white mb-2", "!text-[#4c1d1d]")}>
                   Bulan
                 </label>
                 <div className="relative">
                   <select
                     value={selectedMonth ?? ""}
                     onChange={(e) => setSelectedMonth(e.target.value ? Number(e.target.value) : null)}
-                    className="w-full border bg-white/90 dark:bg-gray-700/80 border-gray-200 dark:border-gray-600 text-black dark:text-white px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none cursor-pointer"
+                    className={getThemeClasses("w-full border bg-white/90 dark:bg-gray-700/80 border-gray-200 dark:border-gray-600 text-black dark:text-white px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none cursor-pointer", "!bg-white/90 !border-[#FFC1CC]/30 !text-[#4c1d1d] focus:!ring-[#FFC1CC]/20 focus:!border-[#FFC1CC]")}
                   >
                     <option value="">Semua Bulan</option>
                     {Array.from({ length: 12 }, (_, i) => (
@@ -494,32 +507,32 @@ export default function DailyIncomingInvestorPage() {
                       </option>
                     ))}
                   </select>
-                  <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 dark:text-gray-300 pointer-events-none" />
+                  <ChevronDown className={getThemeClasses("absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 dark:text-gray-300 pointer-events-none", "!text-[#6b7280]")} />
                 </div>
               </div>
 
               {/* Tanggal */}
               <div>
-                <label className="block text-sm font-medium text-black dark:text-white mb-2">
+                <label className={getThemeClasses("block text-sm font-medium text-black dark:text-white mb-2", "!text-[#4c1d1d]")}>
                   Tanggal (opsional)
                 </label>
                 <input
                   type="date"
                   value={selectedDate}
                   onChange={(e) => setSelectedDate(e.target.value)}
-                  className="w-full border bg-white/90 dark:bg-gray-700/80 border-gray-200 dark:border-gray-600 text-black dark:text-white px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className={getThemeClasses("w-full border bg-white/90 dark:bg-gray-700/80 border-gray-200 dark:border-gray-600 text-black dark:text-white px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500", "!bg-white/90 !border-[#FFC1CC]/30 !text-[#4c1d1d] focus:!ring-[#FFC1CC]/20 focus:!border-[#FFC1CC]")}
                 />
               </div>
 
               {/* Tombol Apply + Reset */}
               <div className="flex items-end gap-2">
-                <Button onClick={handleApplyFilters} className="w-full">
+                <Button onClick={handleApplyFilters} className={getThemeClasses("w-full", "!bg-gradient-to-r !from-[#FFC1CC] !to-[#FFDEE9] !text-[#4c1d1d] hover:!from-[#FFDEE9] hover:!to-[#FFF5BA]")}>
                   Terapkan
                 </Button>
                 <Button
                   variant="outline"
                   onClick={handleReset}
-                  className="w-full border bg-white/90 dark:bg-gray-700/80 border-gray-200 dark:border-gray-600 text-black dark:text-white hover:bg-gray-200 dark:hover:bg-gray-700"
+                  className={getThemeClasses("w-full border bg-white/90 dark:bg-gray-700/80 border-gray-200 dark:border-gray-600 text-black dark:text-white hover:bg-gray-200 dark:hover:bg-gray-700", "!bg-white/90 !border-[#FFC1CC]/30 !text-[#4c1d1d] hover:!bg-[#FFC1CC]/20")}
                 >
                   Reset Filter
                 </Button>
@@ -529,70 +542,78 @@ export default function DailyIncomingInvestorPage() {
         </Card>
 
         {/* ===== KPI ===== */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-8 items-stretch">
           {/* Total pemasukan */}
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.2 }}>
-            <Card className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl border-[#324D3E]/10 dark:border-gray-700 shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300">
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="text-sm text-[#889063] dark:text-gray-200">Total pemasukan</div>
-                  <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-green-500/10 text-green-600">
-                    <TrendingUp className="h-5 w-5" />
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.2 }} className="h-full">
+            <Card className={getThemeClasses("bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl border-[#324D3E]/10 dark:border-gray-700 shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300 h-full", "!bg-white/80 !border-[#FFC1CC]/30")}>
+              <CardContent className="p-6 h-full flex flex-col justify-between">
+                <div>
+                  <div className={getThemeClasses("text-sm text-[#889063] dark:text-gray-200 mb-4", "!text-[#6b7280]")}>Total pemasukan</div>
+                  <div className={getThemeClasses("text-2xl font-bold text-green-600 dark:text-emerald-400", "!text-[#4c1d1d]")}>
+                    {formatCurrency(summary.totalPemasukan)}
                   </div>
                 </div>
-                <div className="text-2xl font-bold text-green-600 dark:text-emerald-400">
-                  {formatCurrency(summary.totalPemasukan)}
+                <div className="flex justify-end mt-4">
+                  <div className={getThemeClasses("flex h-10 w-10 items-center justify-center rounded-2xl bg-green-500/10 text-green-600", "!bg-[#FFC1CC]/20 !text-[#4c1d1d]")}>
+                    <TrendingUp className="h-5 w-5" />
+                  </div>
                 </div>
               </CardContent>
             </Card>
           </motion.div>
 
           {/* Jumlah transaksi */}
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.3 }}>
-            <Card className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl border-[#324D3E]/10 dark:border-gray-700 shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300">
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="text-sm text-[#889063] dark:text-gray-200">Jumlah Transaksi</div>
-                  <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-blue-500/10 text-blue-600">
-                    <BarChart3 className="h-5 w-5" />
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.3 }} className="h-full">
+            <Card className={getThemeClasses("bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl border-[#324D3E]/10 dark:border-gray-700 shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300 h-full", "!bg-white/80 !border-[#FFC1CC]/30")}>
+              <CardContent className="p-6 h-full flex flex-col justify-between">
+                <div>
+                  <div className={getThemeClasses("text-sm text-[#889063] dark:text-gray-200 mb-4", "!text-[#6b7280]")}>Jumlah Transaksi</div>
+                  <div className={getThemeClasses("text-2xl font-bold text-blue-600 dark:text-blue-400", "!text-[#4c1d1d]")}>
+                    {rows.length}
                   </div>
                 </div>
-                <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
-                  {rows.length}
+                <div className="flex justify-end mt-4">
+                  <div className={getThemeClasses("flex h-10 w-10 items-center justify-center rounded-2xl bg-blue-500/10 text-blue-600", "!bg-[#FFC1CC]/20 !text-[#4c1d1d]")}>
+                    <BarChart3 className="h-5 w-5" />
+                  </div>
                 </div>
               </CardContent>
             </Card>
           </motion.div>
 
           {/* Sudah dibayar */}
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.4 }}>
-            <Card className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl border-[#324D3E]/10 dark:border-gray-700 shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300">
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="text-sm text-[#889063] dark:text-gray-200">Total pemasukan sudah dibayar</div>
-                  <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-green-500/10 text-green-600">
-                    <DollarSign className="h-5 w-5" />
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.4 }} className="h-full">
+            <Card className={getThemeClasses("bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl border-[#324D3E]/10 dark:border-gray-700 shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300 h-full", "!bg-white/80 !border-[#FFC1CC]/30")}>
+              <CardContent className="p-6 h-full flex flex-col justify-between">
+                <div>
+                  <div className={getThemeClasses("text-sm text-[#889063] dark:text-gray-200 mb-4", "!text-[#6b7280]")}>Total pemasukan sudah dibayar</div>
+                  <div className={getThemeClasses("text-2xl font-bold text-green-600 dark:text-emerald-400", "!text-[#4c1d1d]")}>
+                    {formatCurrency(summary.totalSudahDibayar)}
                   </div>
                 </div>
-                <div className="text-2xl font-bold text-green-600 dark:text-emerald-400">
-                  {formatCurrency(summary.totalSudahDibayar)}
+                <div className="flex justify-end mt-4">
+                  <div className={getThemeClasses("flex h-10 w-10 items-center justify-center rounded-2xl bg-green-500/10 text-green-600", "!bg-[#FFC1CC]/20 !text-[#4c1d1d]")}>
+                    <DollarSign className="h-5 w-5" />
+                  </div>
                 </div>
               </CardContent>
             </Card>
           </motion.div>
 
           {/* Sisa cicilan */}
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.5 }}>
-            <Card className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl border-[#324D3E]/10 dark:border-gray-700 shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300">
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="text-sm text-[#889063] dark:text-gray-200">Total pemasukan belum dibayar (Sisa cicilan)</div>
-                  <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-red-500/10 text-red-600">
-                    <TrendingDown className="h-5 w-5" />
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.5 }} className="h-full">
+            <Card className={getThemeClasses("bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl border-[#324D3E]/10 dark:border-gray-700 shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300 h-full", "!bg-white/80 !border-[#FFC1CC]/30")}>
+              <CardContent className="p-6 h-full flex flex-col justify-between">
+                <div>
+                  <div className={getThemeClasses("text-sm text-[#889063] dark:text-gray-200 mb-4", "!text-[#6b7280]")}>Total pemasukan belum dibayar (Sisa cicilan)</div>
+                  <div className={getThemeClasses("text-2xl font-bold text-red-600 dark:text-red-400", "!text-[#4c1d1d]")}>
+                    {formatCurrency(summary.totalBelumDibayar)}
                   </div>
                 </div>
-                <div className="text-2xl font-bold text-red-600 dark:text-red-400">
-                  {formatCurrency(summary.totalBelumDibayar)}
+                <div className="flex justify-end mt-4">
+                  <div className={getThemeClasses("flex h-10 w-10 items-center justify-center rounded-2xl bg-red-500/10 text-red-600", "!bg-[#FFC1CC]/20 !text-[#4c1d1d]")}>
+                    <TrendingDown className="h-5 w-5" />
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -601,9 +622,9 @@ export default function DailyIncomingInvestorPage() {
 
         {/* ===== Charts ===== */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-          <Card className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl border-[#324D3E]/10 dark:border-gray-700 shadow-lg transition-colors duration-300">
+          <Card className={getThemeClasses("bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl border-[#324D3E]/10 dark:border-gray-700 shadow-lg transition-colors duration-300", "!bg-white/80 !border-[#FFC1CC]/30")}>
             <CardHeader>
-              <CardTitle className="text-[#324D3E] dark:text-white">Distribusi Payment Type</CardTitle>
+              <CardTitle className={getThemeClasses("text-[#324D3E] dark:text-white", "!text-[#4c1d1d]")}>Distribusi Payment Type</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="h-80">
@@ -641,9 +662,9 @@ export default function DailyIncomingInvestorPage() {
             </CardContent>
           </Card>
 
-          <Card className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl border-[#324D3E]/10 dark:border-gray-700 shadow-lg transition-colors duration-300">
+          <Card className={getThemeClasses("bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl border-[#324D3E]/10 dark:border-gray-700 shadow-lg transition-colors duration-300", "!bg-white/80 !border-[#FFC1CC]/30")}>
             <CardHeader>
-              <CardTitle className="text-[#324D3E] dark:text-white">
+              <CardTitle className={getThemeClasses("text-[#324D3E] dark:text-white", "!text-[#4c1d1d]")}>
                 Tren Pemasukan Bulanan {appliedYear}
               </CardTitle>
             </CardHeader>
@@ -689,12 +710,12 @@ export default function DailyIncomingInvestorPage() {
         </div>
 
         {/* ===== Detail + Search di Header + Pagination ===== */}
-        <Card className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl border-[#324D3E]/10 dark:border-gray-700 shadow-lg transition-colors duration-300">
+        <Card className={getThemeClasses("bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl border-[#324D3E]/10 dark:border-gray-700 shadow-lg transition-colors duration-300", "!bg-white/80 !border-[#FFC1CC]/30")}>
           <CardHeader>
             <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
               <div className="flex flex-col">
-                <CardTitle className="text-[#324D3E] dark:text-white">Detail Pendapatan</CardTitle>
-                <div className="text-sm text-[#889063] dark:text-gray-300">
+                <CardTitle className={getThemeClasses("text-[#324D3E] dark:text-white", "!text-[#4c1d1d]")}>Detail Pendapatan</CardTitle>
+                <div className={getThemeClasses("text-sm text-[#889063] dark:text-gray-300", "!text-[#6b7280]")}>
                   Periode: <span className="font-semibold">{periodLabel}</span>
                   {qApplied ? (
                     <> • Pencarian: <span className="font-semibold">&quot;{qApplied}&quot;</span></>
@@ -710,9 +731,9 @@ export default function DailyIncomingInvestorPage() {
                   onChange={(e) => setQ(e.target.value)}
                   onKeyDown={(e) => { if (e.key === "Enter") handleApplySearch(); }}
                   placeholder="Cari Investment ID (mis. INV-1234 / CICILAN-...)"
-                  className="flex-1 md:w-96 border bg-white/90 dark:bg-gray-700/80 border-gray-200 dark:border-gray-600 text-black dark:text-white px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className={getThemeClasses("flex-1 md:w-96 border bg-white/90 dark:bg-gray-700/80 border-gray-200 dark:border-gray-600 text-black dark:text-white px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500", "!bg-white/90 !border-[#FFC1CC]/30 !text-[#4c1d1d] focus:!ring-[#FFC1CC]/20 focus:!border-[#FFC1CC]")}
                 />
-                <Button onClick={handleApplySearch} className="inline-flex items-center gap-2 rounded-lg">
+                <Button onClick={handleApplySearch} className={getThemeClasses("inline-flex items-center gap-2 rounded-lg", "!bg-gradient-to-r !from-[#FFC1CC] !to-[#FFDEE9] !text-[#4c1d1d] hover:!from-[#FFDEE9] hover:!to-[#FFF5BA]")}>
                   <Search className="h-4 w-4" />
                   Cari
                 </Button>
@@ -761,23 +782,23 @@ export default function DailyIncomingInvestorPage() {
 
                 {/* Pagination */}
                 <div className="flex items-center justify-between mt-4">
-                  <div className="text-sm text-[#889063] dark:text-gray-300">
+                  <div className={getThemeClasses("text-sm text-[#889063] dark:text-gray-300", "!text-[#6b7280]")}>
                     Halaman <span className="font-semibold">{page}</span> dari{" "}
                     <span className="font-semibold">{totalPages}</span>
                   </div>
                   <div className="flex gap-2">
-                    <Button variant="outline" onClick={goPrev} disabled={page === 1}>
+                    <Button variant="outline" onClick={goPrev} disabled={page === 1} className={getThemeClasses("", "!bg-white/90 !border-[#FFC1CC]/30 !text-[#4c1d1d] hover:!bg-[#FFC1CC]/20 disabled:!opacity-50")}>
                       Prev
                     </Button>
-                    <Button variant="outline" onClick={goNext} disabled={page === totalPages}>
+                    <Button variant="outline" onClick={goNext} disabled={page === totalPages} className={getThemeClasses("", "!bg-white/90 !border-[#FFC1CC]/30 !text-[#4c1d1d] hover:!bg-[#FFC1CC]/20 disabled:!opacity-50")}>
                       Next
                     </Button>
                   </div>
                 </div>
               </>
             ) : (
-              <div className="text-center py-8 text-[#889063] dark:text-gray-200">
-                <TrendingDown className="h-12 w-12 mx-auto mb-4 opacity-50 text-[#324D3E] dark:text-white" />
+              <div className={getThemeClasses("text-center py-8 text-[#889063] dark:text-gray-200", "!text-[#6b7280]")}>
+                <TrendingDown className={getThemeClasses("h-12 w-12 mx-auto mb-4 opacity-50 text-[#324D3E] dark:text-white", "!text-[#4c1d1d]")} />
                 <p>Tidak ada data untuk filter yang dipilih</p>
               </div>
             )}

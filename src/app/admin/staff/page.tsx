@@ -13,8 +13,16 @@ import {
   StaffUser,
 } from "@/types/admin";
 import { useEffect, useState } from "react";
+import { useTheme } from 'next-themes';
 
 export default function StaffPage() {
+  const { theme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+  const getThemeClasses = (baseClasses: string, pinkClasses: string = "") => {
+    if (mounted && theme === 'pink' && pinkClasses) return `${baseClasses} ${pinkClasses}`;
+    return baseClasses;
+  };
   const [staffUsers, setStaffUsers] = useState<StaffUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
@@ -363,7 +371,10 @@ export default function StaffPage() {
           {activeTab === "staff" && (
             <Button
               onClick={() => setShowAddModal(true)}
-              className="bg-gradient-to-r from-[#324D3E] to-[#4C3D19] hover:from-[#4C3D19] hover:to-[#324D3E] text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 whitespace-nowrap px-4 sm:px-6 py-2 sm:py-3 text-sm sm:text-base"
+              className={getThemeClasses(
+                "bg-gradient-to-r from-[#324D3E] to-[#4C3D19] hover:from-[#4C3D19] hover:to-[#324D3E] text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 whitespace-nowrap px-4 sm:px-6 py-2 sm:py-3 text-sm sm:text-base",
+                '!bg-gradient-to-r !from-[#FFC1CC] !to-[#FFDEE9] !text-[#4c1d1d]'
+              )}
             >
               <span className="sm:hidden">+ User</span>
               <span className="hidden sm:inline">Tambah Pengguna</span>
@@ -376,21 +387,27 @@ export default function StaffPage() {
           <div className="flex flex-col sm:flex-row gap-2">
             <Button
               onClick={() => setActiveTab("staff")}
-              className={`flex-1 rounded-xl transition-all duration-300 px-3 py-2 text-sm sm:text-base ${
-                activeTab === "staff"
-                  ? "bg-gradient-to-r from-[#324D3E] to-[#4C3D19] text-white shadow-lg"
-                  : "bg-transparent text-[#324D3E] dark:text-gray-300 hover:bg-[#324D3E]/10 dark:hover:bg-gray-700"
-              }`}
+              className={getThemeClasses(
+                `flex-1 rounded-xl transition-all duration-300 px-3 py-2 text-sm sm:text-base ${
+                  activeTab === "staff"
+                    ? "bg-gradient-to-r from-[#324D3E] to-[#4C3D19] text-white shadow-lg"
+                    : "bg-transparent text-[#324D3E] dark:text-gray-300 hover:bg-[#324D3E]/10 dark:hover:bg-gray-700"
+                }`,
+                activeTab === 'staff' ? '!bg-gradient-to-r !from-[#FFC1CC] !to-[#FFDEE9] !text-[#4c1d1d] !shadow-lg' : ''
+              )}
             >
               <span className="truncate">Manajemen Pengguna</span>
             </Button>
             <Button
               onClick={() => setActiveTab("requests")}
-              className={`flex-1 rounded-xl transition-all duration-300 px-3 py-2 text-sm sm:text-base ${
-                activeTab === "requests"
-                  ? "bg-gradient-to-r from-[#324D3E] to-[#4C3D19] text-white shadow-lg"
-                  : "bg-transparent text-[#324D3E] dark:text-gray-300 hover:bg-[#324D3E]/10 dark:hover:bg-gray-700"
-              }`}
+              className={getThemeClasses(
+                `flex-1 rounded-xl transition-all duration-300 px-3 py-2 text-sm sm:text-base ${
+                  activeTab === "requests"
+                    ? "bg-gradient-to-r from-[#324D3E] to-[#4C3D19] text-white shadow-lg"
+                    : "bg-transparent text-[#324D3E] dark:text-gray-300 hover:bg-[#324D3E]/10 dark:hover:bg-gray-700"
+                }`,
+                activeTab === 'requests' ? '!bg-gradient-to-r !from-[#FFC1CC] !to-[#FFDEE9] !text-[#4c1d1d] !shadow-lg' : ''
+              )}
             >
               <span className="truncate">
                 <span className="hidden sm:inline">Permintaan</span>
@@ -406,7 +423,10 @@ export default function StaffPage() {
           <>
             {/* Stats Cards */}
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6 mb-6">
-              <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg rounded-2xl shadow-lg border border-[#324D3E]/10 dark:border-gray-700 p-4 sm:p-6 hover:shadow-xl hover:scale-105 transition-all duration-300">
+              <div className={getThemeClasses(
+                "bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg rounded-2xl shadow-lg border border-[#324D3E]/10 dark:border-gray-700 p-4 sm:p-6 hover:shadow-xl hover:scale-105 transition-all duration-300",
+                '!bg-gradient-to-r !from-[#FFEFF3] !to-[#FFF5F7]'
+              )}>
                 <div className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <h3 className="text-xs sm:text-sm font-medium text-[#889063] dark:text-gray-300 truncate">
                     Total Staff
@@ -416,7 +436,10 @@ export default function StaffPage() {
                   {stats.totalStaff}
                 </div>
               </div>
-              <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg rounded-2xl shadow-lg border border-[#324D3E]/10 dark:border-gray-700 p-4 sm:p-6 hover:shadow-xl hover:scale-105 transition-all duration-300">
+              <div className={getThemeClasses(
+                "bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg rounded-2xl shadow-lg border border-[#324D3E]/10 dark:border-gray-700 p-4 sm:p-6 hover:shadow-xl hover:scale-105 transition-all duration-300",
+                '!bg-gradient-to-r !from-[#FFEFF3] !to-[#FFF5F7]'
+              )}>
                 <div className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <h3 className="text-xs sm:text-sm font-medium text-[#889063] dark:text-gray-300 truncate">
                     Staff Aktif
@@ -426,7 +449,10 @@ export default function StaffPage() {
                   {stats.activeStaff}
                 </div>
               </div>
-              <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg rounded-2xl shadow-lg border border-[#324D3E]/10 dark:border-gray-700 p-4 sm:p-6 hover:shadow-xl hover:scale-105 transition-all duration-300">
+              <div className={getThemeClasses(
+                "bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg rounded-2xl shadow-lg border border-[#324D3E]/10 dark:border-gray-700 p-4 sm:p-6 hover:shadow-xl hover:scale-105 transition-all duration-300",
+                '!bg-gradient-to-r !from-[#FFEFF3] !to-[#FFF5F7]'
+              )}>
                 <div className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <h3 className="text-xs sm:text-sm font-medium text-[#889063] dark:text-gray-300 truncate">
                     Staff Nonaktif
@@ -436,7 +462,10 @@ export default function StaffPage() {
                   {stats.inactiveStaff}
                 </div>
               </div>
-              <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg rounded-2xl shadow-lg border border-[#324D3E]/10 dark:border-gray-700 p-4 sm:p-6 hover:shadow-xl hover:scale-105 transition-all duration-300">
+              <div className={getThemeClasses(
+                "bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg rounded-2xl shadow-lg border border-[#324D3E]/10 dark:border-gray-700 p-4 sm:p-6 hover:shadow-xl hover:scale-105 transition-all duration-300",
+                '!bg-gradient-to-r !from-[#FFEFF3] !to-[#FFF5F7]'
+              )}>
                 <div className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <h3 className="text-xs sm:text-sm font-medium text-[#889063] dark:text-gray-300 truncate">
                     Staff Baru
@@ -449,7 +478,10 @@ export default function StaffPage() {
             </div>
 
             {/* Filters */}
-            <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg rounded-2xl shadow-lg border border-[#324D3E]/10 dark:border-gray-700 p-4 sm:p-6 mb-6">
+            <div className={getThemeClasses(
+              "bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg rounded-2xl shadow-lg border border-[#324D3E]/10 dark:border-gray-700 p-4 sm:p-6 mb-6",
+              '!bg-gradient-to-r !from-[#FFF0F3] !to-[#FFF7F9]'
+            )}>
               <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
                 <div className="flex-1">
                   <Input
@@ -463,7 +495,10 @@ export default function StaffPage() {
                   <select
                     value={statusFilter}
                     onChange={(e) => setStatusFilter(e.target.value)}
-                    className="px-3 py-2 border border-[#324D3E]/20 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#324D3E]/20 focus:border-[#324D3E] text-[#324D3E] dark:text-white bg-white dark:bg-gray-700 text-sm sm:text-base min-w-0 flex-shrink-0"
+                    className={getThemeClasses(
+                      "px-3 py-2 border border-[#324D3E]/20 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#324D3E]/20 focus:border-[#324D3E] text-[#324D3E] dark:text-white bg-white dark:bg-gray-700 text-sm sm:text-base min-w-0 flex-shrink-0",
+                      '!bg-gradient-to-r !from-[#FFF0F3] !to-[#FFF7F9] !text-[#4c1d1d]'
+                    )}
                   >
                     <option value="all">Semua Status</option>
                     <option value="active">Aktif</option>
@@ -935,14 +970,20 @@ export default function StaffPage() {
                         password: "",
                       });
                     }}
-                    className="flex-1 border-[#324D3E]/20 dark:border-gray-600 text-[#324D3E] dark:text-gray-300 hover:bg-[#324D3E]/10 dark:hover:bg-gray-700 hover:border-[#324D3E] rounded-xl"
+                    className={getThemeClasses(
+                      "flex-1 border-[#324D3E]/20 dark:border-gray-600 text-[#324D3E] dark:text-gray-300 hover:bg-[#324D3E]/10 dark:hover:bg-gray-700 hover:border-[#324D3E] rounded-xl",
+                      '!bg-gradient-to-r !from-[#FFF0F3] !to-[#FFF7F9] !text-[#4c1d1d] !border-[#FFC1CC]/30'
+                    )}
                   >
                     Batal
                   </Button>
                   <Button
                     type="submit"
                     disabled={submitting}
-                    className="flex-1 bg-gradient-to-r from-[#324D3E] to-[#4C3D19] hover:from-[#4C3D19] hover:to-[#324D3E] text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300"
+                    className={getThemeClasses(
+                      "flex-1 bg-gradient-to-r from-[#324D3E] to-[#4C3D19] hover:from-[#4C3D19] hover:to-[#324D3E] text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300",
+                      '!bg-gradient-to-r !from-[#FFC1CC] !to-[#FFDEE9] !text-[#4c1d1d]'
+                    )}
                   >
                     {submitting ? "Memperbarui..." : "Update Pengguna"}
                   </Button>
@@ -1254,7 +1295,10 @@ export default function StaffPage() {
                   <Button
                     variant="outline"
                     onClick={() => setShowReviewModal(false)}
-                    className="flex-1 border-[#324D3E]/20 dark:border-gray-600 text-[#324D3E] dark:text-gray-300 hover:bg-[#324D3E]/10 dark:hover:bg-gray-700 hover:border-[#324D3E] rounded-xl"
+                      className={getThemeClasses(
+                        "flex-1 border-[#324D3E]/20 dark:border-gray-600 text-[#324D3E] dark:text-gray-300 hover:bg-[#324D3E]/10 dark:hover:bg-gray-700 hover:border-[#324D3E] rounded-xl",
+                        '!bg-gradient-to-r !from-[#FFF0F3] !to-[#FFF7F9] !text-[#4c1d1d] !border-[#FFC1CC]/30'
+                      )}
                     disabled={reviewingRequest}
                   >
                     Batal
@@ -1262,14 +1306,20 @@ export default function StaffPage() {
                   <Button
                     onClick={() => handleSubmitReview("rejected")}
                     disabled={reviewingRequest}
-                    className="flex-1 bg-gradient-to-r from-red-500 to-red-600 hover:shadow-lg text-white font-semibold rounded-xl transition-all duration-300"
+                      className={getThemeClasses(
+                        "flex-1 bg-gradient-to-r from-red-500 to-red-600 hover:shadow-lg text-white font-semibold rounded-xl transition-all duration-300",
+                        '!bg-gradient-to-r !from-[#FFC1CC] !to-[#FFDEE9] !text-[#4c1d1d]'
+                      )}
                   >
                     {reviewingRequest ? "Processing..." : "Tolak"}
                   </Button>
                   <Button
                     onClick={() => handleSubmitReview("approved")}
                     disabled={reviewingRequest}
-                    className="flex-1 bg-gradient-to-r from-green-500 to-green-600 hover:shadow-lg text-white font-semibold rounded-xl transition-all duration-300"
+                      className={getThemeClasses(
+                        "flex-1 bg-gradient-to-r from-green-500 to-green-600 hover:shadow-lg text-white font-semibold rounded-xl transition-all duration-300",
+                        '!bg-gradient-to-r !from-[#FFC1CC] !to-[#FFDEE9] !text-[#4c1d1d]'
+                      )}
                   >
                     {reviewingRequest ? "Processing..." : "Setujui"}
                   </Button>

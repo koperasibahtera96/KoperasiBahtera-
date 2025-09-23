@@ -77,7 +77,7 @@ const isPlantNew = (p: PlantInstance): boolean => {
   const pending = (p.history || []).find((h: any) => {
     const t = String(h?.type || "").toLowerCase();
     const a = String(h?.action || "").toLowerCase();
-    return t === "pending contract approval" || a === "pending contract approval";
+    return t === "pending contract" || a === "pending contract";
   });
 
   return !!(pending && pending.date && isWithinDays(pending.date, 14));

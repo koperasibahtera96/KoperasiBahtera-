@@ -5,7 +5,8 @@ import { KetuaLayout } from "@/components/ketua/KetuaLayout";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import * as XLSX from "xlsx-js-style";
-import { RefreshCw } from "lucide-react";
+import { RefreshCw, Download, FileText, Users, Trees as TreeIcon, UserCheck, UserX, Check as CheckIcon, ChevronDown } from "lucide-react";
+import { useTheme } from "next-themes";
 import { useSession } from "next-auth/react";
 import { useEffect, useState } from "react";
 
@@ -63,6 +64,17 @@ interface ReportData {
 
 export default function LaporanPage() {
   const { data: session } = useSession();
+  const { theme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const getThemeClasses = (base: string, pink = "") => {
+    if (!mounted) return base;
+    return theme === "pink" ? `${base} ${pink}` : base;
+  };
   // XLSX Export Functions
   const downloadAllInvestorsXLSX = () => {
     if (!reportData) return;
@@ -71,7 +83,9 @@ export default function LaporanPage() {
     // Add header information
     const headerInfo = [
       ["KOPERASI BINTANG MERAH SEJAHTERA"],
-      ["Jl. Green Investment No. 123, Jakarta"],
+      [
+        "Bintaro Business Center\nJl RC Veteran Raya No 1i, Bintaro - Kec Pesanggrahan Kota Jakarta Selatan DKI Jakarta 12330",
+      ],
       ["Tel: 081118893679 | Email: koperasibintangmerahsejahtera@gmail.com"],
       [""],
       ["LAPORAN ADMIN - SEMUA INVESTOR"],
@@ -96,27 +110,31 @@ export default function LaporanPage() {
       [""],
       ["DETAIL INVESTOR"],
       [
-        "Nama",
-        "Email", 
-        "Status",
-        "Tanaman Terdaftar",
-        "Instansi Tanaman",
-        "Tanaman Sehat/Sakit",
+        "No.",
         "Tanggal Bergabung",
+        "No. Anggota",
+        "Email",
+        "Nama",
+        "Status",
+        "Jumlah Paket",
+        "Tanggal Pembelian",
       ],
-      ...reports.map((report) => [
-        report.investor.name,
-        report.investor.email,
-        report.investor.status === "active" ? "Aktif" : "Tidak Aktif",
-        report.investor.jumlahPohon.toString(),
-        report.statistics.total.toString(),
-        `Sehat: ${Object.entries(report.statistics.byCondition).reduce(
-          (total, [status, count]) =>
-            status.toLowerCase() !== "sakit" ? total + count : total,
-          0
-        )}, Sakit: ${report.statistics.byCondition.Sakit || 0}`,
-        new Date(report.investor.createdAt).toLocaleDateString("id-ID"),
-      ]),
+      ...reports.map((report, idx) => {
+        // Use server-provided earliestPurchaseDate when available, otherwise fallback to createdAt
+        const purchaseDateStr = (report.investor as any).earliestPurchaseDate || report.investor.createdAt;
+        const purchaseDateDisplay = new Date(purchaseDateStr).toLocaleDateString("id-ID");
+
+        return [
+          String(idx + 1),
+          new Date(report.investor.createdAt).toLocaleDateString("id-ID"),
+          (report.investor as any).userCode || (report.investor as any).user_code || report.investor._id,
+          report.investor.email,
+          report.investor.name,
+          report.investor.status === "active" ? "Aktif" : "Tidak Aktif",
+          report.investor.jumlahPohon.toString(),
+          purchaseDateDisplay,
+        ];
+      }),
     ];
     
     const summarySheet = XLSX.utils.aoa_to_sheet(summarySheetData);
@@ -134,8 +152,16 @@ export default function LaporanPage() {
           maxWidth = Math.max(maxWidth, cellWidth);
         }
       }
-      // Ensure minimum width for readability and maximum for reasonable display
-      colWidths.push({ width: Math.min(Math.max(maxWidth + 3, 12), 60) });
+      // Make column A (index 0) a bit narrower to your request
+      if (col === 0) {
+        colWidths.push({ width: 20 });
+      } else if (col === 2) {
+        // Column C (index 2) - make wider for emails
+        colWidths.push({ width: 40 });
+      } else {
+        // Ensure minimum width for readability and maximum for reasonable display
+        colWidths.push({ width: Math.min(Math.max(maxWidth + 3, 12), 60) });
+      }
     }
     summarySheet['!cols'] = colWidths;
     
@@ -157,22 +183,35 @@ export default function LaporanPage() {
           right: { style: 'thin', color: { rgb: '000000' } }
         };
         
-        // Company header styling
+        // Company header styling - make gray
         if (row === 0 || summarySheetData[row][0] === "KOPERASI BINTANG MERAH SEJAHTERA") {
           summarySheet[cellRef].s.font = { bold: true, sz: 14 };
           summarySheet[cellRef].s.alignment = { horizontal: 'center' };
+          summarySheet[cellRef].s.fill = { fgColor: { rgb: 'E5E7EB' } };
         }
         
-        // Section headers with background color
+        // Section headers with background color - use subtle gray
         if (summarySheetData[row][0] === "RINGKASAN UMUM" || 
             summarySheetData[row][0] === "DETAIL INVESTOR" ||
             summarySheetData[row][0] === "Metrik" ||
             summarySheetData[row][0] === "Nama") {
           summarySheet[cellRef].s.font = { bold: true, sz: 11 };
           summarySheet[cellRef].s.fill = {
-            fgColor: { rgb: 'D3D3D3' }
+            fgColor: { rgb: 'E5E7EB' }
           };
           summarySheet[cellRef].s.alignment = { horizontal: 'center' };
+        }
+
+        // Header row for the investor details table (contains 'Tanggal Bergabung' or 'Tanggal Pembelian')
+        try {
+          const rowArr = summarySheetData[row];
+          if (Array.isArray(rowArr) && (rowArr.includes("Tanggal Bergabung") || rowArr.includes("Tanggal Pembelian") || rowArr.includes("No."))) {
+            summarySheet[cellRef].s.font = { bold: true, sz: 11 };
+            summarySheet[cellRef].s.fill = { fgColor: { rgb: 'E5E7EB' } };
+            summarySheet[cellRef].s.alignment = { horizontal: 'center' };
+          }
+        } catch {
+          // ignore
         }
         
         // Data alignment
@@ -183,6 +222,66 @@ export default function LaporanPage() {
       }
     }
     
+    // Merge the top header rows: company header rows (0..6) -> A..C, RINGKASAN UMUM (row 7) -> A..B
+    try {
+      summarySheet['!merges'] = summarySheet['!merges'] || [];
+      // company header rows (0..6) -> A..C
+      for (let r = 0; r <= 6; r++) {
+        summarySheet['!merges'].push({ s: { r, c: 0 }, e: { r, c: 2 } });
+      }
+      // RINGKASAN UMUM row (7) -> A..B
+      summarySheet['!merges'].push({ s: { r: 7, c: 0 }, e: { r: 7, c: 1 } });
+
+      // Ensure each cell in the merged areas has a cell object and borders
+      // For rows 0..6 (A..C)
+      for (let r = 0; r <= 6; r++) {
+        for (let c = 0; c <= 2; c++) {
+          const cellRef = XLSX.utils.encode_cell({ r, c });
+          if (!summarySheet[cellRef]) {
+            const val = (summarySheetData[r] && summarySheetData[r][c]) || "";
+            summarySheet[cellRef] = { v: val, t: 's' } as any;
+          }
+          if (!summarySheet[cellRef].s) summarySheet[cellRef].s = {};
+          summarySheet[cellRef].s.border = {
+            top: { style: 'thin', color: { rgb: '000000' } },
+            bottom: { style: 'thin', color: { rgb: '000000' } },
+            left: { style: 'thin', color: { rgb: '000000' } },
+            right: { style: 'thin', color: { rgb: '000000' } },
+          };
+        }
+        // ensure cell to the right (col 3) has left border to close the box
+        const rightCellRef = XLSX.utils.encode_cell({ r, c: 3 });
+        if (!summarySheet[rightCellRef]) summarySheet[rightCellRef] = { v: '', t: 's' } as any;
+        if (!summarySheet[rightCellRef].s) summarySheet[rightCellRef].s = {};
+        summarySheet[rightCellRef].s.border = summarySheet[rightCellRef].s.border || {};
+        summarySheet[rightCellRef].s.border.left = { style: 'thin', color: { rgb: '000000' } };
+      }
+
+      // For RINGKASAN UMUM row (r=7), fill cols 0..1 and set col 2 left border
+      for (let c = 0; c <= 1; c++) {
+        const cellRef = XLSX.utils.encode_cell({ r: 7, c });
+        if (!summarySheet[cellRef]) {
+          const val = (summarySheetData[7] && summarySheetData[7][c]) || "";
+          summarySheet[cellRef] = { v: val, t: 's' } as any;
+        }
+        if (!summarySheet[cellRef].s) summarySheet[cellRef].s = {};
+        summarySheet[cellRef].s.border = {
+          top: { style: 'thin', color: { rgb: '000000' } },
+          bottom: { style: 'thin', color: { rgb: '000000' } },
+          left: { style: 'thin', color: { rgb: '000000' } },
+          right: { style: 'thin', color: { rgb: '000000' } },
+        };
+      }
+      // ensure column C (c=2) at row 7 has left border to close the box
+      const rightOfRingkasan = XLSX.utils.encode_cell({ r: 7, c: 2 });
+      if (!summarySheet[rightOfRingkasan]) summarySheet[rightOfRingkasan] = { v: '', t: 's' } as any;
+      if (!summarySheet[rightOfRingkasan].s) summarySheet[rightOfRingkasan].s = {};
+      summarySheet[rightOfRingkasan].s.border = summarySheet[rightOfRingkasan].s.border || {};
+      summarySheet[rightOfRingkasan].s.border.left = { style: 'thin', color: { rgb: '000000' } };
+    } catch {
+      // ignore if merging fails for any reason
+    }
+
     XLSX.utils.book_append_sheet(wb, summarySheet, "Laporan Admin Semua");
 
     XLSX.writeFile(
@@ -199,20 +298,14 @@ export default function LaporanPage() {
     // Ensure we have detailed plant data for accurate age calculations
     await fetchDetailedPlantAges(report.investor._id);
 
-    // Calculate average age matching PDF logic
-    let avgAge = 0;
-    if (report.trees.length > 0) {
-      const totalAgeInMonths = report.trees.reduce((sum, tree) => {
-        const ageInMonths = tree.umur || 0;
-        return sum + ageInMonths;
-      }, 0);
-      avgAge = Math.round(totalAgeInMonths / report.trees.length);
-    }
+    // (removed plant statistics calculations — not needed for per-investor export)
 
     // Header information matching PDF
     const headerInfo = [
       ["KOPERASI BINTANG MERAH SEJAHTERA"],
-      ["Jl. Green Investment No. 123, Jakarta"],
+      [
+        "Bintaro Business Center\nJl RC Veteran Raya No 1i, Bintaro - Kec Pesanggrahan Kota Jakarta Selatan DKI Jakarta 12330",
+      ],
       ["Tel: 081118893679 | Email: koperasibintangmerahsejahtera@gmail.com"],
       [""],
       [`LAPORAN INVESTOR - ${report.investor.name.toUpperCase()}`],
@@ -232,18 +325,10 @@ export default function LaporanPage() {
       ["Bidang", "Nilai"],
       ["Nama", report.investor.name],
       ["Email", report.investor.email],
+      ["No. Anggota", (report.investor as any).userCode],
       ["Status", report.investor.status === "active" ? "Aktif" : "Tidak Aktif"],
       ["Tanggal Bergabung", new Date(report.investor.createdAt).toLocaleDateString("id-ID")],
-      ["Tanaman Terdaftar", report.investor.jumlahPohon.toString()],
-      ["Instansi Tanaman", report.statistics.total.toString()],
-      [""],
-      ["STATISTIK TANAMAN"],
-      ["Metrik", "Jumlah"],
-      ["Total Tanaman", report.statistics.total.toString()],
-      ...Object.entries(report.statistics.byCondition).map(
-        ([status, count]) => [`Tanaman ${status}`, count.toString()]
-      ),
-      ["Rata-rata Umur", `${avgAge} bulan`],
+      ["Jumlah Paket", report.investor.jumlahPohon.toString()],
       [""],
       ["RINCIAN JENIS TANAMAN"],
       ["Jenis Tanaman", "Jumlah"],
@@ -252,7 +337,7 @@ export default function LaporanPage() {
       ),
       [""],
       ["INSTANSI TANAMAN INDIVIDUAL"],
-      ["Nomor Kontrak", "Nama Instansi", "Lokasi", "Umur", "Ditanam", "Status"],
+      ["Nomor Kontrak", "Jenis Paket", "Lokasi", "Umur", "Ditanam", "Status"],
       ...report.trees.map((tree) => {
         // Use the same age calculation logic as PDF
         let ageDisplay = `${tree.umur} bulan`;
@@ -296,8 +381,15 @@ export default function LaporanPage() {
           maxWidth = Math.max(maxWidth, cellWidth);
         }
       }
-      // Ensure minimum width for readability and maximum for reasonable display
-      colWidths.push({ width: Math.min(Math.max(maxWidth + 3, 12), 60) });
+      // Make column A (index 0) narrower
+      if (col === 0) {
+        colWidths.push({ width: 20 });
+      } else if (col === 2) {
+        colWidths.push({ width: 40 });
+      } else {
+        // Ensure minimum width for readability and maximum for reasonable display
+        colWidths.push({ width: Math.min(Math.max(maxWidth + 3, 12), 60) });
+      }
     }
     infoSheet['!cols'] = colWidths;
     
@@ -319,24 +411,23 @@ export default function LaporanPage() {
           right: { style: 'thin', color: { rgb: '000000' } }
         };
         
-        // Company header styling
+        // Company header styling - use subtle gray
         if (row === 0 || investorInfo[row][0] === "KOPERASI BINTANG MERAH SEJAHTERA") {
           infoSheet[cellRef].s.font = { bold: true, sz: 14 };
           infoSheet[cellRef].s.alignment = { horizontal: 'center' };
+          infoSheet[cellRef].s.fill = { fgColor: { rgb: 'E5E7EB' } };
         }
         
-        // Section headers with background color
+        // Section headers with background color - gray
         if (investorInfo[row][0] === "INFORMASI INVESTOR" || 
-            investorInfo[row][0] === "STATISTIK TANAMAN" ||
-            investorInfo[row][0] === "RINCIAN JENIS TANAMAN" ||
-            investorInfo[row][0] === "INSTANSI TANAMAN INDIVIDUAL" ||
-            investorInfo[row][0] === "Bidang" ||
-            investorInfo[row][0] === "Metrik" ||
-            investorInfo[row][0] === "Jenis Tanaman" ||
-            investorInfo[row][0] === "Nomor Kontrak") {
+          investorInfo[row][0] === "RINCIAN JENIS TANAMAN" ||
+          investorInfo[row][0] === "INSTANSI TANAMAN INDIVIDUAL" ||
+          investorInfo[row][0] === "Bidang" ||
+          investorInfo[row][0] === "Jenis Tanaman" ||
+          investorInfo[row][0] === "Nomor Kontrak") {
           infoSheet[cellRef].s.font = { bold: true, sz: 11 };
           infoSheet[cellRef].s.fill = {
-            fgColor: { rgb: 'D3D3D3' }
+            fgColor: { rgb: 'E5E7EB' }
           };
           infoSheet[cellRef].s.alignment = { horizontal: 'center' };
         }
@@ -349,6 +440,42 @@ export default function LaporanPage() {
       }
     }
     
+    // Merge the investor header rows so the company header and title span full width
+    try {
+      infoSheet['!merges'] = infoSheet['!merges'] || [];
+      for (let r = 0; r <= 7; r++) {
+        infoSheet['!merges'].push({ s: { r, c: 0 }, e: { r, c: 2 } });
+      }
+
+      // Ensure each cell in merged header area has borders
+      for (let r = 0; r <= 7; r++) {
+        for (let c = 0; c <= 2; c++) {
+          const cellRef = XLSX.utils.encode_cell({ r, c });
+          if (!infoSheet[cellRef]) {
+            const val = (investorInfo[r] && investorInfo[r][c]) || "";
+            infoSheet[cellRef] = { v: val, t: 's' } as any;
+          }
+          if (!infoSheet[cellRef].s) infoSheet[cellRef].s = {};
+          infoSheet[cellRef].s.border = {
+            top: { style: 'thin', color: { rgb: '000000' } },
+            bottom: { style: 'thin', color: { rgb: '000000' } },
+            left: { style: 'thin', color: { rgb: '000000' } },
+            right: { style: 'thin', color: { rgb: '000000' } },
+          };
+        }
+      }
+      // Also ensure the cell immediately to the right of merged area has a left border
+      for (let r = 0; r <= 7; r++) {
+        const rightCellRef = XLSX.utils.encode_cell({ r, c: 3 });
+        if (!infoSheet[rightCellRef]) infoSheet[rightCellRef] = { v: '', t: 's' } as any;
+        if (!infoSheet[rightCellRef].s) infoSheet[rightCellRef].s = {};
+        infoSheet[rightCellRef].s.border = infoSheet[rightCellRef].s.border || {};
+        infoSheet[rightCellRef].s.border.left = { style: 'thin', color: { rgb: '000000' } };
+      }
+    } catch {
+      // ignore
+    }
+
     XLSX.utils.book_append_sheet(wb, infoSheet, "Laporan Investor");
 
     XLSX.writeFile(
@@ -414,8 +541,13 @@ export default function LaporanPage() {
 
     doc.setFontSize(12);
     doc.setFont("helvetica", "normal");
-    doc.text("Jl. Green Investment No. 123, Jakarta", 55, 32);
-    doc.text("Tel: 081118893679 | Email: koperasibintangmerahsejahtera@gmail.com", 55, 38);
+    doc.text("Bintaro Business Center", 55, 32);
+    doc.text(
+      "Jl RC Veteran Raya No 1i, Bintaro - Kec Pesanggrahan Kota Jakarta Selatan DKI Jakarta 12330",
+      55,
+      38
+    );
+    doc.text("Tel: 081118893679 | Email: koperasibintangmerahsejahtera@gmail.com", 55, 44);
 
     // Report title
     doc.setFontSize(16);
@@ -474,33 +606,23 @@ export default function LaporanPage() {
     doc.setFont("helvetica", "bold");
     doc.text("DETAIL INVESTOR", 20, finalY);
 
-    const investorTableData = reports.map((report) => [
-      report.investor.name,
-      report.investor.email,
-      report.investor.status === "active" ? "Aktif" : "Tidak Aktif",
-      report.investor.jumlahPohon.toString(),
-      report.statistics.total.toString(),
-      `Sehat: ${Object.entries(report.statistics.byCondition).reduce(
-        (total, [status, count]) =>
-          status.toLowerCase() !== "sakit" ? total + count : total,
-        0
-      )}, Sakit: ${report.statistics.byCondition.Sakit || 0}`,
-      new Date(report.investor.createdAt).toLocaleDateString("id-ID"),
-    ]);
+    const investorTableData = reports.map((report, idx) => {
+      const purchaseDateStr = (report.investor as any).earliestPurchaseDate || report.investor.createdAt;
+      return [
+        String(idx + 1),
+        new Date(report.investor.createdAt).toLocaleDateString("id-ID"),
+        (report.investor as any).userCode || (report.investor as any).user_code || report.investor._id,
+        report.investor.email,
+        report.investor.name,
+        report.investor.status === "active" ? "Aktif" : "Tidak Aktif",
+        report.investor.jumlahPohon.toString(),
+        new Date(purchaseDateStr).toLocaleDateString("id-ID"),
+      ];
+    });
 
     autoTable(doc, {
       startY: finalY + 8,
-      head: [
-        [
-          "Nama",
-          "Email",
-          "Status",
-          "Tanaman Terdaftar",
-          "Instansi Tanaman",
-          "Tanaman Sehat/Sakit",
-          "Tanggal Bergabung",
-        ],
-      ],
+      head: [["No.", "Tanggal Bergabung", "No. Anggota", "Email", "Nama", "Status", "Jumlah Paket", "Tanggal Pembelian"]],
       body: investorTableData,
       theme: "striped",
       headStyles: { fillColor: [50, 77, 62] },
@@ -544,15 +666,7 @@ export default function LaporanPage() {
     // Ensure we have detailed plant data for accurate age calculations
     await fetchDetailedPlantAges(report.investor._id);
 
-    // Calculate average age for PDF only
-    let avgAge = 0;
-    if (report.trees.length > 0) {
-      const totalAgeInMonths = report.trees.reduce((sum, tree) => {
-        const ageInMonths = tree.umur || 0;
-        return sum + ageInMonths;
-      }, 0);
-      avgAge = Math.round(totalAgeInMonths / report.trees.length);
-    }
+    // (removed plant statistics calculations — not needed for per-investor export)
 
     // Investor info
     doc.setFontSize(14);
@@ -562,13 +676,13 @@ export default function LaporanPage() {
     const investorInfo = [
       ["Nama", report.investor.name],
       ["Email", report.investor.email],
+      ["No. Anggota", (report.investor as any).userCode || (report.investor as any).user_code || report.investor._id],
       ["Status", report.investor.status === "active" ? "Aktif" : "Tidak Aktif"],
       [
         "Tanggal Bergabung",
         new Date(report.investor.createdAt).toLocaleDateString("id-ID"),
       ],
-      ["Tanaman Terdaftar", report.investor.jumlahPohon.toString()],
-      ["Instansi Tanaman", report.statistics.total.toString()],
+      ["Jumlah Paket", report.investor.jumlahPohon.toString()],
     ];
 
     autoTable(doc, {
@@ -581,35 +695,11 @@ export default function LaporanPage() {
       styles: { fontSize: 10 },
     });
 
-    // Plant statistics
+    // Plant types
     const afterInfo = (doc as any).lastAutoTable.finalY + 15;
     doc.setFontSize(14);
     doc.setFont("helvetica", "bold");
-    doc.text("STATISTIK TANAMAN", 20, afterInfo);
-
-    const plantStats = [
-      ["Total Tanaman", report.statistics.total.toString()],
-      ...Object.entries(report.statistics.byCondition).map(
-        ([status, count]) => [`Tanaman ${status}`, count.toString()]
-      ),
-      ["Rata-rata Umur", `${avgAge} bulan`],
-    ];
-
-    autoTable(doc, {
-      startY: afterInfo + 8,
-      head: [["Metrik", "Jumlah"]],
-      body: plantStats,
-      theme: "striped",
-      headStyles: { fillColor: [50, 77, 62] },
-      margin: { left: 20, right: 20 },
-      styles: { fontSize: 10 },
-    });
-
-    // Plant types
-    const afterStats = (doc as any).lastAutoTable.finalY + 15;
-    doc.setFontSize(14);
-    doc.setFont("helvetica", "bold");
-    doc.text("RINCIAN JENIS TANAMAN", 20, afterStats);
+    doc.text("RINCIAN JENIS TANAMAN", 20, afterInfo);
 
     const plantTypes = Object.entries(report.statistics.bySpecies).map(
       ([type, count]) => [
@@ -619,7 +709,7 @@ export default function LaporanPage() {
     );
 
     autoTable(doc, {
-      startY: afterStats + 8,
+      startY: afterInfo + 8,
       head: [["Jenis Tanaman", "Jumlah"]],
       body: plantTypes,
       theme: "striped",
@@ -629,7 +719,7 @@ export default function LaporanPage() {
     });
 
     // Individual plants table
-    if (report.trees.length > 0) {
+  if (report.trees.length > 0) {
       const afterTypes = (doc as any).lastAutoTable.finalY + 15;
 
       // Check if we need a new page
@@ -677,7 +767,7 @@ export default function LaporanPage() {
 
       autoTable(doc, {
         startY: tableStartY,
-        head: [["Nomor Kontrak", "Nama Instansi", "Lokasi", "Umur", "Ditanam", "Status"]],
+        head: [["Nomor Kontrak", "Jenis Paket", "Lokasi", "Umur", "Ditanam", "Status"]],
         body: plantsData,
         theme: "striped",
         headStyles: { fillColor: [50, 77, 62] },
@@ -686,7 +776,7 @@ export default function LaporanPage() {
         tableWidth: 'auto',
         columnStyles: {
           0: { cellWidth: 40 }, // Nomor Kontrak - increased width
-          1: { cellWidth: 32 }, // Nama Instansi
+          1: { cellWidth: 32 }, // Jenis Paket
           2: { cellWidth: 28 }, // Lokasi
           3: { cellWidth: 35 }, // Umur - for detailed age
           4: { cellWidth: 22 }, // Ditanam
@@ -884,7 +974,10 @@ export default function LaporanPage() {
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
           <div className="min-w-0 flex-1">
-            <h1 className="text-2xl sm:text-3xl font-bold text-[#324D3E] dark:text-white font-[family-name:var(--font-poppins)] truncate transition-colors duration-300">
+            <h1 className={getThemeClasses(
+              "text-2xl sm:text-3xl font-bold text-[#324D3E] dark:text-white font-[family-name:var(--font-poppins)] truncate transition-colors duration-300",
+              "!text-[#4c1d1d]"
+            )}>
               Laporan Admin
             </h1>
             <p className="text-[#889063] dark:text-gray-200 mt-1 sm:mt-2 text-sm sm:text-base transition-colors duration-300">
@@ -906,17 +999,23 @@ export default function LaporanPage() {
             </button>
             <button
               onClick={downloadAllInvestorsReport}
-              className="bg-gradient-to-r from-[#324D3E] to-[#4C3D19] text-white px-3 sm:px-4 py-2 rounded-xl font-medium transition-all duration-200 flex items-center justify-center gap-2 text-sm sm:text-base whitespace-nowrap hover:shadow-lg"
+              className={getThemeClasses(
+                "bg-gradient-to-r from-[#324D3E] to-[#4C3D19] text-white px-3 sm:px-4 py-2 rounded-xl font-medium transition-all duration-200 flex items-center justify-center gap-2 text-sm sm:text-base whitespace-nowrap hover:shadow-lg",
+                "!bg-gradient-to-r !from-[#FFC1CC] !to-[#FFDEE9] !text-[#4c1d1d]"
+              )}
             >
-              <span>📥</span>
+              <Download className="w-4 h-4" />
               <span className="sm:hidden">Unduh</span>
               <span className="hidden sm:inline">Unduh Semua PDF</span>
             </button>
             <button
               onClick={downloadAllInvestorsXLSX}
-              className="bg-gradient-to-r from-green-600 to-green-800 dark:from-green-700 dark:to-green-900 text-white px-3 sm:px-4 py-2 rounded-xl font-medium transition-all duration-200 flex items-center justify-center gap-2 text-sm sm:text-base whitespace-nowrap hover:shadow-lg hover:from-green-700 hover:to-green-900 dark:hover:from-green-800 dark:hover:to-green-950"
+              className={getThemeClasses(
+                "bg-gradient-to-r from-green-600 to-green-800 dark:from-green-700 dark:to-green-900 text-white px-3 sm:px-4 py-2 rounded-xl font-medium transition-all duration-200 flex items-center justify-center gap-2 text-sm sm:text-base whitespace-nowrap hover:shadow-lg hover:from-green-700 hover:to-green-900 dark:hover:from-green-800 dark:hover:to-green-950",
+                "!bg-gradient-to-r !from-[#FFC1CC] !to-[#FFDEE9] !text-[#4c1d1d]"
+              )}
             >
-              <span>📊</span>
+              <FileText className="w-4 h-4" />
               <span className="sm:hidden">XLSX</span>
               <span className="hidden sm:inline">Unduh Semua XLSX</span>
             </button>
@@ -924,11 +1023,15 @@ export default function LaporanPage() {
         </div>
 
         {/* Summary Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
-          <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg rounded-2xl shadow-lg border border-[#324D3E]/10 dark:border-gray-700 p-6 hover:shadow-xl hover:scale-105 transition-all duration-300">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
+          <div className={getThemeClasses(
+            "bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg rounded-2xl shadow-lg border border-[#324D3E]/10 dark:border-gray-700 p-6 hover:shadow-xl hover:scale-105 transition-all duration-300",
+            "!bg-white/95 !border-[#FFC1CC]/30"
+          )}>
             <div>
-              <p className="text-sm font-medium text-[#889063] dark:text-gray-200 transition-colors duration-300">
-                👥 Total Investor
+              <p className="text-sm font-medium text-[#889063] dark:text-gray-200 transition-colors duration-300 flex items-center gap-2">
+                <Users className="w-4 h-4 text-[#889063] dark:text-gray-200" />
+                <span>Total Investor</span>
               </p>
               <p className="text-2xl font-bold text-[#324D3E] dark:text-white transition-colors duration-300">
                 {reportData.summary.totalInvestors}
@@ -936,10 +1039,14 @@ export default function LaporanPage() {
             </div>
           </div>
 
-          <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg rounded-2xl shadow-lg border border-[#324D3E]/10 dark:border-gray-700 p-6 hover:shadow-xl hover:scale-105 transition-all duration-300">
+          <div className={getThemeClasses(
+            "bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg rounded-2xl shadow-lg border border-[#324D3E]/10 dark:border-gray-700 p-6 hover:shadow-xl hover:scale-105 transition-all duration-300",
+            "!bg-white/95 !border-[#FFC1CC]/30"
+          )}>
             <div>
-              <p className="text-sm font-medium text-[#889063] dark:text-gray-200 transition-colors duration-300">
-                🌳 Total Instansi Tanaman
+              <p className="text-sm font-medium text-[#889063] dark:text-gray-200 transition-colors duration-300 flex items-center gap-2">
+                <TreeIcon className="w-4 h-4 text-[#889063] dark:text-gray-200" />
+                <span>Total Instansi Tanaman</span>
               </p>
               <p className="text-2xl font-bold text-[#4C3D19] dark:text-emerald-300 transition-colors duration-300">
                 {reportData.summary.totalTrees}
@@ -947,10 +1054,14 @@ export default function LaporanPage() {
             </div>
           </div>
 
-          <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg rounded-2xl shadow-lg border border-[#324D3E]/10 dark:border-gray-700 p-6 hover:shadow-xl hover:scale-105 transition-all duration-300">
+          <div className={getThemeClasses(
+            "bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg rounded-2xl shadow-lg border border-[#324D3E]/10 dark:border-gray-700 p-6 hover:shadow-xl hover:scale-105 transition-all duration-300",
+            "!bg-white/95 !border-[#FFC1CC]/30"
+          )}>
             <div>
-              <p className="text-sm font-medium text-[#889063] dark:text-gray-200 transition-colors duration-300">
-                🚨 Investor Tidak Aktif
+              <p className="text-sm font-medium text-[#889063] dark:text-gray-200 transition-colors duration-300 flex items-center gap-2">
+                <UserX className="w-4 h-4 text-red-600 dark:text-red-400" />
+                <span>Investor Tidak Aktif</span>
               </p>
               <p className="text-2xl font-bold text-[#889063] dark:text-gray-200 transition-colors duration-300">
                 {reportData.summary.inactiveInvestors || 0}
@@ -958,10 +1069,14 @@ export default function LaporanPage() {
             </div>
           </div>
 
-          <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg rounded-2xl shadow-lg border border-[#324D3E]/10 dark:border-gray-700 p-6 hover:shadow-xl hover:scale-105 transition-all duration-300">
+          <div className={getThemeClasses(
+            "bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg rounded-2xl shadow-lg border border-[#324D3E]/10 dark:border-gray-700 p-6 hover:shadow-xl hover:scale-105 transition-all duration-300",
+            "!bg-white/95 !border-[#FFC1CC]/30"
+          )}>
             <div>
-              <p className="text-sm font-medium text-[#889063] dark:text-gray-200 transition-colors duration-300">
-                ✅ Investor Aktif
+              <p className="text-sm font-medium text-[#889063] dark:text-gray-200 transition-colors duration-300 flex items-center gap-2">
+                <UserCheck className="w-4 h-4 text-green-600 dark:text-green-400" />
+                <span>Investor Aktif</span>
               </p>
               <p className="text-2xl font-bold text-[#4C3D19] dark:text-emerald-300 transition-colors duration-300">
                 {reportData.summary.activeInvestors}
@@ -971,7 +1086,10 @@ export default function LaporanPage() {
         </div>
 
         {/* Search and Pagination Info */}
-        <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg rounded-2xl shadow-lg border border-[#324D3E]/10 dark:border-gray-700 p-4 lg:p-6 transition-colors duration-300">
+        <div className={getThemeClasses(
+          "bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg rounded-2xl shadow-lg border border-[#324D3E]/10 dark:border-gray-700 p-4 lg:p-6 transition-colors duration-300",
+          "!bg-white/95 !border-[#FFC1CC]/30"
+        )}>
           <div className="flex flex-col lg:flex-row gap-4 items-center justify-between">
             <div className="flex-1 w-full lg:w-auto">
               <input
@@ -979,7 +1097,10 @@ export default function LaporanPage() {
                 placeholder="Cari investor berdasarkan nama atau email..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full px-4 py-2 border border-[#324D3E]/20 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-[#324D3E]/20 focus:border-[#324D3E] text-[#324D3E] dark:text-white placeholder-[#889063] dark:placeholder-gray-300 bg-white dark:bg-gray-700 transition-all duration-300"
+                className={getThemeClasses(
+                  "w-full px-4 py-2 border border-[#324D3E]/20 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-[#324D3E]/20 focus:border-[#324D3E] text-[#324D3E] dark:text-white placeholder-[#889063] dark:placeholder-gray-300 bg-white dark:bg-gray-700 transition-all duration-300",
+                  "!bg-white/95 !border-[#FFC1CC]/30 !text-[#4c1d1d]"
+                )}
               />
             </div>
             {reportData?.pagination && reportData.pagination.totalItems > 0 && (
@@ -996,7 +1117,10 @@ export default function LaporanPage() {
         {/* Investor Reports */}
         <div className="space-y-4">
           {reports.length === 0 ? (
-            <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg rounded-2xl shadow-lg border border-[#324D3E]/10 dark:border-gray-700 p-8 text-center text-[#889063] dark:text-gray-200 transition-colors duration-300">
+            <div className={getThemeClasses(
+              "bg-white/80 dark:bg_gray-800/80 backdrop-blur-lg rounded-2xl shadow-lg border border-[#324D3E]/10 dark:border-gray-700 p-8 text-center text-[#889063] dark:text-gray-200 transition-colors duration-300",
+              "!bg-white/95 !border-[#FFC1CC]/30 !text-[#4c1d1d]"
+            )}>
               {searchTerm
                 ? "Tidak ada investor yang sesuai dengan pencarian"
                 : "Belum ada data investor"}
@@ -1008,16 +1132,25 @@ export default function LaporanPage() {
                 className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg rounded-2xl shadow-lg border border-[#324D3E]/10 dark:border-gray-700 overflow-hidden transition-colors duration-300"
               >
                 {/* Investor Header */}
-                <div className="p-4 lg:p-6 border-b border-[#324D3E]/10 dark:border-gray-600 transition-colors duration-300">
+                <div className={getThemeClasses(
+                  "p-4 lg:p-6 border-b border-[#324D3E]/10 dark:border-gray-600 transition-colors duration-300",
+                  "!border-[#FFC1CC]/30"
+                )}>
                   <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
                     <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 bg-gradient-to-r from-[#324D3E] to-[#4C3D19] rounded-full flex items-center justify-center">
+                      <div className={getThemeClasses(
+                        "w-12 h-12 bg-gradient-to-r from-[#324D3E] to-[#4C3D19] rounded-full flex items-center justify-center",
+                        "!bg-gradient-to-r !from-[#FFC1CC] !to-[#FFDEE9]"
+                      )}>
                         <span className="text-white font-bold text-lg">
                           {report.investor.name.charAt(0)}
                         </span>
                       </div>
                       <div>
-                        <h3 className="text-lg lg:text-xl font-bold text-[#324D3E] dark:text-white font-[family-name:var(--font-poppins)] transition-colors duration-300">
+                                <h3 className={getThemeClasses(
+                                  "text-lg lg:text-xl font-bold text-[#324D3E] dark:text-white font-[family-name:var(--font-poppins)] transition-colors duration-300",
+                                  "!text-[#4c1d1d]"
+                                )}>
                           {report.investor.name}
                         </h3>
                         <p className="text-sm text-[#889063] dark:text-gray-200 transition-colors duration-300">
@@ -1039,22 +1172,33 @@ export default function LaporanPage() {
                       </span>
                       <button
                         onClick={() => downloadIndividualInvestorReport(report)}
-                        className="bg-[#324D3E]/10 dark:bg-[#324D3E]/20 hover:bg-[#324D3E]/20 dark:hover:bg-[#324D3E]/30 text-[#324D3E] dark:text-white px-3 py-1 rounded-xl text-sm font-medium transition-colors hover:shadow-sm"
+                        className={getThemeClasses(
+                          "bg-[#324D3E]/10 dark:bg-[#324D3E]/20 hover:bg-[#324D3E]/20 dark:hover:bg-[#324D3E]/30 text-[#324D3E] dark:text-white px-3 py-1 rounded-xl text-sm font-medium transition-colors hover:shadow-sm",
+                          "!bg-white/95 !border-[#FFC1CC]/30 !text-[#4c1d1d]"
+                        )}
                       >
-                        📥 Unduh PDF
+                        <Download className="w-4 h-4 inline-block mr-2" />
+                        Unduh PDF
                       </button>
                       <button
                         onClick={() => downloadIndividualInvestorXLSX(report)}
-                        className="bg-green-600 hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-800 text-white px-3 py-1 rounded-xl text-sm font-medium transition-colors hover:shadow-sm"
+                        className={getThemeClasses(
+                          "bg-green-600 hover:bg-green-700 dark:bg-green-700 dark:hover:bg-green-800 text-white px-3 py-1 rounded-xl text-sm font-medium transition-colors hover:shadow-sm",
+                          "!bg-gradient-to-r !from-[#FFC1CC] !to-[#FFDEE9] !text-[#4c1d1d]"
+                        )}
                       >
-                        📊 XLSX
+                        <FileText className="w-4 h-4 inline-block mr-2" />
+                        XLSX
                       </button>
                     </div>
                   </div>
                 </div>
 
                 {/* Administrative Summary */}
-                <div className="p-4 lg:p-6 bg-gradient-to-r from-[#324D3E]/5 to-[#4C3D19]/5 dark:from-gray-700/50 dark:to-gray-600/50 border-b border-[#324D3E]/10 dark:border-gray-600 transition-colors duration-300">
+                <div className={getThemeClasses(
+                  "p-4 lg:p-6 bg-gradient-to-r from-[#324D3E]/5 to-[#4C3D19]/5 dark:from-gray-700/50 dark:to-gray-600/50 border-b border-[#324D3E]/10 dark:border-gray-600 transition-colors duration-300",
+                  "!bg-gradient-to-r !from-[#FFC1CC]/10 !to-[#FFDEE9]/10"
+                )}>
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     <div className="text-center">
                       <p className="text-2xl font-bold text-[#324D3E] dark:text-white transition-colors duration-300">
@@ -1093,20 +1237,19 @@ export default function LaporanPage() {
                 <div className="p-4 lg:p-6">
                   <button
                     onClick={() => toggleExpanded(report.investor._id)}
-                    className="flex items-center justify-between w-full text-left hover:bg-[#324D3E]/5 dark:hover:bg-gray-600/30 p-2 rounded-xl transition-colors"
+                    className={getThemeClasses(
+                      "flex items-center justify-between w-full text-left hover:bg-[#324D3E]/5 dark:hover:bg-gray-600/30 p-2 rounded-xl transition-colors",
+                      "!hover:bg-[#FFD7E0]/30"
+                    )}
                   >
                     <span className="text-lg font-medium text-[#324D3E] dark:text-white font-[family-name:var(--font-poppins)] transition-colors duration-300">
                       Detail Instansi Tanaman ({report.statistics.total})
                     </span>
-                    <span
+                    <ChevronDown
                       className={`transform transition-transform duration-200 text-[#324D3E] dark:text-white ${
-                        expandedInvestor === report.investor._id
-                          ? "rotate-180"
-                          : ""
-                      }`}
-                    >
-                      ▼
-                    </span>
+                        expandedInvestor === report.investor._id ? "rotate-180" : ""
+                      } w-5 h-5`} 
+                    />
                   </button>
 
                   {/* Expanded Tree Details */}
@@ -1243,9 +1386,10 @@ export default function LaporanPage() {
                                             tree.ageSource === "tanamBibit" ? (
                                               <div>
                                                 <div>{tree.tanggalTanam}</div>
-                                                <div className="text-xs text-green-600 dark:text-green-400">
-                                                  ✓ Dari Tanam Bibit
-                                                </div>
+                                                  <div className="text-xs text-green-600 dark:text-green-400 flex items-center gap-1">
+                                                    <CheckIcon className="w-3 h-3" />
+                                                    <span>Dari Tanam Bibit</span>
+                                                  </div>
                                               </div>
                                             ) : (
                                               <div>
@@ -1291,7 +1435,10 @@ export default function LaporanPage() {
 
         {/* Pagination Controls */}
         {reportData?.pagination && reportData.pagination.totalPages > 1 && (
-          <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg rounded-2xl shadow-lg border border-[#324D3E]/10 dark:border-gray-700 p-4 lg:p-6 transition-colors duration-300">
+          <div className={getThemeClasses(
+            "bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg rounded-2xl shadow-lg border border-[#324D3E]/10 dark:border-gray-700 p-4 lg:p-6 transition-colors duration-300",
+            "!bg-white/95 !border-[#FFC1CC]/30"
+          )}>
             <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
               <div className="text-sm text-[#889063] dark:text-gray-200">
                 Halaman {reportData.pagination.currentPage} dari{" "}

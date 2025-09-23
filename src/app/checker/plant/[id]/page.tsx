@@ -280,6 +280,11 @@ export default function PlantDetail({
     newDescription: "",
   });
   const [submittingRequest, setSubmittingRequest] = useState(false);
+  const [pendingRequests, setPendingRequests] = useState<{
+    deletePlant?: boolean;
+    updates: Record<string, boolean>;
+    deletes: Record<string, boolean>;
+  }>({ deletePlant: false, updates: {}, deletes: {} });
   const { showError, showSuccess, showConfirmation, AlertComponent } = useAlert();
 
   // ===== pagination state (baru, tanpa mengubah logic lain)
@@ -288,8 +293,37 @@ export default function PlantDetail({
 
   useEffect(() => {
     fetchPlantData();
+    fetchPendingRequests();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
+
+  // Fetch pending requests for this plant (pending status)
+  const fetchPendingRequests = async () => {
+    try {
+      const res = await fetch(`/api/admin/plant-requests?plantId=${id}&status=pending&limit=100`);
+      if (res.ok) {
+        const data = await res.json();
+        const items: any[] = data.data || [];
+        const updates: Record<string, boolean> = {};
+        const deletes: Record<string, boolean> = {};
+        let deletePlant = false;
+        for (const r of items) {
+          if (r.requestType === "delete") {
+            deletePlant = true;
+          }
+          if (r.requestType === "update_history" && r.historyId) {
+            updates[r.historyId] = true;
+          }
+          if (r.requestType === "delete_history" && r.historyId) {
+            deletes[r.historyId] = true;
+          }
+        }
+        setPendingRequests({ deletePlant, updates, deletes });
+      }
+    } catch (err) {
+      console.error("Error fetching pending requests:", err);
+    }
+  };
 
   const fetchPlantData = async () => {
     try {
@@ -654,6 +688,12 @@ export default function PlantDetail({
           originalDescription: "",
           newDescription: "",
         });
+        // refresh pending requests so UI disables buttons as needed
+        try {
+          await fetchPendingRequests();
+        } catch {
+          // ignore refresh errors
+        }
       } else {
         const errorData = await response.json();
         throw new Error(errorData.error || "Failed to submit request");
@@ -1183,16 +1223,39 @@ const handleDownloadHistoryPDF = async () => {
                       <span className="text-xs sm:text-sm">Download PDF</span>
                     </Button>
                     {(session?.user.role === "admin" || session?.user.role === "spv_staff") && (
-                      <Button
-                        onClick={() => handleDeletePlant()}
-                        className="bg-gradient-to-r from-red-500 to-red-600 hover:shadow-lg text-white rounded-lg sm:rounded-xl flex-1 sm:flex-none"
-                        size="sm"
-                      >
-                        <Trash2 className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
-                        <span className="text-xs sm:text-sm">
-                          {session?.user.role === "admin" ? "Delete Plant" : "Request Delete"}
-                        </span>
-                      </Button>
+                      <>
+                        {session?.user.role === "spv_staff" ? (
+                          pendingRequests?.deletePlant ? (
+                            <Button
+                              disabled
+                              size="sm"
+                              className="bg-gray-300 text-white rounded-lg sm:rounded-xl flex-1 sm:flex-none"
+                              title="Permintaan penghapusan tanaman sedang diajukan"
+                            >
+                              <Trash2 className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+                              <span className="text-xs sm:text-sm">Permintaan sedang diajukan</span>
+                            </Button>
+                          ) : (
+                            <Button
+                              onClick={() => handleDeletePlant()}
+                              className="bg-gradient-to-r from-red-500 to-red-600 hover:shadow-lg text-white rounded-lg sm:rounded-xl flex-1 sm:flex-none"
+                              size="sm"
+                            >
+                              <Trash2 className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+                              <span className="text-xs sm:text-sm">Request Delete</span>
+                            </Button>
+                          )
+                        ) : (
+                          <Button
+                            onClick={() => handleDeletePlant()}
+                            className="bg-gradient-to-r from-red-500 to-red-600 hover:shadow-lg text-white rounded-lg sm:rounded-xl flex-1 sm:flex-none"
+                            size="sm"
+                          >
+                            <Trash2 className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+                            <span className="text-xs sm:text-sm">Delete Plant</span>
+                          </Button>
+                        )}
+                      </>
                     )}
                   </div>
                 </div>
@@ -1257,39 +1320,82 @@ const handleDownloadHistoryPDF = async () => {
                               <span className="sm:hidden">View</span>
                             </Button>
                             {(session?.user.role === "admin" || session?.user.role === "spv_staff") && (
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => {
-                                  if (session?.user.role === "admin") {
+                              session?.user.role === "spv_staff" ? (
+                                pendingRequests?.updates?.[item.id] ? (
+                                  <Button
+                                    size="sm"
+                                    disabled
+                                    className="bg-gray-300 text-white border-gray-300 rounded-lg sm:rounded-xl text-xs sm:text-sm px-2 sm:px-3 py-1"
+                                    title="Permintaan update riwayat sedang diajukan"
+                                  >
+                                    <Edit className="w-3 h-3 mr-1" />
+                                    <span className="hidden sm:inline">Permintaan sedang diajukan</span>
+                                    <span className="sm:hidden">Pending</span>
+                                  </Button>
+                                ) : (
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => handleRequestHistoryUpdate(item)}
+                                    className="bg-yellow-500 hover:bg-yellow-600 text-white border-yellow-500 rounded-lg sm:rounded-xl text-xs sm:text-sm px-2 sm:px-3 py-1"
+                                  >
+                                    <Edit className="w-3 h-3 mr-1" />
+                                    <span className="hidden sm:inline">Request Update</span>
+                                    <span className="sm:hidden">Edit</span>
+                                  </Button>
+                                )
+                              ) : (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => {
                                     setSelectedHistory(item);
                                     setEditNotes(item.description);
                                     setIsEditing(true);
                                     setShowModal(true);
-                                  } else {
-                                    handleRequestHistoryUpdate(item);
-                                  }
-                                }}
-                                className="bg-yellow-500 hover:bg-yellow-600 text-white border-yellow-500 rounded-lg sm:rounded-xl text-xs sm:text-sm px-2 sm:px-3 py-1"
-                              >
-                                <Edit className="w-3 h-3 mr-1" />
-                                <span className="hidden sm:inline">
-                                  {session?.user.role === "admin" ? "Update" : "Request Update"}
-                                </span>
-                                <span className="sm:hidden">Edit</span>
-                              </Button>
+                                  }}
+                                  className="bg-yellow-500 hover:bg-yellow-600 text-white border-yellow-500 rounded-lg sm:rounded-xl text-xs sm:text-sm px-2 sm:px-3 py-1"
+                                >
+                                  <Edit className="w-3 h-3 mr-1" />
+                                  <span className="hidden sm:inline">Update</span>
+                                  <span className="sm:hidden">Edit</span>
+                                </Button>
+                              )
                             )}
                           </div>
                           {(session?.user.role === "admin" || session?.user.role === "spv_staff") && (
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => handleDeleteHistoryItem(item.id)}
-                              className="bg-red-500 hover:bg-red-600 text-white border-red-500 p-1.5 sm:p-2 min-w-0 rounded-lg sm:rounded-xl self-start sm:self-auto"
-                              title={session?.user.role === "admin" ? "Delete" : "Request Delete"}
-                            >
-                              <Trash2 className="w-3 h-3" />
-                            </Button>
+                            session?.user.role === "spv_staff" ? (
+                              pendingRequests?.deletes?.[item.id] ? (
+                                <Button
+                                  size="sm"
+                                  disabled
+                                  className="bg-gray-300 text-white border-gray-300 p-1.5 sm:p-2 min-w-0 rounded-lg sm:rounded-xl self-start sm:self-auto"
+                                  title="Permintaan penghapusan riwayat sedang diajukan"
+                                >
+                                  <Trash2 className="w-3 h-3" />
+                                </Button>
+                              ) : (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => handleDeleteHistoryItem(item.id)}
+                                  className="bg-red-500 hover:bg-red-600 text-white border-red-500 p-1.5 sm:p-2 min-w-0 rounded-lg sm:rounded-xl self-start sm:self-auto"
+                                  title="Request Delete"
+                                >
+                                  <Trash2 className="w-3 h-3" />
+                                </Button>
+                              )
+                            ) : (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleDeleteHistoryItem(item.id)}
+                                className="bg-red-500 hover:bg-red-600 text-white border-red-500 p-1.5 sm:p-2 min-w-0 rounded-lg sm:rounded-xl self-start sm:self-auto"
+                                title="Delete"
+                              >
+                                <Trash2 className="w-3 h-3" />
+                              </Button>
+                            )
                           )}
                         </div>
                       </div>

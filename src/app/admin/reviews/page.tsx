@@ -5,6 +5,8 @@ import { useAlert } from '@/components/ui/Alert';
 import { motion } from 'framer-motion';
 import Image from 'next/image';
 import { useEffect, useState } from 'react';
+import { useTheme } from 'next-themes';
+import { Flag, CheckCircle, Clock, Star } from 'lucide-react';
 
 interface Review {
   _id: string;
@@ -30,6 +32,17 @@ interface FilteredWord {
 }
 
 export default function ReviewManagementPage() {
+  const { theme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => setMounted(true), []);
+
+  const getThemeClasses = (baseClasses: string, pinkClasses: string = "") => {
+    if (mounted && theme === "pink" && pinkClasses) {
+      return `${baseClasses} ${pinkClasses}`;
+    }
+    return baseClasses;
+  };
   const [reviews, setReviews] = useState<Review[]>([]);
   const [filteredWords, setFilteredWords] = useState<FilteredWord[]>([]);
   const [loading, setLoading] = useState(true);
@@ -266,7 +279,7 @@ export default function ReviewManagementPage() {
   const renderStars = (rating: number) => {
     return Array.from({ length: 5 }, (_, i) => (
       <span key={i} className={`text-sm ${i < Math.floor(rating) ? 'text-yellow-400' : 'text-gray-300'}`}>
-        ★
+        <Star className="w-4 h-4 inline-block" />
       </span>
     ));
   };
@@ -276,30 +289,30 @@ export default function ReviewManagementPage() {
 
     if (review.isFlagged) {
       badges.push(
-        <span key="flagged" className="px-2 py-1 text-xs font-semibold bg-red-100 dark:bg-red-900/20 text-red-800 dark:text-red-300 rounded-full transition-colors duration-300">
-          🚩 Terdeteksi
+        <span key="flagged" className={getThemeClasses("px-2 py-1 text-xs font-semibold bg-red-100 dark:bg-red-900/20 text-red-800 dark:text-red-300 rounded-full transition-colors duration-300", "!bg-[#FFC1CC] !text-[#4c1d1d]") }>
+          <Flag className="inline-block w-3 h-3 mr-1" /> Terdeteksi
         </span>
       );
     }
 
     if (review.isApproved) {
       badges.push(
-        <span key="approved" className="px-2 py-1 text-xs font-semibold bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-300 rounded-full transition-colors duration-300">
-          ✅ Disetujui
+        <span key="approved" className={getThemeClasses("px-2 py-1 text-xs font-semibold bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-300 rounded-full transition-colors duration-300", "!bg-[#B5EAD7] !text-[#4c1d1d]") }>
+          <CheckCircle className="inline-block w-3 h-3 mr-1" /> Disetujui
         </span>
       );
     } else {
       badges.push(
-        <span key="pending" className="px-2 py-1 text-xs font-semibold bg-yellow-100 dark:bg-yellow-900/20 text-yellow-800 dark:text-yellow-300 rounded-full transition-colors duration-300">
-          ⏳ Menunggu
+        <span key="pending" className={getThemeClasses("px-2 py-1 text-xs font-semibold bg-yellow-100 dark:bg-yellow-900/20 text-yellow-800 dark:text-yellow-300 rounded-full transition-colors duration-300", "!bg-[#C7CEEA] !text-[#4c1d1d]") }>
+          <Clock className="inline-block w-3 h-3 mr-1" /> Menunggu
         </span>
       );
     }
 
     if (review.showOnLanding) {
       badges.push(
-        <span key="landing" className="px-2 py-1 text-xs font-semibold bg-blue-100 dark:bg-blue-900/20 text-blue-800 dark:text-blue-300 rounded-full transition-colors duration-300">
-          ⭐ Landing Page
+        <span key="landing" className={getThemeClasses("px-2 py-1 text-xs font-semibold bg-blue-100 dark:bg-blue-900/20 text-blue-800 dark:text-blue-300 rounded-full transition-colors duration-300", "!bg-[#FFE4E8] !text-[#4c1d1d]") }>
+          <Star className="inline-block w-3 h-3 mr-1" /> Landing Page
         </span>
       );
     }
@@ -318,24 +331,30 @@ export default function ReviewManagementPage() {
           <h1 className="text-3xl font-bold text-[#324D3E] dark:text-white mb-6 font-[family-name:var(--font-poppins)] transition-colors duration-300">Kelola Komentar</h1>
 
           {/* Tab Navigation */}
-          <div className="flex space-x-1 bg-gray-100 dark:bg-gray-700 p-1 rounded-lg mb-6 transition-colors duration-300">
+            <div className="flex space-x-1 bg-gray-100 dark:bg-gray-700 p-1 rounded-lg mb-6 transition-colors duration-300">
             <button
               onClick={() => setActiveTab('reviews')}
-              className={`flex-1 px-4 py-2 text-sm font-medium rounded-md transition-colors duration-300 font-[family-name:var(--font-poppins)] ${
-                activeTab === 'reviews'
-                  ? 'bg-white dark:bg-gray-600 text-[#324D3E] dark:text-white shadow-sm'
-                  : 'text-gray-600 dark:text-gray-300 hover:text-[#324D3E] dark:hover:text-white'
-              }`}
+              className={getThemeClasses(
+                `flex-1 px-4 py-2 text-sm font-medium rounded-md transition-colors duration-300 font-[family-name:var(--font-poppins)] ${
+                  activeTab === 'reviews'
+                    ? 'bg-white dark:bg-gray-600 text-[#324D3E] dark:text-white shadow-sm'
+                    : 'text-gray-600 dark:text-gray-300 hover:text-[#324D3E] dark:hover:text-white'
+                }`,
+                activeTab === 'reviews' ? '!bg-gradient-to-r !from-[#FFC1CC] !to-[#FFDEE9] !text-[#4c1d1d] !shadow-sm' : ''
+              )}
             >
               Kelola Review
             </button>
             <button
               onClick={() => setActiveTab('filtered-words')}
-              className={`flex-1 px-4 py-2 text-sm font-medium rounded-md transition-colors duration-300 font-[family-name:var(--font-poppins)] ${
-                activeTab === 'filtered-words'
-                  ? 'bg-white dark:bg-gray-600 text-[#324D3E] dark:text-white shadow-sm'
-                  : 'text-gray-600 dark:text-gray-300 hover:text-[#324D3E] dark:hover:text-white'
-              }`}
+              className={getThemeClasses(
+                `flex-1 px-4 py-2 text-sm font-medium rounded-md transition-colors duration-300 font-[family-name:var(--font-poppins)] ${
+                  activeTab === 'filtered-words'
+                    ? 'bg-white dark:bg-gray-600 text-[#324D3E] dark:text-white shadow-sm'
+                    : 'text-gray-600 dark:text-gray-300 hover:text-[#324D3E] dark:hover:text-white'
+                }`,
+                activeTab === 'filtered-words' ? '!bg-gradient-to-r !from-[#FFC1CC] !to-[#FFDEE9] !text-[#4c1d1d] !shadow-sm' : ''
+              )}
             >
               Kata Terfilter
             </button>
@@ -350,11 +369,14 @@ export default function ReviewManagementPage() {
                   <button
                     key={filter}
                     onClick={() => setReviewFilter(filter)}
-                    className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors duration-300 font-[family-name:var(--font-poppins)] ${
-                      reviewFilter === filter
-                        ? 'bg-[#324D3E] dark:bg-[#4C3D19] text-white'
-                        : 'bg-gray-100 dark:bg-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-500'
-                    }`}
+                    className={getThemeClasses(
+                      `px-4 py-2 text-sm font-medium rounded-lg transition-colors duration-300 font-[family-name:var(--font-poppins)] ${
+                        reviewFilter === filter
+                          ? 'bg-[#324D3E] dark:bg-[#4C3D19] text-white'
+                          : 'bg-gray-100 dark:bg-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-500'
+                      }`,
+                      reviewFilter === filter ? '!bg-gradient-to-r !from-[#FFC1CC] !to-[#FFDEE9] !text-[#4c1d1d]' : ''
+                    )}
                   >
                     {filter === 'all' ? 'Semua' :
                      filter === 'pending' ? 'Menunggu' :
@@ -443,7 +465,10 @@ export default function ReviewManagementPage() {
                               <button
                                 onClick={() => handleReviewAction(review._id, true)}
                                 disabled={processingId === review._id}
-                                className="px-4 py-2 bg-green-600 dark:bg-green-700 text-white text-sm rounded-lg hover:bg-green-700 dark:hover:bg-green-800 disabled:opacity-50 transition-all duration-300 font-[family-name:var(--font-poppins)]"
+                                className={getThemeClasses(
+                                  'px-4 py-2 bg-green-600 dark:bg-green-700 text-white text-sm rounded-lg hover:bg-green-700 dark:hover:bg-green-800 disabled:opacity-50 transition-all duration-300 font-[family-name:var(--font-poppins)]',
+                                  '!bg-gradient-to-r !from-[#B5EAD7] !to-[#E6FFF0] !text-[#4c1d1d]'
+                                )}
                               >
                                 {processingId === review._id ? 'Processing...' : 'Setujui'}
                               </button>
@@ -451,7 +476,10 @@ export default function ReviewManagementPage() {
                             <button
                               onClick={() => handleDeleteReview(review._id)}
                               disabled={processingId === review._id}
-                              className="px-4 py-2 bg-red-600 dark:bg-red-700 text-white text-sm rounded-lg hover:bg-red-700 dark:hover:bg-red-800 disabled:opacity-50 transition-all duration-300 font-[family-name:var(--font-poppins)]"
+                              className={getThemeClasses(
+                                'px-4 py-2 bg-red-600 dark:bg-red-700 text-white text-sm rounded-lg hover:bg-red-700 dark:hover:bg-red-800 disabled:opacity-50 transition-all duration-300 font-[family-name:var(--font-poppins)]',
+                                '!bg-gradient-to-r !from-[#FFC1CC] !to-[#FFE4E8] !text-[#4c1d1d]'
+                              )}
                             >
                               {processingId === review._id ? 'Processing...' : 'Hapus'}
                             </button>
@@ -473,11 +501,14 @@ export default function ReviewManagementPage() {
                                 <button
                                   onClick={() => handleLandingPageToggle(review._id, !review.showOnLanding)}
                                   disabled={processingId === review._id}
-                                  className={`px-4 py-2 text-sm rounded-lg transition-all duration-300 disabled:opacity-50 font-[family-name:var(--font-poppins)] ${
-                                    review.showOnLanding
-                                      ? 'bg-blue-600 dark:bg-blue-700 text-white hover:bg-blue-700 dark:hover:bg-blue-800'
-                                      : 'bg-blue-100 dark:bg-blue-800 text-blue-700 dark:text-blue-300 hover:bg-blue-200 dark:hover:bg-blue-700'
-                                  }`}
+                                  className={getThemeClasses(
+                                    `px-4 py-2 text-sm rounded-lg transition-all duration-300 disabled:opacity-50 font-[family-name:var(--font-poppins)] ${
+                                      review.showOnLanding
+                                        ? 'bg-blue-600 dark:bg-blue-700 text-white hover:bg-blue-700 dark:hover:bg-blue-800'
+                                        : 'bg-blue-100 dark:bg-blue-800 text-blue-700 dark:text-blue-300 hover:bg-blue-200 dark:hover:bg-blue-700'
+                                    }`,
+                                    '!bg-gradient-to-r !from-[#C7CEEA] !to-[#EAF0FF] !text-[#4c1d1d]'
+                                  )}
                                 >
                                   {processingId === review._id ? 'Processing...' :
                                    review.showOnLanding ? 'Sembunyikan' : 'Tampilkan'}
@@ -523,7 +554,10 @@ export default function ReviewManagementPage() {
                   <button
                     onClick={handleAddFilteredWord}
                     disabled={addingWord || !newWord.trim()}
-                    className="px-4 py-2 bg-[#324D3E] dark:bg-[#4C3D19] text-white rounded-lg hover:bg-[#4A6741] dark:hover:bg-[#889063] active:bg-[#2C3E2B] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 font-medium font-[family-name:var(--font-poppins)] focus:ring-2 focus:ring-[#324D3E] focus:ring-offset-2 whitespace-nowrap min-w-[100px] text-sm sm:text-base"
+                    className={getThemeClasses(
+                      'px-4 py-2 bg-[#324D3E] dark:bg-[#4C3D19] text-white rounded-lg hover:bg-[#4A6741] dark:hover:bg-[#889063] active:bg-[#2C3E2B] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 font-medium font-[family-name:var(--font-poppins)] focus:ring-2 focus:ring-[#324D3E] focus:ring-offset-2 whitespace-nowrap min-w-[100px] text-sm sm:text-base',
+                      '!bg-gradient-to-r !from-[#FFC1CC] !to-[#FFDEE9] !text-[#4c1d1d]'
+                    )}
                   >
                     {addingWord ? 'Menambah...' : 'Tambah'}
                   </button>
@@ -564,7 +598,10 @@ export default function ReviewManagementPage() {
                       </button>
                       <button
                         onClick={() => handleDeleteWord(word._id)}
-                        className="px-3 py-1 text-sm bg-red-600 dark:bg-red-700 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-800 transition-all duration-300 font-[family-name:var(--font-poppins)]"
+                        className={getThemeClasses(
+                          'px-3 py-1 text-sm bg-red-600 dark:bg-red-700 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-800 transition-all duration-300 font-[family-name:var(--font-poppins)]',
+                          '!bg-gradient-to-r !from-[#FFC1CC] !to-[#FFE4E8] !text-[#4c1d1d]'
+                        )}
                       >
                         Hapus
                       </button>

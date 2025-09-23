@@ -73,6 +73,14 @@ export default function AdminSettingsPage() {
     fetchSettings();
   }, []);
 
+  // Helper function to get theme-aware classes
+  const getThemeClasses = (baseClasses: string, pinkClasses: string = "") => {
+    if (mounted && theme === "pink" && pinkClasses) {
+      return `${baseClasses} ${pinkClasses}`;
+    }
+    return baseClasses;
+  };
+
   const fetchSettings = async () => {
     try {
       // Fetch email settings
@@ -357,12 +365,12 @@ export default function AdminSettingsPage() {
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl p-4 sm:p-6 shadow-lg border border-[#324D3E]/10 dark:border-gray-700 transition-colors duration-300"
+          className={getThemeClasses("bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl p-4 sm:p-6 shadow-lg border border-[#324D3E]/10 dark:border-gray-600/60 transition-colors duration-300", "!bg-white/80 !border-[#FFC1CC]/30")}
         >
-          <h1 className="text-xl sm:text-2xl font-bold text-[#324D3E] dark:text-white mb-2 transition-colors duration-300">
+          <h1 className={getThemeClasses("text-xl sm:text-2xl font-bold text-[#324D3E] dark:text-gray-100 mb-2 transition-colors duration-300", "!text-[#4c1d1d]")}>
             Pengaturan Sistem
           </h1>
-          <p className="text-sm sm:text-base text-[#889063] dark:text-gray-400 transition-colors duration-300">
+          <p className={getThemeClasses("text-sm sm:text-base text-[#889063] dark:text-gray-300 transition-colors duration-300", "!text-[#6b7280]")}> 
             Kelola pengaturan email dan notifikasi sistem
           </p>
         </motion.div>
@@ -372,17 +380,17 @@ export default function AdminSettingsPage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.05 }}
-          className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl p-4 sm:p-6 shadow-lg border border-[#324D3E]/10 dark:border-gray-700 transition-colors duration-300"
+          className={getThemeClasses("bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl p-4 sm:p-6 shadow-lg border border-[#324D3E]/10 dark:border-gray-600/60 transition-colors duration-300", "!bg_white/80 !border-[#FFC1CC]/30")}
         >
           <div className="flex items-start sm:items-center gap-3 mb-4 sm:mb-6">
-            <div className="p-2 sm:p-3 bg-purple-100 rounded-xl flex-shrink-0">
-              <Settings className="w-5 h-5 sm:w-6 sm:h-6 text-purple-600" />
+            <div className={getThemeClasses("p-2 sm:p-3 bg-purple-100 rounded-xl flex-shrink-0", "!bg-[#FFC1CC]/20")}>
+              <Settings className={getThemeClasses("w-5 h-5 sm:w-6 sm:h-6 text-purple-600", "!text-[#4c1d1d]")} />
             </div>
             <div>
-              <h2 className="text-lg sm:text-xl font-semibold text-[#324D3E] dark:text-white transition-colors duration-300">
+              <h2 className={getThemeClasses("text-lg sm:text-xl font-semibold text-[#324D3E] dark:text-gray-100 transition-colors duration-300", "!text-[#4c1d1d]")}> 
                 Tema Tampilan
               </h2>
-              <p className="text-sm sm:text-base text-[#889063] dark:text-gray-400 transition-colors duration-300">
+              <p className={getThemeClasses("text-sm sm:text-base text-[#889063] dark:text-gray-300 transition-colors duration-300", "!text-[#6b7280]")}> 
                 Pilih antara mode terang, gelap, atau otomatis
               </p>
             </div>
@@ -390,31 +398,29 @@ export default function AdminSettingsPage() {
 
           {/* Theme Options */}
           {mounted && (
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 sm:gap-4">
               {/* Light Mode */}
               <motion.button
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
                 onClick={() => setTheme('light')}
-                className={`p-4 rounded-xl border-2 transition-all duration-300 ${
+                className={getThemeClasses(`p-4 rounded-xl border-2 transition-all duration-300 ${
                   theme === 'light'
                     ? 'border-[#324D3E] bg-[#324D3E]/5'
                     : 'border-gray-200 hover:border-[#324D3E]/30'
-                }`}
+                }`, theme === 'light' ? '!border-[#FFC1CC] !bg-[#FFC1CC]/5' : '!border-[#FFC1CC]/30 hover:!border-[#FFC1CC]/50')}
               >
                 <div className="flex flex-col items-center gap-3">
-                  <div className={`p-3 rounded-full ${
+                  <div className={getThemeClasses(`p-3 rounded-full ${
                     theme === 'light' ? 'bg-[#324D3E] text-white' : 'bg-gray-100 text-gray-600'
-                  }`}>
+                  }`, theme === 'light' ? '!bg-[#FFC1CC] !text-[#4c1d1d]' : '!bg-[#FFC1CC]/20 !text-[#4c1d1d]')}>
                     <Sun className="w-5 h-5" />
                   </div>
                   <div className="text-center">
-                    <p className={`font-medium ${
-                      theme === 'light' ? 'text-[#324D3E]' : 'text-gray-700'
-                    }`}>
+                    <p className={getThemeClasses("font-medium text-gray-800 dark:text-gray-100 transition-colors duration-300", "!text-[#4c1d1d]")}>
                       Mode Terang
                     </p>
-                    <p className="text-xs text-gray-500 mt-1">
+                    <p className={getThemeClasses("text-xs text-gray-600 dark:text-gray-300 mt-1 transition-colors duration-300", "!text-[#6b7280]")}>
                       Latar belakang terang
                     </p>
                   </div>
@@ -426,26 +432,52 @@ export default function AdminSettingsPage() {
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
                 onClick={() => setTheme('dark')}
-                className={`p-4 rounded-xl border-2 transition-all duration-300 ${
+                className={getThemeClasses(`p-4 rounded-xl border-2 transition-all duration-300 ${
                   theme === 'dark'
                     ? 'border-[#324D3E] bg-[#324D3E]/5'
                     : 'border-gray-200 hover:border-[#324D3E]/30'
+                }`, theme === 'dark' ? '!border-[#FFC1CC] !bg-[#FFC1CC]/5' : '!border-[#FFC1CC]/30 hover:!border-[#FFC1CC]/50')}
+              >
+                <div className="flex flex-col items-center gap-3">
+                  <div className={getThemeClasses(`p-3 rounded-full ${
+                    theme === 'dark' ? 'bg-[#324D3E] text-white' : 'bg-gray-100 text-gray-600'
+                  }`, theme === 'dark' ? '!bg-[#FFC1CC] !text-[#4c1d1d]' : '!bg-[#FFC1CC]/20 !text-[#4c1d1d]')}>
+                    <Moon className="w-5 h-5" />
+                  </div>
+                  <div className="text-center">
+                    <p className={getThemeClasses("font-medium text-gray-800 dark:text-gray-100 transition-colors duration-300", "!text-[#4c1d1d]")}>
+                      Mode Gelap
+                    </p>
+                    <p className={getThemeClasses("text-xs text-gray-600 dark:text-gray-300 mt-1 transition-colors duration-300", "!text-[#6b7280]")}>
+                      Latar belakang gelap
+                    </p>
+                  </div>
+                </div>
+              </motion.button>
+
+              {/* Pink Mode */}
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => setTheme('pink')}
+                className={`p-4 rounded-xl border-2 transition-all duration-300 ${
+                  theme === 'pink'
+                    ? 'border-[#FFC1CC] bg-[#FFC1CC]/5'
+                    : 'border-gray-200 hover:border-[#FFC1CC]/30'
                 }`}
               >
                 <div className="flex flex-col items-center gap-3">
                   <div className={`p-3 rounded-full ${
-                    theme === 'dark' ? 'bg-[#324D3E] text-white' : 'bg-gray-100 text-gray-600'
+                    theme === 'pink' ? 'bg-[#FFC1CC] text-[#4c1d1d]' : 'bg-gray-100 text-gray-600'
                   }`}>
-                    <Moon className="w-5 h-5" />
+                    <Settings className="w-5 h-5" />
                   </div>
                   <div className="text-center">
-                    <p className={`font-medium ${
-                      theme === 'dark' ? 'text-[#324D3E]' : 'text-gray-700'
-                    }`}>
-                      Mode Gelap
+                    <p className={getThemeClasses("font-medium text-gray-800 dark:text-gray-100 transition-colors duration-300", "!text-[#4c1d1d]")}>
+                      Mode Pink
                     </p>
-                    <p className="text-xs text-gray-500 mt-1">
-                      Latar belakang gelap
+                    <p className={getThemeClasses("text-xs text-gray-600 dark:text-gray-300 mt-1 transition-colors duration-300", "!text-[#6b7280]")}>
+                      Tema pink pastel
                     </p>
                   </div>
                 </div>
@@ -456,30 +488,29 @@ export default function AdminSettingsPage() {
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
                 onClick={() => setTheme('system')}
-                className={`p-4 rounded-xl border-2 transition-all duration-300 ${
+                className={getThemeClasses(`p-4 rounded-xl border-2 transition-all duration-300 ${
                   theme === 'system'
                     ? 'border-[#324D3E] bg-[#324D3E]/5'
                     : 'border-gray-200 hover:border-[#324D3E]/30'
-                }`}
+                }`, theme === 'system' ? '!border-[#FFC1CC] !bg-[#FFC1CC]/5' : '!border-[#FFC1CC]/30 hover:!border-[#FFC1CC]/50')}
               >
                 <div className="flex flex-col items-center gap-3">
-                  <div className={`p-3 rounded-full ${
+                  <div className={getThemeClasses(`p-3 rounded-full ${
                     theme === 'system' ? 'bg-[#324D3E] text-white' : 'bg-gray-100 text-gray-600'
-                  }`}>
+                  }`, theme === 'system' ? '!bg-[#FFC1CC] !text-[#4c1d1d]' : '!bg-[#FFC1CC]/20 !text-[#4c1d1d]')}>
                     <Monitor className="w-5 h-5" />
                   </div>
                   <div className="text-center">
-                    <p className={`font-medium ${
-                      theme === 'system' ? 'text-[#324D3E]' : 'text-gray-700'
-                    }`}>
+                    <p className={getThemeClasses("font-medium text-gray-800 dark:text-gray-100 transition-colors duration-300", "!text-[#4c1d1d]")}>
                       Otomatis
                     </p>
-                    <p className="text-xs text-gray-500 mt-1">
+                    <p className={getThemeClasses("text-xs text-gray-600 dark:text-gray-300 mt-1 transition-colors duration-300", "!text-[#6b7280]")}>
                       Sesuai sistem
                     </p>
                   </div>
                 </div>
               </motion.button>
+
             </div>
           )}
         </motion.div>
@@ -489,17 +520,17 @@ export default function AdminSettingsPage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl p-4 sm:p-6 shadow-lg border border-[#324D3E]/10 dark:border-gray-700 transition-colors duration-300"
+          className={getThemeClasses("bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl p-4 sm:p-6 shadow-lg border border-[#324D3E]/10 dark:border-gray-700 transition-colors duration-300", "!bg-white/80 !border-[#FFC1CC]/30")}
         >
           <div className="flex items-start sm:items-center gap-3 mb-4 sm:mb-6">
-            <div className="p-2 sm:p-3 bg-blue-100 rounded-xl flex-shrink-0">
-              <Mail className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600" />
+            <div className={getThemeClasses("p-2 sm:p-3 bg-blue-100 rounded-xl flex-shrink-0", "!bg-[#B5EAD7]/30")}>
+              <Mail className={getThemeClasses("w-5 h-5 sm:w-6 sm:h-6 text-blue-600", "!text-[#4c1d1d]")} />
             </div>
             <div>
-              <h2 className="text-lg sm:text-xl font-semibold text-[#324D3E] dark:text-white transition-colors duration-300">
+              <h2 className={getThemeClasses("text-lg sm:text-xl font-semibold text-[#324D3E] dark:text-white transition-colors duration-300", "!text-[#4c1d1d]")}>
                 Konfigurasi Email
               </h2>
-              <p className="text-sm sm:text-base text-[#889063] dark:text-gray-400 transition-colors duration-300">
+              <p className={getThemeClasses("text-sm sm:text-base text-[#889063] dark:text-gray-400 transition-colors duration-300", "!text-[#6b7280]")}>
                 Pengaturan untuk pengiriman notifikasi cicilan
               </p>
             </div>
@@ -508,7 +539,7 @@ export default function AdminSettingsPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
             {/* Email Service */}
             <div>
-              <label className="block text-sm font-medium text-[#324D3E] dark:text-gray-200 mb-2 transition-colors duration-300">
+              <label className={getThemeClasses("block text-sm font-medium text-[#324D3E] dark:text-gray-200 mb-2 transition-colors duration-300", "!text-[#4c1d1d]")}>
                 Email Service Provider
               </label>
               <select
@@ -519,7 +550,7 @@ export default function AdminSettingsPage() {
                     service: e.target.value,
                   }))
                 }
-                className="w-full px-4 py-3 border border-gray-200 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#324D3E] focus:border-transparent transition-colors duration-300"
+                className={getThemeClasses("w-full px-4 py-3 border border-gray-200 dark:border-gray-600/60 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-[#324D3E] focus:border-transparent transition-colors duration-300", "!bg-white/90 !border-[#FFC1CC]/30 !text-[#4c1d1d] focus:!ring-[#FFC1CC]/20 focus:!border-[#FFC1CC]")}
               >
                 <option value="gmail">Gmail</option>
                 <option value="outlook">Outlook</option>
@@ -529,8 +560,7 @@ export default function AdminSettingsPage() {
 
             {/* Email Address */}
             <div>
-              <label className="block text-sm font-medium text-[#324D3E] dark:text-gray-200 mb-2 transition-colors duration-300">
-                Email Address
+              <label className={getThemeClasses("block text-sm font-medium text-[#324D3E] dark:text-gray-100 mb-2 transition-colors duration-300", "!text-[#4c1d1d]")}>                Email Address
               </label>
               <input
                 type="email"
@@ -542,15 +572,14 @@ export default function AdminSettingsPage() {
                   }))
                 }
                 placeholder="admin@koperasi.com"
-                className="w-full px-4 py-3 border border-gray-200 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#324D3E] focus:border-transparent transition-colors duration-300"
+                className={getThemeClasses("w-full px-4 py-3 border border-gray-200 dark:border-gray-600/60 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-[#324D3E] focus:border-transparent transition-colors duration-300", "!bg-white/90 !border-[#FFC1CC]/30 !text-[#4c1d1d] focus:!ring-[#FFC1CC]/20 focus:!border-[#FFC1CC]")}
               />
             </div>
 
             {/* Email Password */}
             <div className="md:col-span-2">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-2 gap-2 sm:gap-0">
-                <label className="block text-sm font-medium text-[#324D3E]">
-                  App Password
+                <label className={getThemeClasses("block text-sm font-medium text-[#324D3E]", "!text-[#4c1d1d]")}>                  App Password
                 </label>
                 <div className="flex gap-2 flex-shrink-0">
                   {hasPassword && !isEditingEmail && (
@@ -579,36 +608,36 @@ export default function AdminSettingsPage() {
 
               {!hasPassword || isEditingEmail ? (
                 <div className="relative">
-                  <input
-                    type={showPassword ? "text" : "password"}
-                    placeholder="Enter password"
-                    value={emailSettings.password}
-                    onChange={(e) =>
-                      setEmailSettings({
-                        ...emailSettings,
-                        password: e.target.value,
-                      })
-                    }
-                    className="w-full px-4 py-3 pr-12 border border-gray-200 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#324D3E] focus:border-transparent transition-colors duration-300"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors duration-300"
-                  >
-                    {showPassword ? (
-                      <EyeOff className="w-5 h-5" />
-                    ) : (
-                      <Eye className="w-5 h-5" />
-                    )}
-                  </button>
-                </div>
+                    <input
+                      type={showPassword ? "text" : "password"}
+                      placeholder="Enter password"
+                      value={emailSettings.password}
+                      onChange={(e) =>
+                        setEmailSettings({
+                          ...emailSettings,
+                          password: e.target.value,
+                        })
+                      }
+                      className={getThemeClasses("w-full px-4 py-3 pr-12 border border-gray-200 dark:border-gray-600/60 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-[#324D3E] focus:border-transparent transition-colors duration-300", "!bg-white/90 !border-[#FFC1CC]/30 !text-[#4c1d1d] focus:!ring-[#FFC1CC]/20 focus:!border-[#FFC1CC]")}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors duration-300"
+                    >
+                      {showPassword ? (
+                        <EyeOff className="w-5 h-5" />
+                      ) : (
+                        <Eye className="w-5 h-5" />
+                      )}
+                    </button>
+                  </div>
               ) : (
-                <div className="px-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-gray-500 dark:text-gray-300 transition-colors duration-300">
+                <div className={getThemeClasses("px-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-gray-500 dark:text-gray-300 transition-colors duration-300", "!bg-[#FFC1CC]/10 !border-[#FFC1CC]/30 !text-[#4c1d1d]")}>
                   Password tersimpan (klik Edit Password untuk mengubah)
                 </div>
               )}
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-2 transition-colors duration-300">
+              <p className="text-xs text-gray-500 dark:text-gray-300 mt-2 transition-colors duration-300">
                 Untuk Gmail, gunakan App Password. Untuk provider lain, gunakan
                 password akun.
               </p>
@@ -627,9 +656,9 @@ export default function AdminSettingsPage() {
               }`}
             >
               {saveResult.type === "success" ? (
-                <CheckCircle className="w-5 h-5" />
+                <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-300" />
               ) : (
-                <XCircle className="w-5 h-5" />
+                <XCircle className="w-5 h-5 text-red-600 dark:text-red-300" />
               )}
               <span>{saveResult.message}</span>
             </motion.div>
@@ -646,9 +675,9 @@ export default function AdminSettingsPage() {
               }`}
             >
               {testResult.type === "success" ? (
-                <CheckCircle className="w-5 h-5" />
+                <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-300" />
               ) : (
-                <XCircle className="w-5 h-5" />
+                <XCircle className="w-5 h-5 text-red-600 dark:text-red-300" />
               )}
               <span>{testResult.message}</span>
             </motion.div>
@@ -665,7 +694,7 @@ export default function AdminSettingsPage() {
                 !emailSettings.email ||
                 (!emailSettings.password && !hasPassword)
               }
-              className="flex items-center justify-center gap-2 px-4 sm:px-6 py-3 bg-[#324D3E] text-white rounded-xl font-medium hover:bg-[#4C3D19] transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
+              className={getThemeClasses("flex items-center justify-center gap-2 px-4 sm:px-6 py-3 bg-[#324D3E] text-white rounded-xl font-medium hover:bg-[#4C3D19] transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base", "!bg-gradient-to-r !from-[#FFC1CC] !to-[#FFDEE9] !text-[#4c1d1d] hover:!from-[#FFDEE9] hover:!to-[#FFF5BA]")}
             >
               <Save className="w-5 h-5" />
               {isLoading ? "Menyimpan..." : "Simpan Pengaturan"}
@@ -676,7 +705,7 @@ export default function AdminSettingsPage() {
               whileTap={{ scale: 0.98 }}
               onClick={handleTestEmail}
               disabled={isLoading || !emailSettings.email || !hasPassword}
-              className="flex items-center justify-center gap-2 px-4 sm:px-6 py-3 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
+              className={getThemeClasses("flex items-center justify-center gap-2 px-4 sm:px-6 py-3 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base", "!bg-gradient-to-r !from-[#B5EAD7] !to-[#C7CEEA] !text-[#4c1d1d] hover:!from-[#C7CEEA] hover:!to-[#FFF5BA]")}
             >
               <TestTube className="w-5 h-5" />
               Test Email
@@ -689,17 +718,17 @@ export default function AdminSettingsPage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.15 }}
-          className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl p-4 sm:p-6 shadow-lg border border-[#324D3E]/10 dark:border-gray-700 transition-colors duration-300"
+          className={getThemeClasses("bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl p-4 sm:p-6 shadow-lg border border-[#324D3E]/10 dark:border-gray-700 transition-colors duration-300", "!bg-white/80 !border-[#FFC1CC]/30")}
         >
           <div className="flex items-start sm:items-center gap-3 mb-4 sm:mb-6">
-            <div className="p-2 sm:p-3 bg-green-100 rounded-xl flex-shrink-0">
-              <MessageCircle className="w-5 h-5 sm:w-6 sm:h-6 text-green-600" />
+            <div className={getThemeClasses("p-2 sm:p-3 bg-green-100 rounded-xl flex-shrink-0", "!bg-[#B5EAD7]/30")}>
+              <MessageCircle className={getThemeClasses("w-5 h-5 sm:w-6 sm:h-6 text-green-600", "!text-[#4c1d1d]")} />
             </div>
             <div>
-              <h2 className="text-lg sm:text-xl font-semibold text-[#324D3E] dark:text-white transition-colors duration-300">
+              <h2 className={getThemeClasses("text-lg sm:text-xl font-semibold text-[#324D3E] dark:text-white transition-colors duration-300", "!text-[#4c1d1d]")}>
                 Konfigurasi WhatsApp
               </h2>
-              <p className="text-sm sm:text-base text-[#889063] dark:text-gray-400 transition-colors duration-300">
+              <p className={getThemeClasses("text-sm sm:text-base text-[#889063] dark:text-gray-400 transition-colors duration-300", "!text-[#6b7280]")}>
                 Pengaturan untuk pengiriman pesan WhatsApp cicilan
               </p>
             </div>
@@ -708,8 +737,7 @@ export default function AdminSettingsPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
             {/* WhatsApp Number */}
             <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-[#324D3E] dark:text-gray-200 mb-2 transition-colors duration-300">
-                Nomor WhatsApp
+              <label className={getThemeClasses("block text-sm font-medium text-[#324D3E] dark:text-gray-200 mb-2 transition-colors duration-300", "!text-[#4c1d1d]")}>                Nomor WhatsApp
               </label>
               <div className="relative">
                 <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
@@ -723,7 +751,7 @@ export default function AdminSettingsPage() {
                     }))
                   }
                   placeholder="628123456789"
-                  className="w-full pl-12 pr-4 py-3 border border-gray-200 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#324D3E] focus:border-transparent transition-colors duration-300"
+                  className={getThemeClasses("w-full pl-12 pr-4 py-3 border border-gray-200 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#324D3E] focus:border-transparent transition-colors duration-300", "!bg-white/90 !border-[#FFC1CC]/30 !text-[#4c1d1d] focus:!ring-[#FFC1CC]/20 focus:!border-[#FFC1CC]")}
                 />
               </div>
               <p className="text-xs text-gray-500 dark:text-gray-400 mt-2 transition-colors duration-300">
@@ -734,8 +762,7 @@ export default function AdminSettingsPage() {
 
             {/* Status */}
             <div>
-              <label className="block text-sm font-medium text-[#324D3E] dark:text-gray-200 mb-2 transition-colors duration-300">
-                Status Koneksi
+              <label className={getThemeClasses("block text-sm font-medium text-[#324D3E] dark:text-gray-200 mb-2 transition-colors duration-300", "!text-[#4c1d1d]")}>                Status Koneksi
               </label>
               <div
                 className={`px-4 py-3 rounded-xl border transition-colors duration-300 ${
@@ -835,7 +862,7 @@ export default function AdminSettingsPage() {
               whileTap={{ scale: 0.98 }}
               onClick={handleWhatsAppSave}
               disabled={isLoading || !whatsappSettings.whatsappNumber}
-              className="flex items-center justify-center gap-2 px-4 sm:px-6 py-3 bg-[#324D3E] text-white rounded-xl font-medium hover:bg-[#4C3D19] transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base min-w-0"
+              className={getThemeClasses("flex items-center justify-center gap-2 px-4 sm:px-6 py-3 bg-[#324D3E] text-white rounded-xl font-medium hover:bg-[#4C3D19] transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base min-w-0", "!bg-gradient-to-r !from-[#FFC1CC] !to-[#FFDEE9] !text-[#4c1d1d] hover:!from-[#FFDEE9] hover:!to-[#FFF5BA]")}
             >
               <Save className="w-5 h-5" />
               Simpan Nomor
@@ -850,7 +877,7 @@ export default function AdminSettingsPage() {
                 !whatsappSettings.whatsappNumber ||
                 whatsappSettings.status === "connected"
               }
-              className="flex items-center justify-center gap-2 px-4 sm:px-6 py-3 bg-green-600 text-white rounded-xl font-medium hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base min-w-0"
+              className={getThemeClasses("flex items-center justify-center gap-2 px-4 sm:px-6 py-3 bg-green-600 text-white rounded-xl font-medium hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base min-w-0", "!bg-gradient-to-r !from-[#B5EAD7] !to-[#C7CEEA] !text-[#4c1d1d] hover:!from-[#C7CEEA] hover:!to-[#FFF5BA]")}
             >
               <Hash className="w-5 h-5" />
               Generate QR Code
@@ -863,7 +890,7 @@ export default function AdminSettingsPage() {
               disabled={
                 isLoading || !whatsappSettings.whatsappNumber || !hasSessionData
               }
-              className="flex items-center justify-center gap-2 px-4 sm:px-6 py-3 bg-red-600 text-white rounded-xl font-medium hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base min-w-0"
+              className={getThemeClasses("flex items-center justify-center gap-2 px-4 sm:px-6 py-3 bg-red-600 text-white rounded-xl font-medium hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base min-w-0", "!bg-gradient-to-r !from-[#FF9FAB] !to-[#FFB3C6] !text-[#4c1d1d] hover:!from-[#FFB3C6] hover:!to-[#FFDEE9]")}
             >
               <Trash2 className="w-5 h-5" />
               Hapus Auth
@@ -876,15 +903,14 @@ export default function AdminSettingsPage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
-          className="bg-blue-50/80 dark:bg-blue-900/20 backdrop-blur-sm rounded-2xl p-4 sm:p-6 shadow-lg border border-blue-200/50 dark:border-blue-700/50 transition-colors duration-300"
+          className={getThemeClasses("bg-blue-50/80 dark:bg-blue-900/20 backdrop-blur-sm rounded-2xl p-4 sm:p-6 shadow-lg border border-blue-200/50 dark:border-blue-700/50 transition-colors duration-300", "!bg-[#B5EAD7]/30 !border-[#FFC1CC]/30")}
         >
-          <h3 className="text-base sm:text-lg font-semibold text-blue-800 dark:text-blue-300 mb-3 transition-colors duration-300">
+          <h3 className={getThemeClasses("text-base sm:text-lg font-semibold text-blue-800 dark:text-blue-300 mb-3 transition-colors duration-300", "!text-[#4c1d1d]")}>
             Panduan Setup & Cara Kerja
           </h3>
-          <div className="space-y-3 sm:space-y-4 text-blue-700 dark:text-blue-300 transition-colors duration-300">
+          <div className={getThemeClasses("space-y-3 sm:space-y-4 text-blue-700 dark:text-blue-300 transition-colors duration-300", "!text-[#4c1d1d]")}>
             <div>
-              <h4 className="font-semibold text-blue-800 dark:text-blue-200 mb-2 text-sm sm:text-base transition-colors duration-300">
-                📧 Setup Email:
+              <h4 className={getThemeClasses("font-semibold text-blue-800 dark:text-blue-200 mb-2 text-sm sm:text-base transition-colors duration-300", "!text-[#4c1d1d]")}>                📧 Setup Email:
               </h4>
               <ol className="list-decimal list-inside space-y-1 text-xs sm:text-sm ml-2 sm:ml-4">
                 <li>Pilih email service provider (Gmail, Outlook, Yahoo)</li>
@@ -895,15 +921,13 @@ export default function AdminSettingsPage() {
                   Gunakan &quot;Test Email&quot; untuk memverifikasi konfigurasi
                 </li>
               </ol>
-              <p className="text-xs mt-2 bg-blue-50 dark:bg-blue-800/30 p-2 rounded leading-relaxed transition-colors duration-300">
-                <strong>📝 Catatan:</strong> Password tersimpan aman dan tidak
+              <p className={getThemeClasses("text-xs mt-2 bg-blue-50 dark:bg-blue-800/30 p-2 rounded leading-relaxed transition-colors duration-300", "!bg-[#FFC1CC]/20 !text-[#4c1d1d]")}>                <strong>📝 Catatan:</strong> Password tersimpan aman dan tidak
                 ditampilkan. Klik &quot;Edit Password&quot; jika perlu mengubah.
               </p>
             </div>
 
             <div>
-              <h4 className="font-semibold text-blue-800 dark:text-blue-200 mb-2 text-sm sm:text-base transition-colors duration-300">
-                📱 Setup WhatsApp:
+              <h4 className={getThemeClasses("font-semibold text-blue-800 dark:text-blue-200 mb-2 text-sm sm:text-base transition-colors duration-300", "!text-[#4c1d1d]")}>                📱 Setup WhatsApp:
               </h4>
               <ol className="list-decimal list-inside space-y-1 text-xs sm:text-sm ml-2 sm:ml-4">
                 <li>
@@ -923,15 +947,13 @@ export default function AdminSettingsPage() {
                   aktif
                 </li>
               </ol>
-              <p className="text-xs mt-2 bg-blue-50 dark:bg-blue-800/30 p-2 rounded leading-relaxed transition-colors duration-300">
-                <strong>⚠️ Penting:</strong> Tombol diaktifkan bertahap sesuai
+              <p className={getThemeClasses("text-xs mt-2 bg-blue-50 dark:bg-blue-800/30 p-2 rounded leading-relaxed transition-colors duration-300", "!bg-[#FFC1CC]/20 !text-[#4c1d1d]")}>                <strong>⚠️ Penting:</strong> Tombol diaktifkan bertahap sesuai
                 status koneksi.
               </p>
             </div>
 
             <div>
-              <h4 className="font-semibold text-blue-800 dark:text-blue-200 mb-2 text-sm sm:text-base transition-colors duration-300">
-                🔄 Cara Kerja:
+              <h4 className={getThemeClasses("font-semibold text-blue-800 dark:text-blue-200 mb-2 text-sm sm:text-base transition-colors duration-300", "!text-[#4c1d1d]")}>                🔄 Cara Kerja:
               </h4>
               <ul className="space-y-1 text-xs sm:text-sm ml-2 sm:ml-4">
                 <li>

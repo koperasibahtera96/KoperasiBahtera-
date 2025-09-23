@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState, useTransition } from "react";
+import { useTheme } from "next-themes";
 
 export default function InvoiceControls({
   q,
@@ -31,6 +32,20 @@ export default function InvoiceControls({
   const pathname = usePathname();
   const router = useRouter();
   const sp = useSearchParams();
+  const { theme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // Helper function to get theme-aware classes
+  const getThemeClasses = (baseClasses: string, pinkClasses: string = "") => {
+    if (mounted && theme === "pink" && pinkClasses) {
+      return `${baseClasses} ${pinkClasses}`;
+    }
+    return baseClasses;
+  };
 
   // keep input in sync when user navigates
   useEffect(() => setLocalQ(q), [q]);
@@ -84,7 +99,7 @@ export default function InvoiceControls({
   }, [page, totalPages]);
 
   return (
-    <section className="rounded-3xl border border-[#324D3E]/10 dark:border-gray-700 bg-white/60 dark:bg-gray-800/60 backdrop-blur-lg p-4 sm:p-6 shadow-lg transition-colors duration-300">
+    <section className={getThemeClasses("rounded-3xl border border-[#324D3E]/10 dark:border-gray-700 bg-white/60 dark:bg-gray-800/60 backdrop-blur-lg p-4 sm:p-6 shadow-lg transition-colors duration-300", "!bg-white/80 !border-[#FFC1CC]/30")}>
       <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
         {/* Search */}
         <form
@@ -99,16 +114,16 @@ export default function InvoiceControls({
               value={localQ}
               onChange={(e) => setLocalQ(e.target.value)}
               placeholder="Cari REF / OrderId / Tanggal (yyyy-mm-dd)"
-              className="w-full sm:w-64 md:w-72 lg:w-64 xl:w-80 2xl:w-96 pl-10 pr-4 py-3 rounded-2xl border border-[#324D3E]/20 dark:border-gray-600 bg-white/90 dark:bg-gray-700/80 text-sm text-[#324D3E] dark:text-white placeholder:text-[#889063] dark:placeholder:text-gray-300 focus:border-[#324D3E]/50 focus:ring-2 focus:ring-[#324D3E]/10 transition-all duration-300"
+              className={getThemeClasses("w-full sm:w-64 md:w-72 lg:w-64 xl:w-80 2xl:w-96 pl-10 pr-4 py-3 rounded-2xl border border-[#324D3E]/20 dark:border-gray-600 bg-white/90 dark:bg-gray-700/80 text-sm text-[#324D3E] dark:text-white placeholder:text-[#889063] dark:placeholder:text-gray-300 focus:border-[#324D3E]/50 focus:ring-2 focus:ring-[#324D3E]/10 transition-all duration-300", "!bg-white/90 !border-[#FFC1CC]/30 !text-[#4c1d1d] placeholder:!text-[#6b7280] focus:!border-[#FFC1CC] focus:!ring-[#FFC1CC]/20")}
             />
             <Search
               size={18}
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-[#889063] dark:text-gray-300"
+              className={getThemeClasses("absolute left-3 top-1/2 -translate-y-1/2 text-[#889063] dark:text-gray-300", "!text-[#6b7280]")}
             />
           </div>
           <button
             type="submit"
-            className="px-4 py-3 rounded-2xl bg-gradient-to-r from-[#324D3E] to-[#4C3D19] text-white text-sm font-semibold hover:shadow-lg transition-all duration-300 whitespace-nowrap"
+            className={getThemeClasses("px-4 py-3 rounded-2xl bg-gradient-to-r from-[#324D3E] to-[#4C3D19] text-white text-sm font-semibold hover:shadow-lg transition-all duration-300 whitespace-nowrap", "!bg-gradient-to-r !from-[#FFC1CC] !to-[#FFDEE9] !text-[#4c1d1d] hover:!from-[#FFDEE9] hover:!to-[#FFF5BA]")}
           >
             Search
           </button>
@@ -122,7 +137,7 @@ export default function InvoiceControls({
               pushParams({ sort: sort === "desc" ? "asc" : "desc" })
             }
             disabled={isPending}
-            className="inline-flex items-center gap-2 px-4 py-3 rounded-2xl border border-[#324D3E]/20 dark:border-gray-600 bg-white/80 dark:bg-gray-700/80 text-sm hover:bg-[#324D3E]/5 dark:hover:bg-gray-700 transition-all duration-300 whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
+            className={getThemeClasses("inline-flex items-center gap-2 px-4 py-3 rounded-2xl border border-[#324D3E]/20 dark:border-gray-600 bg-white/80 dark:bg-gray-700/80 text-sm hover:bg-[#324D3E]/5 dark:hover:bg-gray-700 transition-all duration-300 whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed", "!bg-white/90 !border-[#FFC1CC]/30 hover:!bg-[#FFC1CC]/20")}
             title={sort === "desc" ? "Urutkan: Terlama" : "Urutkan: Terbaru"}
           >
             {isPending ? (
@@ -132,13 +147,13 @@ export default function InvoiceControls({
             ) : (
               <ArrowDownWideNarrow size={16} />
             )}
-            <span className="text-[#324D3E] dark:text-white font-medium">
+            <span className={getThemeClasses("text-[#324D3E] dark:text-white font-medium", "!text-[#4c1d1d]")}>
               {sort === "desc" ? "Terbaru" : "Terlama"}
             </span>
           </button>
 
           {/* Info */}
-          <span className="text-sm text-[#889063] dark:text-gray-200 font-medium whitespace-nowrap order-last md:order-none">
+          <span className={getThemeClasses("text-sm text-[#889063] dark:text-gray-200 font-medium whitespace-nowrap order-last md:order-none", "!text-[#6b7280]")}>
             {total} hasil · {perPage}/hal
           </span>
 
@@ -147,7 +162,7 @@ export default function InvoiceControls({
             <button
               onClick={() => canPrev && pushParams({ page: page - 1 })}
               disabled={!canPrev || isPending}
-              className="p-2 rounded-xl border border-[#324D3E]/20 dark:border-gray-600 disabled:opacity-40 hover:bg-[#324D3E]/5 dark:hover:bg-gray-700 transition-all duration-300 flex-shrink-0 cursor-pointer disabled:cursor-not-allowed"
+              className={getThemeClasses("p-2 rounded-xl border border-[#324D3E]/20 dark:border-gray-600 disabled:opacity-40 hover:bg-[#324D3E]/5 dark:hover:bg-gray-700 transition-all duration-300 flex-shrink-0 cursor-pointer disabled:cursor-not-allowed", "!border-[#FFC1CC]/30 hover:!bg-[#FFC1CC]/20")}
               aria-label="Sebelumnya"
             >
               {isPending ? (
@@ -162,7 +177,7 @@ export default function InvoiceControls({
                   return (
                     <span
                       key={`ellipsis-${index}`}
-                      className="px-2 py-2 text-sm text-[#889063] dark:text-gray-400 flex-shrink-0 min-w-[32px] text-center"
+                      className={getThemeClasses("px-2 py-2 text-sm text-[#889063] dark:text-gray-400 flex-shrink-0 min-w-[32px] text-center", "!text-[#6b7280]")}
                     >
                       ...
                     </span>
@@ -175,11 +190,16 @@ export default function InvoiceControls({
                     key={pageNum}
                     onClick={() => pushParams({ page: pageNum })}
                     disabled={isPending}
-                    className={`px-2 py-2 rounded-xl border text-sm font-medium transition-all duration-300 flex-shrink-0 min-w-[32px] cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed ${
+                    className={getThemeClasses(
+                      `px-2 py-2 rounded-xl border text-sm font-medium transition-all duration-300 flex-shrink-0 min-w-[32px] cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed ${
+                        pageNum === page
+                          ? "bg-gradient-to-r from-[#324D3E] to-[#4C3D19] text-white border-[#324D3E] shadow-lg"
+                          : "bg-white/80 dark:bg-gray-700/80 text-[#324D3E] dark:text-white border-[#324D3E]/20 dark:border-gray-600 hover:bg-[#324D3E]/5 dark:hover:bg-gray-700"
+                      }`,
                       pageNum === page
-                        ? "bg-gradient-to-r from-[#324D3E] to-[#4C3D19] text-white border-[#324D3E] shadow-lg"
-                        : "bg-white/80 dark:bg-gray-700/80 text-[#324D3E] dark:text-white border-[#324D3E]/20 dark:border-gray-600 hover:bg-[#324D3E]/5 dark:hover:bg-gray-700"
-                    }`}
+                        ? "!bg-gradient-to-r !from-[#FFC1CC] !to-[#FFDEE9] !text-[#4c1d1d] !border-[#FFC1CC]"
+                        : "!bg-white/90 !text-[#4c1d1d] !border-[#FFC1CC]/30 hover:!bg-[#FFC1CC]/20"
+                    )}
                   >
                     {isPending && pageNum === page ? (
                       <Loader2 size={16} className="animate-spin" />
@@ -193,7 +213,7 @@ export default function InvoiceControls({
             <button
               onClick={() => canNext && pushParams({ page: page + 1 })}
               disabled={!canNext || isPending}
-              className="p-2 rounded-xl border border-[#324D3E]/20 dark:border-gray-600 disabled:opacity-40 hover:bg-[#324D3E]/5 dark:hover:bg-gray-700 transition-all duration-300 flex-shrink-0 cursor-pointer disabled:cursor-not-allowed"
+              className={getThemeClasses("p-2 rounded-xl border border-[#324D3E]/20 dark:border-gray-600 disabled:opacity-40 hover:bg-[#324D3E]/5 dark:hover:bg-gray-700 transition-all duration-300 flex-shrink-0 cursor-pointer disabled:cursor-not-allowed", "!border-[#FFC1CC]/30 hover:!bg-[#FFC1CC]/20")}
               aria-label="Berikutnya"
             >
               {isPending ? (

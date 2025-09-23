@@ -4,8 +4,9 @@ import { AdminLayout } from "@/components/admin/AdminLayout";
 import { useAlert } from "@/components/ui/Alert";
 import Image from "next/image";
 import { motion } from "framer-motion";
-import { RefreshCw } from "lucide-react";
+import { RefreshCw, Check, X, Eye } from "lucide-react";
 import { useEffect, useState } from "react";
+import { useTheme } from "next-themes";
 
 interface SignatureAttempt {
   attemptNumber: number;
@@ -46,6 +47,21 @@ interface ApprovalModalData {
 }
 
 export default function ContractApprovalsPage() {
+  const { theme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // Helper function to get theme-aware classes (only apply pink overrides when mounted & theme === 'pink')
+  const getThemeClasses = (baseClasses: string, pinkClasses: string = "") => {
+    if (mounted && theme === "pink" && pinkClasses) {
+      return `${baseClasses} ${pinkClasses}`;
+    }
+    return baseClasses;
+  };
+
   const [contracts, setContracts] = useState<ContractForApproval[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
@@ -196,14 +212,14 @@ export default function ContractApprovalsPage() {
       <AdminLayout>
         <div className="space-y-8">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Persetujuan Kontrak</h1>
-            <p className="text-gray-600 dark:text-gray-200 mt-2">Memuat data...</p>
+            <h1 className={getThemeClasses("text-3xl font-bold text-gray-900 dark:text-white", "!text-[#4c1d1d]")}>Persetujuan Kontrak</h1>
+            <p className={getThemeClasses("text-gray-600 dark:text-gray-200 mt-2", "!text-[#6b7280]")}>Memuat data...</p>
           </div>
           <div className="grid grid-cols-1 gap-6">
             {[1, 2, 3].map((i) => (
-              <div key={i} className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 animate-pulse">
-                <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/2 mb-2"></div>
-                <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-3/4"></div>
+              <div key={i} className={getThemeClasses("bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 animate-pulse", "!bg-[#FFC1CC] !border-[#FFC1CC]/30")}>
+                <div className={getThemeClasses("h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/2 mb-2", "!bg-[#FFDEE9]")}></div>
+                <div className={getThemeClasses("h-8 bg-gray-200 dark:bg-gray-700 rounded w-3/4", "!bg-[#FFDEE9]")}></div>
               </div>
             ))}
           </div>
@@ -224,7 +240,7 @@ export default function ContractApprovalsPage() {
         <motion.div variants={itemVariants} className="mb-6 sm:mb-8">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div className="min-w-0 flex-1">
-              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-[#324D3E] dark:text-white font-[family-name:var(--font-poppins)] transition-colors duration-300">
+              <h1 className={getThemeClasses("text-2xl sm:text-3xl lg:text-4xl font-bold text-[#324D3E] dark:text-white font-[family-name:var(--font-poppins)] transition-colors duration-300", "!text-[#4c1d1d]") }>
                 Persetujuan Kontrak
               </h1>
               <p className="text-[#889063] dark:text-gray-200 mt-1 sm:mt-2 text-sm sm:text-base transition-colors duration-300">
@@ -234,7 +250,7 @@ export default function ContractApprovalsPage() {
             <button
               onClick={fetchContracts}
               disabled={loading}
-              className="bg-[#324D3E]/10 dark:bg-[#324D3E]/20 hover:bg-[#324D3E]/20 dark:hover:bg-[#324D3E]/30 text-[#324D3E] dark:text-white px-3 sm:px-4 py-2 rounded-xl font-medium transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 text-sm sm:text-base whitespace-nowrap"
+              className={getThemeClasses("bg-[#324D3E]/10 dark:bg-[#324D3E]/20 hover:bg-[#324D3E]/20 dark:hover:bg-[#324D3E]/30 text-[#324D3E] dark:text-white px-3 sm:px-4 py-2 rounded-xl font-medium transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 text-sm sm:text-base whitespace-nowrap", "!text-[#4c1d1d] hover:!bg-[#FFDEE9]/30")}
             >
               <RefreshCw
                 className={`w-4 h-4 ${loading ? "animate-spin" : ""}`}
@@ -252,7 +268,7 @@ export default function ContractApprovalsPage() {
               setStatusFilter(e.target.value);
               setCurrentPage(1);
             }}
-            className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#324D3E] focus:border-transparent bg-white dark:bg-gray-800 text-gray-900 dark:text-white transition-colors duration-300"
+            className={getThemeClasses("px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#324D3E] focus:border-transparent bg-white dark:bg-gray-800 text-gray-900 dark:text-white transition-colors duration-300", "!border-[#FFC1CC]/30 !text-[#4c1d1d] !bg-white")}
           >
             <option value="pending">Pending Approval</option>
             <option value="approved">Approved</option>
@@ -263,7 +279,7 @@ export default function ContractApprovalsPage() {
         </div>
 
         {/* Contracts Table */}
-        <div className="bg-white dark:bg-gray-800 shadow-lg rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700 transition-colors duration-300">
+        <div className={getThemeClasses("bg-white dark:bg-gray-800 shadow-lg rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700 transition-colors duration-300", "!bg-white/95 !border-[#FFC1CC]/30")}>
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
               <thead className="bg-gray-50 dark:bg-gray-900">
@@ -287,7 +303,7 @@ export default function ContractApprovalsPage() {
               </thead>
               <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                 {contracts.map((contract) => (
-                  <tr key={contract.contractId} className="hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-200">
+                  <tr key={contract.contractId} className={getThemeClasses("hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-200", "hover:!bg-[#FFEEF0]") }>
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div>
                         <div className="text-sm font-medium text-gray-900 dark:text-white">
@@ -332,7 +348,7 @@ export default function ContractApprovalsPage() {
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusBadgeColor(contract.adminApprovalStatus)}`}>
+                      <span className={getThemeClasses(`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusBadgeColor(contract.adminApprovalStatus)}`, "!text-[#4c1d1d]") }>
                         {contract.adminApprovalStatus.replace('_', ' ').toUpperCase()}
                       </span>
                     </td>
@@ -342,32 +358,25 @@ export default function ContractApprovalsPage() {
                           <>
                             <button
                               onClick={() => setSelectedContract({ contract, action: 'approve' })}
-                              className="inline-flex items-center justify-center px-3 py-2 border border-transparent text-xs font-medium rounded-lg text-white bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 dark:focus:ring-offset-gray-800 transition-all duration-200 shadow-sm hover:shadow-md"
+                              className={getThemeClasses("inline-flex items-center justify-center px-3 py-2 border border-transparent text-xs font-medium rounded-lg text-white bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 dark:focus:ring-offset-gray-800 transition-all duration-200 shadow-sm hover:shadow-md", "!bg-gradient-to-r !from-[#B5EAD7] !to-[#E6FFF0] !text-[#4c1d1d] !shadow-md")}
                             >
-                              <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                              </svg>
+                              <Check className="w-3 h-3 mr-1" />
                               Approve
                             </button>
                             <button
                               onClick={() => setSelectedContract({ contract, action: 'reject' })}
-                              className="inline-flex items-center justify-center px-3 py-2 border border-transparent text-xs font-medium rounded-lg text-white bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 dark:focus:ring-offset-gray-800 transition-all duration-200 shadow-sm hover:shadow-md"
+                              className={getThemeClasses("inline-flex items-center justify-center px-3 py-2 border border-transparent text-xs font-medium rounded-lg text-white bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 dark:focus:ring-offset-gray-800 transition-all duration-200 shadow-sm hover:shadow-md", "!bg-gradient-to-r !from-[#FFC1CC] !to-[#FFE4E8] !text-[#4c1d1d] !shadow-md")}
                             >
-                              <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                              </svg>
+                              <X className="w-3 h-3 mr-1" />
                               Reject
                             </button>
                           </>
                         )}
                         <button
                           onClick={() => setSelectedContract({ contract, action: 'approve' })}
-                          className="inline-flex items-center justify-center px-3 py-2 border border-transparent text-xs font-medium rounded-lg text-white bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:focus:ring-offset-gray-800 transition-all duration-200 shadow-sm hover:shadow-md"
+                          className={getThemeClasses("inline-flex items-center justify-center px-3 py-2 border border-transparent text-xs font-medium rounded-lg text-white bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:focus:ring-offset-gray-800 transition-all duration-200 shadow-sm hover:shadow-md", "!bg-gradient-to-r !from-[#C7CEEA] !to-[#EAF0FF] !text-[#4c1d1d] !shadow-md")}
                         >
-                          <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                          </svg>
+                          <Eye className="w-3 h-3 mr-1" />
                           View Details
                         </button>
                       </div>
@@ -416,25 +425,23 @@ export default function ContractApprovalsPage() {
           exit={{ opacity: 0 }}
         >
           <motion.div
-            className="bg-white dark:bg-gray-800 rounded-2xl max-w-6xl w-full max-h-[95vh] sm:max-h-[90vh] flex flex-col mt-2 sm:mt-0 transition-colors duration-300"
+            className={getThemeClasses("bg-white dark:bg-gray-800 rounded-2xl max-w-6xl w-full max-h-[95vh] sm:max-h-[90vh] flex flex-col mt-2 sm:mt-0 transition-colors duration-300 border border-gray-200 dark:border-gray-700", "!bg-white/95 !border-[#FFC1CC]/30")}
             initial={{ scale: 0.9, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0.9, opacity: 0 }}
           >
             {/* Fixed Header */}
-            <div className="flex-shrink-0 p-6 border-b border-gray-200 dark:border-gray-700">
+            <div className={getThemeClasses("flex-shrink-0 p-6 border-b border-gray-200 dark:border-gray-700", "!border-[#FFC1CC]/30 !bg-white/95")}>
               <div className="flex justify-between items-center">
-                <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+                <h2 className={getThemeClasses("text-2xl font-bold text-gray-900 dark:text-white", "!text-[#4c1d1d]") }>
                   Contract Review - {selectedContract.contract.contractNumber}
                 </h2>
                 <button
                   onClick={() => setSelectedContract(null)}
-                  className="text-gray-400 hover:text-gray-600 dark:text-gray-300 dark:hover:text-gray-100 transition-colors"
+                  className={getThemeClasses("text-gray-400 hover:text-gray-600 dark:text-gray-300 dark:hover:text-gray-100 transition-colors", "!text-[#6b7280] hover:!text-[#4c1d1d]")}
                 >
                   <span className="sr-only">Close</span>
-                  <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
+                  <X className="h-6 w-6" />
                 </button>
               </div>
             </div>
@@ -580,11 +587,11 @@ export default function ContractApprovalsPage() {
                             }
                           }}
                           disabled={actionLoading || (selectedContract.action === 'reject' && !rejectionReason)}
-                          className={`flex-1 py-2 px-4 rounded-md font-medium disabled:opacity-50 disabled:cursor-not-allowed ${
+                          className={getThemeClasses(`flex-1 py-2 px-4 rounded-md font-medium disabled:opacity-50 disabled:cursor-not-allowed ${
                             selectedContract.action === 'approve'
                               ? 'bg-green-600 hover:bg-green-700 text-white'
                               : 'bg-red-600 hover:bg-red-700 text-white'
-                          }`}
+                          }`, selectedContract.action === 'approve' ? "!bg-gradient-to-r !from-[#B5EAD7] !to-[#E6FFF0] !text-[#4c1d1d] !shadow-md" : "!bg-gradient-to-r !from-[#FFC1CC] !to-[#FFE4E8] !text-[#4c1d1d] !shadow-md")}
                         >
                           {actionLoading ? 'Processing...' : (
                             selectedContract.action === 'approve' ? 'Approve Contract' : 'Reject Contract'
@@ -592,7 +599,7 @@ export default function ContractApprovalsPage() {
                         </button>
                         <button
                           onClick={() => setSelectedContract(null)}
-                          className="flex-1 py-2 px-4 rounded-md border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                          className={getThemeClasses("flex-1 py-2 px-4 rounded-md border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors", "!border-[#FFC1CC]/30 !text-[#4c1d1d] hover:!bg-[#FFDEE9]/30")}
                         >
                           Cancel
                         </button>
