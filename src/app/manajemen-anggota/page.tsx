@@ -122,7 +122,7 @@ function BulkFinanceBar() {
   const [plantType, setPlantType] = useState<string>("");
   const [loading, setLoading] = useState(false);
   const [instances, setInstances] = useState<
-    { instanceId: string; memberName: string; memberId: string }[]
+    { instanceId: string; contractNumber?: string; memberName: string; memberId: string }[]
   >([]);
   const [rows, setRows] = useState<
     {
@@ -191,7 +191,7 @@ function BulkFinanceBar() {
       );
       if (!r.ok) throw new Error("gagal load instances");
       const data: {
-        items: { instanceId: string; memberName: string; memberId: string }[];
+        items: { instanceId: string; contractNumber?: string; memberName: string; memberId: string }[];
       } = await r.json();
       setInstances(data.items || []);
       setRows(
@@ -414,7 +414,9 @@ function BulkFinanceBar() {
                         }
                       />
                     </td>
-                    <td className="p-3 font-medium">{it.instanceId}</td>
+                    <td className="p-3 font-medium">
+                      {it.contractNumber || it.instanceId}
+                    </td>
                     <td className="p-3">{it.memberName}</td>
                     <td className="p-3">
                       <Input

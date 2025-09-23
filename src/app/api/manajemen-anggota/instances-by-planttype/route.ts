@@ -1,13 +1,13 @@
 import { NextResponse } from "next/server";
-import { ensureConnection } from "@/lib/utils/database";
+import { ensureConnection } from "@/lib/utils/database"; // sesuaikan jika path berbeda
 import { PlantInstance } from "@/models";
 
 export async function GET(req: Request) {
   try {
     await ensureConnection();
 
-    const { searchParams } = new URL(req.url);
-    const plantType = searchParams.get("plantType");
+    const url = new URL(req.url);
+    const plantType = url.searchParams.get("plantType") || "";
 
     if (!plantType) {
       return NextResponse.json(
@@ -16,31 +16,34 @@ export async function GET(req: Request) {
       );
     }
 
-    // Cocokkan case-insensitive agar "Alpukat" / "alpukat" sama
-    const query = { plantType: { $regex: `^${escapeRegex(plantType)}$`, $options: "i" } };
+    // Ambil field secukupnya + contractNumber
+    const docs = await PlantInstance.find(
+      { plantType },
+      {
+        _id: 1,
+        contractNumber: 1,
+        memberId: 1,
+        owner: 1, // kalau owner berisi nama pemilik
+      }
+    )
+      .lean()
+      .exec();
 
-    // Ambil hanya kolom yang diperlukan agar ringan
-    const instances = await PlantInstance
-      .find(query, { _id: 1, owner: 1, memberId: 1 })
-      .lean();
-
-    const items = instances.map((inst: any) => ({
-      instanceId: String(inst._id),
-      memberId: inst.memberId ? String(inst.memberId) : "",
-      memberName: inst.owner ?? "-", // pakai owner dari PlantInstance
-    }));
+    const items = (docs || []).map((d: any) => {
+      const instanceId = String(d._id);
+      const contractNumber = String(d.contractNumber ?? "");
+      const memberName =
+        String(d?.owner?.name ?? d?.owner ?? d?.memberName ?? "").trim() || "—";
+      const memberId = String(d?.memberId ?? "");
+      return { instanceId, contractNumber, memberName, memberId };
+    });
 
     return NextResponse.json({ items });
   } catch (err: any) {
     console.error("[instances-by-planttype] error:", err);
     return NextResponse.json(
-      { error: "Gagal memuat data", details: err.message },
+      { error: "Gagal mengambil data instances", details: err?.message },
       { status: 500 }
     );
   }
-}
-
-/** Escape karakter khusus untuk dipakai di RegExp mongo */
-function escapeRegex(input: string) {
-  return input.replace(/[-\/\\^$*+?.()|[\]{}]/g, "\\$&");
 }
