@@ -68,7 +68,7 @@ export default function LandingHero() {
 
   return (
     <motion.section
-      className="relative h-screen flex items-center justify-start w-full pt-20"
+      className="relative h-screen flex items-center justify-start w-full"
       initial="hidden"
       animate="visible"
       variants={containerVariants}

@@ -37,6 +37,7 @@ import {
   YAxis,
 } from "recharts";
 import { useTheme } from "next-themes";
+import * as React from "react";
 
 const BRUTALIST_COLORS = [
   "#FF6B35",
@@ -66,6 +67,19 @@ export default function LaporanPengeluaranPage() {
   const { showError, AlertComponent } = useAlert();
   const { theme, systemTheme } = useTheme();
   const isDark = (theme === "system" ? systemTheme : theme) === "dark";
+  const [mounted, setMounted] = React.useState(false);
+
+  React.useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // Helper function to get theme-aware classes
+  const getThemeClasses = (baseClasses: string, pinkClasses: string = "") => {
+    if (mounted && theme === "pink" && pinkClasses) {
+      return `${baseClasses} ${pinkClasses}`;
+    }
+    return baseClasses;
+  };
 
   // === Toggle Laporan ===
   const [mode, setMode] = useState<"expense" | "income">("expense");
@@ -490,8 +504,8 @@ export default function LaporanPengeluaranPage() {
       <FinanceSidebar>
         <div className="p-4 sm:p-6 lg:p-8 flex items-center justify-center min-h-[50vh]">
           <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#324D3E] dark:border-white mx-auto mb-4"></div>
-            <p className="text-[#889063] dark:text-gray-200 text-lg">
+            <div className={getThemeClasses("animate-spin rounded-full h-12 w-12 border-b-2 border-[#324D3E] dark:border-white mx-auto mb-4", "!border-[#FFC1CC]")}></div>
+            <p className={getThemeClasses("text-[#889063] dark:text-gray-200 text-lg", "!text-[#6b7280]")}>
               Memuat laporan pengeluaran...
             </p>
           </div>
@@ -520,7 +534,10 @@ export default function LaporanPengeluaranPage() {
           <div className="flex items-center gap-4">
             <Link href="/finance">
               <motion.button
-                className="group flex items-center gap-2 px-3 sm:px-4 py-2 bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl rounded-xl sm:rounded-2xl shadow-lg border border-[#324D3E]/10 dark:border-gray-700 text-[#324D3E] dark:text-white hover:bg-[#324D3E] hover:text-white transition-all duration-300 self-start"
+                className={getThemeClasses(
+                  "group flex items-center gap-2 px-3 sm:px-4 py-2 bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl rounded-xl sm:rounded-2xl shadow-lg border border-[#324D3E]/10 dark:border-gray-700 text-[#324D3E] dark:text-white hover:bg-[#324D3E] hover:text-white transition-all duration-300 self-start",
+                  "!bg-white/95 !border-[#FFC1CC]/30 !text-[#4c1d1d] hover:!bg-[#FFC1CC] hover:!text-white"
+                )}
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
               >
@@ -529,10 +546,10 @@ export default function LaporanPengeluaranPage() {
               </motion.button>
             </Link>
             <div>
-              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-[#324D3E] dark:text-white transition-colors duration-300">
+              <h1 className={getThemeClasses("text-2xl sm:text-3xl lg:text-4xl font-bold text-[#324D3E] dark:text-white transition-colors duration-300", "!text-[#4c1d1d]")}>
                 {isExpense ? "Laporan Pengeluaran" : "Laporan Pendapatan"}
               </h1>
-              <p className="text-[#889063] dark:text-gray-200 mt-1 text-sm sm:text-base lg:text-lg transition-colors duration-300">
+              <p className={getThemeClasses("text-[#889063] dark:text-gray-200 mt-1 text-sm sm:text-base lg:text-lg transition-colors duration-300", "!text-[#6b7280]")}>
                 {isExpense
                   ? "Analisis dan manajemen pengeluaran operasional"
                   : "Analisis dan manajemen pendapatan per tanaman"}
@@ -542,20 +559,22 @@ export default function LaporanPengeluaranPage() {
 
           <div className="flex gap-3 items-center">
             {/* Toggle kecil – tidak mengubah layout utama */}
-            <div className="inline-flex rounded-2xl overflow-hidden border border-black/60">
+            <div className={getThemeClasses("inline-flex rounded-2xl overflow-hidden border border-black/60", "!border-[#FFC1CC]/50")}>
               <button
-                className={`px-3 py-1 text-xs font-bold ${
-                  isExpense ? "bg-[#FFEAA7]" : "bg-white"
-                }`}
+                className={getThemeClasses(
+                  `px-3 py-1 text-xs font-bold ${isExpense ? "bg-[#FFEAA7]" : "bg-white"}`,
+                  isExpense ? "!bg-[#FFDEE9] !text-[#4c1d1d]" : "!bg-white !text-[#4c1d1d]"
+                )}
                 onClick={() => setMode("expense")}
                 title="Lihat Pengeluaran"
               >
                 Pengeluaran
               </button>
               <button
-                className={`px-3 py-1 text-xs font-bold ${
-                  !isExpense ? "bg-[#C2F5C0]" : "bg-white"
-                }`}
+                className={getThemeClasses(
+                  `px-3 py-1 text-xs font-bold ${!isExpense ? "bg-[#C2F5C0]" : "bg-white"}`,
+                  !isExpense ? "!bg-[#B5EAD7] !text-[#4c1d1d]" : "!bg-white !text-[#4c1d1d]"
+                )}
                 onClick={() => setMode("income")}
                 title="Lihat Pendapatan"
               >
@@ -565,7 +584,10 @@ export default function LaporanPengeluaranPage() {
 
             <motion.button
               onClick={handleExportCSV}
-              className="inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-green-500 to-[#324D3E] hover:from-green-600 hover:to-[#4C3D19] px-4 py-2 text-sm font-medium text-white transition-all duration-300 shadow-lg hover:shadow-xl"
+              className={getThemeClasses(
+                "inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-green-500 to-[#324D3E] hover:from-green-600 hover:to-[#4C3D19] px-4 py-2 text-sm font-medium text-white transition-all duration-300 shadow-lg hover:shadow-xl",
+                "!bg-gradient-to-r !from-[#FFC1CC] !to-[#FFDEE9] !text-[#4c1d1d] hover:!from-[#FFDEE9] hover:!to-[#FFF5BA]"
+              )}
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
             >
@@ -575,9 +597,9 @@ export default function LaporanPengeluaranPage() {
           </div>
         </motion.div>
 
-        <Card className="bg-white/90 dark:bg-gray-800/90 mb-6 border border-[#324D3E]/10 dark:border-gray-700 transition-colors duration-300">
+        <Card className={getThemeClasses("bg-white/90 dark:bg-gray-800/90 mb-6 border border-[#324D3E]/10 dark:border-gray-700 transition-colors duration-300", "!bg-white/95 !border-[#FFC1CC]/30")}>
           <CardHeader>
-            <CardTitle className="text-black dark:text-white flex items-center gap-2 transition-colors duration-300">
+            <CardTitle className={getThemeClasses("text-black dark:text-white flex items-center gap-2 transition-colors duration-300", "!text-[#4c1d1d]")}>
               <Filter className="h-5 w-5" />
               Filter Laporan
             </CardTitle>
@@ -585,23 +607,23 @@ export default function LaporanPengeluaranPage() {
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <div>
-                <label className="block text-sm font-medium text-black dark:text-white mb-2 transition-colors duration-300">
+                <label className={getThemeClasses("block text-sm font-medium text-black dark:text-white mb-2 transition-colors duration-300", "!text-[#4c1d1d]")}>
                   Tahun
                 </label>
                 <div className="relative">
                   <select
                     value={selectedYear}
                     onChange={(e) => setSelectedYear(Number(e.target.value))}
-                    className="w-full border bg-white/90 dark:bg-gray-700/80 border-gray-200 dark:border-gray-600 text-black dark:text-white px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none cursor-pointer transition-colors duration-300"
+                    className={getThemeClasses("w-full border bg-white/90 dark:bg-gray-700/80 border-gray-200 dark:border-gray-600 text-black dark:text-white px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none cursor-pointer transition-colors duration-300", "!bg-white/90 !border-[#FFC1CC]/30 !text-[#4c1d1d] focus:!ring-[#FFC1CC]")}
                   >
                     <option value={2024}>2024</option>
                     <option value={2025}>2025</option>
                   </select>
-                  <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400 dark:text-gray-300 pointer-events-none" />
+                  <ChevronDown className={getThemeClasses("absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400 dark:text-gray-300 pointer-events-none", "!text-[#4c1d1d]")} />
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-black dark:text-white mb-2 transition-colors duration-300">
+                <label className={getThemeClasses("block text-sm font-medium text-black dark:text-white mb-2 transition-colors duration-300", "!text-[#4c1d1d]")}>
                   Bulan
                 </label>
                 <div className="relative">
@@ -612,7 +634,7 @@ export default function LaporanPengeluaranPage() {
                         e.target.value ? Number(e.target.value) : null
                       )
                     }
-                    className="w-full border bg-white/90 dark:bg-gray-700/80 border-gray-200 dark:border-gray-600 text-black dark:text-white px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none cursor-pointer transition-colors duration-300"
+                    className={getThemeClasses("w-full border bg-white/90 dark:bg-gray-700/80 border-gray-200 dark:border-gray-600 text-black dark:text-white px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none cursor-pointer transition-colors duration-300", "!bg-white/90 !border-[#FFC1CC]/30 !text-[#4c1d1d] focus:!ring-[#FFC1CC]")}
                   >
                     <option value="">Semua Bulan</option>
                     {Array.from({ length: 12 }, (_, i) => (
@@ -623,18 +645,18 @@ export default function LaporanPengeluaranPage() {
                       </option>
                     ))}
                   </select>
-                  <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400 dark:text-gray-300 pointer-events-none" />
+                  <ChevronDown className={getThemeClasses("absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400 dark:text-gray-300 pointer-events-none", "!text-[#4c1d1d]")} />
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-black dark:text-white mb-2 transition-colors duration-300">
+                <label className={getThemeClasses("block text-sm font-medium text-black dark:text-white mb-2 transition-colors duration-300", "!text-[#4c1d1d]")}>
                   Tanaman
                 </label>
                 <div className="relative">
                   <select
                     value={selectedPlant}
                     onChange={(e) => setSelectedPlant(e.target.value)}
-                    className="w-full border bg-white/90 dark:bg-gray-700/80 border-gray-200 dark:border-gray-600 text-black dark:text-white px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none cursor-pointer transition-colors duration-300"
+                    className={getThemeClasses("w-full border bg-white/90 dark:bg-gray-700/80 border-gray-200 dark:border-gray-600 text-black dark:text-white px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none cursor-pointer transition-colors duration-300", "!bg-white/90 !border-[#FFC1CC]/30 !text-[#4c1d1d] focus:!ring-[#FFC1CC]")}
                   >
                     <option value="all">Semua Tanaman</option>
                     {plantTypes.map((plantType) => (
@@ -643,7 +665,7 @@ export default function LaporanPengeluaranPage() {
                       </option>
                     ))}
                   </select>
-                  <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400 dark:text-gray-300 pointer-events-none" />
+                  <ChevronDown className={getThemeClasses("absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400 dark:text-gray-300 pointer-events-none", "!text-[#4c1d1d]")} />
                 </div>
               </div>
               <div className="flex items-end">
@@ -653,7 +675,7 @@ export default function LaporanPengeluaranPage() {
                     setSelectedPlant("all");
                   }}
                   variant="outline"
-                  className="w-full border bg-white/90 dark:bg-gray-700/80 border-gray-200 dark:border-gray-600 text-black dark:text-white hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors duration-300"
+                  className={getThemeClasses("w-full border bg-white/90 dark:bg-gray-700/80 border-gray-200 dark:border-gray-600 text-black dark:text-white hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors duration-300", "!bg-white/90 !border-[#FFC1CC]/30 !text-[#4c1d1d] hover:!bg-[#FFC1CC]/20")}
                 >
                   Reset Filter
                 </Button>
@@ -668,17 +690,23 @@ export default function LaporanPengeluaranPage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.2 }}
           >
-            <Card className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl border-[#324D3E]/10 dark:border-gray-700 shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300">
+            <Card className={getThemeClasses("bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl border-[#324D3E]/10 dark:border-gray-700 shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300", "!bg-white/95 !border-[#FFC1CC]/30")}>
               <CardContent className="p-6">
                 <div className="flex items-center justify-between mb-4">
-                  <div className="text-sm text-[#889063] dark:text-gray-200 transition-colors duration-300">
+                  <div className={getThemeClasses("text-sm text-[#889063] dark:text-gray-200 transition-colors duration-300", "!text-[#6b7280]")}>
                     {isExpense ? "Total Pengeluaran" : "Total Pendapatan"}
                   </div>
-                  <div className={`flex h-10 w-10 items-center justify-center rounded-2xl ${isExpense ? "bg-red-500/10 text-red-600" : "bg-green-500/10 text-green-600"}`}>
+                  <div className={getThemeClasses(
+                    `flex h-10 w-10 items-center justify-center rounded-2xl ${isExpense ? "bg-red-500/10 text-red-600" : "bg-green-500/10 text-green-600"}`,
+                    isExpense ? "!bg-[#FFDEE9]/50 !text-[#dc2626]" : "!bg-[#B5EAD7]/50 !text-[#059669]"
+                  )}>
                     {isExpense ? <TrendingDown className="h-5 w-5" /> : <TrendingUp className="h-5 w-5" />}
                   </div>
                 </div>
-                <div className={`text-2xl font-bold ${isExpense ? "text-red-600 dark:text-red-400" : "text-green-600 dark:text-emerald-400"} transition-colors duration-300`}>
+                <div className={getThemeClasses(
+                  `text-2xl font-bold ${isExpense ? "text-red-600 dark:text-red-400" : "text-green-600 dark:text-emerald-400"} transition-colors duration-300`,
+                  isExpense ? "!text-[#dc2626]" : "!text-[#059669]"
+                )}>
                   {formatCurrency(totalPrimary)}
                 </div>
               </CardContent>
@@ -690,15 +718,15 @@ export default function LaporanPengeluaranPage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.3 }}
           >
-            <Card className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl border-[#324D3E]/10 dark:border-gray-700 shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300">
+            <Card className={getThemeClasses("bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl border-[#324D3E]/10 dark:border-gray-700 shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300", "!bg-white/95 !border-[#FFC1CC]/30")}>
               <CardContent className="p-6">
                 <div className="flex items-center justify-between mb-4">
-                  <div className="text-sm text-[#889063] dark:text-gray-200 transition-colors duration-300">Jumlah Transaksi</div>
-                  <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-blue-500/10 text-blue-600">
+                  <div className={getThemeClasses("text-sm text-[#889063] dark:text-gray-200 transition-colors duration-300", "!text-[#6b7280]")}>Jumlah Transaksi</div>
+                  <div className={getThemeClasses("flex h-10 w-10 items-center justify-center rounded-2xl bg-blue-500/10 text-blue-600", "!bg-[#C7CEEA]/50 !text-[#7c3aed]")}>
                     <BarChart3 className="h-5 w-5" />
                   </div>
                 </div>
-                <div className="text-2xl font-bold text-blue-600 dark:text-blue-400 transition-colors duration-300">
+                <div className={getThemeClasses("text-2xl font-bold text-blue-600 dark:text-blue-400 transition-colors duration-300", "!text-[#7c3aed]")}>
                   {listPrimary.length}
                 </div>
               </CardContent>
@@ -710,17 +738,17 @@ export default function LaporanPengeluaranPage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.4 }}
           >
-            <Card className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl border-[#324D3E]/10 dark:border-gray-700 shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300">
+            <Card className={getThemeClasses("bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl border-[#324D3E]/10 dark:border-gray-700 shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300", "!bg-white/95 !border-[#FFC1CC]/30")}>
               <CardContent className="p-6">
                 <div className="flex items-center justify-between mb-4">
-                  <div className="text-sm text-[#889063] dark:text-gray-200 transition-colors duration-300">
+                  <div className={getThemeClasses("text-sm text-[#889063] dark:text-gray-200 transition-colors duration-300", "!text-[#6b7280]")}>
                     Rata-rata per Transaksi
                   </div>
-                  <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-yellow-500/10 text-yellow-600">
+                  <div className={getThemeClasses("flex h-10 w-10 items-center justify-center rounded-2xl bg-yellow-500/10 text-yellow-600", "!bg-[#FFF5BA]/70 !text-[#d97706]")}>
                     <DollarSign className="h-5 w-5" />
                   </div>
                 </div>
-                <div className="text-2xl font-bold text-yellow-600 dark:text-yellow-400 transition-colors duration-300">
+                <div className={getThemeClasses("text-2xl font-bold text-yellow-600 dark:text-yellow-400 transition-colors duration-300", "!text-[#d97706]")}>
                   {listPrimary.length > 0
                     ? formatCurrency(totalPrimary / listPrimary.length)
                     : "Rp 0"}
@@ -734,15 +762,15 @@ export default function LaporanPengeluaranPage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.5 }}
           >
-            <Card className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl border-[#324D3E]/10 dark:border-gray-700 shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300">
+            <Card className={getThemeClasses("bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl border-[#324D3E]/10 dark:border-gray-700 shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300", "!bg-white/95 !border-[#FFC1CC]/30")}>
               <CardContent className="p-6">
                 <div className="flex items-center justify-between mb-4">
-                  <div className="text-sm text-[#889063] dark:text-gray-200 transition-colors duration-300">Periode</div>
-                  <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-green-500/10 text-green-600">
+                  <div className={getThemeClasses("text-sm text-[#889063] dark:text-gray-200 transition-colors duration-300", "!text-[#6b7280]")}>Periode</div>
+                  <div className={getThemeClasses("flex h-10 w-10 items-center justify-center rounded-2xl bg-green-500/10 text-green-600", "!bg-[#B5EAD7]/50 !text-[#059669]")}>
                     <Calendar className="h-5 w-5" />
                   </div>
                 </div>
-                <div className="text-2xl font-bold text-green-600 dark:text-emerald-400 transition-colors duration-300">
+                <div className={getThemeClasses("text-2xl font-bold text-green-600 dark:text-emerald-400 transition-colors duration-300", "!text-[#059669]")}>
                   {selectedMonth
                     ? `${new Date(
                         selectedYear,
@@ -764,9 +792,9 @@ export default function LaporanPengeluaranPage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.6 }}
           >
-            <Card className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl border-[#324D3E]/10 dark:border-gray-700 shadow-lg transition-colors duration-300">
+            <Card className={getThemeClasses("bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl border-[#324D3E]/10 dark:border-gray-700 shadow-lg transition-colors duration-300", "!bg-white/95 !border-[#FFC1CC]/30")}>
               <CardHeader>
-                <CardTitle className="text-[#324D3E] dark:text-white transition-colors duration-300">
+                <CardTitle className={getThemeClasses("text-[#324D3E] dark:text-white transition-colors duration-300", "!text-[#4c1d1d]")}>
                   {isExpense ? "Pengeluaran per Tanaman" : "Pendapatan per Tanaman"}
                 </CardTitle>
               </CardHeader>
@@ -820,9 +848,9 @@ export default function LaporanPengeluaranPage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.7 }}
           >
-            <Card className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl border-[#324D3E]/10 dark:border-gray-700 shadow-lg transition-colors duration-300">
+            <Card className={getThemeClasses("bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl border-[#324D3E]/10 dark:border-gray-700 shadow-lg transition-colors duration-300", "!bg-white/95 !border-[#FFC1CC]/30")}>
               <CardHeader>
-                <CardTitle className="text-[#324D3E] dark:text-white transition-colors duration-300">
+                <CardTitle className={getThemeClasses("text-[#324D3E] dark:text-white transition-colors duration-300", "!text-[#4c1d1d]")}>
                   {isExpense
                     ? `Tren Pengeluaran Bulanan ${selectedYear}`
                     : `Tren Pendapatan Bulanan ${selectedYear}`}
@@ -884,9 +912,9 @@ export default function LaporanPengeluaranPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.8 }}
         >
-          <Card className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl border-[#324D3E]/10 dark:border-gray-700 shadow-lg transition-colors duration-300">
+          <Card className={getThemeClasses("bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl border-[#324D3E]/10 dark:border-gray-700 shadow-lg transition-colors duration-300", "!bg-white/95 !border-[#FFC1CC]/30")}>
             <CardHeader>
-              <CardTitle className="text-[#324D3E] dark:text-white transition-colors duration-300">
+              <CardTitle className={getThemeClasses("text-[#324D3E] dark:text-white transition-colors duration-300", "!text-[#4c1d1d]")}>
                 {isExpense ? "Detail Pengeluaran" : "Detail Pendapatan"}
               </CardTitle>
             </CardHeader>
@@ -895,17 +923,17 @@ export default function LaporanPengeluaranPage() {
                 <div className="overflow-x-auto">
                   <table className="w-full">
                     <thead>
-                      <tr className="border-b-2 border-[#324D3E]/10 dark:border-gray-600 transition-colors duration-300">
-                        <th className="text-left py-3 px-4 text-[#324D3E] dark:text-white font-semibold transition-colors duration-300">
+                      <tr className={getThemeClasses("border-b-2 border-[#324D3E]/10 dark:border-gray-600 transition-colors duration-300", "!border-[#FFC1CC]/30")}>
+                        <th className={getThemeClasses("text-left py-3 px-4 text-[#324D3E] dark:text-white font-semibold transition-colors duration-300", "!text-[#4c1d1d]")}>
                           Tanggal
                         </th>
-                        <th className="text-left py-3 px-4 text-[#324D3E] dark:text-white font-semibold transition-colors duration-300">
+                        <th className={getThemeClasses("text-left py-3 px-4 text-[#324D3E] dark:text-white font-semibold transition-colors duration-300", "!text-[#4c1d1d]")}>
                           Deskripsi
                         </th>
-                        <th className="text-right py-3 px-4 text-[#324D3E] dark:text-white font-semibold transition-colors duration-300">
+                        <th className={getThemeClasses("text-right py-3 px-4 text-[#324D3E] dark:text-white font-semibold transition-colors duration-300", "!text-[#4c1d1d]")}>
                           Jumlah
                         </th>
-                        <th className="text-left py-3 px-4 text-[#324D3E] dark:text-white font-semibold transition-colors duration-300">
+                        <th className={getThemeClasses("text-left py-3 px-4 text-[#324D3E] dark:text-white font-semibold transition-colors duration-300", "!text-[#4c1d1d]")}>
                           Input Oleh
                         </th>
                       </tr>
@@ -920,22 +948,32 @@ export default function LaporanPengeluaranPage() {
                         .map((row, index) => (
                           <tr
                             key={index}
-                            className={`border-b border-[#324D3E]/5 dark:border-gray-700 ${
-                              index % 2 === 0
-                                ? "bg-white/40 dark:bg-gray-800/40"
-                                : "bg-[#324D3E]/5 dark:bg-gray-700/50"
-                            } hover:bg-[#324D3E]/10 dark:hover:bg-gray-700 transition-colors duration-200`}
+                            className={getThemeClasses(
+                              `border-b border-[#324D3E]/5 dark:border-gray-700 ${
+                                index % 2 === 0
+                                  ? "bg-white/40 dark:bg-gray-800/40"
+                                  : "bg-[#324D3E]/5 dark:bg-gray-700/50"
+                              } hover:bg-[#324D3E]/10 dark:hover:bg-gray-700 transition-colors duration-200`,
+                              `!border-[#FFC1CC]/20 ${
+                                index % 2 === 0
+                                  ? "!bg-white/60"
+                                  : "!bg-[#FFC1CC]/10"
+                              } hover:!bg-[#FFC1CC]/20`
+                            )}
                           >
-                            <td className="py-3 px-4 text-[#324D3E] dark:text-white transition-colors duration-300">
+                            <td className={getThemeClasses("py-3 px-4 text-[#324D3E] dark:text-white transition-colors duration-300", "!text-[#4c1d1d]")}>
                               {new Date(row.date).toLocaleDateString("id-ID")}
                             </td>
-                            <td className="py-3 px-4 text-[#324D3E] dark:text-white transition-colors duration-300">
+                            <td className={getThemeClasses("py-3 px-4 text-[#324D3E] dark:text-white transition-colors duration-300", "!text-[#4c1d1d]")}>
                               {row.description}
                             </td>
-                            <td className={`py-3 px-4 text-right font-medium transition-colors duration-300 ${isExpense ? "text-red-600 dark:text-red-400" : "text-green-600 dark:text-emerald-400"}`}>
+                            <td className={getThemeClasses(
+                              `py-3 px-4 text-right font-medium transition-colors duration-300 ${isExpense ? "text-red-600 dark:text-red-400" : "text-green-600 dark:text-emerald-400"}`,
+                              isExpense ? "!text-[#dc2626]" : "!text-[#059669]"
+                            )}>
                               {formatCurrency(row.amount)}
                             </td>
-                            <td className="py-3 px-4 text-[#889063] dark:text-gray-200 transition-colors duration-300">
+                            <td className={getThemeClasses("py-3 px-4 text-[#889063] dark:text-gray-200 transition-colors duration-300", "!text-[#6b7280]")}>
                               {row.addedBy}
                             </td>
                           </tr>
@@ -944,11 +982,11 @@ export default function LaporanPengeluaranPage() {
                   </table>
                 </div>
               ) : (
-                <div className="text-center py-8 text-[#889063] dark:text-gray-200 transition-colors duration-300">
+                <div className={getThemeClasses("text-center py-8 text-[#889063] dark:text-gray-200 transition-colors duration-300", "!text-[#6b7280]")}>
                   {(isExpense ? (
-                    <TrendingDown className="h-12 w-12 mx-auto mb-4 opacity-50 text-[#324D3E] dark:text-white transition-colors duration-300" />
+                    <TrendingDown className={getThemeClasses("h-12 w-12 mx-auto mb-4 opacity-50 text-[#324D3E] dark:text-white transition-colors duration-300", "!text-[#4c1d1d]")} />
                   ) : (
-                    <TrendingUp className="h-12 w-12 mx-auto mb-4 opacity-50 text-[#324D3E] dark:text-white transition-colors duration-300" />
+                    <TrendingUp className={getThemeClasses("h-12 w-12 mx-auto mb-4 opacity-50 text-[#324D3E] dark:text-white transition-colors duration-300", "!text-[#4c1d1d]")} />
                   ))}
                   <p>
                     {isExpense

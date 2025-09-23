@@ -215,6 +215,72 @@
   --sidebar-ring: rgba(34, 197, 94, 0.5);
 }
 
+.pink {
+  --background: oklch(0.99 0.02 339.23);
+  --foreground: oklch(0.195 0.024 342.56);
+  --card: oklch(0.985 0.025 335.87);
+  --card-foreground: oklch(0.195 0.024 342.56);
+  --popover: oklch(0.99 0.02 339.23);
+  --popover-foreground: oklch(0.195 0.024 342.56);
+  --primary: oklch(0.656 0.213 322.58);
+  --primary-foreground: oklch(0.985 0.025 335.87);
+  --secondary: oklch(0.956 0.048 345.89);
+  --secondary-foreground: oklch(0.195 0.024 342.56);
+  --muted: oklch(0.956 0.048 345.89);
+  --muted-foreground: oklch(0.556 0.048 345.89);
+  --accent: oklch(0.956 0.048 345.89);
+  --accent-foreground: oklch(0.195 0.024 342.56);
+  --destructive: oklch(0.577 0.245 27.325);
+  --border: oklch(0.922 0.048 345.89);
+  --input: oklch(0.99 0.02 339.23);
+  --ring: oklch(0.656 0.213 322.58 / 50%);
+  --chart-1: oklch(0.777 0.173 321.32);
+  --chart-2: oklch(0.691 0.193 332.41);
+  --chart-3: oklch(0.6 0.222 41.116);
+  --chart-4: oklch(0.828 0.189 84.429);
+  --chart-5: oklch(0.769 0.188 70.08);
+  --sidebar: oklch(0.985 0.025 335.87);
+  --sidebar-foreground: oklch(0.195 0.024 342.56);
+  --sidebar-primary: oklch(0.656 0.213 322.58);
+  --sidebar-primary-foreground: oklch(0.985 0.025 335.87);
+  --sidebar-accent: oklch(0.956 0.048 345.89);
+  --sidebar-accent-foreground: oklch(0.195 0.024 342.56);
+  --sidebar-border: oklch(0.922 0.048 345.89);
+  --sidebar-ring: oklch(0.656 0.213 322.58 / 50%);
+  --background: #FFDEE9;
+  --foreground: #4c1d1d;
+  --card: #FFC1CC;
+  --card-foreground: #4c1d1d;
+  --popover: #FFDEE9;
+  --popover-foreground: #4c1d1d;
+  --primary: #FFC1CC;
+  --primary-foreground: #4c1d1d;
+  --secondary: #B5EAD7;
+  --secondary-foreground: #1f2937;
+  --muted: #C7CEEA;
+  --muted-foreground: #6b7280;
+  --accent: #FFF5BA;
+  --accent-foreground: #1f2937;
+  --destructive: #ea580c;
+  --destructive-foreground: #ffffff;
+  --border: #FFC1CC;
+  --input: #FFDEE9;
+  --ring: rgba(255, 193, 204, 0.5);
+  --chart-1: #FFC1CC;
+  --chart-2: #FFDEE9;
+  --chart-3: #B5EAD7;
+  --chart-4: #C7CEEA;
+  --chart-5: #FFF5BA;
+  --sidebar: #FFC1CC;
+  --sidebar-foreground: #4c1d1d;
+  --sidebar-primary: #FFDEE9;
+  --sidebar-primary-foreground: #4c1d1d;
+  --sidebar-accent: #B5EAD7;
+  --sidebar-accent-foreground: #1f2937;
+  --sidebar-border: #FFC1CC;
+  --sidebar-ring: rgba(255, 193, 204, 0.5);
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;

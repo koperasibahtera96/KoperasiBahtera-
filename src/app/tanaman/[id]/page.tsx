@@ -15,8 +15,8 @@ import {
   Users,
 } from "lucide-react";
 import Link from "next/link";
-import * as React from "react";
 import { use, useEffect, useState } from "react";
+import { useTheme } from "next-themes";
 import {
   CartesianGrid,
   Cell,
@@ -194,6 +194,8 @@ function exportAllAsXls(args: {
 
 // ================== page ==================
 export default function Page({ params }: { params: Promise<{ id: string }> }) {
+  const { theme } = useTheme()
+  const [mounted, setMounted] = useState(false)
   const { id: plantTypeId } = use(params); // "gaharu", "jengkol", dll
   const plantTypeMeta = PLANT_TYPES.find((p) => p.id === plantTypeId) ?? {
     id: plantTypeId,
@@ -201,6 +203,18 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
     payoutEveryMonths: 0,
     baseAnnualROI: 0,
   };
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  // Theme-aware helper function
+  const getThemeClasses = (baseClasses: string, pinkClasses: string = "") => {
+    if (mounted && theme === "pink" && pinkClasses) {
+      return `${baseClasses} ${pinkClasses}`
+    }
+    return baseClasses
+  }
 
   // ---------- PREFETCH CACHE (dibiarkan agar kompatibel, meskipun data investor sudah dari API) ----------
   const [ready, setReady] = useState(false);
@@ -361,13 +375,22 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
         <div className="min-h-screen flex items-center justify-center">
           <div className="text-center">
             <motion.div
-              className="inline-block p-6 bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl rounded-3xl shadow-xl border border-[#324D3E]/10 dark:border-gray-700 transition-colors duration-300"
+              className={getThemeClasses(
+                "inline-block p-6 bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl rounded-3xl shadow-xl border border-[#324D3E]/10 dark:border-gray-700 transition-colors duration-300",
+                "!bg-white/95 !border-[#FFC1CC]/30"
+              )}
               animate={{ rotate: 360 }}
               transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
             >
-              <Leaf className="h-8 w-8 text-[#324D3E] dark:text-white transition-colors duration-300" />
+              <Leaf className={getThemeClasses(
+                "h-8 w-8 text-[#324D3E] dark:text-white transition-colors duration-300",
+                "!text-[#4c1d1d]"
+              )} />
             </motion.div>
-            <p className="text-[#324D3E] dark:text-white text-lg font-medium mt-4 transition-colors duration-300">
+            <p className={getThemeClasses(
+              "text-[#324D3E] dark:text-white text-lg font-medium mt-4 transition-colors duration-300",
+              "!text-[#4c1d1d]"
+            )}>
               Memuat ringkasan investasi...
             </p>
           </div>
@@ -389,14 +412,23 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 sm:gap-6 mb-6 sm:mb-8">
             <div className="flex flex-col sm:flex-row sm:items-center gap-4">
               <div className="flex items-center gap-4">
-                <div className="p-3 bg-[#324D3E]/10 dark:bg-[#324D3E]/20 rounded-2xl text-[#324D3E] dark:text-white transition-colors duration-300">
+                <div className={getThemeClasses(
+                  "p-3 bg-[#324D3E]/10 dark:bg-[#324D3E]/20 rounded-2xl text-[#324D3E] dark:text-white transition-colors duration-300",
+                  "!bg-[#FFC1CC] !text-black"
+                )}>
                   <Leaf className="h-8 w-8" />
                 </div>
                 <div>
-                  <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-[#324D3E] dark:text-white mb-1 transition-colors duration-300">
+                  <h1 className={getThemeClasses(
+                    "text-2xl sm:text-3xl lg:text-4xl font-bold text-[#324D3E] dark:text-white mb-1 transition-colors duration-300",
+                    "!text-[#4c1d1d]"
+                  )}>
                     Ringkasan Investasi {plantTypeMeta.name}
                   </h1>
-                  <p className="text-[#889063] dark:text-gray-200 text-sm sm:text-base transition-colors duration-300">
+                  <p className={getThemeClasses(
+                    "text-[#889063] dark:text-gray-200 text-sm sm:text-base transition-colors duration-300",
+                    "!text-[#6b7280]"
+                  )}>
                     Data berasal dari transaksi di database (income &amp;
                     operational costs)
                   </p>
@@ -443,7 +475,10 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
                     detailRows: details,
                   });
                 }}
-                className="inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-green-500 to-[#324D3E] hover:from-green-600 hover:to-[#4C3D19] px-4 py-2 text-sm font-medium text-white transition-all duration-300 shadow-lg hover:shadow-xl"
+                className={getThemeClasses(
+                  "inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-green-500 to-[#324D3E] hover:from-green-600 hover:to-[#4C3D19] px-4 py-2 text-sm font-medium text-black transition-all duration-300 shadow-lg hover:shadow-xl",
+                  "!bg-gradient-to-r !from-[#FFC1CC] !to-[#FFDEE9] !text-[#4c1d1d]"
+                )}
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
               >
@@ -453,7 +488,10 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
 
               <Link href="/semua-investasi">
                 <motion.button
-                  className="inline-flex items-center justify-center gap-2 rounded-2xl bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl border border-[#324D3E]/10 dark:border-gray-700 hover:bg-[#324D3E] hover:text-white px-4 py-2 text-sm font-medium text-[#324D3E] dark:text-white transition-all duration-300 shadow-lg w-full sm:w-auto"
+                  className={getThemeClasses(
+                    "inline-flex items-center justify-center gap-2 rounded-2xl bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl border border-[#324D3E]/10 dark:border-gray-700 hover:bg-[#324D3E] hover:text-black px-4 py-2 text-sm font-medium text-[#324D3E] dark:text-white transition-all duration-300 shadow-lg w-full sm:w-auto",
+                    "!bg-white/95 !border-[#FFC1CC]/30 !text-[#4c1d1d] hover:!bg-[#FFC1CC] hover:!text-black"
+                  )}
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                 >
@@ -511,8 +549,14 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.4 }}
           >
-            <div className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl rounded-3xl p-6 sm:p-8 shadow-xl border border-[#324D3E]/10 dark:border-gray-700 transition-colors duration-300">
-              <h3 className="text-lg sm:text-xl font-bold text-[#324D3E] dark:text-white mb-6 text-center border-b-2 border-[#324D3E]/10 dark:border-gray-600 pb-4 transition-colors duration-300">
+            <div className={getThemeClasses(
+              "bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl rounded-3xl p-6 sm:p-8 shadow-xl border border-[#324D3E]/10 dark:border-gray-700 transition-colors duration-300",
+              "!bg-white/95 !border-[#FFC1CC]/30"
+            )}>
+              <h3 className={getThemeClasses(
+                "text-lg sm:text-xl font-bold text-[#324D3E] dark:text-white mb-6 text-center border-b-2 border-[#324D3E]/10 dark:border-gray-600 pb-4 transition-colors duration-300",
+                "!text-[#4c1d1d] !border-[#FFC1CC]/30"
+              )}>
                 Net Profit Bulanan {selectedYear}
               </h3>
               <div className="h-64 sm:h-80">
@@ -536,7 +580,14 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
                         fmtIDR(value),
                         "Net Profit",
                       ]}
-                      contentStyle={{
+                      contentStyle={mounted && theme === "pink" ? {
+                        backgroundColor: "#ffffff",
+                        border: "2px solid #FFC1CC",
+                        borderRadius: "12px",
+                        color: "#4c1d1d",
+                        fontWeight: "600",
+                        boxShadow: "0 10px 25px -5px rgba(255,193,204,0.2)",
+                      } : {
                         backgroundColor: "#ffffff",
                         border: "2px solid #324D3E",
                         borderRadius: "12px",
@@ -548,15 +599,15 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
                     <Line
                       type="monotone"
                       dataKey="net"
-                      stroke="#324D3E"
+                      stroke={mounted && theme === "pink" ? "#4c1d1d" : "#324D3E"}
                       strokeWidth={3}
                       dot={{
-                        fill: "#324D3E",
+                        fill: mounted && theme === "pink" ? "#4c1d1d" : "#324D3E",
                         strokeWidth: 2,
                         stroke: "#fff",
                         r: 5,
                       }}
-                      activeDot={{ r: 8, fill: "#4C3D19" }}
+                      activeDot={{ r: 8, fill: mounted && theme === "pink" ? "#FFC1CC" : "#4C3D19" }}
                     />
                   </LineChart>
                 </ResponsiveContainer>
@@ -564,8 +615,14 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
             </div>
 
             {/* Distribusi Investasi Per Investor */}
-            <div className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl rounded-3xl p-6 sm:p-8 shadow-xl border border-[#324D3E]/10 dark:border-gray-700 transition-colors duration-300">
-              <h3 className="text-lg sm:text-xl font-bold text-[#324D3E] dark:text-white mb-6 text-center border-b-2 border-[#324D3E]/10 dark:border-gray-600 pb-4 transition-colors duration-300">
+            <div className={getThemeClasses(
+              "bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl rounded-3xl p-6 sm:p-8 shadow-xl border border-[#324D3E]/10 dark:border-gray-700 transition-colors duration-300",
+              "!bg-white/95 !border-[#FFC1CC]/30 "
+            )}>
+              <h3 className={getThemeClasses(
+                "text-lg sm:text-xl font-bold text-[#324D3E] dark:text-white mb-6 text-center border-b-2 border-[#324D3E]/10 dark:border-gray-600 pb-4 transition-colors duration-300",
+                "!text-[#4c1d1d] !border-[#FFC1CC]/30"
+              )}>
                 Distribusi Investasi per Investor
               </h3>
               <div className="h-64 sm:h-80">
@@ -599,7 +656,14 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
                     </Pie>
                     <Tooltip
                       formatter={(v: number) => [fmtIDR(v), "Investasi"]}
-                      contentStyle={{
+                      contentStyle={mounted && theme === "pink" ? {
+                        backgroundColor: "#ffffff",
+                        border: "2px solid #FFC1CC",
+                        borderRadius: "12px",
+                        color: "#4c1d1d",
+                        fontWeight: "600",
+                        boxShadow: "0 10px 25px -5px rgba(255,193,204,0.2)",
+                      } : {
                         backgroundColor: "#ffffff",
                         border: "2px solid #324D3E",
                         borderRadius: "12px",
@@ -616,13 +680,19 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
                 <button
                   type="button"
                   onClick={() => setShowInvestorList((v) => !v)}
-                  className="inline-flex items-center justify-center gap-2 rounded-2xl bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl border border-[#324D3E]/10 dark:border-gray-700 hover:bg-[#324D3E] hover:text-white px-4 py-2 text-sm font-medium text-[#324D3E] dark:text-white transition-all duration-300 shadow-lg"
+                  className={getThemeClasses(
+                    "inline-flex items-center justify-center gap-2 rounded-2xl bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl border border-[#324D3E]/10 dark:border-gray-700 hover:bg-[#324D3E] hover:text-black px-4 py-2 text-sm font-medium text-[#324D3E] dark:text-white transition-all duration-300 shadow-lg",
+                    "!bg-white/95 !border-[#FFC1CC]/30 !text-[#4c1d1d] hover:!bg-[#FFC1CC] hover:!text-black "
+                  )}
                 >
                   {showInvestorList ? "Tutup Daftar Investor" : "Tampilkan Daftar Investor"}
                 </button>
               </div>
               {showInvestorList && (
-                <div className="mt-4 rounded-2xl border border-[#324D3E]/10 dark:border-gray-700 bg-white/70 dark:bg-gray-800/70 backdrop-blur-xl p-4 max-h-56 overflow-auto">
+                <div className={getThemeClasses(
+                  "mt-4 rounded-2xl border border-[#324D3E]/10 dark:border-gray-700 bg-white/70 dark:bg-gray-800/70 backdrop-blur-xl p-4 max-h-56 overflow-auto",
+                  "!border-[#FFC1CC]/30 !bg-white/90"
+                )}>
                   {(() => {
                     const total = perInvestor.totalInvestAll || 1;
                     const items = perInvestor.rows.map((r, i) => ({
@@ -633,20 +703,35 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
                     }));
                     if (items.length === 0) {
                       return (
-                        <p className="text-sm text-[#889063] dark:text-gray-300 text-center">Belum ada data investor.</p>
+                        <p className={getThemeClasses(
+                          "text-sm text-[#889063] dark:text-gray-300 text-center",
+                          "!text-[#6b7280]"
+                        )}>Belum ada data investor.</p>
                       );
                     }
                     return (
                       <ul className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         {items.map((it, idx) => (
-                          <li key={idx} className="flex items-center justify-between gap-3 rounded-xl bg-white/70 dark:bg-gray-800/70 border border-[#324D3E]/10 dark:border-gray-700 px-3 py-2">
+                          <li key={idx} className={getThemeClasses(
+                            "flex items-center justify-between gap-3 rounded-xl bg-white/70 dark:bg-gray-800/70 border border-[#324D3E]/10 dark:border-gray-700 px-3 py-2",
+                            "!bg-white/90 !border-[#FFC1CC]/30"
+                          )}>
                             <div className="flex items-center gap-3 min-w-0">
                               <span className="inline-block h-3 w-3 rounded-full" style={{ backgroundColor: it.color }} />
-                              <span className="truncate font-medium text-[#324D3E] dark:text-white" title={it.name}>{it.name}</span>
+                              <span className={getThemeClasses(
+                                "truncate font-medium text-[#324D3E] dark:text-white",
+                                "!text-[#4c1d1d]"
+                              )} title={it.name}>{it.name}</span>
                             </div>
                             <div className="text-right text-xs sm:text-sm">
-                              <div className="font-semibold text-[#324D3E] dark:text-white">{fmtIDR(it.value)}</div>
-                              <div className="text-[#889063] dark:text-gray-300">{it.pct.toFixed(1)}%</div>
+                              <div className={getThemeClasses(
+                                "font-semibold text-[#324D3E] dark:text-white",
+                                "!text-[#4c1d1d]"
+                              )}>{fmtIDR(it.value)}</div>
+                              <div className={getThemeClasses(
+                                "text-[#889063] dark:text-gray-300",
+                                "!text-[#6b7280]"
+                              )}>{it.pct.toFixed(1)}%</div>
                             </div>
                           </li>
                         ))}
@@ -661,21 +746,33 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
 
         {/* Laporan Bulanan (table) + pilih tahun */}
         <motion.section
-          className="mb-8 bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl rounded-3xl border border-[#324D3E]/10 dark:border-gray-700 p-6 sm:p-8 shadow-xl transition-colors duration-300"
+          className={getThemeClasses(
+            "mb-8 bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl rounded-3xl border border-[#324D3E]/10 dark:border-gray-700 p-6 sm:p-8 shadow-xl transition-colors duration-300",
+            "!bg-white/95 !border-[#FFC1CC]/30 "
+          )}
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.6 }}
         >
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-4">
-              <h2 className="text-xl font-bold text-[#324D3E] dark:text-white flex items-center gap-3 transition-colors duration-300">
-                <Calendar className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+              <h2 className={getThemeClasses(
+                "text-xl font-bold text-[#324D3E] dark:text-white flex items-center gap-3 transition-colors duration-300",
+                "!text-[#4c1d1d]"
+              )}>
+                <Calendar className={getThemeClasses(
+                  "h-5 w-5 text-emerald-600 dark:text-emerald-400",
+                  "!text-[#059669]"
+                )} />
                 Laporan Bulanan {plantTypeMeta.name}
               </h2>
               <select
                 value={selectedYear}
                 onChange={(e) => setSelectedYear(Number(e.target.value))}
-                className="bg-white/80 dark:bg-gray-700/80 backdrop-blur-xl border border-[#324D3E]/20 dark:border-gray-600 rounded-xl px-3 py-2 text-[#324D3E] dark:text-white font-medium focus:outline-none focus:ring-2 focus:ring-[#324D3E]/20 focus:border-[#324D3E]/40 transition-colors duration-300"
+                className={getThemeClasses(
+                  "bg-white/80 dark:bg-gray-700/80 backdrop-blur-xl border border-[#324D3E]/20 dark:border-gray-600 rounded-xl px-3 py-2 text-[#324D3E] dark:text-white font-medium focus:outline-none focus:ring-2 focus:ring-[#324D3E]/20 focus:border-[#324D3E]/40 transition-colors duration-300",
+                  "!bg-white/90 !border-[#FFC1CC]/30 !text-[#4c1d1d] focus:!ring-[#FFC1CC]/20 focus:!border-[#FFC1CC]/40"
+                )}
               >
                 {availableYears.map((y) => (
                   <option key={y} value={y}>
@@ -689,11 +786,20 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
           <div className="overflow-x-auto">
             <table className="min-w-full text-sm">
               <thead>
-                <tr className="border-b-2 border-[#324D3E]/10 dark:border-gray-600">
-                  <th className="py-3 pr-4 text-left font-semibold text-[#324D3E] dark:text-white transition-colors duration-300">
+                <tr className={getThemeClasses(
+                  "border-b-2 border-[#324D3E]/10 dark:border-gray-600",
+                  "!border-[#FFC1CC]/30"
+                )}>
+                  <th className={getThemeClasses(
+                    "py-3 pr-4 text-left font-semibold text-[#324D3E] dark:text-white transition-colors duration-300",
+                    "!text-[#4c1d1d]"
+                  )}>
                     Bulan
                   </th>
-                  <th className="py-3 pr-4 text-right font-semibold text-[#324D3E] dark:text-white transition-colors duration-300">
+                  <th className={getThemeClasses(
+                    "py-3 pr-4 text-right font-semibold text-[#324D3E] dark:text-white transition-colors duration-300",
+                    "!text-[#4c1d1d]"
+                  )}>
                     Net Profit
                   </th>
                 </tr>
@@ -702,16 +808,29 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
                 {monthlySeries.map((m, idx) => (
                   <tr
                     key={m.month}
-                    className={`border-b border-[#324D3E]/5 dark:border-gray-700 ${
-                      idx % 2 === 0
-                        ? "bg-white/40 dark:bg-gray-800/40"
-                        : "bg-[#324D3E]/5 dark:bg-gray-700/50"
-                    } transition-colors duration-300`}
+                    className={getThemeClasses(
+                      `border-b border-[#324D3E]/5 dark:border-gray-700 ${
+                        idx % 2 === 0
+                          ? "bg-white/40 dark:bg-gray-800/40"
+                          : "bg-[#324D3E]/5 dark:bg-gray-700/50"
+                      } transition-colors duration-300`,
+                      `!border-[#FFC1CC]/10 ${
+                        idx % 2 === 0
+                          ? "!bg-white/60"
+                          : "!bg-[#FFC1CC]/5"
+                      }`
+                    )}
                   >
-                    <td className="py-3 pr-4 font-medium text-[#324D3E] dark:text-white transition-colors duration-300">
+                    <td className={getThemeClasses(
+                      "py-3 pr-4 font-medium text-[#324D3E] dark:text-white transition-colors duration-300",
+                      "!text-[#4c1d1d]"
+                    )}>
                       {m.month}
                     </td>
-                    <td className="py-3 pr-4 text-right text-[#889063] dark:text-gray-200 font-semibold transition-colors duration-300">
+                    <td className={getThemeClasses(
+                      "py-3 pr-4 text-right text-[#889063] dark:text-gray-200 font-semibold transition-colors duration-300",
+                      "!text-[#6b7280]"
+                    )}>
                       {fmtIDR(m.net)}
                     </td>
                   </tr>
@@ -723,24 +842,39 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
 
         {/* Ringkasan Tahunan */}
         <motion.section
-          className="mb-8 bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl rounded-3xl border border-[#324D3E]/10 dark:border-gray-700 p-6 sm:p-8 shadow-xl transition-colors duration-300"
+          className={getThemeClasses(
+            "mb-8 bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl rounded-3xl border border-[#324D3E]/10 dark:border-gray-700 p-6 sm:p-8 shadow-xl transition-colors duration-300",
+            "!bg-white/95 !border-[#FFC1CC]/30 "
+          )}
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.8 }}
         >
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-bold text-[#324D3E] dark:text-white transition-colors duration-300">
+            <h2 className={getThemeClasses(
+              "text-xl font-bold text-[#324D3E] dark:text-white transition-colors duration-300",
+              "!text-[#4c1d1d]"
+            )}>
               Ringkasan Tahunan
             </h2>
           </div>
           <div className="overflow-x-auto">
             <table className="min-w-full text-sm">
               <thead>
-                <tr className="border-b-2 border-[#324D3E]/10 dark:border-gray-600">
-                  <th className="py-3 pr-4 text-left font-semibold text-[#324D3E] dark:text-white transition-colors duration-300">
+                <tr className={getThemeClasses(
+                  "border-b-2 border-[#324D3E]/10 dark:border-gray-600",
+                  "!border-[#FFC1CC]/30"
+                )}>
+                  <th className={getThemeClasses(
+                    "py-3 pr-4 text-left font-semibold text-[#324D3E] dark:text-white transition-colors duration-300",
+                    "!text-[#4c1d1d]"
+                  )}>
                     Tahun
                   </th>
-                  <th className="py-3 pr-4 text-right font-semibold text-[#324D3E] dark:text-white transition-colors duration-300">
+                  <th className={getThemeClasses(
+                    "py-3 pr-4 text-right font-semibold text-[#324D3E] dark:text-white transition-colors duration-300",
+                    "!text-[#4c1d1d]"
+                  )}>
                     Total Profit
                   </th>
                 </tr>
@@ -749,16 +883,29 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
                 {yearlyRows.map((y, idx) => (
                   <tr
                     key={y.year}
-                    className={`border-b border-[#324D3E]/5 dark:border-gray-700 ${
-                      idx % 2 === 0
-                        ? "bg-white/40 dark:bg-gray-800/40"
-                        : "bg-[#324D3E]/5 dark:bg-gray-700/50"
-                    } transition-colors duration-300`}
+                    className={getThemeClasses(
+                      `border-b border-[#324D3E]/5 dark:border-gray-700 ${
+                        idx % 2 === 0
+                          ? "bg-white/40 dark:bg-gray-800/40"
+                          : "bg-[#324D3E]/5 dark:bg-gray-700/50"
+                      } transition-colors duration-300`,
+                      `!border-[#FFC1CC]/10 ${
+                        idx % 2 === 0
+                          ? "!bg-white/60"
+                          : "!bg-[#FFC1CC]/5"
+                      }`
+                    )}
                   >
-                    <td className="py-3 pr-4 font-medium text-[#324D3E] dark:text-white transition-colors duration-300">
+                    <td className={getThemeClasses(
+                      "py-3 pr-4 font-medium text-[#324D3E] dark:text-white transition-colors duration-300",
+                      "!text-[#4c1d1d]"
+                    )}>
                       {y.year}
                     </td>
-                    <td className="py-3 pr-4 text-right text-green-600 dark:text-emerald-400 font-semibold transition-colors duration-300">
+                    <td className={getThemeClasses(
+                      "py-3 pr-4 text-right text-green-600 dark:text-emerald-400 font-semibold transition-colors duration-300",
+                      "!text-[#059669]"
+                    )}>
                       {fmtIDR(y.totalProfit)}
                     </td>
                   </tr>
@@ -770,13 +917,19 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
 
         {/* Per Investor */}
         <motion.section
-          className="mb-8 bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl rounded-3xl border border-[#324D3E]/10 dark:border-gray-700 p-6 sm:p-8 shadow-xl transition-colors duration-300"
+          className={getThemeClasses(
+            "mb-8 bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl rounded-3xl border border-[#324D3E]/10 dark:border-gray-700 p-6 sm:p-8 shadow-xl transition-colors duration-300",
+            "!bg-white/95 !border-[#FFC1CC]/30 "
+          )}
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 1.0 }}
         >
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-bold text-[#324D3E] dark:text-white transition-colors duration-300">
+            <h2 className={getThemeClasses(
+              "text-xl font-bold text-[#324D3E] dark:text-white transition-colors duration-300",
+              "!text-[#4c1d1d]"
+            )}>
               Rincian Per Investor
             </h2>
           </div>
@@ -784,17 +937,32 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
           <div className="overflow-x-auto">
             <table className="min-w-full text-sm">
               <thead>
-                <tr className="border-b-2 border-[#324D3E]/10 dark:border-gray-600">
-                  <th className="py-3 pr-4 text-left font-semibold text-[#324D3E] dark:text-white transition-colors duration-300">
+                <tr className={getThemeClasses(
+                  "border-b-2 border-[#324D3E]/10 dark:border-gray-600",
+                  "!border-[#FFC1CC]/30"
+                )}>
+                  <th className={getThemeClasses(
+                    "py-3 pr-4 text-left font-semibold text-[#324D3E] dark:text-white transition-colors duration-300",
+                    "!text-[#4c1d1d]"
+                  )}>
                     Nama
                   </th>
-                  <th className="py-3 pr-4 text-right font-semibold text-[#324D3E] dark:text-white transition-colors duration-300">
+                  <th className={getThemeClasses(
+                    "py-3 pr-4 text-right font-semibold text-[#324D3E] dark:text-white transition-colors duration-300",
+                    "!text-[#4c1d1d]"
+                  )}>
                     Total Investasi
                   </th>
-                  <th className="py-3 pr-4 text-right font-semibold text-[#324D3E] dark:text-white transition-colors duration-300">
+                  <th className={getThemeClasses(
+                    "py-3 pr-4 text-right font-semibold text-[#324D3E] dark:text-white transition-colors duration-300",
+                    "!text-[#4c1d1d]"
+                  )}>
                     Total Profit
                   </th>
-                  <th className="py-3 pr-4 text-right font-semibold text-[#324D3E] dark:text-white transition-colors duration-300">
+                  <th className={getThemeClasses(
+                    "py-3 pr-4 text-right font-semibold text-[#324D3E] dark:text-white transition-colors duration-300",
+                    "!text-[#4c1d1d]"
+                  )}>
                     ROI Individu
                   </th>
                 </tr>
@@ -804,7 +972,10 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
                   <tr>
                     <td
                       colSpan={4}
-                      className="py-6 text-center text-[#889063] dark:text-gray-200 transition-colors duration-300"
+                      className={getThemeClasses(
+                        "py-6 text-center text-[#889063] dark:text-gray-200 transition-colors duration-300",
+                        "!text-[#6b7280]"
+                      )}
                     >
                       Belum ada data investasi untuk tipe ini.
                     </td>
@@ -813,22 +984,41 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
                   perInvestor.rows.map((r, idx) => (
                     <tr
                       key={r.name}
-                      className={`border-b border-[#324D3E]/5 dark:border-gray-700 ${
-                        idx % 2 === 0
-                          ? "bg-white/40 dark:bg-gray-800/40"
-                          : "bg-[#324D3E]/5 dark:bg-gray-700/50"
-                      } transition-colors duration-300`}
+                      className={getThemeClasses(
+                        `border-b border-[#324D3E]/5 dark:border-gray-700 ${
+                          idx % 2 === 0
+                            ? "bg-white/40 dark:bg-gray-800/40"
+                            : "bg-[#324D3E]/5 dark:bg-gray-700/50"
+                        } transition-colors duration-300`,
+                        `!border-[#FFC1CC]/10 ${
+                          idx % 2 === 0
+                            ? "!bg-white/60"
+                            : "!bg-[#FFC1CC]/5"
+                        }`
+                      )}
                     >
-                      <td className="py-3 pr-4 font-medium text-[#324D3E] dark:text-white transition-colors duration-300">
+                      <td className={getThemeClasses(
+                        "py-3 pr-4 font-medium text-[#324D3E] dark:text-white transition-colors duration-300",
+                        "!text-[#4c1d1d]"
+                      )}>
                         {r.name}
                       </td>
-                      <td className="py-3 pr-4 text-right text-[#889063] dark:text-gray-200 font-semibold transition-colors duration-300">
+                      <td className={getThemeClasses(
+                        "py-3 pr-4 text-right text-[#889063] dark:text-gray-200 font-semibold transition-colors duration-300",
+                        "!text-[#6b7280]"
+                      )}>
                         {fmtIDR(r.invest)}
                       </td>
-                      <td className="py-3 pr-4 text-right text-green-600 dark:text-emerald-400 font-semibold transition-colors duration-300">
+                      <td className={getThemeClasses(
+                        "py-3 pr-4 text-right text-green-600 dark:text-emerald-400 font-semibold transition-colors duration-300",
+                        "!text-[#059669]"
+                      )}>
                         {fmtIDR(r.profit)}
                       </td>
-                      <td className="py-3 pr-4 text-right font-medium text-[#324D3E] dark:text-white transition-colors duration-300">
+                      <td className={getThemeClasses(
+                        "py-3 pr-4 text-right font-medium text-[#324D3E] dark:text-white transition-colors duration-300",
+                        "!text-[#4c1d1d]"
+                      )}>
                         {r.invest > 0
                           ? `${((r.profit / r.invest) * 100).toFixed(2)}%`
                           : "0%"}
@@ -859,26 +1049,40 @@ function SummaryCard({
   colorClass: string;
   highlight?: boolean;
 }) {
+  const { theme } = useTheme()
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  const getThemeClasses = (baseClasses: string, pinkClasses: string = "") => {
+    if (mounted && theme === "pink" && pinkClasses) {
+      return `${baseClasses} ${pinkClasses}`
+    }
+    return baseClasses
+  }
+
   const colors = {
     "text-chart-1": {
-      bg: "bg-[#324D3E]/10 dark:bg-[#324D3E]/20",
-      text: "text-[#324D3E] dark:text-white",
-      hover: "group-hover:bg-[#324D3E]/20 dark:group-hover:bg-[#324D3E]/30",
+      bg: mounted && theme === "pink" ? "bg-[#FFC1CC]" : "bg-[#324D3E]/10 dark:bg-[#324D3E]/20",
+      text: mounted && theme === "pink" ? "text-black" : "text-[#324D3E] dark:text-white",
+      hover: mounted && theme === "pink" ? "group-hover:bg-[#4c1d1d]" : "group-hover:bg-[#324D3E]/20 dark:group-hover:bg-[#324D3E]/30",
     },
     "text-chart-2": {
-      bg: "bg-green-500/10 dark:bg-green-900/30",
-      text: "text-green-600 dark:text-emerald-400",
-      hover: "group-hover:bg-green-500/20 dark:group-hover:bg-green-800/40",
+      bg: mounted && theme === "pink" ? "bg-[#B5EAD7]" : "bg-green-500/10 dark:bg-green-900/30",
+      text: mounted && theme === "pink" ? "text-black" : "text-green-600 dark:text-emerald-400",
+      hover: mounted && theme === "pink" ? "group-hover:bg-[#059669]" : "group-hover:bg-green-500/20 dark:group-hover:bg-green-800/40",
     },
     "text-chart-3": {
-      bg: "bg-blue-500/10 dark:bg-blue-900/30",
-      text: "text-blue-600 dark:text-blue-400",
-      hover: "group-hover:bg-blue-500/20 dark:group-hover:bg-blue-800/40",
+      bg: mounted && theme === "pink" ? "bg-[#C7CEEA]" : "bg-blue-500/10 dark:bg-blue-900/30",
+      text: mounted && theme === "pink" ? "text-black" : "text-blue-600 dark:text-blue-400",
+      hover: mounted && theme === "pink" ? "group-hover:bg-[#7c3aed]" : "group-hover:bg-blue-500/20 dark:group-hover:bg-blue-800/40",
     },
     "text-chart-4": {
-      bg: "bg-purple-500/10 dark:bg-purple-900/30",
-      text: "text-purple-600 dark:text-purple-400",
-      hover: "group-hover:bg-purple-500/20 dark:group-hover:bg-purple-800/40",
+      bg: mounted && theme === "pink" ? "bg-[#FFF5BA]" : "bg-purple-500/10 dark:bg-purple-900/30",
+      text: mounted && theme === "pink" ? "text-black" : "text-purple-600 dark:text-purple-400",
+      hover: mounted && theme === "pink" ? "group-hover:bg-[#d97706]" : "group-hover:bg-purple-500/20 dark:group-hover:bg-purple-800/40",
     },
   };
 
@@ -887,11 +1091,18 @@ function SummaryCard({
 
   return (
     <div
-      className={`group rounded-3xl bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl p-6 border ${
-        highlight
-          ? "border-green-500/30 dark:border-emerald-600/50 shadow-lg"
-          : "border-[#324D3E]/10 dark:border-gray-700"
-      } shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300`}
+      className={getThemeClasses(
+        `group rounded-3xl bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl p-6 border ${
+          highlight
+            ? "border-green-500/30 dark:border-emerald-600/50 shadow-lg"
+            : "border-[#324D3E]/10 dark:border-gray-700"
+        } shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300`,
+        `!bg-white/95 ${
+          highlight
+            ? "!border-[#B5EAD7]/30 "
+            : "!border-[#FFC1CC]/30 "
+        }`
+      )}
     >
       <div className="flex items-center justify-between mb-4">
         <div
@@ -901,15 +1112,25 @@ function SummaryCard({
         </div>
       </div>
       <div className="space-y-2">
-        <p className="text-sm font-medium text-[#889063] dark:text-gray-200 transition-colors duration-300">
+        <p className={getThemeClasses(
+          "text-sm font-medium text-[#889063] dark:text-gray-200 transition-colors duration-300",
+          "!text-[#6b7280]"
+        )}>
           {title}
         </p>
         <p
-          className={`text-2xl font-bold ${
-            highlight
-              ? "text-green-600 dark:text-emerald-400"
-              : "text-[#324D3E] dark:text-white"
-          } group-hover:text-[#4C3D19] dark:group-hover:text-gray-200 transition-colors duration-300`}
+          className={getThemeClasses(
+            `text-2xl font-bold ${
+              highlight
+                ? "text-green-600 dark:text-emerald-400"
+                : "text-[#324D3E] dark:text-white"
+            } group-hover:text-[#4C3D19] dark:group-hover:text-gray-200 transition-colors duration-300`,
+            `${
+              highlight
+                ? "!text-[#059669]"
+                : "!text-[#4c1d1d]"
+            } group-hover:!text-[#6b7280]`
+          )}
         >
           {value}
         </p>

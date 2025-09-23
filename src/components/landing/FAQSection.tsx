@@ -13,7 +13,7 @@ const faqData = [
     answer: "Dana Anda akan dikelola secara transparan dan aman melalui sistem kemi yang telah terintegrasi dengan standar keamanan tingkat tinggi. Setiap dana keatas akan dialokasikan ke proyek-proyek yang telah melalui proses seleksi ketat, dan Anda akan mendapat laporan berkala mengenai penggunaan dana dan perkembangan proyek. Selain itu, kami menggunakan sistem perbankan digital yang aman dan terpercaya. Kami berkomitmen untuk menjaga kepercayaan Anda dengan memastikan setiap operasi mengikuti prosedur audit yang ketat sesuai tujuan Anda menginvestasikan dana kepada koperasi."
   },
   {
-    question: "Apakah Peternakan Ini Dijamin untuk Jangka Panjang?",
+    question: "Apakah Pertanian Ini Dijamin untuk Jangka Panjang?",
     answer: "Ya, investasi pertanian kami dirancang untuk jangka panjang dengan jaminan keberlanjutan. Kami bekerja sama dengan petani berpengalaman dan menggunakan teknologi modern untuk memastikan produktivitas yang optimal sepanjang periode investasi."
   },
   {

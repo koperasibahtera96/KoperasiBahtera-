@@ -9,6 +9,7 @@ import { BarChart3, DollarSign, Download, TrendingUp, Users } from "lucide-react
 import Link from "next/link"
 import React from "react"
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip as RTooltip } from "recharts"
+import { useTheme } from "next-themes"
 
 // ===== XLSX (pakai dynamic import agar aman SSR) =====
 let XLSXMod: any
@@ -83,6 +84,8 @@ const toNum = (v: any): number => {
 }
 
 export default function FinancePage() {
+  const { theme } = useTheme()
+  const [mounted, setMounted] = React.useState(false)
   const [topPlants, setTopPlants] = React.useState<
     { id: string; name: string; totalInvestment: number; totalProfit: number; roi: number; instanceCount: number; investorCount: number }[]
   >([])
@@ -90,6 +93,18 @@ export default function FinancePage() {
   const [loading, setLoading] = React.useState(true)
   const [error, setError] = React.useState<string | null>(null)
   const { showError, AlertComponent } = useAlert()
+
+  React.useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  // Helper function to get theme-aware classes
+  const getThemeClasses = (baseClasses: string, pinkClasses: string = "") => {
+    if (mounted && theme === "pink" && pinkClasses) {
+      return `${baseClasses} ${pinkClasses}`
+    }
+    return baseClasses
+  }
 
   const [totals, setTotals] = React.useState({ invest: 0, profit: 0, roi: 0, investors: 0 })
   const [distribution, setDistribution] = React.useState<{ name: string; value: number; color: string }[]>([])
@@ -332,8 +347,12 @@ export default function FinancePage() {
   function PieTooltip({ active, payload }: any) {
     if (!active || !payload || !payload.length) return null
     const p = payload[0]
+    const tooltipClasses = getThemeClasses(
+      "bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white",
+      "!bg-[#FFC1CC] !border-[#FFDEE9] !text-[#4c1d1d]"
+    )
     return (
-      <div style={{ background: "#fff", border: "1px solid #000", padding: "8px 10px", borderRadius: 6, fontWeight: 600 }}>
+      <div className={`${tooltipClasses} rounded-lg shadow-lg transition-colors duration-300`} style={{ padding: "8px 10px", fontWeight: 600 }}>
         <div style={{ marginBottom: 4 }}>{p?.name}</div>
         <div>Investasi : {formatCurrency(Number(p?.value) || 0)}</div>
       </div>
@@ -346,8 +365,8 @@ export default function FinancePage() {
       <div className="p-6 space-y-8 font-[family-name:var(--font-poppins)]">
         <header>
           <div className="mb-8">
-            <h1 className="text-3xl lg:text-4xl font-bold text-[#324D3E] dark:text-white mb-4 transition-colors duration-300">Dashboard Finance</h1>
-            <p className="text-[#889063] dark:text-gray-300 text-lg transition-colors duration-300">
+            <h1 className={getThemeClasses("text-3xl lg:text-4xl font-bold text-[#324D3E] dark:text-white mb-4 transition-colors duration-300", "!text-[#4c1d1d]")}>Dashboard Finance</h1>
+            <p className={getThemeClasses("text-[#889063] dark:text-gray-300 text-lg transition-colors duration-300", "!text-[#6b7280]")}>
               {new Date().toLocaleDateString("id-ID", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
             </p>
             {error && (
@@ -357,14 +376,14 @@ export default function FinancePage() {
             )}
           </div>
 
-          <div className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl rounded-3xl p-8 border border-[#324D3E]/10 dark:border-gray-700 shadow-xl transition-colors duration-300">
+          <div className={getThemeClasses("bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl rounded-3xl p-8 border border-[#324D3E]/10 dark:border-gray-700 shadow-xl transition-colors duration-300", "!bg-white/95 !border-[#FFC1CC]/30")}>
             <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between mb-8 gap-4">
               <div>
-                <h2 className="text-2xl font-bold text-[#324D3E] dark:text-white mb-2 transition-colors duration-300">Ringkasan Investasi</h2>
-                <p className="text-[#889063] dark:text-gray-300 text-lg transition-colors duration-300">Analisis detail per jenis tanaman dan kinerja anggota</p>
+                <h2 className={getThemeClasses("text-2xl font-bold text-[#324D3E] dark:text-white mb-2 transition-colors duration-300", "!text-[#4c1d1d]")}>Ringkasan Investasi</h2>
+                <p className={getThemeClasses("text-[#889063] dark:text-gray-300 text-lg transition-colors duration-300", "!text-[#6b7280]")}>Analisis detail per jenis tanaman dan kinerja anggota</p>
               </div>
-              <Button 
-                className="bg-gradient-to-r from-[#324D3E] to-[#4C3D19] hover:shadow-lg text-white font-semibold px-6 py-3 rounded-2xl transition-all duration-300 flex items-center gap-2" 
+              <Button
+                className={getThemeClasses("bg-gradient-to-r from-[#324D3E] to-[#4C3D19] hover:shadow-lg text-white font-semibold px-6 py-3 rounded-2xl transition-all duration-300 flex items-center gap-2", "!bg-gradient-to-r !from-[#FFC1CC] !to-[#FFDEE9] !text-[#4c1d1d]")}
                 onClick={handleDownloadSummary}
               >
                 <Download className="w-4 h-4" />
@@ -385,19 +404,19 @@ export default function FinancePage() {
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
-                <SummaryCard title="Total Investasi" value={formatCurrency(totals.invest)} icon={<DollarSign className="h-5 w-5" />} colorClass="card-a" />
-                <SummaryCard title="Total Keuntungan" value={formatCurrency(totals.profit)} icon={<TrendingUp className="h-5 w-5" />} colorClass="card-b" />
-                <SummaryCard title="ROI" value={formatPercentage(totals.roi || 0)} icon={<BarChart3 className="h-5 w-5" />} colorClass="card-c" />
-                <SummaryCard title="Jumlah Anggota" value={`${totals.investors}`} icon={<Users className="h-5 w-5" />} colorClass="card-d" />
+                <SummaryCard title="Total Investasi" value={formatCurrency(totals.invest)} icon={<DollarSign className="h-5 w-5" />} colorClass="card-a" theme={theme} />
+                <SummaryCard title="Total Keuntungan" value={formatCurrency(totals.profit)} icon={<TrendingUp className="h-5 w-5" />} colorClass="card-b" theme={theme} />
+                <SummaryCard title="ROI" value={formatPercentage(totals.roi || 0)} icon={<BarChart3 className="h-5 w-5" />} colorClass="card-c" theme={theme} />
+                <SummaryCard title="Jumlah Anggota" value={`${totals.investors}`} icon={<Users className="h-5 w-5" />} colorClass="card-d" theme={theme} />
               </div>
             )}
 
             {/* PIE + LEGEND WARNA */}
-            <div className="bg-white/60 dark:bg-gray-700/60 backdrop-blur-lg rounded-3xl p-8 border border-[#324D3E]/10 dark:border-gray-600 transition-colors duration-300">
-              <h3 className="text-2xl font-bold text-[#324D3E] dark:text-white mb-6 transition-colors duration-300">Distribusi Investasi</h3>
+            <div className={getThemeClasses("bg-white/60 dark:bg-gray-700/60 backdrop-blur-lg rounded-3xl p-8 border border-[#324D3E]/10 dark:border-gray-600 transition-colors duration-300", "!bg-white/80 !border-[#FFC1CC]/30")}>
+              <h3 className={getThemeClasses("text-2xl font-bold text-[#324D3E] dark:text-white mb-6 transition-colors duration-300", "!text-[#4c1d1d]")}>Distribusi Investasi</h3>
               {loading ? (
                 <div className="h-80 flex items-center justify-center">
-                  <div className="animate-spin rounded-full h-20 w-20 border-b-4 border-[#324D3E] dark:border-white"></div>
+                  <div className={getThemeClasses("animate-spin rounded-full h-20 w-20 border-b-4 border-[#324D3E] dark:border-white", "!border-[#FFC1CC]")}></div>
                 </div>
               ) : (
                 <>
@@ -444,8 +463,8 @@ export default function FinancePage() {
 
         <div>
           <div className="flex items-center justify-between mb-8">
-            <h2 className="text-2xl font-bold text-[#324D3E] dark:text-white transition-colors duration-300">Top Investasi Tanaman</h2>
-            <Link href="/semua-investasi" className="text-[#4C3D19] dark:text-emerald-300 hover:text-[#324D3E] dark:hover:text-emerald-200 text-lg font-semibold hover:underline transition-all duration-300">
+            <h2 className={getThemeClasses("text-2xl font-bold text-[#324D3E] dark:text-white transition-colors duration-300", "!text-[#4c1d1d]")}>Top Investasi Tanaman</h2>
+            <Link href="/semua-investasi" className={getThemeClasses("text-[#4C3D19] dark:text-emerald-300 hover:text-[#324D3E] dark:hover:text-emerald-200 text-lg font-semibold hover:underline transition-all duration-300", "!text-[#6b7280] hover:!text-[#4c1d1d]")}>
               Lihat Semua →
             </Link>
           </div>
@@ -471,7 +490,7 @@ export default function FinancePage() {
           ) : (
             <div className="grid grid-cols-1 gap-8">
               {topPlants.map((plant) => (
-                <PlantCard key={plant.id} plant={plant} />
+                <PlantCard key={plant.id} plant={plant} getThemeClasses={getThemeClasses} />
               ))}
             </div>
           )}
@@ -487,11 +506,13 @@ function SummaryCard({
   value,
   icon,
   colorClass,
+  theme,
 }: {
   title: string
   value: string
   icon: React.ReactNode
   colorClass: string
+  theme?: string
 }) {
   const palette: Record<string, { card: string; iconBg: string; iconText: string }> = {
     "card-a": { card: "bg-gradient-to-br from-emerald-50 to-emerald-100 dark:from-emerald-900/30 dark:to-emerald-800/20", iconBg: "bg-emerald-200 dark:bg-emerald-700", iconText: "text-emerald-900 dark:text-emerald-100" },
@@ -499,39 +520,64 @@ function SummaryCard({
     "card-c": { card: "bg-gradient-to-br from-indigo-50 to-indigo-100 dark:from-indigo-900/30 dark:to-emerald-800/20", iconBg: "bg-indigo-200 dark:bg-indigo-700", iconText: "text-indigo-900 dark:text-indigo-100" },
     "card-d": { card: "bg-gradient-to-br from-fuchsia-50 to-fuchsia-100 dark:from-fuchsia-900/30 dark:to-fuchsia-800/20", iconBg: "bg-fuchsia-200 dark:bg-fuchsia-700", iconText: "text-fuchsia-900 dark:text-fuchsia-100" },
   }
+
+  // Apply pink theme overrides with lighter, more subtle pastel palette
+  const getCardClasses = (baseClasses: string) => {
+    if (theme === "pink") {
+      if (colorClass === "card-a") return "bg-gradient-to-br from-white to-[#FFDEE9]/50"
+      if (colorClass === "card-b") return "bg-gradient-to-br from-white to-[#B5EAD7]/50"
+      if (colorClass === "card-c") return "bg-gradient-to-br from-white to-[#C7CEEA]/50"
+      if (colorClass === "card-d") return "bg-gradient-to-br from-white to-[#FFF5BA]/50"
+    }
+    return baseClasses
+  }
+
+  const getIconClasses = (baseClasses: string) => {
+    if (theme === "pink") {
+      if (colorClass === "card-a") return "bg-[#FFC1CC]/30 text-[#4c1d1d]"
+      if (colorClass === "card-b") return "bg-[#B5EAD7]/50 text-[#1f2937]"
+      if (colorClass === "card-c") return "bg-[#C7CEEA]/50 text-[#1f2937]"
+      if (colorClass === "card-d") return "bg-[#FFF5BA]/50 text-[#1f2937]"
+    }
+    return baseClasses
+  }
+
   const pal = palette[colorClass] ?? palette["card-a"]
   const isNegative = typeof value === "string" && value.trim().startsWith("-")
-  const valueColor = isNegative ? "text-yellow-500" : "text-green-800"
+  const valueColor = isNegative ? "text-yellow-500" : theme === "pink" ? "text-[#4c1d1d]" : "text-green-800"
+
+  const cardClasses = getCardClasses(pal.card)
+  const iconClasses = getIconClasses(pal.iconBg + " " + pal.iconText)
 
   return (
-    <div className={`group rounded-3xl ${pal.card} p-6 border border-black/5 shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300`}>
+    <div className={`group rounded-3xl ${cardClasses} p-6 border border-black/5 shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300`}>
       <div className="flex items-center justify-between mb-4">
-        <div className={`flex h-12 w-12 items-center justify-center rounded-2xl ${pal.iconBg} ${pal.iconText} transition-all duration-300 group-hover:scale-110`}>
+        <div className={`flex h-12 w-12 items-center justify-center rounded-2xl ${iconClasses} transition-all duration-300 group-hover:scale-110`}>
           {icon}
         </div>
       </div>
       <div className="space-y-2">
-        <p className="text-sm font-medium text-[#324D3E] dark:text-gray-100/90 transition-colors duration-300">{title}</p>
+        <p className={theme === "pink" ? "text-sm font-medium text-[#4c1d1d] transition-colors duration-300" : "text-sm font-medium text-[#324D3E] dark:text-gray-100/90 transition-colors duration-300"}>{title}</p>
         <p className={`text-2xl font-bold ${valueColor} transition-colors duration-300`}>{value}</p>
       </div>
     </div>
   )
 }
 
-function PlantCard({ plant }: { plant: any }) {
+function PlantCard({ plant, getThemeClasses }: { plant: any; getThemeClasses: (base: string, pink: string) => string }) {
   return (
-    <div className="group relative overflow-hidden rounded-3xl bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl border border-[#324D3E]/10 dark:border-gray-700 hover:border-[#324D3E]/30 dark:hover:border-gray-600 transition-all duration-300 shadow-xl hover:shadow-2xl hover:scale-105">
+    <div className={getThemeClasses("group relative overflow-hidden rounded-3xl bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl border border-[#324D3E]/10 dark:border-gray-700 hover:border-[#324D3E]/30 dark:hover:border-gray-600 transition-all duration-300 shadow-xl hover:shadow-2xl hover:scale-105", "!bg-white/95 !border-[#FFC1CC]/30 !hover:border-[#FFC1CC]/50")}>
       <div className="p-8">
         <div className="flex items-start justify-between mb-8">
           <div>
-            <h2 className="text-2xl font-bold text-[#324D3E] dark:text-white mb-4 capitalize group-hover:text-[#4C3D19] dark:group-hover:text-gray-200 transition-colors duration-300">{plant.name}</h2>
+            <h2 className={getThemeClasses("text-2xl font-bold text-[#324D3E] dark:text-white mb-4 capitalize group-hover:text-[#4C3D19] dark:group-hover:text-gray-200 transition-colors duration-300", "!text-[#4c1d1d] group-hover:!text-[#831843]")}>{plant.name}</h2>
             <div className="flex items-center gap-4 text-sm">
-              <span className="flex items-center gap-2 text-[#889063] dark:text-gray-200 transition-colors duration-300">
-                <BarChart3 className="h-4 w-4 text-[#324D3E] dark:text-white" />
+              <span className={getThemeClasses("flex items-center gap-2 text-[#889063] dark:text-gray-200 transition-colors duration-300", "!text-[#6b7280]")}>
+                <BarChart3 className={getThemeClasses("h-4 w-4 text-[#324D3E] dark:text-white", "!text-[#FFC1CC]")} />
                 ROI {formatPercentage(plant.roi || 0)}
               </span>
-              <span className="flex items-center gap-2 text-[#889063] dark:text-gray-200 transition-colors duration-300">
-                <TrendingUp className="h-4 w-4 text-[#4C3D19] dark:text-emerald-300" />
+              <span className={getThemeClasses("flex items-center gap-2 text-[#889063] dark:text-gray-200 transition-colors duration-300", "!text-[#6b7280]")}>
+                <TrendingUp className={getThemeClasses("h-4 w-4 text-[#4C3D19] dark:text-emerald-300", "!text-[#FFC1CC]")} />
                 {plant.instanceCount} pohon
               </span>
             </div>
@@ -539,33 +585,33 @@ function PlantCard({ plant }: { plant: any }) {
         </div>
 
         <div className="grid grid-cols-2 gap-6 mb-8">
-          <div className="rounded-2xl bg-white/60 dark:bg-gray-700/60 backdrop-blur-lg p-6 border border-[#324D3E]/10 dark:border-gray-600 group-hover:bg-white/80 dark:group-hover:bg-gray-600/80 transition-all duration-300">
+          <div className={getThemeClasses("rounded-2xl bg-white/60 dark:bg-gray-700/60 backdrop-blur-lg p-6 border border-[#324D3E]/10 dark:border-gray-600 group-hover:bg-white/80 dark:group-hover:bg-gray-600/80 transition-all duration-300", "!bg-white/70 !border-[#FFC1CC]/30 group-hover:!bg-white/90")}>
             <div className="flex items-center gap-3 mb-3">
-              <DollarSign className="h-5 w-5 text-[#324D3E] dark:text-white" />
-              <span className="text-sm font-medium text-[#889063] dark:text-gray-200 transition-colors duration-300">Total Investasi</span>
+              <DollarSign className={getThemeClasses("h-5 w-5 text-[#324D3E] dark:text-white", "!text-[#FFC1CC]")} />
+              <span className={getThemeClasses("text-sm font-medium text-[#889063] dark:text-gray-200 transition-colors duration-300", "!text-[#6b7280]")}>Total Investasi</span>
             </div>
-            <div className="text-xl font-bold text-[#324D3E] dark:text-white transition-colors duration-300">{formatCurrency(plant.totalInvestment)}</div>
+            <div className={getThemeClasses("text-xl font-bold text-[#324D3E] dark:text-white transition-colors duration-300", "!text-[#4c1d1d]")}>{formatCurrency(plant.totalInvestment)}</div>
           </div>
-          <div className="rounded-2xl bg-white/60 dark:bg-gray-700/60 backdrop-blur-lg p-6 border border-[#324D3E]/10 dark:border-gray-600 group-hover:bg-white/80 dark:group-hover:bg-gray-600/80 transition-all duration-300">
+          <div className={getThemeClasses("rounded-2xl bg-white/60 dark:bg-gray-700/60 backdrop-blur-lg p-6 border border-[#324D3E]/10 dark:border-gray-600 group-hover:bg-white/80 dark:group-hover:bg-gray-600/80 transition-all duration-300", "!bg-white/70 !border-[#FFC1CC]/30 group-hover:!bg-white/90")}>
             <div className="flex items-center gap-3 mb-3">
-              <TrendingUp className="h-5 w-5 text-green-600 dark:text-emerald-400" />
-              <span className="text-sm font-medium text-[#889063] dark:text-gray-200 transition-colors durataion-300">Total Profit</span>
+              <TrendingUp className={getThemeClasses("h-5 w-5 text-green-600 dark:text-emerald-400", "!text-[#B5EAD7]")} />
+              <span className={getThemeClasses("text-sm font-medium text-[#889063] dark:text-gray-200 transition-colors duration-300", "!text-[#6b7280]")}>Total Profit</span>
             </div>
-            <div className="text-xl font-bold text-green-600 dark:text-emerald-400 transition-colors duration-300">{formatCurrency(plant.totalProfit)}</div>
+            <div className={getThemeClasses("text-xl font-bold text-green-600 dark:text-emerald-400 transition-colors duration-300", "!text-[#4c1d1d]")}>{formatCurrency(plant.totalProfit)}</div>
           </div>
         </div>
 
-        <div className="flex items-center justify-between mb-8 p-4 bg-[#324D3E]/5 dark:bg-gray-600/50 rounded-2xl border border-[#324D3E]/10 dark:border-gray-600 transition-colors duration-300">
+        <div className={getThemeClasses("flex items-center justify-between mb-8 p-4 bg-[#324D3E]/5 dark:bg-gray-600/50 rounded-2xl border border-[#324D3E]/10 dark:border-gray-600 transition-colors duration-300", "!bg-[#FFDEE9]/30 !border-[#FFC1CC]/30")}>
           <div className="flex items-center gap-3">
-            <BarChart3 className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-            <span className="text-lg font-medium text-[#324D3E] dark:text-white transition-colors duration-300">ROI Aktual</span>
+            <BarChart3 className={getThemeClasses("h-5 w-5 text-blue-600 dark:text-blue-400", "!text-[#C7CEEA]")} />
+            <span className={getThemeClasses("text-lg font-medium text-[#324D3E] dark:text-white transition-colors duration-300", "!text-[#4c1d1d]")}>ROI Aktual</span>
           </div>
-          <div className="text-2xl font-bold text-blue-600 dark:text-blue-400 transition-colors durataion-300">{formatPercentage(plant.roi || 0)}</div>
+          <div className={getThemeClasses("text-2xl font-bold text-blue-600 dark:text-blue-400 transition-colors duration-300", "!text-[#4c1d1d]")}>{formatPercentage(plant.roi || 0)}</div>
         </div>
 
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3 text-[#889063] dark:text-gray-200 transition-colors duration-300">
-            <Users className="h-5 w-5 text-[#324D3E] dark:text-white" />
+          <div className={getThemeClasses("flex items-center gap-3 text-[#889063] dark:text-gray-200 transition-colors duration-300", "!text-[#6b7280]")}>
+            <Users className={getThemeClasses("h-5 w-5 text-[#324D3E] dark:text-white", "!text-[#FFC1CC]")} />
             <span className="font-medium">{plant.investorCount} investor aktif</span>
           </div>
         </div>

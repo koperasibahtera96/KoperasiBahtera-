@@ -42,6 +42,5 @@ export async function GET(req: Request) {
 
 /** Escape karakter khusus untuk dipakai di RegExp mongo */
 function escapeRegex(input: string) {
-  // eslint-disable-next-line no-useless-escape
   return input.replace(/[-\/\\^$*+?.()|[\]{}]/g, "\\$&");
 }

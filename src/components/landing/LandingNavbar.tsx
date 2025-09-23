@@ -172,39 +172,41 @@ export default function LandingNavbar({
 
   return (
     <motion.nav
-      className="fixed top-0 left-0 right-0 w-full bg-white/95 backdrop-blur-sm px-4 sm:px-6 lg:px-10 py-3 shadow-sm z-50 transition-all duration-300"
-      initial="hidden"
+      className="fixed top-0 left-0 right-0 w-full bg-white/95 backdrop-blur-sm px-3 sm:px-4 lg:px-6 h-16 sm:h-20 lg:h-20 shadow-sm z-50 transition-all duration-300"
+      initial="visible"
       animate="visible"
       variants={navVariants}
     >
-      <div className="max-w-7xl mx-auto">
+      <div className="w-full">
         <motion.div
-          className="flex items-center justify-between"
+          className="flex items-center justify-between w-full"
           variants={navVariants}
         >
-          {/* Logo */}
+          {/* Logo and title */}
           <motion.div
-            className="flex items-center"
+            className="flex items-center space-x-2"
             variants={logoVariants}
-            whileHover={{
-              scale: 1.1,
-              rotate: 5,
-              transition: { duration: 0.3 },
-            }}
           >
+            {/* Header text shown on md+ including xl (desktop). Make font smaller on xl and truncate to avoid overflow when full navigation is visible */}
+            <h1
+              className="hidden sm:block text-gray-800 font-semibold text-sm md:text-base lg:text-lg whitespace-nowrap"
+              title="Koperasi BAHTERA"
+            >
+              Koperasi BAHTERA
+            </h1>
             <Image
               src="/images/koperasi-logo.webp"
               alt="Logo"
-              width={50}
-              height={50}
-              className="rounded-full transition-all duration-300"
+              width={64}
+              height={64}
+              className="rounded-full transition-all duration-300 w-12 h-12 lg:w-16 lg:h-16"
             />
           </motion.div>
 
           {/* Navigation - Only visible on very large screens when hideNavigation is false */}
           {!hideNavigation && (
             <motion.div
-              className="hidden xl:flex items-center space-x-8 transition-all duration-300"
+              className="hidden xl:flex items-center space-x-6 transition-all duration-300 flex-1 justify-center"
               variants={navVariants}
             >
               {[
@@ -236,7 +238,7 @@ export default function LandingNavbar({
 
           {/* Auth Buttons / User Menu */}
           <motion.div
-            className="hidden sm:flex items-center space-x-1 md:space-x-1 lg:space-x-2 xl:space-x-4"
+            className="hidden sm:flex items-center space-x-1 md:space-x-1 lg:space-x-2 xl:space-x-4 min-w-[160px] md:min-w-[220px] lg:min-w-[260px] justify-end"
             variants={navVariants}
           >
             {status === "loading" ? (
@@ -267,7 +269,7 @@ export default function LandingNavbar({
                     >
                       <Link
                         href="/investasi"
-                        className="px-1.5 md:px-1.5 lg:px-2 xl:px-3 py-0.5 text-gray-700 transition-all duration-300 font-medium rounded-full border border-[#324D3E] hover:border-[#4C3D19] hover:bg-[#4C3D19] hover:text-white whitespace-nowrap text-[10px] md:text-[11px] lg:text-xs xl:text-sm"
+                        className="px-3 md:px-4 lg:px-4 xl:px-5 py-1.5 text-gray-700 transition-all duration-300 font-semibold rounded-full border border-[#324D3E] hover:border-[#4C3D19] hover:bg-[#4C3D19] hover:text-white whitespace-nowrap text-sm md:text-sm lg:text-sm xl:text-base"
                       >
                         Investasi Saya
                       </Link>
@@ -280,9 +282,9 @@ export default function LandingNavbar({
                     >
                       <Link
                         href="/payments"
-                        className="px-1.5 md:px-1.5 lg:px-2 xl:px-3 py-0.5 text-gray-700 transition-all duration-300 font-medium rounded-full border border-[#324D3E] hover:border-[#4C3D19] hover:bg-[#4C3D19] hover:text-white whitespace-nowrap text-[10px] md:text-[11px] lg:text-xs xl:text-sm"
+                        className="px-3 md:px-4 lg:px-4 xl:px-5 py-1.5 text-gray-700 transition-all duration-300 font-semibold rounded-full border border-[#324D3E] hover:border-[#4C3D19] hover:bg-[#4C3D19] hover:text-white whitespace-nowrap text-sm md:text-sm lg:text-sm xl:text-base"
                       >
-                        Pembayaran Saya
+                        Pembayaran
                       </Link>
                     </motion.div>
                   </>
@@ -332,7 +334,7 @@ export default function LandingNavbar({
                 <div className="relative user-menu">
                   <motion.button
                     onClick={() => setShowUserMenu(!showUserMenu)}
-                    className="flex items-center space-x-2 p-1 rounded-full hover:bg-gray-100 transition-colors"
+                    className="flex items-center space-x-2 px-2 py-1 rounded-full hover:bg-gray-100 transition-colors overflow-hidden"
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
                   >
@@ -369,11 +371,11 @@ export default function LandingNavbar({
                           "U"}
                       </motion.div>
                     )}
-                    <span className="text-gray-700 font-medium text-xs md:text-sm lg:text-base hidden md:inline">
+                    <span className="text-gray-700 font-medium text-xs md:text-sm lg:text-base hidden md:inline max-w-[8rem] md:max-w-[10rem] truncate">
                       Hello, {session.user.name?.split(" ")[0] || "User"}
                     </span>
                     <motion.svg
-                      className="w-4 h-4 text-gray-500"
+                      className="w-4 h-4 text-gray-500 flex-shrink-0"
                       fill="none"
                       stroke="currentColor"
                       viewBox="0 0 24 24"

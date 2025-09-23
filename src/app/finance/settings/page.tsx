@@ -3,6 +3,7 @@
 import { FinanceSidebar } from "@/components/finance/FinanceSidebar";
 import { motion } from "framer-motion";
 import {
+  Heart,
   Monitor,
   Moon,
   Settings,
@@ -31,6 +32,12 @@ export default function FinanceSettingsPage() {
       label: "Mode Gelap",
       description: "Tampilan gelap untuk mengurangi kelelahan mata",
       icon: Moon,
+    },
+    {
+      value: "pink",
+      label: "Mode Pink",
+      description: "Tampilan pink yang lembut dan feminin",
+      icon: Heart,
     },
     {
       value: "system",
@@ -85,7 +92,7 @@ export default function FinanceSettingsPage() {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {themeOptions.map((option) => {
               const isActive = theme === option.value;
               const IconComponent = option.icon;
@@ -167,10 +174,11 @@ export default function FinanceSettingsPage() {
                 {themeOptions.find(option => option.value === theme)?.label || "Tidak diketahui"}
               </p>
             </div>
-            <div className="p-4 bg-[#324D3E]/10 dark:bg-gray-600/50 rounded-2xl transition-colors duration-300">
-              {theme === "dark" && <Moon className="h-6 w-6 text-[#324D3E] dark:text-gray-300" />}
-              {theme === "light" && <Sun className="h-6 w-6 text-[#324D3E] dark:text-gray-300" />}
-              {theme === "system" && <Monitor className="h-6 w-6 text-[#324D3E] dark:text-gray-300" />}
+            <div className="p-4 bg-[#324D3E]/10 dark:bg-gray-600/50 pink:bg-pink-100 rounded-2xl transition-colors duration-300">
+              {theme === "dark" && <Moon className="h-6 w-6 text-[#324D3E] dark:text-gray-300 pink:text-pink-600" />}
+              {theme === "light" && <Sun className="h-6 w-6 text-[#324D3E] dark:text-gray-300 pink:text-pink-600" />}
+              {theme === "pink" && <Heart className="h-6 w-6 text-[#324D3E] dark:text-gray-300 pink:text-pink-600" />}
+              {theme === "system" && <Monitor className="h-6 w-6 text-[#324D3E] dark:text-gray-300 pink:text-pink-600" />}
             </div>
           </div>
         </motion.div>

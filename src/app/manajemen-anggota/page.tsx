@@ -1,6 +1,7 @@
 "use client";
 import type React from "react";
 import { useEffect, useRef, useState } from "react";
+import { useTheme } from "next-themes";
 
 import { FinanceSidebar } from "@/components/finance/FinanceSidebar";
 import { Button } from "@/components/ui-finance/button";
@@ -116,6 +117,8 @@ function ToastBox({
 
 /* ==================== Bulk Finance Bar ==================== */
 function BulkFinanceBar() {
+  const { theme } = useTheme()
+  const [mounted, setMounted] = useState(false)
   const [plantType, setPlantType] = useState<string>("");
   const [loading, setLoading] = useState(false);
   const [instances, setInstances] = useState<
@@ -146,6 +149,18 @@ function BulkFinanceBar() {
     // auto close
     setTimeout(() => setToast((s) => ({ ...s, open: false })), 2500);
   };
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  // Theme-aware helper function
+  const getThemeClasses = (baseClasses: string, pinkClasses: string = "") => {
+    if (mounted && theme === "pink" && pinkClasses) {
+      return `${baseClasses} ${pinkClasses}`
+    }
+    return baseClasses
+  }
 
   const allChecked = rows.length > 0 && rows.every((r) => r.checked);
   const someChecked = rows.some((r) => r.checked) && !allChecked;
@@ -275,22 +290,40 @@ function BulkFinanceBar() {
                 fetchInstances(v);
               }}
             >
-              <SelectTrigger className="w-full">
+              <SelectTrigger className={getThemeClasses(
+                "w-full bg-white dark:bg-gray-700 border-[#324D3E]/20 dark:border-gray-600 text-[#324D3E] dark:text-white",
+                "!bg-white/90 !border-[#FFC1CC]/30 !text-[#4c1d1d]"
+              )}>
                 <SelectValue placeholder="Pilih jenis tanaman" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className={getThemeClasses(
+                "bg-white dark:bg-gray-700 border-[#324D3E]/20 dark:border-gray-600",
+                "!bg-white/95 !border-[#FFC1CC]/30"
+              )}>
                 {/* sesuaikan daftar berikut dengan PlantType di sistemmu */}
-                <SelectItem value="alpukat">Alpukat</SelectItem>
-                <SelectItem value="aren">Aren</SelectItem>
-                <SelectItem value="gaharu">Gaharu</SelectItem>
-                <SelectItem value="jengkol">Jengkol</SelectItem>
+                <SelectItem value="alpukat" className={getThemeClasses(
+                  "text-[#324D3E] dark:text-white hover:bg-[#324D3E]/10 dark:hover:bg-gray-600",
+                  "!text-[#4c1d1d] hover:!bg-[#FFC1CC]/20"
+                )}>Alpukat</SelectItem>
+                <SelectItem value="aren" className={getThemeClasses(
+                  "text-[#324D3E] dark:text-white hover:bg-[#324D3E]/10 dark:hover:bg-gray-600",
+                  "!text-[#4c1d1d] hover:!bg-[#FFC1CC]/20"
+                )}>Aren</SelectItem>
+                <SelectItem value="gaharu" className={getThemeClasses(
+                  "text-[#324D3E] dark:text-white hover:bg-[#324D3E]/10 dark:hover:bg-gray-600",
+                  "!text-[#4c1d1d] hover:!bg-[#FFC1CC]/20"
+                )}>Gaharu</SelectItem>
+                <SelectItem value="jengkol" className={getThemeClasses(
+                  "text-[#324D3E] dark:text-white hover:bg-[#324D3E]/10 dark:hover:bg-gray-600",
+                  "!text-[#4c1d1d] hover:!bg-[#FFC1CC]/20"
+                )}>Jengkol</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
-          <div className="flex-1 grid grid-cols-1 sm:grid-cols-4 gap-3">
+          <div className="flex-1 grid grid-cols-1 sm:grid-cols-4 gap-3 sm:items-end">
             <div>
-              <label className="block text-sm font-medium text-[#324D3E] dark:text-gray-100 mb-1">
+              <label className="block text-sm font-medium text-[#324D3E] dark:text-gray-100 mb-1 min-h-[2.5rem] flex items-end">
                 Set Pendapatan (semua tercentang)
               </label>
               <Input
@@ -306,7 +339,7 @@ function BulkFinanceBar() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-[#324D3E] dark:text-gray-100 mb-1">
+              <label className="block text-sm font-medium text-[#324D3E] dark:text-gray-100 mb-1 min-h-[2.5rem] flex items-end">
                 Set Pengeluaran (semua tercentang)
               </label>
               <Input
@@ -321,8 +354,8 @@ function BulkFinanceBar() {
                 }}
               />
             </div>
-            <div className="col-span-1 sm:col-span-2">
-              <label className="block text-sm font-medium text-[#324D3E] dark:text-gray-100 mb-1">
+            <div className="sm:col-span-2">
+              <label className="block text-sm font-medium text-[#324D3E] dark:text-gray-100 mb-1 min-h-[2.5rem] flex items-end">
                 Set Catatan (semua tercentang)
               </label>
               <Input
@@ -448,10 +481,24 @@ function BulkFinanceBar() {
 /* ================== END BulkFinanceBar ================== */
 
 export default function ManajemenAnggotaPage() {
+  const { theme } = useTheme()
+  const [mounted, setMounted] = useState(false)
   const [currentPage, setCurrentPage] = useState(1);
   const [members, setMembers] = useState<Member[]>([]);
   const [loading, setLoading] = useState(true);
   const [_, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  // Theme-aware helper function
+  const getThemeClasses = (baseClasses: string, pinkClasses: string = "") => {
+    if (mounted && theme === "pink" && pinkClasses) {
+      return `${baseClasses} ${pinkClasses}`
+    }
+    return baseClasses
+  }
 
   const [kpi, setKpi] = useState({
     totalInvestment: 0,
@@ -617,7 +664,10 @@ export default function ManajemenAnggotaPage() {
           <div className="flex items-center gap-4 mb-6">
             <Link href="/finance">
               <motion.button
-                className="group flex items-center gap-2 px-3 sm:px-4 py-2 bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl rounded-xl sm:rounded-2xl shadow-lg border border-[#324D3E]/10 dark:border-gray-700 text-[#324D3E] dark:text-white hover:bg-[#324D3E] hover:text-white transition-all duration-300 self-start"
+                className={getThemeClasses(
+                  "group flex items-center gap-2 px-3 sm:px-4 py-2 bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl rounded-xl sm:rounded-2xl shadow-lg border border-[#324D3E]/10 dark:border-gray-700 text-[#324D3E] dark:text-white hover:bg-[#324D3E] hover:text-white transition-all duration-300 self-start",
+                  "!bg-white/95 !border-[#FFC1CC]/30 !text-[#4c1d1d] hover:!bg-[#FFC1CC] hover:!text-white"
+                )}
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
               >
@@ -628,10 +678,16 @@ export default function ManajemenAnggotaPage() {
           </div>
 
           <div className="mb-6">
-            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-[#324D3E] dark:text-white mb-2 transition-colors duration-300">
+            <h1 className={getThemeClasses(
+              "text-2xl sm:text-3xl lg:text-4xl font-bold text-[#324D3E] dark:text-white mb-2 transition-colors duration-300",
+              "!text-[#4c1d1d]"
+            )}>
               Manajemen Anggota
             </h1>
-            <p className="text-[#889063] dark:text-gray-200 text-sm sm:text-base lg:text-lg transition-colors duration-300">
+            <p className={getThemeClasses(
+              "text-[#889063] dark:text-gray-200 text-sm sm:text-base lg:text-lg transition-colors duration-300",
+              "!text-[#6b7280]"
+            )}>
               Kelola data investor dan kontrak investasi
             </p>
           </div>
@@ -686,7 +742,10 @@ export default function ManajemenAnggotaPage() {
         {/* Member List */}
         <div>
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-bold text-[#324D3E] dark:text-white transition-colors duration-300">
+            <h2 className={getThemeClasses(
+              "text-xl font-bold text-[#324D3E] dark:text-white transition-colors duration-300",
+              "!text-[#4c1d1d]"
+            )}>
               Daftar Anggota ({members.length})
             </h2>
             <div className="flex items-center gap-2">
@@ -695,11 +754,17 @@ export default function ManajemenAnggotaPage() {
                 size="sm"
                 onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
                 disabled={currentPage === 1}
-                className="border-[#324D3E]/20 dark:border-gray-600 text-[#324D3E] dark:text-white hover:bg-[#324D3E] hover:text-white transition-colors duration-300"
+                className={getThemeClasses(
+                  "border-[#324D3E]/20 dark:border-gray-600 text-[#324D3E] dark:text-white hover:bg-[#324D3E] hover:text-white transition-colors duration-300",
+                  "!border-[#FFC1CC]/30 !text-[#4c1d1d] hover:!bg-[#FFC1CC] hover:!text-white"
+                )}
               >
                 <ChevronLeft className="w-4 h-4" />
               </Button>
-              <span className="text-sm text-[#889063] dark:text-gray-200 px-2 transition-colors duration-300">
+              <span className={getThemeClasses(
+                "text-sm text-[#889063] dark:text-gray-200 px-2 transition-colors duration-300",
+                "!text-[#6b7280]"
+              )}>
                 Halaman {currentPage} dari {totalPages}
               </span>
               <Button
@@ -709,7 +774,10 @@ export default function ManajemenAnggotaPage() {
                   setCurrentPage((p) => Math.min(p + 1, totalPages))
                 }
                 disabled={currentPage === totalPages}
-                className="border-[#324D3E]/20 dark:border-gray-600 text-[#324D3E] dark:text-white hover:bg-[#324D3E] hover:text-white transition-colors duration-300"
+                className={getThemeClasses(
+                  "border-[#324D3E]/20 dark:border-gray-600 text-[#324D3E] dark:text-white hover:bg-[#324D3E] hover:text-white transition-colors duration-300",
+                  "!border-[#FFC1CC]/30 !text-[#4c1d1d] hover:!bg-[#FFC1CC] hover:!text-white"
+                )}
               >
                 <ChevronRight className="w-4 h-4" />
               </Button>
@@ -765,26 +833,40 @@ function SummaryCard({
   icon: React.ReactNode;
   colorClass: string;
 }) {
+  const { theme } = useTheme()
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  const getThemeClasses = (baseClasses: string, pinkClasses: string = "") => {
+    if (mounted && theme === "pink" && pinkClasses) {
+      return `${baseClasses} ${pinkClasses}`
+    }
+    return baseClasses
+  }
+
   const colors = {
     "text-chart-1": {
-      bg: "bg-[#324D3E]/10 dark:bg-[#324D3E]/20",
-      text: "text-[#324D3E] dark:text-white",
-      hover: "group-hover:bg-[#324D3E]/20 dark:group-hover:bg-[#324D3E]/30",
+      bg: mounted && theme === "pink" ? "bg-[#FFC1CC]" : "bg-[#324D3E]/10 dark:bg-[#324D3E]/20",
+      text: mounted && theme === "pink" ? "text-black" : "text-[#324D3E] dark:text-white",
+      hover: mounted && theme === "pink" ? "group-hover:bg-[#4c1d1d]" : "group-hover:bg-[#324D3E]/20 dark:group-hover:bg-[#324D3E]/30",
     },
     "text-chart-2": {
-      bg: "bg-green-500/10 dark:bg-green-900/30",
-      text: "text-green-600 dark:text-emerald-400",
-      hover: "group-hover:bg-green-500/20 dark:group-hover:bg-green-800/40",
+      bg: mounted && theme === "pink" ? "bg-[#B5EAD7]" : "bg-green-500/10 dark:bg-green-900/30",
+      text: mounted && theme === "pink" ? "text-black" : "text-green-600 dark:text-emerald-400",
+      hover: mounted && theme === "pink" ? "group-hover:bg-[#059669]" : "group-hover:bg-green-500/20 dark:group-hover:bg-green-800/40",
     },
     "text-chart-3": {
-      bg: "bg-blue-500/10 dark:bg-blue-900/30",
-      text: "text-blue-600 dark:text-blue-400",
-      hover: "group-hover:bg-blue-500/20 dark:group-hover:bg-blue-800/40",
+      bg: mounted && theme === "pink" ? "bg-[#C7CEEA]" : "bg-blue-500/10 dark:bg-blue-900/30",
+      text: mounted && theme === "pink" ? "text-black" : "text-blue-600 dark:text-blue-400",
+      hover: mounted && theme === "pink" ? "group-hover:bg-[#7c3aed]" : "group-hover:bg-blue-500/20 dark:group-hover:bg-blue-800/40",
     },
     "text-chart-4": {
-      bg: "bg-purple-500/10 dark:bg-purple-900/30",
-      text: "text-purple-600 dark:text-purple-400",
-      hover: "group-hover:bg-purple-500/20 dark:group-hover:bg-purple-800/40",
+      bg: mounted && theme === "pink" ? "bg-[#FFF5BA]" : "bg-purple-500/10 dark:bg-purple-900/30",
+      text: mounted && theme === "pink" ? "text-black" : "text-purple-600 dark:text-purple-400",
+      hover: mounted && theme === "pink" ? "group-hover:bg-[#d97706]" : "group-hover:bg-purple-500/20 dark:group-hover:bg-purple-800/40",
     },
   };
 
@@ -792,7 +874,10 @@ function SummaryCard({
     colors[colorClass as keyof typeof colors] || colors["text-chart-1"];
 
   return (
-    <div className="group rounded-3xl bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl p-6 border border-[#324D3E]/10 dark:border-gray-700 shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300">
+    <div className={getThemeClasses(
+      "group rounded-3xl bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl p-6 border border-[#324D3E]/10 dark:border-gray-700 shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300",
+      "!bg-white/95 !border-[#FFC1CC]/30"
+    )}>
       <div className="flex items-center justify-between mb-4">
         <div
           className={`flex h-12 w-12 items-center justify-center rounded-2xl ${color.bg} ${color.text} ${color.hover} transition-all duration-300 group-hover:scale-110`}
@@ -801,10 +886,16 @@ function SummaryCard({
         </div>
       </div>
       <div className="space-y-2">
-        <p className="text-sm font-medium text-[#889063] dark:text-gray-200 transition-colors duration-300">
+        <p className={getThemeClasses(
+          "text-sm font-medium text-[#889063] dark:text-gray-200 transition-colors duration-300",
+          "!text-[#6b7280]"
+        )}>
           {title}
         </p>
-        <p className="text-2xl font-bold text-[#324D3E] dark:text-white group-hover:text-[#4C3D19] dark:group-hover:text-gray-200 transition-colors duration-300">
+        <p className={getThemeClasses(
+          "text-2xl font-bold text-[#324D3E] dark:text-white group-hover:text-[#4C3D19] dark:group-hover:text-gray-200 transition-colors duration-300",
+          "!text-[#4c1d1d] group-hover:!text-[#6b7280]"
+        )}>
           {value}
         </p>
       </div>
@@ -813,18 +904,44 @@ function SummaryCard({
 }
 
 function MemberCard({ member }: { member: Member }) {
+  const { theme } = useTheme()
+  const [mounted, setMounted] = useState(false)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  const getThemeClasses = (baseClasses: string, pinkClasses: string = "") => {
+    if (mounted && theme === "pink" && pinkClasses) {
+      return `${baseClasses} ${pinkClasses}`
+    }
+    return baseClasses
+  }
+
   return (
-    <div className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl rounded-3xl p-6 border border-[#324D3E]/10 dark:border-gray-700 shadow-lg hover:shadow-xl hover:border-[#324D3E]/30 dark:hover:border-gray-600 transition-all duration-300">
+    <div className={getThemeClasses(
+      "bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl rounded-3xl p-6 border border-[#324D3E]/10 dark:border-gray-700 shadow-lg hover:shadow-xl hover:border-[#324D3E]/30 dark:hover:border-gray-600 transition-all duration-300",
+      "!bg-white/95 !border-[#FFC1CC]/30 hover:!border-[#FFC1CC]/50"
+    )}>
       <div className="flex items-start justify-between mb-6">
         <div className="flex items-center gap-4">
-          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#324D3E] text-white font-bold text-lg">
+          <div className={getThemeClasses(
+            "flex h-12 w-12 items-center justify-center rounded-2xl bg-[#324D3E] text-white font-bold text-lg",
+            "!bg-[#FFC1CC] !text-black"
+          )}>
             {member.name.charAt(0)}
           </div>
           <div>
-            <h3 className="text-xl font-bold text-[#324D3E] dark:text-white mb-1 transition-colors duration-300">
+            <h3 className={getThemeClasses(
+              "text-xl font-bold text-[#324D3E] dark:text-white mb-1 transition-colors duration-300",
+              "!text-[#4c1d1d]"
+            )}>
               {member.name}
             </h3>
-            <div className="flex items-center gap-4 text-sm text-[#889063] dark:text-gray-200 transition-colors duration-300">
+            <div className={getThemeClasses(
+              "flex items-center gap-4 text-sm text-[#889063] dark:text-gray-200 transition-colors duration-300",
+              "!text-[#6b7280]"
+            )}>
               <span className="flex items-center gap-1">
                 <Mail className="h-4 w-4" />
                 {member.email}
@@ -840,7 +957,10 @@ function MemberCard({ member }: { member: Member }) {
           <Button
             size="sm"
             asChild
-            className="bg-[#324D3E] hover:bg-[#4C3D19] text-white"
+            className={getThemeClasses(
+              "bg-[#324D3E] hover:bg-[#4C3D19] text-white",
+              "!bg-[#FFC1CC] hover:!bg-[#4c1d1d] !text-black hover:!text-white"
+            )}
           >
             <Link href={`/anggota/${member.id}`} className="gap-2">
               <Eye className="w-4 h-4" />
@@ -852,7 +972,10 @@ function MemberCard({ member }: { member: Member }) {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
         <div className="space-y-3">
-          <div className="flex items-center gap-2 text-sm text-[#889063] dark:text-gray-200 transition-colors duration-300">
+          <div className={getThemeClasses(
+            "flex items-center gap-2 text-sm text-[#889063] dark:text-gray-200 transition-colors duration-300",
+            "!text-[#6b7280]"
+          )}>
             <Calendar className="h-4 w-4" />
             <span>
               Bergabung: {new Date(member.joinDate).toLocaleDateString("id-ID")}
@@ -861,26 +984,44 @@ function MemberCard({ member }: { member: Member }) {
         </div>
         <div className="grid grid-cols-3 gap-4">
           <div>
-            <p className="text-sm font-medium text-[#889063] dark:text-gray-200 mb-1 transition-colors duration-300">
+            <p className={getThemeClasses(
+              "text-sm font-medium text-[#889063] dark:text-gray-200 mb-1 transition-colors duration-300",
+              "!text-[#6b7280]"
+            )}>
               Investasi
             </p>
-            <p className="text-lg font-bold text-[#324D3E] dark:text-white transition-colors duration-300">
+            <p className={getThemeClasses(
+              "text-lg font-bold text-[#324D3E] dark:text-white transition-colors duration-300",
+              "!text-[#4c1d1d]"
+            )}>
               {formatCurrency(member.totalInvestment)}
             </p>
           </div>
           <div>
-            <p className="text-sm font-medium text-[#889063] dark:text-gray-200 mb-1 transition-colors duration-300">
+            <p className={getThemeClasses(
+              "text-sm font-medium text-[#889063] dark:text-gray-200 mb-1 transition-colors duration-300",
+              "!text-[#6b7280]"
+            )}>
               Keuntungan
             </p>
-            <p className="text-lg font-bold text-green-600 dark:text-emerald-400 transition-colors duration-300">
+            <p className={getThemeClasses(
+              "text-lg font-bold text-green-600 dark:text-emerald-400 transition-colors duration-300",
+              "!text-[#059669]"
+            )}>
               {formatCurrency(member.totalProfit)}
             </p>
           </div>
           <div>
-            <p className="text-sm font-medium text-[#889063] dark:text-gray-200 mb-1 transition-colors duration-300">
+            <p className={getThemeClasses(
+              "text-sm font-medium text-[#889063] dark:text-gray-200 mb-1 transition-colors duration-300",
+              "!text-[#6b7280]"
+            )}>
               ROI
             </p>
-            <p className="text-lg font-bold text-blue-600 dark:text-blue-400 transition-colors duration-300">
+            <p className={getThemeClasses(
+              "text-lg font-bold text-blue-600 dark:text-blue-400 transition-colors duration-300",
+              "!text-[#7c3aed]"
+            )}>
               {formatPercentage(member.overallROI)}
             </p>
           </div>
@@ -888,29 +1029,50 @@ function MemberCard({ member }: { member: Member }) {
       </div>
 
       {/* Investment Details */}
-      <div className="bg-[#324D3E]/5 dark:bg-gray-700/50 rounded-2xl p-4 border border-[#324D3E]/10 dark:border-gray-600 transition-colors duration-300">
-        <h4 className="text-sm font-bold text-[#324D3E] dark:text-white mb-3 transition-colors duration-300">
+      <div className={getThemeClasses(
+        "bg-[#324D3E]/5 dark:bg-gray-700/50 rounded-2xl p-4 border border-[#324D3E]/10 dark:border-gray-600 transition-colors duration-300",
+        "!bg-[#FFC1CC]/10 !border-[#FFC1CC]/30"
+      )}>
+        <h4 className={getThemeClasses(
+          "text-sm font-bold text-[#324D3E] dark:text-white mb-3 transition-colors duration-300",
+          "!text-[#4c1d1d]"
+        )}>
           Portfolio Investasi ({member.investments.length} tanaman)
         </h4>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
           {member.investments.map((investment, index) => (
             <div
               key={index}
-              className="bg-white/80 dark:bg-gray-600/80 backdrop-blur-xl rounded-xl p-3 border border-[#324D3E]/10 dark:border-gray-500 transition-colors duration-300"
+              className={getThemeClasses(
+                "bg-white/80 dark:bg-gray-600/80 backdrop-blur-xl rounded-xl p-3 border border-[#324D3E]/10 dark:border-gray-500 transition-colors duration-300",
+                "!bg-white/90 !border-[#FFC1CC]/30"
+              )}
             >
               <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-medium text-[#324D3E] dark:text-white transition-colors duration-300">
+                <span className={getThemeClasses(
+                  "text-sm font-medium text-[#324D3E] dark:text-white transition-colors duration-300",
+                  "!text-[#4c1d1d]"
+                )}>
                   {investment.investmentId} - {member.name}
                 </span>
-                <span className="text-xs text-blue-600 dark:text-blue-400 transition-colors duration-300">
+                <span className={getThemeClasses(
+                  "text-xs text-blue-600 dark:text-blue-400 transition-colors duration-300",
+                  "!text-[#7c3aed]"
+                )}>
                   {formatPercentage(investment.roi)}
                 </span>
               </div>
-              <div className="text-xs text-[#889063] dark:text-gray-200 space-y-1 transition-colors duration-300">
+              <div className={getThemeClasses(
+                "text-xs text-[#889063] dark:text-gray-200 space-y-1 transition-colors duration-300",
+                "!text-[#6b7280]"
+              )}>
                 <div>Investasi: {formatCurrency(investment.amount)}</div>
                 <div>
                   Profit:{" "}
-                  <span className="text-green-600 dark:text-emerald-400 transition-colors duration-300">
+                  <span className={getThemeClasses(
+                    "text-green-600 dark:text-emerald-400 transition-colors duration-300",
+                    "!text-[#059669]"
+                  )}>
                     {formatCurrency(investment.profit)}
                   </span>
                 </div>

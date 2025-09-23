@@ -1,6 +1,46 @@
 'use client';
 
 import { motion } from 'framer-motion';
+import Image from 'next/image';
+import { useState } from 'react';
+
+function PengurusAvatar({ name }: { name: string }) {
+  const [errored, setErrored] = useState(false);
+
+  // The images in public/pengurus use the exact name + extension
+  const filename = `${name}.jpg`;
+  const src = `/pengurus/${encodeURIComponent(filename)}`;
+
+  const initials = name
+    .split(' ')
+    .map((n) => n[0])
+    .slice(0, 2)
+    .join('')
+    .toUpperCase();
+
+  return (
+    <div className="relative mb-3 sm:mb-4">
+      <div className="w-20 h-20 sm:w-24 sm:h-24 lg:w-28 lg:h-28 mx-auto rounded-full overflow-hidden flex items-center justify-center shadow-lg bg-gray-100">
+        {!errored ? (
+          // Next/Image with onError isn't supported on server directly; use loading="eager" and handle onError via onLoadingComplete
+          <Image
+            src={src}
+            alt={name}
+            width={112}
+            height={112}
+            className="w-full h-full object-cover"
+            onError={() => setErrored(true)}
+            unoptimized
+          />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-300 to-gray-400 text-white font-bold text-lg">
+            {initials}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -155,28 +195,22 @@ export default function AboutSection() {
               variants={containerVariants}
             >
               {/* Ketua Koperasi */}
-              <motion.div
-                className="text-center"
-                variants={fadeInUp}
-                whileHover={{
-                  scale: 1.05,
-                  transition: { duration: 0.3 }
-                }}
-              >
-                <div className="relative mb-3 sm:mb-4">
-                  <div className="w-20 h-20 sm:w-24 sm:h-24 lg:w-28 lg:h-28 mx-auto bg-gradient-to-br from-gray-300 to-gray-400 rounded-full flex items-center justify-center shadow-lg">
-                    <svg className="w-8 h-8 sm:w-10 sm:h-10 lg:w-12 lg:h-12 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                    </svg>
-                  </div>
-                </div>
-                <h4 className="text-xs sm:text-sm lg:text-base font-bold text-[#2D3B30] mb-1">
-                  Halim Perdana Kusuma, S.H., M.H.
-                </h4>
-                <p className="text-xs sm:text-sm text-gray-700 font-medium">
-                  Ketua Koperasi
-                </p>
-              </motion.div>
+                <motion.div
+                  className="text-center"
+                  variants={fadeInUp}
+                  whileHover={{
+                    scale: 1.05,
+                    transition: { duration: 0.3 }
+                  }}
+                >
+                  <PengurusAvatar name="Halim Perdana Kusuma, S.H., M.H." />
+                  <h4 className="text-xs sm:text-sm lg:text-base font-bold text-[#2D3B30] mb-1">
+                    Halim Perdana Kusuma, S.H., M.H.
+                  </h4>
+                  <p className="text-xs sm:text-sm text-gray-700 font-medium">
+                    Ketua Koperasi
+                  </p>
+                </motion.div>
 
               {/* Sekretaris */}
               <motion.div
@@ -187,13 +221,7 @@ export default function AboutSection() {
                   transition: { duration: 0.3 }
                 }}
               >
-                <div className="relative mb-3 sm:mb-4">
-                  <div className="w-20 h-20 sm:w-24 sm:h-24 lg:w-28 lg:h-28 mx-auto bg-gradient-to-br from-gray-300 to-gray-400 rounded-full flex items-center justify-center shadow-lg">
-                    <svg className="w-8 h-8 sm:w-10 sm:h-10 lg:w-12 lg:h-12 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                    </svg>
-                  </div>
-                </div>
+                <PengurusAvatar name="Meidi Asri, S.H., M.H." />
                 <h4 className="text-xs sm:text-sm lg:text-base font-bold text-[#2D3B30] mb-1">
                   Meidi Asri, S.H., M.H.
                 </h4>
@@ -211,13 +239,7 @@ export default function AboutSection() {
                   transition: { duration: 0.3 }
                 }}
               >
-                <div className="relative mb-3 sm:mb-4">
-                  <div className="w-20 h-20 sm:w-24 sm:h-24 lg:w-28 lg:h-28 mx-auto bg-gradient-to-br from-gray-300 to-gray-400 rounded-full flex items-center justify-center shadow-lg">
-                    <svg className="w-8 h-8 sm:w-10 sm:h-10 lg:w-12 lg:h-12 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                    </svg>
-                  </div>
-                </div>
+                <PengurusAvatar name="Rika Ariyanti, S.E." />
                 <h4 className="text-xs sm:text-sm lg:text-base font-bold text-[#2D3B30] mb-1">
                   Rika Ariyanti, S.E.
                 </h4>
@@ -235,13 +257,7 @@ export default function AboutSection() {
                   transition: { duration: 0.3 }
                 }}
               >
-                <div className="relative mb-3 sm:mb-4">
-                  <div className="w-20 h-20 sm:w-24 sm:h-24 lg:w-28 lg:h-28 mx-auto bg-gradient-to-br from-gray-300 to-gray-400 rounded-full flex items-center justify-center shadow-lg">
-                    <svg className="w-8 h-8 sm:w-10 sm:h-10 lg:w-12 lg:h-12 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                    </svg>
-                  </div>
-                </div>
+                <PengurusAvatar name="Bobot Sudoyo, S.P., M.Si." />
                 <h4 className="text-xs sm:text-sm lg:text-base font-bold text-[#2D3B30] mb-1">
                   Bobot Sudoyo, S.P., M.Si.
                 </h4>
@@ -282,7 +298,7 @@ export default function AboutSection() {
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.5, duration: 0.6 }}
               >
-                Menjadi pemimpin dalam industri investasi pertanian dengan mendorong praktik berkelanjutan dan menghadirkan hasil terbaik bagi para investor.
+                Koperasi yang Kuat dan Mandiri untuk Masa Depan yang Berkelanjutan
               </motion.p>
             </motion.div>
 
@@ -311,7 +327,10 @@ export default function AboutSection() {
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.7, duration: 0.6 }}
               >
-                Menyediakan peluang investasi unggulan di sektor pertanian melalui seleksi proyek yang ketat, pengelolaan profesional, dan solusi inovatif.
+              1. Pemberdayaan anggota dan Pengelolaan berkelanjutan<br />
+              2. Meningkatkan Kesejahteraan dan Lingkungan<br />
+3. Kemitraan & Jaringan Bisnis<br />
+4. Memperkuat Kapasitas Ekonomi Anggota
               </motion.p>
 
               {/* Vertical divider line */}
