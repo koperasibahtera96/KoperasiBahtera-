@@ -6,19 +6,19 @@ import { useState } from 'react';
 const faqData = [
   {
     question: "Bagaimana Cara Kerjanya?",
-    answer: "Sistem investasi kami bekerja melalui platform digital yang mudah diakses. Anda dapat memilih jenis tanaman, menentukan jumlah investasi, dan memantau perkembangan investasi Anda secara real-time melalui dashboard yang disediakan."
+    answer: "Sistem kami bekerja melalui platform digital yang mudah diakses. Anda dapat memilih jenis tanaman, menentukan jumlah paket, dan memantau perkembangan tanaman Anda secara real-time melalui dashboard yang disediakan."
   },
   {
     question: "Seberapa Amankah Dana Saya Setelah Pengajuan?",
-    answer: "Dana Anda akan dikelola secara transparan dan aman melalui sistem kemi yang telah terintegrasi dengan standar keamanan tingkat tinggi. Setiap dana keatas akan dialokasikan ke proyek-proyek yang telah melalui proses seleksi ketat, dan Anda akan mendapat laporan berkala mengenai penggunaan dana dan perkembangan proyek. Selain itu, kami menggunakan sistem perbankan digital yang aman dan terpercaya. Kami berkomitmen untuk menjaga kepercayaan Anda dengan memastikan setiap operasi mengikuti prosedur audit yang ketat sesuai tujuan Anda menginvestasikan dana kepada koperasi."
+    answer: "Dana Anda akan dikelola secara transparan dan aman melalui sistem kami yang telah terintegrasi dengan standar keamanan tingkat tinggi. Setiap dana akan dialokasikan ke proyek-proyek yang telah melalui proses seleksi ketat, dan Anda akan mendapat laporan berkala mengenai penggunaan dana dan perkembangan proyek. Selain itu, kami menggunakan sistem perbankan digital yang aman dan terpercaya. Kami berkomitmen untuk menjaga kepercayaan Anda dengan memastikan setiap operasi mengikuti prosedur audit yang ketat sesuai tujuan pembelian paket tanaman Anda."
   },
   {
     question: "Apakah Pertanian Ini Dijamin untuk Jangka Panjang?",
-    answer: "Ya, investasi pertanian kami dirancang untuk jangka panjang dengan jaminan keberlanjutan. Kami bekerja sama dengan petani berpengalaman dan menggunakan teknologi modern untuk memastikan produktivitas yang optimal sepanjang periode investasi."
+    answer: "Ya, paket pertanian kami dirancang untuk jangka panjang dengan jaminan keberlanjutan. Kami bekerja sama dengan petani berpengalaman dan menggunakan teknologi modern untuk memastikan produktivitas yang optimal sepanjang periode pembelian paket."
   },
   {
-    question: "Bagaimana Proses Investasi Pertanian Berkelanjutan?",
-    answer: "Proses investasi dimulai dengan pendaftaran akun, pemilihan paket investasi, pembayaran, dan kemudian monitoring berkala. Kami menyediakan laporan transparan mengenai perkembangan tanaman, estimasi hasil panen, dan proyeksi keuntungan yang akan Anda terima."
+    question: "Bagaimana Proses Pembelian Paket Pertanian Berkelanjutan?",
+    answer: "Proses pembelian paket dimulai dengan pendaftaran akun, pemilihan paket tanaman, pembayaran, dan kemudian monitoring berkala. Kami menyediakan laporan transparan mengenai perkembangan tanaman, estimasi hasil panen, dan proyeksi keuntungan yang akan Anda terima."
   }
 ];
 

@@ -82,13 +82,15 @@ function EditableField({
       if (response.ok) {
         onUpdate(value.trim() || "-");
         setIsEditing(false);
-        showSuccess("Berhasil!", `${fieldName === 'location' ? 'Lokasi' : 'Kavling'} berhasil diperbarui!`);
+        const fieldLabel = fieldName === 'location' ? 'Lokasi' : fieldName === 'blok' ? 'Blok' : 'Kavling';
+        showSuccess("Berhasil!", `${fieldLabel} berhasil diperbarui!`);
       } else {
         throw new Error(`Failed to update ${fieldName}`);
       }
     } catch (error) {
       console.error(`Error updating ${fieldName}:`, error);
-      showError("Gagal memperbarui", `Gagal memperbarui ${fieldName === 'location' ? 'lokasi' : 'kavling'}.`);
+      const fieldLabel = fieldName === 'location' ? 'lokasi' : fieldName === 'blok' ? 'blok' : 'kavling';
+      showError("Gagal memperbarui", `Gagal memperbarui ${fieldLabel}.`);
       setValue(initialValue);
     } finally {
       setIsLoading(false);
@@ -1072,8 +1074,27 @@ const handleDownloadHistoryPDF = async () => {
                   </div>
                 </div>
 
-                {/* Jumlah Tanam */}
-                <div className="bg-white/60 rounded-xl sm:rounded-2xl p-3 sm:p-4 border border-[#324D3E]/10 md:col-span-2">
+                <div className="bg-white/60 rounded-xl sm:rounded-2xl p-3 sm:p-4 border border-[#324D3E]/10">
+                  <p className="text-xs sm:text-sm text-[#889063] mb-1">Blok</p>
+                  <div className="flex items-center gap-2 min-w-0">
+                    <MapPin className="w-3 h-3 sm:w-4 sm:h-4 text-[#4C3D19] flex-shrink-0" />
+                    {(session?.user.role === "admin" || session?.user.role === "spv_staff") ? (
+                      <EditableField
+                        plantId={id}
+                        fieldName="blok"
+                        initialValue={plantData.blok || "-"}
+                        onUpdate={(newBlok) => setPlantData({ ...plantData, blok: newBlok })}
+                        placeholder="Masukkan blok..."
+                      />
+                    ) : (
+                      <span className="font-semibold text-[#324D3E] text-sm sm:text-base truncate">
+                        {plantData.blok || "-"}
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                <div className="bg-white/60 rounded-xl sm:rounded-2xl p-3 sm:p-4 border border-[#324D3E]/10">
                   <p className="text-xs sm:text-sm text-[#889063] mb-1">Jumlah Tanam</p>
                   <div className="flex items-center gap-2">
                     <FileText className="w-3 h-3 sm:w-4 sm:h-4 text-[#4C3D19] flex-shrink-0" />

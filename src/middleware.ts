@@ -120,7 +120,7 @@ export default async function middleware(req: NextRequest) {
 
     // Routes users can access only when verified
     const verifiedOnlyPaths = [
-      "/investasi",
+      "/plants",
       "/payments",
       "/cicilan",
       "/contract"
@@ -164,7 +164,7 @@ export const config = {
     "/checker/:path*",
     "/marketing/:path*",
     "/staff/:path*",
-    "/investasi/:path*",
+    "/plants/:path*",
     "/payments/:path*",
     "/public/:path*",
     "/profile/:path*",

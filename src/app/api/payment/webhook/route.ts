@@ -4,6 +4,7 @@ import dbConnect from "@/lib/mongodb";
 import { createCommissionRecord } from "@/lib/commission";
 import { generateInvoiceNumber } from "@/lib/invoiceNumberGenerator";
 import { getFirstAdminName } from "@/lib/utils/admin";
+import generateUserCode from '@/lib/userCodeGenerator';
 import { Investor } from "@/models";
 import Contract from "@/models/Contract";
 import Payment from "@/models/Payment";
@@ -109,43 +110,82 @@ export async function POST(request: NextRequest) {
         console.log("User already exists, skipping creation");
         payment.processingError = "User already exists";
       } else {
-        const hashedPassword = payment.customerData.password;
+  console.log("🔍 Creating user with customerData:", payment.customerData);
+  // Defensive: ensure password is present (already hashed when saved in Payment)
+  const hashedPassword = payment.customerData.password ?? null;
         const occupationData = occupationOptions.find(
           (opt) => opt.value === payment.customerData.occupation
         );
         const occupationCode = occupationData?.code || "999";
-        const currentYear = new Date().getFullYear().toString().slice(-2);
+        // Generate a unique userCode atomically
+        const { userCode } = await generateUserCode(occupationCode);
 
-        const lastUser = await User.findOne({})
-          .sort({ userCode: -1 })
-          .select("userCode");
+        // Log beneficiary fields explicitly and normalize types
+        console.log("🔍 Beneficiary fields from customerData:", {
+          beneficiaryName: String(payment.customerData.beneficiaryName || ""),
+          beneficiaryNik: String(payment.customerData.beneficiaryNik || ""),
+          beneficiaryDateOfBirth: payment.customerData.beneficiaryDateOfBirth
+            ? new Date(payment.customerData.beneficiaryDateOfBirth).toISOString()
+            : null,
+          beneficiaryRelationship: String(payment.customerData.beneficiaryRelationship || ""),
+        });
 
-        let sequential = 1;
-        if (lastUser?.userCode) {
-          const match = lastUser.userCode.match(/BMS-\d+\.(\d+)$/);
-          if (match) sequential = parseInt(match[1]) + 1;
-        }
-
-        const userCode = `BMS-${currentYear}${occupationCode}.${sequential
-          .toString()
-          .padStart(4, "0")}`;
-
-        const user = new User({
-          ...payment.customerData,
+        // Build user data explicitly to avoid accidental extra properties
+        const userData: any = {
+          email: String(payment.customerData.email || "").toLowerCase().trim(),
           password: hashedPassword,
+          fullName: String(payment.customerData.fullName || "").trim(),
+          nik: String(payment.customerData.nik || "").trim(),
+          phoneNumber: String(payment.customerData.phoneNumber || "").trim(),
+          dateOfBirth: payment.customerData.dateOfBirth
+            ? new Date(payment.customerData.dateOfBirth)
+            : null,
+          ktpAddress: String(payment.customerData.ktpAddress || "").trim(),
+          ktpVillage: String(payment.customerData.ktpVillage || "").trim(),
+          ktpCity: String(payment.customerData.ktpCity || "").trim(),
+          ktpProvince: String(payment.customerData.ktpProvince || "").trim(),
+          ktpPostalCode: String(payment.customerData.ktpPostalCode || "").trim(),
+          domisiliAddress: String(payment.customerData.domisiliAddress || "").trim(),
+          domisiliVillage: String(payment.customerData.domisiliVillage || "").trim(),
+          domisiliCity: String(payment.customerData.domisiliCity || "").trim(),
+          domisiliProvince: String(payment.customerData.domisiliProvince || "").trim(),
+          domisiliPostalCode: String(payment.customerData.domisiliPostalCode || "").trim(),
+          occupation: String(payment.customerData.occupation || "").trim(),
+          beneficiaryName: String(payment.customerData.beneficiaryName || "").trim(),
+          beneficiaryNik: String(payment.customerData.beneficiaryNik || "").trim(),
+          beneficiaryDateOfBirth: payment.customerData.beneficiaryDateOfBirth
+            ? new Date(payment.customerData.beneficiaryDateOfBirth)
+            : null,
+          beneficiaryRelationship: String(payment.customerData.beneficiaryRelationship || "").trim(),
+          ktpImageUrl: String(payment.customerData.ktpImageUrl || "").trim(),
+          faceImageUrl: String(payment.customerData.faceImageUrl || "").trim(),
           occupationCode,
           userCode,
           role: "user",
           isEmailVerified: false,
           isPhoneVerified: false,
           isActive: true,
-        });
+        };
 
-        await user.save();
+        // Attempt to save and capture any validation errors to payment.processingError
+        let createdUser;
+        try {
+          const user = new User(userData);
+          createdUser = await user.save();
+        } catch (userCreateError: any) {
+          console.error("Error creating user from payment.customerData:", userCreateError);
+          payment.processingError = `User creation failed: ${userCreateError.message || String(userCreateError)}`;
+          await payment.save();
+          // mark as processed to avoid retry loops, but surface the error
+          payment.isProcessed = false;
+          message = "Transaction successful but user creation failed";
+        }
 
-        payment.userId = user._id;
-        payment.isProcessed = true;
-        message = `Transaction successful - User created: ${userCode}`;
+        if (createdUser) {
+          payment.userId = createdUser._id;
+          payment.isProcessed = true;
+          message = `Transaction successful - User created: ${createdUser.userCode || userCode}`;
+        }
       }
     }
 
@@ -223,6 +263,7 @@ export async function POST(request: NextRequest) {
             contractNumber: orderId,
             location: "Musi Rawas Utara",
             kavling: "-",
+            blok: "-",
             status: plantStatus,
             approvalStatus: "approved",
             lastUpdate: new Date().toLocaleDateString("id-ID", {
@@ -439,6 +480,7 @@ export async function POST(request: NextRequest) {
               contractNumber: cicilanOrderId,
               location: "Musi Rawas Utara",
               kavling: "-",
+              blok: "-",
               status: plantStatus,
               approvalStatus: "approved",
               lastUpdate: new Date().toLocaleDateString("id-ID", {

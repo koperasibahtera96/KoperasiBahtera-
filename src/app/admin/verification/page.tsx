@@ -29,6 +29,11 @@ interface PendingUser {
   domisiliCity: string;
   domisiliProvince: string;
   domisiliPostalCode: string;
+  // Beneficiary Information
+  beneficiaryName: string;
+  beneficiaryNik: string;
+  beneficiaryDateOfBirth: Date | string;
+  beneficiaryRelationship: 'orangtua' | 'suami_istri' | 'anak_kandung' | 'saudara_kandung';
 }
 
 export default function UserVerificationPage() {
@@ -487,6 +492,22 @@ export default function UserVerificationPage() {
                       <p className="text-gray-600 dark:text-gray-200 transition-colors duration-300">Kota: <span className="font-medium">{selectedUser.domisiliCity}</span></p>
                       <p className="text-gray-600 dark:text-gray-200 transition-colors duration-300">Provinsi: <span className="font-medium">{selectedUser.domisiliProvince}</span></p>
                       <p className="text-gray-600 dark:text-gray-200 transition-colors duration-300">Kode Pos: <span className="font-medium">{selectedUser.domisiliPostalCode}</span></p>
+                    </div>
+                  </div>
+
+                  {/* Beneficiary Information */}
+                  <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-600">
+                    <h5 className="font-semibold text-[#324D3E] dark:text-white mb-2 text-xs sm:text-sm">Penerima Manfaat:</h5>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs sm:text-sm">
+                      <p className="text-gray-600 dark:text-gray-200 transition-colors duration-300">Nama: <span className="font-medium">{selectedUser.beneficiaryName}</span></p>
+                      <p className="text-gray-600 dark:text-gray-200 transition-colors duration-300">NIK: <span className="font-medium">{selectedUser.beneficiaryNik}</span></p>
+                      <p className="text-gray-600 dark:text-gray-200 transition-colors duration-300">Tanggal Lahir: <span className="font-medium">{selectedUser.beneficiaryDateOfBirth ? new Date(selectedUser.beneficiaryDateOfBirth).toLocaleDateString('id-ID') : '-'}</span></p>
+                      <p className="text-gray-600 dark:text-gray-200 transition-colors duration-300">Hubungan: <span className="font-medium">
+                        {selectedUser.beneficiaryRelationship === 'orangtua' ? 'Orang Tua' :
+                         selectedUser.beneficiaryRelationship === 'suami_istri' ? 'Suami/Istri' :
+                         selectedUser.beneficiaryRelationship === 'anak_kandung' ? 'Anak Kandung' :
+                         selectedUser.beneficiaryRelationship === 'saudara_kandung' ? 'Saudara Kandung' : '-'}
+                      </span></p>
                     </div>
                   </div>
                 </div>

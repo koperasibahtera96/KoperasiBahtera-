@@ -416,6 +416,8 @@ export default function ContractPage() {
           addPageNumber(); // Add page number to current page before adding new page
           pdf.addPage();
           yPosition = 20;
+          pdf.setFontSize(10);
+          pdf.setFont("helvetica", "normal");
         }
 
         if (text === "") {

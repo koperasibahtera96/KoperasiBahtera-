@@ -318,16 +318,16 @@ export default function LandingNavbar({
                 {/* Show buttons only if user can purchase and navigation is not hidden */}
                 {!hideNavigation && derivedCanPurchase ? (
                   <>
-                    {/* Investasi Saya Button */}
+                    {/* Tanaman Saya Button */}
                     <motion.div
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}
                     >
                       <Link
-                        href="/investasi"
+                        href="/plants"
                         className="px-3 md:px-4 lg:px-4 xl:px-5 py-1.5 text-gray-700 transition-all duration-300 font-semibold rounded-full border border-[#324D3E] hover:border-[#4C3D19] hover:bg-[#4C3D19] hover:text-white whitespace-nowrap text-sm md:text-sm lg:text-sm xl:text-base"
                       >
-                        Investasi Saya
+                        Tanaman Saya
                       </Link>
                     </motion.div>
 
@@ -443,7 +443,7 @@ export default function LandingNavbar({
                       </motion.div>
                     )}
                     <span className="text-gray-700 font-medium text-xs md:text-sm lg:text-base hidden md:inline max-w-[8rem] md:max-w-[10rem] truncate">
-                      Hello, {session.user.name?.split(" ")[0] || "User"}
+                      Hello, {session.user.name.length >= 5 ? `${session.user.name.slice(0, 5)}...` : session.user.name}
                     </span>
                     <motion.svg
                       className="w-4 h-4 text-gray-500 flex-shrink-0"
@@ -754,7 +754,7 @@ export default function LandingNavbar({
                       {/* Conditional Menu Items for Verified Users */}
                       {derivedCanPurchase && (
                         <>
-                          <Link href="/investasi">
+                          <Link href="/plants">
                             <motion.div
                               className="w-full px-4 py-2.5 text-left text-gray-700 hover:bg-gray-50 transition-colors font-medium cursor-pointer text-sm"
                               whileHover={{
@@ -778,7 +778,7 @@ export default function LandingNavbar({
                                     d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"
                                   />
                                 </svg>
-                                <span>Investasi Saya</span>
+                                <span>Tanaman Saya</span>
                               </div>
                             </motion.div>
                           </Link>

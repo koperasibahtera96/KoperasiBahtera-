@@ -202,7 +202,7 @@ export default function ContractRetryPage() {
             }
           </p>
           <button
-            onClick={() => router.push('/investasi')}
+            onClick={() => router.push('/plants')}
             className="bg-[#324D3E] text-white px-6 py-2 rounded-lg hover:bg-[#4C3D19]"
           >
             Back to Investments

@@ -34,6 +34,7 @@ export interface IPlantInstance extends Document {
   userId?: mongoose.Types.ObjectId
   location?: string
   kavling?: string
+  blok?: string
   status?: string
   approvalStatus: "pending" | "approved" | "rejected"
   lastUpdate?: string
@@ -81,6 +82,7 @@ const PlantInstanceSchema = new Schema(
     contractNumber: { type: String, unique: true, sparse: true },
     location: { type: String },
     kavling: {type: String},
+    blok: {type: String},
     status: { type: String },
     approvalStatus: {
       type: String,

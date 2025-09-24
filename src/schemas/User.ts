@@ -47,6 +47,19 @@ export const registrationSchema = z.object({
     .regex(/^[0-9]{5}$/, 'Kode pos domisili harus 5 digit angka'),
   occupation: z.string()
     .min(1, 'Pekerjaan wajib diisi'),
+  // Beneficiary Information (Penerima Manfaat)
+  beneficiaryName: z.string()
+    .min(2, 'Nama penerima manfaat minimal 2 karakter')
+    .max(100, 'Nama penerima manfaat maksimal 100 karakter')
+    .regex(/^[a-zA-Z\s\.]+$/, 'Nama hanya boleh berisi huruf, spasi, dan titik'),
+  beneficiaryNik: z.string()
+    .regex(/^[0-9]{16}$/, 'NIK penerima manfaat harus berisi 16 digit angka'),
+  beneficiaryDateOfBirth: z.string()
+    .min(1, 'Tanggal lahir penerima manfaat wajib diisi'),
+  beneficiaryRelationship: z.enum(['orangtua', 'suami_istri', 'anak_kandung', 'saudara_kandung'])
+    .refine((val) => val !== undefined, {
+      message: 'Hubungan dengan penerima manfaat wajib diisi',
+    }),
   agreeToTerms: z.boolean()
     .refine((val) => val === true, 'Anda harus menyetujui syarat & ketentuan'),
   agreeToPrivacy: z.boolean()

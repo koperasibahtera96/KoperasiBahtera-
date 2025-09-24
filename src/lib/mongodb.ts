@@ -13,7 +13,7 @@ import mongoose from "mongoose";
 
 const MONGODB_URI =
   process.env.MONGODB_URI ||
-  "mongodb+srv://BenZeta:BenZeta@benzeta.lfcf6it.mongodb.net/investasi-hijau?retryWrites=true&w=majority";
+  "mongodb+srv://BenZeta:BenZeta@benzeta.lfcf6it.mongodb.net/tanaman-hijau?retryWrites=true&w=majority";
 if (!MONGODB_URI) {
   throw new Error(
     "Please define the MONGODB_URI environment variable inside .env.local"

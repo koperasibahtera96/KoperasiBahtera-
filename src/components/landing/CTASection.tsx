@@ -116,7 +116,7 @@ export default function CTASection({ className = '' }: CTASectionProps) {
                   transition: { duration: 0.3 }
                 }}
               >
-                Investasi Hijau, Hijaukan Bumi Sejahterakan Hati
+                Tanam Hari ini, Hijaukan Bumi Sejahterakan Hati
               </motion.h3>
               <motion.p 
                 className="text-gray-600 text-sm sm:text-base md:text-lg lg:text-xl"

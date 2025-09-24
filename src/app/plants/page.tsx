@@ -24,6 +24,8 @@ interface PlantInstance {
   instanceName: string;
   baseAnnualROI: number;
   location: string;
+  kavling?: string;
+  blok?: string;
   status: string;
   qrCode?: string;
   fotoGambar?: string;
@@ -436,7 +438,7 @@ export default function InvestasiPage() {
             transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
           />
           <p className="text-[#324D3E] text-lg font-medium">
-            Memuat investasi Anda...
+            Memuat tanaman Anda...
           </p>
         </motion.div>
       </div>
@@ -470,10 +472,10 @@ export default function InvestasiPage() {
                   />
                   <div>
                     <h1 className="text-lg sm:text-xl font-bold text-[#324D3E]">
-                      Investasi Saya
+                      Tanaman Saya
                     </h1>
                     <p className="text-sm text-gray-600">
-                      Kelola dan pantau investasi Anda
+                      Kelola dan pantau tanaman Anda
                     </p>
                   </div>
                 </motion.div>
@@ -517,14 +519,14 @@ export default function InvestasiPage() {
           >
             {[
               {
-                title: "Total Investasi",
+                title: "Total Paket",
                 value: data?.totalInvestments || 0,
-                suffix: " Investasi",
+                suffix: " Paket",
                 icon: <BarChart3 className="w-6 h-6" />,
                 bgColor: "from-blue-500 to-blue-600",
               },
               {
-                title: "Nilai Investasi",
+                title: "Nilai Paket",
                 value: formatCurrency(data?.totalAmount || 0),
                 suffix: "",
                 icon: <Coins className="w-6 h-6" />,
@@ -642,7 +644,7 @@ export default function InvestasiPage() {
                     {/* Investment Details */}
                     <div className="grid grid-cols-2 gap-4 text-sm">
                       <div>
-                        <span className="text-gray-600">Total Investasi</span>
+                        <span className="text-gray-600">Total Paket</span>
                         <p className="font-semibold text-gray-900">
                           {formatCurrency(investment.totalAmount)}
                         </p>
@@ -700,12 +702,9 @@ export default function InvestasiPage() {
                           </span>
                         </div>
                         <div className="flex justify-between">
-                          <span className="text-gray-600">ROI Tahunan:</span>
-                          <span className="text-green-600 font-medium">
-                            {(
-                              investment.plantInstance.baseAnnualROI * 100
-                            ).toFixed(1)}
-                            %
+                          <span className="text-gray-600">Kav / Blok:</span>
+                          <span className="text-gray-900">
+                            {investment.plantInstance.kavling || "-"} / {investment.plantInstance.blok || "-"}
                           </span>
                         </div>
                         <div className="flex justify-between">
@@ -899,10 +898,10 @@ export default function InvestasiPage() {
                 <Sprout className="w-full h-full" />
               </motion.div>
               <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                Belum Ada Investasi
+                Belum Ada Tanaman
               </h3>
               <p className="text-gray-600 mb-6 max-w-md mx-auto">
-                Mulai investasi hijau Anda hari ini dan berkontribusi untuk masa
+                Mulai pembelian paket Anda hari ini dan berkontribusi untuk masa
                 depan yang lebih berkelanjutan.
               </p>
               <Link href="/#produk">
@@ -911,7 +910,7 @@ export default function InvestasiPage() {
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                 >
-                  Mulai Investasi
+                  Mulai Bergabung
                 </motion.button>
               </Link>
             </motion.div>
@@ -996,7 +995,7 @@ export default function InvestasiPage() {
                   {/* Investment Summary */}
                   <div>
                     <h3 className="text-lg font-semibold mb-4">
-                      Ringkasan Investasi
+                      Ringkasan Tanaman
                     </h3>
                     <div className="grid grid-cols-2 gap-4">
                       <div className="p-4 bg-gray-50 rounded-lg">
@@ -1017,7 +1016,7 @@ export default function InvestasiPage() {
                       </div>
                       <div className="p-4 bg-gray-50 rounded-lg">
                         <span className="text-sm text-gray-600">
-                          Tanggal Investasi
+                          Tanggal Pembelian
                         </span>
                         <p className="font-semibold">
                           {formatDate(selectedInvestment.investmentDate)}
@@ -1063,16 +1062,8 @@ export default function InvestasiPage() {
                               <p>{selectedInvestment.plantInstance.location}</p>
                             </div>
                             <div>
-                              <span className="text-gray-600">
-                                ROI Tahunan:
-                              </span>
-                              <p className="text-green-600 font-medium">
-                                {(
-                                  selectedInvestment.plantInstance
-                                    .baseAnnualROI * 100
-                                ).toFixed(1)}
-                                %
-                              </p>
+                              <span className="text-gray-600">Kav / Blok:</span>
+                              <p>{selectedInvestment.plantInstance.kavling || "-"} / {selectedInvestment.plantInstance.blok || "-"}</p>
                             </div>
                           </div>
                         </div>

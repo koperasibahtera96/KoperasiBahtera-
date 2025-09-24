@@ -22,7 +22,7 @@ export async function GET() {
     const users = await User.find({
       role: 'user'
     })
-    .select('fullName nik email phoneNumber ktpImageUrl faceImageUrl verificationStatus createdAt ktpAddress ktpVillage ktpCity ktpProvince ktpPostalCode domisiliAddress domisiliVillage domisiliCity domisiliProvince domisiliPostalCode verificationNotes verifiedBy verifiedAt')
+    .select('fullName nik email phoneNumber ktpImageUrl faceImageUrl verificationStatus createdAt ktpAddress ktpVillage ktpCity ktpProvince ktpPostalCode domisiliAddress domisiliVillage domisiliCity domisiliProvince domisiliPostalCode verificationNotes verifiedBy verifiedAt beneficiaryName beneficiaryNik beneficiaryDateOfBirth beneficiaryRelationship')
     .sort({ createdAt: -1 })
     .lean();
 

@@ -22,6 +22,11 @@ export interface IUser extends Document {
   occupation: string;
   occupationCode?: string; // Auto-generated based on occupation
   userCode?: string; // Auto-generated user code
+  // Beneficiary Information (Penerima Manfaat)
+  beneficiaryName: string;
+  beneficiaryNik: string;
+  beneficiaryDateOfBirth: Date;
+  beneficiaryRelationship: 'orangtua' | 'suami_istri' | 'anak_kandung' | 'saudara_kandung';
   ktpImageUrl?: string; // KTP image URL from ImageKit
   faceImageUrl?: string; // Face verification image URL from ImageKit
   profileImageUrl?: string; // Profile image URL from ImageKit
@@ -150,6 +155,27 @@ const UserSchema: Schema = new Schema({
     type: String,
     unique: true,
     trim: true,
+  },
+  // Beneficiary Information
+  beneficiaryName: {
+    type: String,
+    required: [true, 'Beneficiary name is required'],
+    trim: true,
+  },
+  beneficiaryNik: {
+    type: String,
+    required: [true, 'Beneficiary NIK is required'],
+    trim: true,
+    match: [/^[0-9]{16}$/, 'Beneficiary NIK must be 16 digits'],
+  },
+  beneficiaryDateOfBirth: {
+    type: Date,
+    required: [true, 'Beneficiary date of birth is required'],
+  },
+  beneficiaryRelationship: {
+    type: String,
+    required: [true, 'Beneficiary relationship is required'],
+    enum: ['orangtua', 'suami_istri', 'anak_kandung', 'saudara_kandung'],
   },
   ktpImageUrl: {
     type: String,

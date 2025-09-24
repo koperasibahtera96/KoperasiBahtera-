@@ -52,6 +52,7 @@ export type PlantInstance = {
   incomeRecords: IncomeRecord[];
   location?: string;
   kavling?: string;
+  blok?: string;
   lastUpdate: string;
   status: string;
   owner: string;

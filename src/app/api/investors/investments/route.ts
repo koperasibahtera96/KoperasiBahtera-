@@ -146,6 +146,8 @@ export async function GET() {
           instanceName: inv.plantInstanceId.instanceName,
           baseAnnualROI: inv.plantInstanceId.baseAnnualROI,
           location: inv.plantInstanceId.location,
+          kavling: inv.plantInstanceId.kavling,
+          blok: inv.plantInstanceId.blok,
           status: inv.plantInstanceId.status,
           qrCode: inv.plantInstanceId.qrCode,
           fotoGambar: inv.plantInstanceId.fotoGambar,

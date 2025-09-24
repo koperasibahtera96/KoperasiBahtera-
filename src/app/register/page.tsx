@@ -203,6 +203,10 @@ export default function RegisterPage() {
           domisiliProvince: formData.domisiliProvince,
           domisiliPostalCode: formData.domisiliPostalCode.trim(),
           occupation: formData.occupation,
+          beneficiaryName: formData.beneficiaryName.trim(),
+          beneficiaryNik: formData.beneficiaryNik.trim(),
+          beneficiaryDateOfBirth: new Date(formData.beneficiaryDateOfBirth),
+          beneficiaryRelationship: formData.beneficiaryRelationship,
           ktpImageUrl,
           faceImageUrl,
         },
@@ -302,6 +306,10 @@ export default function RegisterPage() {
         "domisiliCity",
         "domisiliProvince",
         "domisiliPostalCode",
+        "beneficiaryName",
+        "beneficiaryNik",
+        "beneficiaryDateOfBirth",
+        "beneficiaryRelationship",
         "password",
         "confirmPassword",
         "agreeToTerms",
@@ -334,8 +342,6 @@ export default function RegisterPage() {
       if (success) {
         setCurrentStep(4);
       }
-    } else if (currentStep === 4 && orderId) {
-      setCurrentStep(5);
     }
   };
 
@@ -348,7 +354,7 @@ export default function RegisterPage() {
   };
 
   const onSubmit = async (data: RegistrationFormData) => {
-    if (currentStep !== 5) {
+    if (currentStep !== 4) {
       handleNextStep();
       return;
     }
@@ -452,7 +458,7 @@ export default function RegisterPage() {
 
         {/* Progress Steps */}
         <div className="mb-8 px-4">
-          <div className="max-w-4xl mx-auto">
+          <div className="max-w-4xl mx-auto overflow-y-hidden">
             {/* Mobile View - Show only current step */}
             <div className="sm:hidden flex justify-center">
               <div className="flex flex-col items-center">
@@ -487,11 +493,10 @@ export default function RegisterPage() {
                   {currentStep === 2 && "Verifikasi KTP"}
                   {currentStep === 3 && "Verifikasi Wajah"}
                   {currentStep === 4 && "Pembayaran"}
-                  {currentStep === 5 && "Selesai"}
                 </p>
                 {/* Progress indicator */}
                 <div className="flex items-center mt-3 space-x-1">
-                  {[1, 2, 3, 4, 5].map((step) => (
+                  {[1, 2, 3, 4].map((step) => (
                     <div
                       key={step}
                       className={`w-2 h-2 rounded-full ${
@@ -506,7 +511,7 @@ export default function RegisterPage() {
             </div>
 
             {/* Desktop/Tablet View - Show all steps */}
-            <div className="hidden sm:flex items-center justify-center overflow-x-auto">
+            <div className="hidden sm:flex items-center justify-center overflow-x-auto !overflow-y-hidden">
               <div className="flex items-center min-w-max px-4">
                 {[
                   {
@@ -531,12 +536,6 @@ export default function RegisterPage() {
                     step: 4,
                     label: "Pembayaran",
                     active: currentStep >= 4,
-                    completed: currentStep > 4,
-                  },
-                  {
-                    step: 5,
-                    label: "Selesai",
-                    active: currentStep >= 5,
                     completed: false,
                   },
                 ].map((item, index) => (
@@ -583,7 +582,7 @@ export default function RegisterPage() {
                       </p>
                     </div>
                     {/* Connecting Line */}
-                    {index < 4 && (
+                    {index < 3 && (
                       <div
                         className={`w-12 sm:w-16 h-1 mx-2 sm:mx-3 ${
                           item.completed || (item.active && currentStep > item.step)
@@ -607,7 +606,6 @@ export default function RegisterPage() {
               {currentStep === 2 && "Verifikasi KTP"}
               {currentStep === 3 && "Verifikasi Wajah"}
               {currentStep === 4 && "Pembayaran"}
-              {currentStep === 5 && "Konfirmasi Pendaftaran"}
             </h3>
             <p className="text-gray-600 mt-2">
               {currentStep === 1 &&
@@ -618,8 +616,6 @@ export default function RegisterPage() {
                 "Ambil foto selfie Anda menggunakan kamera untuk verifikasi"}
               {currentStep === 4 &&
                 "Lakukan pembayaran untuk menyelesaikan pendaftaran"}
-              {currentStep === 5 &&
-                "Periksa kembali data Anda dan selesaikan pendaftaran"}
             </p>
           </div>
 
@@ -872,6 +868,64 @@ export default function RegisterPage() {
                           error={errors.domisiliPostalCode?.message}
                           showValidation={false}
                         />
+                      </FormRow>
+                    </div>
+                  </div>
+
+                  {/* Beneficiary Information */}
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-800 mb-4 border-b border-gray-200 pb-2">
+                      Pergantian Penerima Manfaat <span className="text-red-500">*</span>
+                    </h3>
+                    <div className="space-y-6">
+                      <FormRow cols={2}>
+                        <ValidationInput
+                          label="Nama Penerima Manfaat"
+                          {...register("beneficiaryName")}
+                          placeholder="Masukkan nama lengkap"
+                          required
+                          error={errors.beneficiaryName?.message}
+                          showValidation={false}
+                        />
+                        <ValidationInput
+                          label="NIK Penerima Manfaat"
+                          {...register("beneficiaryNik")}
+                          placeholder="16 digit NIK"
+                          required
+                          maxLength={16}
+                          error={errors.beneficiaryNik?.message}
+                          showValidation={false}
+                        />
+                      </FormRow>
+
+                      <FormRow cols={2}>
+                        <ValidationInput
+                          label="Tanggal Lahir Penerima Manfaat"
+                          type="date"
+                          {...register("beneficiaryDateOfBirth")}
+                          required
+                          error={errors.beneficiaryDateOfBirth?.message}
+                          showValidation={false}
+                        />
+                        <div>
+                          <Select
+                            label="Hubungan dengan Penerima Manfaat"
+                            {...register("beneficiaryRelationship")}
+                            options={[
+                              { value: "", label: "Pilih hubungan" },
+                              { value: "orangtua", label: "Orang Tua" },
+                              { value: "suami_istri", label: "Suami/Istri" },
+                              { value: "anak_kandung", label: "Anak Kandung" },
+                              { value: "saudara_kandung", label: "Saudara Kandung" },
+                            ]}
+                            required
+                          />
+                          {errors.beneficiaryRelationship && (
+                            <p className="mt-1 text-sm text-red-600">
+                              {errors.beneficiaryRelationship.message}
+                            </p>
+                          )}
+                        </div>
                       </FormRow>
                     </div>
                   </div>
@@ -1154,6 +1208,21 @@ export default function RegisterPage() {
               {/* Step 3: Face Upload */}
               {currentStep === 3 && (
                 <div className="space-y-6">
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+                    <div className="flex items-start gap-3">
+                      <svg className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      <div>
+                        <p className="text-sm font-semibold text-blue-900 mb-1">
+                          Informasi Penting
+                        </p>
+                        <p className="text-sm text-blue-800">
+                          Foto selfie yang Anda ambil akan digunakan sebagai foto profil pada kartu anggota koperasi Anda. Pastikan foto terlihat jelas.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
                   <CameraSelfie
                     ref={cameraSelfieRef}
                     onCapture={handleCameraCapture}
@@ -1270,151 +1339,6 @@ export default function RegisterPage() {
                 </div>
               )}
 
-              {/* Step 5: Confirmation */}
-              {currentStep === 5 && (
-                <div className="space-y-6">
-                  <div className="space-y-6">
-                    <div className="bg-gray-50 rounded-lg p-6">
-                      <h4 className="font-semibold text-gray-800 mb-4">
-                        Informasi Pribadi
-                      </h4>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                        <div>
-                          <span className="text-gray-600">Nama Lengkap:</span>{" "}
-                          {watchedValues.fullName}
-                        </div>
-                        <div>
-                          <span className="text-gray-600">NIK:</span>{" "}
-                          {watchedValues.nik}
-                        </div>
-                        <div>
-                          <span className="text-gray-600">Tanggal Lahir:</span>{" "}
-                          {watchedValues.dateOfBirth}
-                        </div>
-                        <div>
-                          <span className="text-gray-600">Email:</span>{" "}
-                          {watchedValues.email}
-                        </div>
-                        <div>
-                          <span className="text-gray-600">Nomor Telepon:</span>{" "}
-                          {watchedValues.phoneNumber}
-                        </div>
-                        <div>
-                          <span className="text-gray-600">Pekerjaan:</span>{" "}
-                          {watchedValues.occupation}
-                        </div>
-                        <div>
-                          <span className="text-gray-600">Kode Pekerjaan:</span>{" "}
-                          {getOccupationCode(watchedValues.occupation)}
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="bg-gray-50 rounded-lg p-6">
-                      <h4 className="font-semibold text-gray-800 mb-4">
-                        Alamat KTP
-                      </h4>
-                      <div className="space-y-3 text-sm">
-                        <div>
-                          <span className="text-gray-600">Alamat Lengkap:</span>{" "}
-                          {watchedValues.ktpAddress}
-                        </div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <div>
-                            <span className="text-gray-600">
-                              Desa/Kelurahan:
-                            </span>{" "}
-                            {watchedValues.ktpVillage}
-                          </div>
-                          <div>
-                            <span className="text-gray-600">
-                              Kota/Kabupaten:
-                            </span>{" "}
-                            {watchedValues.ktpCity}
-                          </div>
-                          <div>
-                            <span className="text-gray-600">Provinsi:</span>{" "}
-                            {watchedValues.ktpProvince}
-                          </div>
-                          <div>
-                            <span className="text-gray-600">Kode Pos:</span>{" "}
-                            {watchedValues.ktpPostalCode}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="bg-gray-50 rounded-lg p-6">
-                      <h4 className="font-semibold text-gray-800 mb-4">
-                        Alamat Domisili
-                      </h4>
-                      <div className="space-y-3 text-sm">
-                        <div>
-                          <span className="text-gray-600">Alamat Lengkap:</span>{" "}
-                          {watchedValues.domisiliAddress}
-                        </div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <div>
-                            <span className="text-gray-600">
-                              Desa/Kelurahan:
-                            </span>{" "}
-                            {watchedValues.domisiliVillage}
-                          </div>
-                          <div>
-                            <span className="text-gray-600">
-                              Kota/Kabupaten:
-                            </span>{" "}
-                            {watchedValues.domisiliCity}
-                          </div>
-                          <div>
-                            <span className="text-gray-600">Provinsi:</span>{" "}
-                            {watchedValues.domisiliProvince}
-                          </div>
-                          <div>
-                            <span className="text-gray-600">Kode Pos:</span>{" "}
-                            {watchedValues.domisiliPostalCode}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="bg-gray-50 rounded-lg p-6">
-                      <h4 className="font-semibold text-gray-800 mb-4">
-                        Verifikasi
-                      </h4>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div>
-                          <p className="text-sm text-gray-600 mb-2">KTP</p>
-                          {ktpImageUrl && (
-                            <Image
-                              width={100}
-                              height={100}
-                              src={ktpImageUrl}
-                              alt="KTP"
-                              className="w-32 h-20 object-cover rounded border border-gray-300"
-                            />
-                          )}
-                        </div>
-                        <div>
-                          <p className="text-sm text-gray-600 mb-2">
-                            Foto Wajah
-                          </p>
-                          {faceImageUrl && (
-                            <Image
-                              width={100}
-                              height={100}
-                              src={faceImageUrl}
-                              alt="Face"
-                              className="w-20 h-20 object-cover rounded-full border border-gray-300"
-                            />
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-
               {/* Submit Error and Validation Errors */}
               {(submitError ||
                 (hasAttemptedSubmit && Object.keys(errors).length > 0)) && (
@@ -1516,8 +1440,8 @@ export default function RegisterPage() {
                       ? "Mengupload foto..."
                       : uploadingKtp
                       ? "Mengupload KTP..."
-                      : currentStep === 5
-                      ? "Daftar Sekarang"
+                      : currentStep === 4
+                      ? "Bayar Sekarang"
                       : "Lanjutkan"}
                   </button>
                 </div>

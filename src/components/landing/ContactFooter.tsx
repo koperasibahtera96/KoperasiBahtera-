@@ -227,7 +227,7 @@ export function Footer() {
                 </svg>
               </a>
               <a
-                href="https://instagram.com/investasihijau"
+                href="https://instagram.com/tanamanhijau"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="w-10 h-10 bg-gray-800 hover:bg-green-600 rounded-lg flex-center transition-colors"
@@ -238,7 +238,7 @@ export function Footer() {
                 </svg>
               </a>
               <a
-                href="https://facebook.com/investasihijau"
+                href="https://facebook.com/tanamanhijau"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="w-10 h-10 bg-gray-800 hover:bg-green-600 rounded-lg flex-center transition-colors"
@@ -285,18 +285,17 @@ export function Footer() {
             <h4 className="font-semibold mb-6">Kontak</h4>
             <div className="space-y-4">
               <div>
-                <p className="text-gray-300 mb-1">WhatsApp:</p>
-                <p className="text-green-400 font-medium">+62 812-3456-7890</p>
+                <p className="text-gray-300 mb-1">Nomor Telp:</p>
+                <p className="text-green-400 font-medium">081118893679</p>
               </div>
               <div>
                 <p className="text-gray-300 mb-1">Email:</p>
-                <p className="text-green-400 font-medium">info@investasihijau.com</p>
+                <p className="text-green-400 font-medium">bintangmerahsejahtera@gmail.com</p>
               </div>
               <div>
                 <p className="text-gray-300 mb-1">Alamat:</p>
                 <p className="text-gray-300">
-                  Jl. Sudirman No. 123<br />
-                  Jakarta Pusat 10110
+                  Bintaro Business Center Jl RC Veteran Raya No 1i, Bintaro - Kec Pesanggrahan Kota Jakarta Selatan DKI Jakarta 12330
                 </p>
               </div>
             </div>

@@ -73,10 +73,17 @@ export async function GET(
 
     const contractData = {
         investor: {
-          name: user.name || user.email.split('@')[0],
+          name: user.fullName || user.email.split('@')[0],
           email: user.email,
           phoneNumber: user.phoneNumber || undefined,
-          address: user.address || undefined,
+          nik: user.nik || undefined,
+          dateOfBirth: user.dateOfBirth || undefined,
+          occupation: user.occupation || undefined,
+          address: user.ktpAddress || undefined,
+          village: user.ktpVillage || undefined,
+          city: user.ktpCity || undefined,
+          province: user.ktpProvince || undefined,
+          postalCode: user.ktpPostalCode || undefined,
         },
         investment: {
           investmentId: contract.contractId || contractId,
@@ -90,11 +97,11 @@ export async function GET(
         plantInstance: {
           instanceName: "Instansi Pohon",
           plantType: contract.plantType || "pohon",
-          baseAnnualROI: contract.annualROI || 0.15, // Default 15%
+          baseAnnualROI: contract.annualROI || 0.15,
           location: "Jakarta",
         },
         contractNumber: contract.contractNumber || contractId,
-        contractDate: contract.createdAt?.toISOString() || new Date().toISOString(),
+        contractDate: contract.contractDate?.toISOString() || contract.createdAt?.toISOString() || new Date().toISOString(),
       };
     
     // Find the last approved signature attempt

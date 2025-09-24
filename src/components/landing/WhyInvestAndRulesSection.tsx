@@ -25,7 +25,7 @@ const benefits = [
   {
     title: "Dampak Sosial",
     description:
-      "Membantu ekonomi petani dan masyarakat sekitar lokasi investasi",
+      "Membantu ekonomi petani dan masyarakat sekitar lokasi pertanian",
     icon: "/landing/Dampak Sosial.png",
   },
   {
@@ -38,14 +38,14 @@ const benefits = [
 
 const rules = [
   {
-    title: "Investasi Hijau",
+    title: "Pembiayaan Paket",
     description:
-      "Setiap Anggota dapat mengikuti program ini dengan min membeli 1 paket (10 pohon) Investasi",
+      "Setiap Anggota dapat mengikuti program ini dengan minimal membeli 1 paket (10 Pohon) Tanaman.",
   },
   {
     title: "Jangka Waktu",
     description:
-      "Investasi bersifat jangka menengah/panjang (5 - 7 tahun, tergantung jenis tanaman)",
+      "Program ini bersifat jangka menengah/panjang (5-7 tahun, tergantung jenis tanaman)",
   },
   {
     title: "Bagi Hasil",
@@ -55,12 +55,12 @@ const rules = [
   {
     title: "Transparansi",
     description:
-      "Investor mendapat laporan berkala mengenai pertumbuhan tanaman, perawatan tanaman, kondisi lahan, dan proyeksi keuntungan",
+      "Anggota mendapat laporan berkala mengenai pertumbuhan tanaman, perawatan tanaman, kondisi lahan, dan proyeksi keuntungan",
   },
   {
     title: "Risiko",
     description:
-      "Investor menyadari bahwa investasi tanaman bergantung pada faktor alam, perawatan, serta pasar",
+      "Anggota menyadari bahwa program ini bergantung pada faktor alam, perawatan, serta pasar",
   },
 ];
 
@@ -162,7 +162,7 @@ export default function WhyInvestAndRulesSection() {
               transition: { duration: 0.3 },
             }}
           >
-            Cara Kerja Investasi
+            Dampak dan Manfaat
           </motion.h2>
 
           {/* Benefits Grid - First Row (3 cards) */}
@@ -299,7 +299,7 @@ export default function WhyInvestAndRulesSection() {
               transition: { duration: 0.3 },
             }}
           >
-            Aturan Investasi!
+            Panduan Berpartisipasi!
           </motion.h2>
 
           {/* Rules Container */}

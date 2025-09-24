@@ -114,7 +114,7 @@ export default function LandingHero() {
                 transition: { duration: 0.3 },
               }}
             >
-              Investasi Pertanian
+              Pembiayaan Pengembangan Usaha Pertanian 
             </motion.span>
             <motion.span
               className="block text-[#4C3D19]"
@@ -156,7 +156,7 @@ export default function LandingHero() {
             }}
             whileTap={{ scale: 0.98 }}
           >
-            Mulai Investasi
+            Mulai Sekarang
           </motion.button>
         </div>
       </motion.div>

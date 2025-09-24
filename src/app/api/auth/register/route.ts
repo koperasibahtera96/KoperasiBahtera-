@@ -3,6 +3,7 @@ import User from '@/models/User';
 import bcrypt from 'bcryptjs';
 import { NextRequest, NextResponse } from 'next/server';
 import { occupationOptions } from '@/constant/OCCUPATION';
+import generateUserCode from '@/lib/userCodeGenerator';
 
 export async function POST(request: NextRequest) {
   try {
@@ -26,6 +27,10 @@ export async function POST(request: NextRequest) {
       domisiliProvince,
       domisiliPostalCode,
       occupation,
+      beneficiaryName,
+      beneficiaryNik,
+      beneficiaryDateOfBirth,
+      beneficiaryRelationship,
       ktpImageUrl,
       faceImageUrl
     } = body;
@@ -53,9 +58,9 @@ export async function POST(request: NextRequest) {
     });
 
     // Server-side validation
-    if (!fullName || !nik || !email || !phoneNumber || !password || !dateOfBirth || !ktpAddress || !ktpVillage || !ktpCity || !ktpProvince || !ktpPostalCode || !domisiliAddress || !domisiliVillage || !domisiliCity || !domisiliProvince || !domisiliPostalCode || !occupation || !ktpImageUrl || !faceImageUrl) {
+    if (!fullName || !nik || !email || !phoneNumber || !password || !dateOfBirth || !ktpAddress || !ktpVillage || !ktpCity || !ktpProvince || !ktpPostalCode || !domisiliAddress || !domisiliVillage || !domisiliCity || !domisiliProvince || !domisiliPostalCode || !occupation || !beneficiaryName || !beneficiaryNik || !beneficiaryDateOfBirth || !beneficiaryRelationship || !ktpImageUrl || !faceImageUrl) {
       return NextResponse.json(
-        { error: 'Semua field wajib diisi, termasuk NIK, alamat KTP, alamat domisili, KTP dan foto wajah' },
+        { error: 'Semua field wajib diisi, termasuk NIK, alamat KTP, alamat domisili, data penerima manfaat, KTP dan foto wajah' },
         { status: 400 }
       );
     }
@@ -163,6 +168,41 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Validate beneficiary name
+    if (beneficiaryName.length < 2 || beneficiaryName.length > 100) {
+      return NextResponse.json(
+        { error: 'Nama penerima manfaat harus antara 2-100 karakter' },
+        { status: 400 }
+      );
+    }
+
+    if (!/^[a-zA-Z\s\.]+$/.test(beneficiaryName)) {
+      return NextResponse.json(
+        { error: 'Nama penerima manfaat hanya boleh berisi huruf, spasi, dan titik' },
+        { status: 400 }
+      );
+    }
+
+    // Validate beneficiary NIK
+    if (!/^[0-9]{16}$/.test(beneficiaryNik)) {
+      return NextResponse.json(
+        { error: 'NIK penerima manfaat harus berisi 16 digit angka' },
+        { status: 400 }
+      );
+    }
+
+    // Validate beneficiary relationship
+    const validRelationships = ['orangtua', 'suami_istri', 'anak_kandung', 'saudara_kandung'];
+    if (!validRelationships.includes(beneficiaryRelationship)) {
+      return NextResponse.json(
+        { error: 'Hubungan dengan penerima manfaat tidak valid' },
+        { status: 400 }
+      );
+    }
+
+    // Validate beneficiary date of birth
+    const beneficiaryDobDate = new Date(beneficiaryDateOfBirth);
+
     // Connect to database
     await dbConnect();
 
@@ -196,24 +236,8 @@ export async function POST(request: NextRequest) {
     const occupationData = occupationOptions.find(opt => opt.value === occupation);
     const occupationCode = occupationData?.code || '999'; // Default to 'Lainnya' if not found
 
-    // Generate user code - format: BMS-{Year}{OccupationCode}.{Sequential}
-    const currentYear = new Date().getFullYear().toString().slice(-2); // Last 2 digits of year
-
-    // Find the last user with any user code to get the highest sequential number
-    const lastUser = await User.findOne({})
-    .sort({ userCode: -1 })
-    .select('userCode');
-
-    let sequential = 1;
-    if (lastUser && lastUser.userCode) {
-      // Extract sequential number from format BMS-2599.0017
-      const match = lastUser.userCode.match(/BMS-\d+\.(\d+)$/);
-      if (match) {
-        sequential = parseInt(match[1]) + 1;
-      }
-    }
-
-    const userCode = `BMS-${currentYear}${occupationCode}.${sequential.toString().padStart(4, '0')}`;
+    // Generate a unique userCode using an atomic counter to avoid duplicates under concurrency
+    const { userCode } = await generateUserCode(occupationCode);
 
     // Use the already validated date of birth
     // dobDate was already parsed and validated above
@@ -239,6 +263,10 @@ export async function POST(request: NextRequest) {
       occupation: occupation.trim(),
       occupationCode: occupationCode,
       userCode: userCode,
+      beneficiaryName: beneficiaryName.trim(),
+      beneficiaryNik: beneficiaryNik.trim(),
+      beneficiaryDateOfBirth: beneficiaryDobDate,
+      beneficiaryRelationship: beneficiaryRelationship,
       ktpImageUrl: ktpImageUrl.trim(),
       faceImageUrl: faceImageUrl.trim(),
       role: 'user',

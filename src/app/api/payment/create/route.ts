@@ -60,7 +60,41 @@ export async function POST(request: NextRequest) {
 
     // Hash password before storing
     const hashedPassword = registrationData?.password
-      ? await bcrypt.hash(registrationData.password, 12)
+      ? await bcrypt.hash(String(registrationData.password), 12)
+      : null;
+
+    // Normalize customer/registration data so the DB always gets the expected keys
+    const normalizedCustomerData = registrationData
+      ? {
+          fullName: registrationData.fullName ?? "",
+          nik: registrationData.nik ?? "",
+          email: registrationData.email ?? "",
+          phoneNumber: registrationData.phoneNumber ?? "",
+          // Ensure dates are stored as ISO strings / Date will be cast by mongoose
+          dateOfBirth: registrationData.dateOfBirth
+            ? new Date(registrationData.dateOfBirth)
+            : null,
+          ktpAddress: registrationData.ktpAddress ?? "",
+          ktpVillage: registrationData.ktpVillage ?? "",
+          ktpCity: registrationData.ktpCity ?? "",
+          ktpProvince: registrationData.ktpProvince ?? "",
+          ktpPostalCode: registrationData.ktpPostalCode ?? "",
+          domisiliAddress: registrationData.domisiliAddress ?? "",
+          domisiliVillage: registrationData.domisiliVillage ?? "",
+          domisiliCity: registrationData.domisiliCity ?? "",
+          domisiliProvince: registrationData.domisiliProvince ?? "",
+          domisiliPostalCode: registrationData.domisiliPostalCode ?? "",
+          occupation: registrationData.occupation ?? "",
+          beneficiaryName: registrationData.beneficiaryName ?? "",
+          beneficiaryNik: registrationData.beneficiaryNik ?? "",
+          beneficiaryDateOfBirth: registrationData.beneficiaryDateOfBirth
+            ? new Date(registrationData.beneficiaryDateOfBirth)
+            : null,
+          beneficiaryRelationship: registrationData.beneficiaryRelationship ?? "",
+          password: hashedPassword ?? null,
+          ktpImageUrl: registrationData.ktpImageUrl ?? "",
+          faceImageUrl: registrationData.faceImageUrl ?? "",
+        }
       : null;
 
     const payment = new Payment({
@@ -70,19 +104,14 @@ export async function POST(request: NextRequest) {
       paymentType: "registration", // Set payment type for registration
       userId: new mongoose.Types.ObjectId(), // Temporary ObjectId, will be updated after user creation
       transactionStatus: "pending",
-      customerData: registrationData
-        ? {
-            ...registrationData,
-            password: hashedPassword, // Store hashed password
-          }
-        : null,
+      customerData: normalizedCustomerData,
       midtransResponse: transaction,
       isProcessed: false,
       status: "pending", // Set default status
     });
 
     await payment.save();
-    console.log("Payment record created:", orderId);
+    console.log("Payment record created:", orderId, "customerData keys:", normalizedCustomerData ? Object.keys(normalizedCustomerData) : null);
 
     return NextResponse.json({
       success: true,

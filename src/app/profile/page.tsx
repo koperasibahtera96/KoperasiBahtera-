@@ -125,6 +125,8 @@ export default function ProfilePage() {
 
   const user = userData;
 
+  const canGenerateKartu = user.verificationStatus === 'approved';
+
   // Helper function to get province name from value
   const getProvinceName = (provinceValue: string) => {
     const province = provinceOptions.find((p) => p.value === provinceValue);
@@ -817,14 +819,19 @@ export default function ProfilePage() {
                     "Change Profile Photo"
                   )}
                 </button>
-                <button
-                  onClick={handleGenerateKartuAnggota}
-                  disabled={isLoading}
-                  className="flex items-center gap-2 px-6 py-2 bg-[#324D3E] text-white rounded-xl font-semibold hover:bg-[#4C3D19] transition-all duration-200 hover:scale-[1.02] disabled:opacity-50 disabled:hover:scale-100 shadow-lg shadow-[#324D3E]/25"
-                >
-                  <FileText size={16} />
-                  Generate Kartu Anggota
-                </button>
+                <div className="flex flex-col">
+                  <button
+                    onClick={handleGenerateKartuAnggota}
+                    disabled={isLoading || !canGenerateKartu}
+                    className={`flex items-center gap-2 px-6 py-2 rounded-xl font-semibold transition-all duration-200 hover:scale-[1.02] shadow-lg ${canGenerateKartu ? 'bg-[#324D3E] text-white hover:bg-[#4C3D19] shadow-[#324D3E]/25' : 'bg-gray-200 text-gray-500 cursor-not-allowed shadow-none'} ${isLoading ? 'disabled:opacity-50' : ''}`}
+                  >
+                    <FileText size={16} />
+                    {canGenerateKartu ? 'Generate Kartu Anggota' : 'Kartu tidak tersedia'}
+                  </button>
+                  {!canGenerateKartu && (
+                    <p className="mt-2 text-xs text-gray-600">Akun Anda harus diverifikasi oleh admin sebelum dapat menghasilkan kartu anggota.</p>
+                  )}
+                </div>
               </div>
               <input
                 ref={fileInputRef}

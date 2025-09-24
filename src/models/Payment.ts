@@ -66,6 +66,11 @@ export interface IPayment extends Document {
     domisiliProvince: string;
     domisiliPostalCode: string;
     occupation: string;
+    // Beneficiary Information
+    beneficiaryName: string;
+    beneficiaryNik: string;
+    beneficiaryDateOfBirth: Date;
+    beneficiaryRelationship: string;
     password: string;
     ktpImageUrl: string;
     faceImageUrl: string;
@@ -229,6 +234,11 @@ const PaymentSchema: Schema = new Schema(
       domisiliProvince: String,
       domisiliPostalCode: String,
       occupation: String,
+      // Beneficiary Information
+      beneficiaryName: String,
+      beneficiaryNik: String,
+      beneficiaryDateOfBirth: Date,
+      beneficiaryRelationship: String,
       password: String,
       ktpImageUrl: String,
       faceImageUrl: String,

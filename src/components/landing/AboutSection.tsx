@@ -18,17 +18,23 @@ function PengurusAvatar({ name }: { name: string }) {
     .join('')
     .toUpperCase();
 
+  // Some photos need to be shifted up so we see the top of the subject.
+  const shouldShiftUp = /Halim Perdana|Meidi Asri/.test(name);
+
   return (
     <div className="relative mb-3 sm:mb-4">
       <div className="w-20 h-20 sm:w-24 sm:h-24 lg:w-28 lg:h-28 mx-auto rounded-full overflow-hidden flex items-center justify-center shadow-lg bg-gray-100">
         {!errored ? (
-          // Next/Image with onError isn't supported on server directly; use loading="eager" and handle onError via onLoadingComplete
           <Image
             src={src}
             alt={name}
             width={112}
             height={112}
-            className="w-full h-full object-cover"
+            className="w-full h-full"
+            style={{
+              objectFit: 'cover',
+              objectPosition: shouldShiftUp ? '50% 25%' : '50% 50%'
+            }}
             onError={() => setErrored(true)}
             unoptimized
           />
@@ -157,19 +163,14 @@ export default function AboutSection() {
                 }}
               >
                 Koperasi Bintang Merah Sejahtera (BAHTERA)
-              </motion.span> merupakan badan hukum koperasi tersertifikasi yang
-              didirikan atas semangat gotong royong dan prinsip kekeluargaan. Hadir sebagai wadah pemberdayaan
-              ekonomi yang inklusif, profesional dan berkelanjutan.
+              </motion.span> Koperasi Bintang Merah Sejahtera (BAHTERA) merupakan badan hukum koperasi tersertifikasi yang didirikan atas semangat gotong royong  dan prinsip kekeluargaan. Hadir sebagai wadah pemberdayaan ekonomi yang inklusif, profesional dan berkelanjutan. 
             </motion.p>
 
             <motion.p 
               className="text-sm sm:text-base md:text-lg lg:text-xl xl:text-2xl leading-relaxed text-gray-900 mb-12 sm:mb-18 md:mb-24 lg:mb-32 xl:mb-36 font-medium"
               variants={fadeInUp}
             >
-              Sebagian upaya pelestarian lingkungan yang selaras dengan peningkatan kesejahteraan masyarakat, kami
-              menginisiasi program penghijauan berbasis tanaman multi-komoditas di kawasan Hutan Produksi Tetap
-              (HPT) dan Hutan Produksi (HP). Program ini bertujuan untuk pemulihan lahan, meningkatkan produktifitas
-              hutan, serta mengoptimalkan potensi ekonomi kawasan melalui pendekatan agroforestri berkelanjutan.
+            Sebagai upaya pelestarian lingkungan yang selaras dengan peningkatan kesejahteraan masyarakat, kami menginisiasi program penghijauan berbasis tanaman multi-komoditas di kawasan Hutan. Program ini juga sejalan dengan program pemerintah dimana salah satu fokus utamanya adalah swasembada energi (Bioetanol), ketahanan pangan dan konservasi lahan. Selain itu, peningkatkan produktifitas hutan serta mengoptimalkan potensi ekonomi kawasan melalui pendekatan agroforestri berkelanjutan juga menjadi tujuan kami.
             </motion.p>
           </motion.div>
 
@@ -179,7 +180,7 @@ export default function AboutSection() {
             variants={containerVariants}
           >
             <motion.h3
-              className="text-2xl sm:text-3xl lg:text-4xl font-black text-center text-[#2D3B30] mb-6 sm:mb-8 font-[family-name:var(--font-poppins)] drop-shadow-sm"
+              className="text-3xl sm:text-3xl lg:text-4xl font-black text-center text-[#2D3B30] mb-6 sm:mb-8 font-[family-name:var(--font-poppins)] drop-shadow-sm"
               variants={fadeInUp}
               whileHover={{
                 scale: 1.05,
@@ -187,16 +188,16 @@ export default function AboutSection() {
                 transition: { duration: 0.3 }
               }}
             >
-              Pengurus dan Foto
+              Pengurus
             </motion.h3>
 
             <motion.div
-              className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6 lg:gap-8 max-w-4xl mx-auto"
+              className="grid grid-cols-2 md:grid-cols-4 gap-6 sm:gap-8 lg:gap-10 max-w-5xl mx-auto"
               variants={containerVariants}
             >
               {/* Ketua Koperasi */}
                 <motion.div
-                  className="text-center"
+                  className="flex flex-col items-center"
                   variants={fadeInUp}
                   whileHover={{
                     scale: 1.05,
@@ -204,7 +205,7 @@ export default function AboutSection() {
                   }}
                 >
                   <PengurusAvatar name="Halim Perdana Kusuma, S.H., M.H." />
-                  <h4 className="text-xs sm:text-sm lg:text-base font-bold text-[#2D3B30] mb-1">
+                  <h4 className="text-xs sm:text-sm lg:text-base font-bold text-[#2D3B30] mb-1 whitespace-nowrap">
                     Halim Perdana Kusuma, S.H., M.H.
                   </h4>
                   <p className="text-xs sm:text-sm text-gray-700 font-medium">
@@ -214,7 +215,7 @@ export default function AboutSection() {
 
               {/* Sekretaris */}
               <motion.div
-                className="text-center"
+                className="flex flex-col items-center"
                 variants={fadeInUp}
                 whileHover={{
                   scale: 1.05,
@@ -222,7 +223,7 @@ export default function AboutSection() {
                 }}
               >
                 <PengurusAvatar name="Meidi Asri, S.H., M.H." />
-                <h4 className="text-xs sm:text-sm lg:text-base font-bold text-[#2D3B30] mb-1">
+                <h4 className="text-xs sm:text-sm lg:text-base font-bold text-[#2D3B30] mb-1 whitespace-nowrap">
                   Meidi Asri, S.H., M.H.
                 </h4>
                 <p className="text-xs sm:text-sm text-gray-700 font-medium">
@@ -232,7 +233,7 @@ export default function AboutSection() {
 
               {/* Bendahara */}
               <motion.div
-                className="text-center"
+                className="flex flex-col items-center"
                 variants={fadeInUp}
                 whileHover={{
                   scale: 1.05,
@@ -240,8 +241,8 @@ export default function AboutSection() {
                 }}
               >
                 <PengurusAvatar name="Rika Ariyanti, S.E." />
-                <h4 className="text-xs sm:text-sm lg:text-base font-bold text-[#2D3B30] mb-1">
-                  Rika Ariyanti, S.E.
+                <h4 className="text-xs sm:text-sm lg:text-base font-bold text-[#2D3B30] mb-1 whitespace-nowrap">
+                  Rika Aryanti, S.E.
                 </h4>
                 <p className="text-xs sm:text-sm text-gray-700 font-medium">
                   Bendahara
@@ -250,7 +251,7 @@ export default function AboutSection() {
 
               {/* Direktur */}
               <motion.div
-                className="text-center"
+                className="flex flex-col items-center"
                 variants={fadeInUp}
                 whileHover={{
                   scale: 1.05,
@@ -258,7 +259,7 @@ export default function AboutSection() {
                 }}
               >
                 <PengurusAvatar name="Bobot Sudoyo, S.P., M.Si." />
-                <h4 className="text-xs sm:text-sm lg:text-base font-bold text-[#2D3B30] mb-1">
+                <h4 className="text-xs sm:text-sm lg:text-base font-bold text-[#2D3B30] mb-1 whitespace-nowrap">
                   Bobot Sudoyo, S.P., M.Si.
                 </h4>
                 <p className="text-xs sm:text-sm text-gray-700 font-medium">
