@@ -166,6 +166,9 @@ function LoginContent() {
                 case "marketing":
                   redirectPath = "/staff";
                   break;
+                case "marketing_head":
+                  redirectPath = "/marketing";
+                  break;
                 default:
                   redirectPath = "/";
               }
@@ -224,16 +227,15 @@ function LoginContent() {
             />
             <div className="text-left">
               <h1 className="text-2xl sm:text-3xl font-bold text-white font-[family-name:var(--font-poppins)]">
-                Investasi Hijau
+                Koperasi BAHTERA
               </h1>
-              <p className="text-sm text-white/80">Koperasi BAHTERA</p>
             </div>
           </Link>
           <h2 className="text-2xl sm:text-3xl font-bold text-white mb-2 font-[family-name:var(--font-poppins)]">
             Masuk ke Akun Anda
           </h2>
           <p className="text-white/80">
-            Kelola investasi tanaman Anda dengan mudah
+            Kelola tanaman Anda dengan mudah
           </p>
         </div>
 

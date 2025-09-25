@@ -5,11 +5,13 @@ import { useSession } from "next-auth/react";
 import StaffLayout from "@/components/staff/StaffLayout";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
-import { 
-  Copy, 
-  DollarSign, 
-  Users, 
-  TrendingUp, 
+import { useTheme } from "next-themes";
+import { motion } from "framer-motion";
+import {
+  Copy,
+  DollarSign,
+  Users,
+  TrendingUp,
   RefreshCw,
   ExternalLink,
   ChevronLeft,
@@ -46,12 +48,26 @@ interface ReferralData {
 
 export default function StaffPage() {
   const { status } = useSession();
+  const { theme } = useTheme();
+  const [mounted, setMounted] = useState(false);
   const [data, setData] = useState<ReferralData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [copiedCode, setCopiedCode] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // Helper function to get theme-aware classes
+  const getThemeClasses = (baseClasses: string, pinkClasses: string = "") => {
+    if (mounted && theme === "pink" && pinkClasses) {
+      return `${baseClasses} ${pinkClasses}`;
+    }
+    return baseClasses;
+  };
 
   const fetchReferralData = async () => {
     try {
@@ -134,8 +150,8 @@ export default function StaffPage() {
     };
     
     const typeLabels = {
-      'full-investment': "Full Payment",
-      'cicilan-installment': "Installment",
+      'full-investment': "Full",
+      'cicilan-installment': "Cicilan",
       'registration': "Registration",
     };
     
@@ -156,12 +172,17 @@ export default function StaffPage() {
   if (status === 'loading' || loading) {
     return (
       <StaffLayout>
-        <div className="container mx-auto py-8 px-4">
-          <div className="flex items-center justify-center h-64">
-            <RefreshCw className="h-8 w-8 animate-spin text-blue-600" />
-            <span className="ml-2 text-lg text-gray-700 font-semibold">Loading...</span>
+        <motion.div
+          className={getThemeClasses("min-h-screen bg-gradient-to-br from-green-50 via-white to-emerald-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 flex items-center justify-center", "!bg-gradient-to-br !from-[#FFDEE9] !via-white !to-[#FFDEE9]")}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.3 }}
+        >
+          <div className="flex items-center justify-center">
+            <RefreshCw className={getThemeClasses("h-8 w-8 animate-spin text-[#324D3E] dark:text-white", "!text-[#4c1d1d]")} />
+            <span className={getThemeClasses("ml-2 text-lg text-[#324D3E] dark:text-white font-semibold", "!text-[#4c1d1d]")}>Loading...</span>
           </div>
-        </div>
+        </motion.div>
       </StaffLayout>
     );
   }
@@ -186,119 +207,180 @@ export default function StaffPage() {
 
   return (
     <StaffLayout>
-      <div className="container mx-auto py-8 px-4 space-y-8">
+      <motion.div
+        className="container mx-auto py-4 sm:py-6 lg:py-8 px-3 sm:px-4 lg:px-6 space-y-6 sm:space-y-8"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6 }}
+      >
         {/* Header */}
-        <div className="text-center space-y-4">
-          <h1 className="text-4xl md:text-5xl font-black text-gray-900 drop-shadow-sm">
+        <motion.div
+          className="text-center space-y-4"
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1, duration: 0.6 }}
+        >
+          <h1 className={getThemeClasses("text-3xl sm:text-4xl md:text-5xl font-black text-[#324D3E] dark:text-white drop-shadow-sm", "!text-[#4c1d1d]")}>
             Marketing Dashboard
           </h1>
-          <p className="text-lg text-gray-600 max-w-2xl mx-auto font-medium">
+          <p className={getThemeClasses("text-base sm:text-lg text-[#889063] dark:text-gray-400 max-w-2xl mx-auto font-medium", "!text-[#6b7280]")}>
             Track your referrals and commission earnings
           </p>
-          <Button
+          <motion.button
             onClick={fetchReferralData}
-            variant="outline"
-            className="shadow-lg bg-white hover:bg-gray-50 border-blue-200 text-blue-600 font-semibold"
+            className={getThemeClasses("inline-flex items-center gap-2 px-4 py-2 bg-white/80 dark:bg-gray-800/80 hover:bg-white dark:hover:bg-gray-700 border border-[#324D3E]/20 dark:border-gray-600 text-[#324D3E] dark:text-white rounded-xl shadow-lg font-semibold backdrop-blur-lg transition-all duration-300", "!bg-white/80 hover:!bg-white !border-[#FFC1CC]/50 !text-[#4c1d1d]")}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
           >
-            <RefreshCw className="w-4 h-4 mr-2" />
-            Refresh Data
-          </Button>
-        </div>
+            <RefreshCw className="w-4 h-4" />
+            <span className="hidden sm:inline">Refresh Data</span>
+          </motion.button>
+        </motion.div>
 
         {/* Referral Code Card */}
-        <Card className="shadow-lg bg-[#FFFCE3] border border-[#324D3E]/20">
-          <div className="p-6 space-y-4">
+        <motion.div
+          className={getThemeClasses("bg-white/95 dark:bg-gray-800/95 backdrop-blur-lg rounded-2xl shadow-lg border border-[#324D3E]/10 dark:border-gray-700 overflow-hidden", "!bg-white/95 !border-[#FFC1CC]/30")}
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ delay: 0.2, duration: 0.6 }}
+          whileHover={{ scale: 1.02, y: -5 }}
+        >
+          <div className="p-4 sm:p-6 space-y-4">
             <div className="flex items-center gap-3">
-              <ExternalLink className="h-6 w-6 text-[#324D3E]" />
-              <h2 className="text-xl font-bold text-[#324D3E]">Your Referral Code</h2>
+              <div className={getThemeClasses("p-2 bg-blue-100 dark:bg-blue-900/30 rounded-xl", "!bg-[#FFC1CC]/40")}>
+                <ExternalLink className={getThemeClasses("h-5 w-5 sm:h-6 sm:w-6 text-blue-600 dark:text-blue-400", "!text-[#4c1d1d]")} />
+              </div>
+              <h2 className={getThemeClasses("text-lg sm:text-xl font-bold text-[#324D3E] dark:text-white", "!text-[#4c1d1d]")}>Your Referral Code</h2>
             </div>
             {data?.referralCode ? (
               <div className="flex flex-col sm:flex-row items-center gap-4">
-                <div className="bg-gradient-to-r from-[#324D3E]/10 to-[#4C3D19]/10 px-6 py-4 rounded-xl border border-[#324D3E]/20">
-                  <code className="text-2xl font-mono font-bold text-[#324D3E] tracking-wider">
+                <div className={getThemeClasses("bg-gradient-to-r from-[#324D3E]/10 to-[#4C3D19]/10 dark:from-gray-700/50 dark:to-gray-600/50 px-4 sm:px-6 py-3 sm:py-4 rounded-xl border border-[#324D3E]/20 dark:border-gray-600", "!bg-gradient-to-r !from-[#FFC1CC]/20 !to-[#FFDEE9]/20 !border-[#FFC1CC]/30")}>
+                  <code className={getThemeClasses("text-xl sm:text-2xl font-mono font-bold text-[#324D3E] dark:text-white tracking-wider", "!text-[#4c1d1d]")}>
                     {data.referralCode}
                   </code>
                 </div>
-                <Button
+                <motion.button
                   onClick={copyReferralCode}
-                  className={`shadow-lg transition-all duration-300 font-semibold ${copiedCode ? 'bg-[#324D3E] hover:bg-[#4C3D19] text-white' : 'bg-[#324D3E] hover:bg-[#4C3D19] text-white'}`}
+                  className={getThemeClasses(`inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-[#324D3E] to-[#4C3D19] text-white rounded-xl shadow-lg transition-all duration-300 font-semibold ${copiedCode ? 'from-green-600 to-green-700' : ''}`, copiedCode ? '!bg-gradient-to-r !from-[#B5EAD7] !to-[#A7F3D0] !text-[#4c1d1d]' : "!bg-gradient-to-r !from-[#FFC1CC] !to-[#FFDEE9] !text-[#4c1d1d]")}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
                 >
-                  <Copy className="w-4 h-4 mr-2" />
-                  {copiedCode ? 'Copied!' : 'Copy Code'}
-                </Button>
+                  <Copy className="w-4 h-4" />
+                  <span className="hidden sm:inline">{copiedCode ? 'Copied!' : 'Copy Code'}</span>
+                </motion.button>
               </div>
             ) : (
-              <div className="text-gray-700 bg-gray-100 p-4 rounded-lg border border-gray-200">
+              <div className={getThemeClasses("text-[#889063] dark:text-gray-400 bg-gray-100 dark:bg-gray-700 p-4 rounded-lg border border-gray-200 dark:border-gray-600", "!bg-[#FFB3C6]/10 !border-[#FFB3C6]/30 !text-[#4c1d1d]")}>
                 {data?.message || "No referral code assigned. Contact admin."}
               </div>
             )}
           </div>
-        </Card>
+        </motion.div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <Card className="shadow-lg bg-[#FFFCE3] border border-[#324D3E]/20">
-            <div className="p-6 space-y-3">
+        <motion.div
+          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3, duration: 0.6 }}
+        >
+          <motion.div
+            className={getThemeClasses("bg-white/95 dark:bg-gray-800/95 backdrop-blur-lg rounded-2xl shadow-lg border border-[#324D3E]/10 dark:border-gray-700 p-4 sm:p-6", "!bg-white/95 !border-[#FFC1CC]/30")}
+            whileHover={{ scale: 1.02, y: -5 }}
+            transition={{ duration: 0.2 }}
+          >
+            <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <h3 className="text-sm font-semibold text-[#324D3E]">Total Commission</h3>
-                <DollarSign className="h-5 w-5 text-[#324D3E]" />
+                <h3 className={getThemeClasses("text-sm font-semibold text-[#889063] dark:text-gray-400", "!text-[#6b7280]")}>Total Commission</h3>
+                <div className={getThemeClasses("p-2 bg-green-100 dark:bg-green-900/30 rounded-xl", "!bg-[#B5EAD7]/40")}>
+                  <DollarSign className={getThemeClasses("h-4 w-4 sm:h-5 sm:w-5 text-green-600 dark:text-green-400", "!text-[#4c1d1d]")} />
+                </div>
               </div>
-              <div className="text-2xl font-bold text-[#324D3E]">
+              <div className={getThemeClasses("text-xl sm:text-2xl font-bold text-[#324D3E] dark:text-white", "!text-[#4c1d1d]")}>
                 {formatCurrency(data?.totalCommission || 0)}
               </div>
-              <p className="text-xs text-gray-600 font-medium">
+              <p className={getThemeClasses("text-xs text-[#889063] dark:text-gray-400 font-medium", "!text-[#6b7280]")}>
                 2% of total referred investments
               </p>
             </div>
-          </Card>
+          </motion.div>
 
-          <Card className="shadow-lg bg-[#FFFCE3] border border-[#324D3E]/20">
-            <div className="p-6 space-y-3">
+          <motion.div
+            className={getThemeClasses("bg-white/95 dark:bg-gray-800/95 backdrop-blur-lg rounded-2xl shadow-lg border border-[#324D3E]/10 dark:border-gray-700 p-4 sm:p-6", "!bg-white/95 !border-[#FFC1CC]/30")}
+            whileHover={{ scale: 1.02, y: -5 }}
+            transition={{ duration: 0.2 }}
+          >
+            <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <h3 className="text-sm font-semibold text-[#324D3E]">Total Referrals</h3>
-                <Users className="h-5 w-5 text-[#324D3E]" />
+                <h3 className={getThemeClasses("text-sm font-semibold text-[#889063] dark:text-gray-400", "!text-[#6b7280]")}>Total Referrals</h3>
+                <div className={getThemeClasses("p-2 bg-blue-100 dark:bg-blue-900/30 rounded-xl", "!bg-[#FFC1CC]/40")}>
+                  <Users className={getThemeClasses("h-4 w-4 sm:h-5 sm:w-5 text-blue-600 dark:text-blue-400", "!text-[#4c1d1d]")} />
+                </div>
               </div>
-              <div className="text-2xl font-bold text-[#324D3E]">{data?.totalReferrals || 0}</div>
-              <p className="text-xs text-gray-600 font-medium">
+              <div className={getThemeClasses("text-xl sm:text-2xl font-bold text-[#324D3E] dark:text-white", "!text-[#4c1d1d]")}>
+                {data?.totalReferrals || 0}
+              </div>
+              <p className={getThemeClasses("text-xs text-[#889063] dark:text-gray-400 font-medium", "!text-[#6b7280]")}>
                 Successful referrals
               </p>
             </div>
-          </Card>
+          </motion.div>
 
-          <Card className="shadow-lg bg-[#FFFCE3] border border-[#324D3E]/20">
-            <div className="p-6 space-y-3">
+          <motion.div
+            className={getThemeClasses("bg-white/95 dark:bg-gray-800/95 backdrop-blur-lg rounded-2xl shadow-lg border border-[#324D3E]/10 dark:border-gray-700 p-4 sm:p-6", "!bg-white/95 !border-[#FFC1CC]/30")}
+            whileHover={{ scale: 1.02, y: -5 }}
+            transition={{ duration: 0.2 }}
+          >
+            <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <h3 className="text-sm font-semibold text-[#324D3E]">Full Payments</h3>
-                <TrendingUp className="h-5 w-5 text-[#324D3E]" />
+                <h3 className={getThemeClasses("text-sm font-semibold text-[#889063] dark:text-gray-400", "!text-[#6b7280]")}>Full Payments</h3>
+                <div className={getThemeClasses("p-2 bg-purple-100 dark:bg-purple-900/30 rounded-xl", "!bg-[#C7CEEA]/40")}>
+                  <TrendingUp className={getThemeClasses("h-4 w-4 sm:h-5 sm:w-5 text-purple-600 dark:text-purple-400", "!text-[#4c1d1d]")} />
+                </div>
               </div>
-              <div className="text-2xl font-bold text-[#324D3E]">{data?.summary.fullPayments || 0}</div>
-              <p className="text-xs text-gray-600 font-medium">
+              <div className={getThemeClasses("text-xl sm:text-2xl font-bold text-[#324D3E] dark:text-white", "!text-[#4c1d1d]")}>
+                {data?.summary.fullPayments || 0}
+              </div>
+              <p className={getThemeClasses("text-xs text-[#889063] dark:text-gray-400 font-medium", "!text-[#6b7280]")}>
                 One-time investments
               </p>
             </div>
-          </Card>
+          </motion.div>
 
-          <Card className="shadow-lg bg-[#FFFCE3] border border-[#324D3E]/20">
-            <div className="p-6 space-y-3">
+          <motion.div
+            className={getThemeClasses("bg-white/95 dark:bg-gray-800/95 backdrop-blur-lg rounded-2xl shadow-lg border border-[#324D3E]/10 dark:border-gray-700 p-4 sm:p-6", "!bg-white/95 !border-[#FFC1CC]/30")}
+            whileHover={{ scale: 1.02, y: -5 }}
+            transition={{ duration: 0.2 }}
+          >
+            <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <h3 className="text-sm font-semibold text-[#324D3E]">Installments</h3>
-                <TrendingUp className="h-5 w-5 text-[#324D3E]" />
+                <h3 className={getThemeClasses("text-sm font-semibold text-[#889063] dark:text-gray-400", "!text-[#6b7280]")}>Installments</h3>
+                <div className={getThemeClasses("p-2 bg-orange-100 dark:bg-orange-900/30 rounded-xl", "!bg-[#FFDEE9]/40")}>
+                  <TrendingUp className={getThemeClasses("h-4 w-4 sm:h-5 sm:w-5 text-orange-600 dark:text-orange-400", "!text-[#4c1d1d]")} />
+                </div>
               </div>
-              <div className="text-2xl font-bold text-[#324D3E]">{data?.summary.cicilanPayments || 0}</div>
-              <p className="text-xs text-gray-600 font-medium">
+              <div className={getThemeClasses("text-xl sm:text-2xl font-bold text-[#324D3E] dark:text-white", "!text-[#4c1d1d]")}>
+                {data?.summary.cicilanPayments || 0}
+              </div>
+              <p className={getThemeClasses("text-xs text-[#889063] dark:text-gray-400 font-medium", "!text-[#6b7280]")}>
                 Installment payments
               </p>
             </div>
-          </Card>
-        </div>
+          </motion.div>
+        </motion.div>
 
         {/* Referrals Table */}
-        <Card className="shadow-lg bg-[#FFFCE3] border border-[#324D3E]/20">
-          <div className="p-6 space-y-6">
-            <div className="flex items-center justify-between">
-              <h2 className="text-xl font-bold text-[#324D3E]">Referral History</h2>
+        <motion.div
+          className={getThemeClasses("bg-white/95 dark:bg-gray-800/95 backdrop-blur-lg rounded-2xl shadow-lg border border-[#324D3E]/10 dark:border-gray-700 overflow-hidden", "!bg-white/95 !border-[#FFC1CC]/30")}
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.4, duration: 0.6 }}
+        >
+          <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <h2 className={getThemeClasses("text-lg sm:text-xl font-bold text-[#324D3E] dark:text-white", "!text-[#4c1d1d]")}>Referral History</h2>
               {totalPages > 1 && (
-                <div className="text-sm text-gray-700 font-medium">
+                <div className={getThemeClasses("text-sm text-[#889063] dark:text-gray-400 font-medium", "!text-[#6b7280]")}>
                   Page {currentPage} of {totalPages}
                 </div>
               )}
@@ -309,33 +391,33 @@ export default function StaffPage() {
                 <div className="overflow-x-auto">
                   <table className="w-full">
                     <thead>
-                      <tr className="border-b border-[#324D3E]/20">
-                        <th className="text-left py-3 px-4 font-semibold text-[#324D3E]">Customer</th>
-                        <th className="text-left py-3 px-4 font-semibold text-[#324D3E] hidden sm:table-cell">Product</th>
-                        <th className="text-left py-3 px-4 font-semibold text-[#324D3E] hidden md:table-cell">Type</th>
-                        <th className="text-left py-3 px-4 font-semibold text-[#324D3E]">Amount</th>
-                        <th className="text-left py-3 px-4 font-semibold text-[#324D3E]">Commission</th>
-                        <th className="text-left py-3 px-4 font-semibold text-[#324D3E] hidden lg:table-cell">Status</th>
-                        <th className="text-left py-3 px-4 font-semibold text-[#324D3E] hidden xl:table-cell">Date</th>
+                      <tr className={getThemeClasses("border-b border-[#324D3E]/20 dark:border-gray-600", "!border-[#FFC1CC]/30")}>
+                        <th className={getThemeClasses("text-left py-3 px-4 font-semibold text-[#324D3E] dark:text-white", "!text-[#4c1d1d]")}>Customer</th>
+                        <th className={getThemeClasses("text-left py-3 px-4 font-semibold text-[#324D3E] dark:text-white hidden sm:table-cell", "!text-[#4c1d1d]")}>Product</th>
+                        <th className={getThemeClasses("text-left py-3 px-4 font-semibold text-[#324D3E] dark:text-white hidden md:table-cell", "!text-[#4c1d1d]")}>Type</th>
+                        <th className={getThemeClasses("text-left py-3 px-4 font-semibold text-[#324D3E] dark:text-white", "!text-[#4c1d1d]")}>Amount</th>
+                        <th className={getThemeClasses("text-left py-3 px-4 font-semibold text-[#324D3E] dark:text-white", "!text-[#4c1d1d]")}>Commission</th>
+                        <th className={getThemeClasses("text-left py-3 px-4 font-semibold text-[#324D3E] dark:text-white hidden lg:table-cell", "!text-[#4c1d1d]")}>Status</th>
+                        <th className={getThemeClasses("text-left py-3 px-4 font-semibold text-[#324D3E] dark:text-white hidden xl:table-cell", "!text-[#4c1d1d]")}>Date</th>
                       </tr>
                     </thead>
                     <tbody>
                       {paginatedReferrals.map((referral) => (
-                        <tr key={referral.paymentId} className="border-b border-[#324D3E]/10 hover:bg-[#324D3E]/5">
-                          <td className="py-4 px-4">
+                        <tr key={referral.paymentId} className={getThemeClasses("border-b border-[#324D3E]/10 dark:border-gray-700 hover:bg-[#324D3E]/5 dark:hover:bg-gray-700/30 transition-colors duration-200", "!border-[#FFC1CC]/20 hover:!bg-[#FFC1CC]/5")}>
+                          <td className="py-3 sm:py-4 px-3 sm:px-4">
                             <div>
-                              <div className="font-medium text-[#324D3E]">{referral.customerName}</div>
-                              <div className="text-sm text-gray-600">{referral.customerEmail}</div>
+                              <div className={getThemeClasses("font-medium text-[#324D3E] dark:text-white text-sm sm:text-base", "!text-[#4c1d1d]")}>{referral.customerName}</div>
+                              <div className={getThemeClasses("text-xs sm:text-sm text-[#889063] dark:text-gray-400", "!text-[#6b7280]")}>{referral.customerEmail}</div>
                             </div>
                           </td>
-                          <td className="py-4 px-4 text-gray-700 hidden sm:table-cell font-medium">{referral.productName || 'N/A'}</td>
-                          <td className="py-4 px-4 hidden md:table-cell">{getPaymentTypeBadge(referral.paymentType)}</td>
-                          <td className="py-4 px-4 font-mono text-[#324D3E] font-semibold">{formatCurrency(referral.amount)}</td>
-                          <td className="py-4 px-4 font-mono font-semibold text-[#4C3D19]">
+                          <td className={getThemeClasses("py-3 sm:py-4 px-3 sm:px-4 text-[#889063] dark:text-gray-300 hidden sm:table-cell font-medium text-sm", "!text-[#6b7280]")}>{referral.productName || 'N/A'}</td>
+                          <td className="py-3 sm:py-4 px-3 sm:px-4 hidden md:table-cell">{getPaymentTypeBadge(referral.paymentType)}</td>
+                          <td className={getThemeClasses("py-3 sm:py-4 px-3 sm:px-4 font-mono text-[#324D3E] dark:text-white font-semibold text-sm sm:text-base", "!text-[#4c1d1d]")}>{formatCurrency(referral.amount)}</td>
+                          <td className={getThemeClasses("py-3 sm:py-4 px-3 sm:px-4 font-mono font-semibold text-[#4C3D19] dark:text-green-400 text-sm sm:text-base", "!text-[#059669]")}>
                             {formatCurrency(referral.commission)}
                           </td>
-                          <td className="py-4 px-4 hidden lg:table-cell">{getStatusBadge(referral.status)}</td>
-                          <td className="py-4 px-4 text-gray-700 hidden xl:table-cell font-medium">{formatDate(referral.paymentDate)}</td>
+                          <td className="py-3 sm:py-4 px-3 sm:px-4 hidden lg:table-cell">{getStatusBadge(referral.status)}</td>
+                          <td className={getThemeClasses("py-3 sm:py-4 px-3 sm:px-4 text-[#889063] dark:text-gray-300 hidden xl:table-cell font-medium text-sm", "!text-[#6b7280]")}>{formatDate(referral.paymentDate)}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -344,43 +426,47 @@ export default function StaffPage() {
 
                 {/* Pagination */}
                 {totalPages > 1 && (
-                  <div className="flex items-center justify-between pt-4">
-                    <div className="text-sm text-gray-700 font-medium">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between pt-4 gap-4">
+                    <div className={getThemeClasses("text-sm text-[#889063] dark:text-gray-400 font-medium", "!text-[#6b7280]")}>
                       Showing {(currentPage - 1) * itemsPerPage + 1} to {Math.min(currentPage * itemsPerPage, data.referrals.length)} of {data.referrals.length} referrals
                     </div>
                     <div className="flex gap-2">
-                      <Button
-                        variant="outline"
+                      <motion.button
                         onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
                         disabled={currentPage === 1}
-                        className="shadow-md bg-white hover:bg-[#324D3E]/5 border-[#324D3E]/30 text-[#324D3E] font-semibold"
+                        className={getThemeClasses(`inline-flex items-center gap-1 px-3 py-2 bg-white dark:bg-gray-700 hover:bg-[#324D3E]/5 dark:hover:bg-gray-600 border border-[#324D3E]/30 dark:border-gray-600 text-[#324D3E] dark:text-white font-semibold rounded-xl shadow-md transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed`, "!bg-white hover:!bg-[#FFC1CC]/5 !border-[#FFC1CC]/50 !text-[#4c1d1d]")}
+                        whileHover={{ scale: currentPage === 1 ? 1 : 1.05 }}
+                        whileTap={{ scale: currentPage === 1 ? 1 : 0.95 }}
                       >
-                        <ChevronLeft className="w-4 h-4 mr-1" />
-                        Previous
-                      </Button>
-                      <Button
-                        variant="outline"
+                        <ChevronLeft className="w-4 h-4" />
+                        <span className="hidden sm:inline">Previous</span>
+                      </motion.button>
+                      <motion.button
                         onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
                         disabled={currentPage === totalPages}
-                        className="shadow-md bg-white hover:bg-[#324D3E]/5 border-[#324D3E]/30 text-[#324D3E] font-semibold"
+                        className={getThemeClasses(`inline-flex items-center gap-1 px-3 py-2 bg-white dark:bg-gray-700 hover:bg-[#324D3E]/5 dark:hover:bg-gray-600 border border-[#324D3E]/30 dark:border-gray-600 text-[#324D3E] dark:text-white font-semibold rounded-xl shadow-md transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed`, "!bg-white hover:!bg-[#FFC1CC]/5 !border-[#FFC1CC]/50 !text-[#4c1d1d]")}
+                        whileHover={{ scale: currentPage === totalPages ? 1 : 1.05 }}
+                        whileTap={{ scale: currentPage === totalPages ? 1 : 0.95 }}
                       >
-                        Next
-                        <ChevronRight className="w-4 h-4 ml-1" />
-                      </Button>
+                        <span className="hidden sm:inline">Next</span>
+                        <ChevronRight className="w-4 h-4" />
+                      </motion.button>
                     </div>
                   </div>
                 )}
               </>
             ) : (
-              <div className="text-center py-12">
-                <Users className="h-16 w-16 text-[#324D3E]/30 mx-auto mb-4" />
-                <p className="text-gray-700 text-lg font-semibold">No referrals found</p>
-                <p className="text-gray-600 font-medium">Share your referral code to start earning commissions!</p>
+              <div className="text-center py-8 sm:py-12">
+                <div className={getThemeClasses("p-4 bg-[#324D3E]/10 dark:bg-gray-700/30 rounded-full w-fit mx-auto mb-4", "!bg-[#FFC1CC]/20")}>
+                  <Users className={getThemeClasses("h-12 w-12 sm:h-16 sm:w-16 text-[#324D3E]/50 dark:text-gray-400", "!text-[#4c1d1d]/50")} />
+                </div>
+                <p className={getThemeClasses("text-[#324D3E] dark:text-white text-lg font-semibold mb-2", "!text-[#4c1d1d]")}>No referrals found</p>
+                <p className={getThemeClasses("text-[#889063] dark:text-gray-400 font-medium", "!text-[#6b7280]")}>Share your referral code to start earning commissions!</p>
               </div>
             )}
           </div>
-        </Card>
-      </div>
+        </motion.div>
+      </motion.div>
     </StaffLayout>
   );
 }

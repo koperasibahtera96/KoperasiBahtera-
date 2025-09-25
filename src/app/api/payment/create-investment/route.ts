@@ -121,8 +121,11 @@ export async function POST(req: NextRequest) {
     });
 
     // Update existing payment record with additional details and Midtrans response
+    // Use referral code from request, or copy from contract if not provided
     if (referralCode) {
       existingPayment.referralCode = referralCode;
+    } else if (contract.referralCode) {
+      existingPayment.referralCode = contract.referralCode;
     }
     existingPayment.customerData = {
       fullName: dbUser.fullName,

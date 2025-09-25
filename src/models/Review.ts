@@ -6,11 +6,13 @@ export interface IReview extends Document {
   email: string;
   description: string;
   photoUrl?: string;
+  videoUrl?: string;
   rating: number;
   isApproved: boolean;
   isFlagged: boolean;
   flaggedWords?: string[];
   showOnLanding: boolean;
+  isFeatured: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -47,6 +49,10 @@ const ReviewSchema: Schema = new Schema({
     type: String,
     trim: true,
   },
+  videoUrl: {
+    type: String,
+    trim: true,
+  },
   rating: {
     type: Number,
     required: [true, 'Rating is required'],
@@ -70,6 +76,10 @@ const ReviewSchema: Schema = new Schema({
     type: Boolean,
     default: false,
   },
+  isFeatured: {
+    type: Boolean,
+    default: false,
+  },
 }, {
   timestamps: true,
 });
@@ -78,6 +88,7 @@ const ReviewSchema: Schema = new Schema({
 ReviewSchema.index({ isApproved: 1 });
 ReviewSchema.index({ isFlagged: 1 });
 ReviewSchema.index({ showOnLanding: 1 });
+ReviewSchema.index({ isFeatured: 1 });
 ReviewSchema.index({ createdAt: -1 });
 
 export default mongoose.models.Review || mongoose.model<IReview>('Review', ReviewSchema);

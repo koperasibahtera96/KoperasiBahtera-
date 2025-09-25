@@ -43,6 +43,7 @@ export interface IContract extends Document {
   // Contract metadata
   contractNumber: string;
   contractDate: Date;
+  referralCode?: string; // Optional referral code
 
   // Overall status
   status: 'draft' | 'signed' | 'approved' | 'rejected' | 'permanently_rejected' | 'paid';
@@ -158,6 +159,17 @@ const ContractSchema: Schema = new Schema({
   contractDate: {
     type: Date,
     default: Date.now
+  },
+  referralCode: {
+    type: String,
+    required: false,
+    validate: {
+      validator: function(v: string) {
+        // Only validate if value is provided
+        return !v || (typeof v === 'string' && v.length === 6 && /^[A-Z0-9]{6}$/.test(v));
+      },
+      message: 'Referral code must be exactly 6 uppercase alphanumeric characters'
+    }
   },
   status: {
     type: String,

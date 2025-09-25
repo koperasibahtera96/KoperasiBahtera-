@@ -211,6 +211,10 @@ export async function POST(
             email: user.email,
             phoneNumber: user.phoneNumber || '',
           },
+          // Copy referral code from contract if it exists
+          ...(contract.referralCode && {
+            referralCode: contract.referralCode
+          }),
         });
 
         await firstInstallmentPayment.save();
@@ -248,7 +252,11 @@ export async function POST(
             fullName: user.name || user.email.split('@')[0],
             phoneNumber: user.phoneNumber || '',
           },
-          isProcessed: false
+          isProcessed: false,
+          // Copy referral code from contract if it exists
+          ...(contract.referralCode && {
+            referralCode: contract.referralCode
+          }),
         });
 
         await payment.save();

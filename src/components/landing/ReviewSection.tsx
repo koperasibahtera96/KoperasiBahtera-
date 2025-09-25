@@ -11,13 +11,16 @@ interface Review {
   city: string;
   description: string;
   photoUrl?: string;
+  videoUrl?: string;
   rating: number;
   createdAt: string;
 }
 
 const ReviewSection = () => {
   const [reviews, setReviews] = useState<Review[]>([]);
+  const [featuredReview, setFeaturedReview] = useState<Review | null>(null);
   const [loading, setLoading] = useState(true);
+  const [featuredLoading, setFeaturedLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [isClient, setIsClient] = useState(false);
   const [screenType, setScreenType] = useState<'mobile' | 'tablet' | 'desktop'>('desktop');
@@ -66,7 +69,23 @@ const ReviewSection = () => {
 
   useEffect(() => {
     fetchReviews();
+    fetchFeaturedReview();
   }, []);
+
+  const fetchFeaturedReview = async () => {
+    try {
+      setFeaturedLoading(true);
+      const response = await fetch('/api/reviews/featured');
+      if (response.ok) {
+        const result = await response.json();
+        setFeaturedReview(result.data);
+      }
+    } catch (error) {
+      console.error('Error fetching featured review:', error);
+    } finally {
+      setFeaturedLoading(false);
+    }
+  };
 
   const fetchReviews = async () => {
     try {
@@ -208,6 +227,116 @@ const ReviewSection = () => {
     <LazyMotion features={domAnimation}>
       <section className="py-16 sm:py-20 bg-gradient-to-br from-[#F8FAF9] to-[#E8F5E8]">
         <div className="max-w-screen mx-auto px-4 sm:px-6 lg:px-8">
+
+        {/* Header */}
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6 }}
+          className="text-center mb-12"
+        >
+          <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-[#324D3E] mb-4 md:mb-5 font-[family-name:var(--font-poppins)]">
+            Review Investor
+          </h2>
+          <p className="text-base md:text-lg lg:text-xl text-[#889063] max-w-4xl mx-auto">
+            Apa kata para investor tentang pengalaman investasi mereka bersama kami
+          </p>
+        </motion.div>
+
+        {/* Featured Testimonial Section */}
+        {featuredReview && (
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.8 }}
+            className="mb-16 max-w-5xl mx-auto"
+          >
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6, delay: 0.2 }}
+              className="bg-white/95 backdrop-blur-lg rounded-3xl p-8 md:p-12 shadow-2xl border border-[#324D3E]/10 relative overflow-hidden"
+            >
+              {/* Decorative Elements */}
+              <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-[#E8B86D]/20 to-[#B8860B]/20 rounded-full transform translate-x-16 -translate-y-16"></div>
+              <div className="absolute bottom-0 left-0 w-24 h-24 bg-gradient-to-tr from-[#324D3E]/20 to-[#4C3D19]/20 rounded-full transform -translate-x-12 translate-y-12"></div>
+
+              <div className="relative z-10">
+                <div className="flex flex-col lg:flex-row items-center gap-8 lg:gap-12">
+                  {/* Photo/Video Section */}
+                  <div className="flex-shrink-0">
+                    <div className="bg-gradient-to-r from-[#E8B86D] to-[#B8860B] p-2 rounded-2xl shadow-lg">
+                      <div className="bg-white p-3 rounded-xl">
+                        {featuredReview.videoUrl ? (
+                          <div className="relative w-72 h-72 bg-gray-100 rounded-xl overflow-hidden">
+                            <video
+                              src={featuredReview.videoUrl}
+                              controls
+                              className="w-full h-full object-cover"
+                              poster={featuredReview.photoUrl || undefined}
+                            >
+                              Video testimonial tidak dapat diputar
+                            </video>
+                          </div>
+                        ) : featuredReview.photoUrl ? (
+                          <div className="relative w-72 h-72 bg-gray-100 rounded-xl overflow-hidden">
+                            <Image
+                              src={featuredReview.photoUrl}
+                              alt={`${featuredReview.name}'s testimonial photo`}
+                              fill
+                              className="object-cover"
+                              sizes="288px"
+                              quality={95}
+                              priority
+                            />
+                          </div>
+                        ) : (
+                          <div className="w-72 h-72 bg-gray-100 rounded-xl flex items-center justify-center">
+                            <div className="text-center">
+                              <div className="w-20 h-20 bg-gradient-to-r from-[#324D3E] to-[#4C3D19] rounded-full flex items-center justify-center mx-auto mb-4">
+                                <span className="text-white font-bold text-3xl">
+                                  {featuredReview.name.charAt(0).toUpperCase()}
+                                </span>
+                              </div>
+                              <p className="text-gray-500 text-base">Featured Testimonial</p>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Testimonial Content */}
+                  <div className="flex-1 text-center lg:text-left">
+                    <div className="mb-6">
+                      <h3 className="text-3xl md:text-4xl font-bold text-[#324D3E] mb-2 font-[family-name:var(--font-poppins)]">
+                        {featuredReview.name}
+                      </h3>
+                      <p className="text-xl text-[#889063] font-medium">{featuredReview.city}</p>
+                    </div>
+
+                    <div className="flex justify-center lg:justify-start items-center gap-2 mb-6">
+                      <div className="flex">
+                        {renderStars(featuredReview.rating)}
+                      </div>
+                      <span className="text-lg font-semibold text-[#324D3E] ml-2">
+                        {featuredReview.rating}/5 Bintang
+                      </span>
+                    </div>
+
+                    <blockquote className="text-xl md:text-2xl leading-relaxed text-[#324D3E] font-medium italic">
+                      &quot;{featuredReview.description}&quot;
+                    </blockquote>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+
         {/* Reviews Grid - Above Header */}
         <div className="mb-12">
           {loading ? (
@@ -368,22 +497,6 @@ const ReviewSection = () => {
             </motion.div>
           )}
         </div>
-
-        {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.6 }}
-          className="text-center mb-12"
-        >
-          <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-[#324D3E] mb-4 md:mb-5 font-[family-name:var(--font-poppins)]">
-            Review Investor
-          </h2>
-          <p className="text-base md:text-lg lg:text-xl text-[#889063] max-w-4xl mx-auto">
-            Apa kata para investor tentang pengalaman investasi mereka bersama kami
-          </p>
-        </motion.div>
 
         {/* Single Container with Rating and Form */}
         <motion.div

@@ -12,10 +12,14 @@ export async function POST(req: NextRequest) {
 
     const session = await getServerSession();
     if (!session?.user?.email) {
+      console.log("Contract creation failed: No session or email");
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { productName, productId, totalAmount, paymentType, paymentTerm, totalInstallments, installmentAmount, contractNumber } = await req.json();
+    const body = await req.json();
+    console.log("Contract creation request body:", body);
+
+    const { productName, productId, totalAmount, paymentType, paymentTerm, totalInstallments, installmentAmount, contractNumber, referralCode } = body;
 
     // Validate required fields
     if (!productName || !productId || !totalAmount || !paymentType || !contractNumber) {
@@ -41,6 +45,29 @@ export async function POST(req: NextRequest) {
         { error: "Total amount must be a positive number" },
         { status: 400 }
       );
+    }
+
+    // Validate referral code format and existence if provided
+    if (referralCode) {
+      if (typeof referralCode !== 'string' || referralCode.length !== 6 || !/^[A-Z0-9]{6}$/.test(referralCode)) {
+        return NextResponse.json(
+          { error: "Referral code must be exactly 6 uppercase alphanumeric characters" },
+          { status: 400 }
+        );
+      }
+
+      // Check if referral code exists and belongs to a marketing staff
+      const marketingUser = await User.findOne({
+        referralCode: referralCode,
+        role: 'marketing'
+      });
+
+      if (!marketingUser) {
+        return NextResponse.json(
+          { error: "Kode referral salah atau tidak valid" },
+          { status: 400 }
+        );
+      }
     }
 
     // Find user
@@ -126,6 +153,10 @@ export async function POST(req: NextRequest) {
       ...(paymentType === 'full' && paymentUrl && {
         paymentUrl
       }),
+      // Add referral code if provided
+      ...(referralCode && {
+        referralCode
+      }),
       contractNumber,
       status: 'draft',
       adminApprovalStatus: 'pending',
@@ -161,6 +192,7 @@ export async function POST(req: NextRequest) {
 
   } catch (error) {
     console.error("Error creating contract:", error);
+    console.error("Error stack:", error instanceof Error ? error.stack : "No stack trace");
 
     // Handle specific MongoDB errors
     if (error instanceof Error) {
@@ -171,6 +203,7 @@ export async function POST(req: NextRequest) {
         );
       }
       if (error.message.includes('validation failed')) {
+        console.error("Validation error details:", error.message);
         return NextResponse.json(
           { error: "Invalid contract data provided" },
           { status: 400 }
@@ -178,10 +211,13 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    const errorMessage = error instanceof Error ? error.message : "Unknown error";
+    console.error("Returning generic error:", errorMessage);
+
     return NextResponse.json(
       {
         error: "Failed to create contract",
-        details: error instanceof Error ? error.message : "Unknown error",
+        details: errorMessage,
       },
       { status: 500 }
     );

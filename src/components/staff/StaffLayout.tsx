@@ -2,19 +2,19 @@
 
 import { AnimatePresence, motion } from "framer-motion";
 import {
-  Users,
-  TrendingUp,
   Settings,
   LogOut,
   Menu,
-  X,
-  UserCircle,
+  BarChart3,
+  Shield,
+  UserCheck,
 } from "lucide-react";
 import { signOut, useSession } from "next-auth/react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useTheme } from "next-themes";
 
 interface StaffLayoutProps {
   children: React.ReactNode;
@@ -23,13 +23,19 @@ interface StaffLayoutProps {
 const getNavigationForRole = (role: string) => {
   const navigation = [
     // Marketing staff navigation - only /staff page exists
-    { name: "Referral Dashboard", href: "/staff", icon: TrendingUp, color: "text-green-600", roles: ['marketing'] },
+    { name: "Referral Dashboard", href: "/staff", icon: BarChart3, color: "text-green-600", roles: ['marketing'] },
 
     // Marketing head and admin navigation - only /marketing page exists
-    { name: "Marketing Management", href: "/marketing", icon: Users, color: "text-purple-600", roles: ['marketing_head', 'admin'] },
+    { name: "Marketing Management", href: "/marketing", icon: UserCheck, color: "text-purple-600", roles: ['marketing_head', 'admin'] },
 
-    // Admin specific navigation - back to admin panel
-    { name: "Admin Dashboard", href: "/admin", icon: Settings, color: "text-red-600", roles: ['admin'] },
+    // Marketing head: Kelola Staff (manage marketing staff)
+    { name: "Kelola Staff", href: "/marketing/staff", icon: UserCheck, color: "text-orange-600", roles: ['marketing_head'] },
+
+    // Settings page for all roles
+    { name: "Settings", href: "/staff/settings", icon: Settings, color: "text-indigo-600", roles: ['marketing', 'marketing_head', 'admin'] },
+
+    // Admin specific navigation - back to admin panel (only for admins, below settings)
+    { name: "Admin Dashboard", href: "/admin", icon: Shield, color: "text-red-600", roles: ['admin'] },
   ];
 
   return navigation.filter(item =>
@@ -83,12 +89,15 @@ export default function StaffLayout({ children }: StaffLayoutProps) {
   const { data: session } = useSession();
   const pathname = usePathname();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const { theme } = useTheme();
+  const [mounted, setMounted] = useState(false);
 
-  if (!session?.user) {
-    return <div>Please log in to access this page</div>;
-  }
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
-  const userRole = session.user.role || 'marketing';
+
+  const userRole = session?.user?.role || 'marketing';
   const navigation = getNavigationForRole(userRole);
 
   const getRoleDisplayName = (role: string) => {
@@ -100,8 +109,16 @@ export default function StaffLayout({ children }: StaffLayoutProps) {
     }
   };
 
+  // Helper function to get theme-aware classes
+  const getThemeClasses = (baseClasses: string, pinkClasses: string = "") => {
+    if (mounted && theme === "pink" && pinkClasses) {
+      return `${baseClasses} ${pinkClasses}`;
+    }
+    return baseClasses;
+  };
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 flex">
+    <div className={getThemeClasses("min-h-screen bg-gradient-to-br from-green-50 via-white to-emerald-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 font-[family-name:var(--font-poppins)] transition-colors duration-300", "!bg-gradient-to-br !from-[#FFDEE9] !via-white !to-[#FFDEE9]")}>
       {/* Mobile menu overlay */}
       <AnimatePresence>
         {sidebarOpen && (
@@ -110,134 +127,184 @@ export default function StaffLayout({ children }: StaffLayoutProps) {
             initial="hidden"
             animate="visible"
             exit="exit"
-            className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
+            className="fixed inset-0 bg-black/50 z-40 lg:hidden"
             onClick={() => setSidebarOpen(false)}
           />
         )}
       </AnimatePresence>
 
       {/* Sidebar */}
-      <AnimatePresence>
-        <motion.div
-          variants={sidebarVariants}
-          initial="hidden"
-          animate="visible"
-          exit="exit"
-          className={`fixed inset-y-0 left-0 z-50 w-72 bg-white/95 backdrop-blur-xl shadow-2xl border-r border-gray-200 lg:relative lg:z-auto ${
+      <motion.div
+        className={getThemeClasses(`
+          fixed inset-y-0 left-0 w-64 sm:w-72 bg-white/95 dark:bg-gray-900/95 backdrop-blur-lg shadow-2xl transform transition-all duration-300 ease-in-out z-50 border-r border-[#324D3E]/10 dark:border-gray-700 flex flex-col
+          ${
             sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
-          } transition-transform duration-300 ease-in-out lg:transition-none`}
+          }
+        `, "!bg-white/95 !border-[#FFC1CC]/30")}
+        initial="hidden"
+        animate="visible"
+        variants={sidebarVariants}
+      >
+        {/* Logo */}
+        <motion.div
+          className={getThemeClasses("flex items-center gap-3 p-4 sm:p-6 border-b border-[#324D3E]/10 dark:border-gray-700", "!border-[#FFC1CC]/30")}
+          variants={navItemVariants}
         >
-          <div className="flex flex-col h-full">
-            {/* Header */}
-            <div className="flex items-center justify-between p-6 border-b border-gray-200">
-              <div className="flex items-center gap-3">
-                <div className="relative w-10 h-10">
-                  <Image
-                    src="/images/koperasi-logo.jpg"
-                    alt="Koperasi Logo"
-                    fill
-                    className="object-cover rounded-xl shadow-lg"
-                  />
-                </div>
-                <div>
-                  <h1 className="text-lg font-bold text-gray-900">Staff Portal</h1>
-                  <p className="text-xs text-gray-600">Koperasi Bahtera</p>
-                </div>
-              </div>
-              <button
-                onClick={() => setSidebarOpen(false)}
-                className="lg:hidden p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            {/* User info */}
-            <div className="p-6 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50">
-              <div className="flex items-center gap-3">
-                <div className="relative w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center">
-                  <UserCircle className="w-8 h-8 text-white" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-gray-900 truncate">
-                    {session.user.name}
-                  </p>
-                  <p className="text-xs text-gray-600 truncate">
-                    {session.user.email}
-                  </p>
-                  <p className="text-xs text-blue-600 font-medium">
-                    {getRoleDisplayName(userRole)}
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* Navigation */}
-            <nav className="flex-1 p-6 space-y-2 overflow-y-auto">
-              {navigation.map((item) => {
-                const isActive = pathname === item.href;
-                return (
-                  <motion.div key={item.name} variants={navItemVariants}>
-                    <Link
-                      href={item.href}
-                      onClick={() => setSidebarOpen(false)}
-                      className={`flex items-center gap-4 p-3 rounded-xl transition-all duration-300 group ${
-                        isActive
-                          ? "bg-gradient-to-r from-blue-500 to-indigo-600 text-white shadow-lg"
-                          : "text-gray-700 hover:bg-white hover:shadow-md hover:text-blue-600"
-                      }`}
-                    >
-                      <item.icon
-                        className={`w-5 h-5 ${
-                          isActive ? "text-white" : item.color
-                        } group-hover:scale-110 transition-transform`}
-                      />
-                      <span className="font-medium text-sm">{item.name}</span>
-                    </Link>
-                  </motion.div>
-                );
-              })}
-            </nav>
-
-            {/* Footer */}
-            <div className="p-6 border-t border-gray-200">
-              <button
-                onClick={() => signOut({ callbackUrl: "/login" })}
-                className="flex items-center gap-3 w-full p-3 text-red-600 hover:bg-red-50 rounded-xl transition-all duration-300 group"
-              >
-                <LogOut className="w-5 h-5 group-hover:scale-110 transition-transform" />
-                <span className="font-medium text-sm">Logout</span>
-              </button>
-            </div>
+          <motion.div
+            whileHover={{
+              scale: 1.1,
+              rotate: 5,
+              transition: { duration: 0.3 },
+            }}
+          >
+            <Image
+              src="/images/koperasi-logo.jpg"
+              alt="Logo"
+              width={40}
+              height={40}
+              className="rounded-full"
+            />
+          </motion.div>
+          <div className="min-w-0 flex-1">
+            <motion.h1
+              className={getThemeClasses("font-bold text-[#324D3E] dark:text-white text-base sm:text-lg truncate", "!text-[#4c1d1d]")}
+              whileHover={{ color: theme === "pink" ? "#831843" : "#4C3D19" }}
+            >
+              Staff Portal
+            </motion.h1>
+            <p className={getThemeClasses("text-xs sm:text-sm text-[#889063] dark:text-gray-400 truncate", "!text-[#6b7280]")}>
+              Koperasi BAHTERA
+            </p>
           </div>
         </motion.div>
-      </AnimatePresence>
+
+        {/* Navigation */}
+        <motion.nav className="p-4 space-y-1 flex-1 overflow-y-auto" variants={sidebarVariants}>
+          {navigation.map((item, index) => {
+            const isActive = pathname === item.href;
+            return (
+              <motion.div
+                key={item.name}
+                variants={navItemVariants}
+                whileHover={{ x: 5 }}
+                whileTap={{ scale: 0.98 }}
+              >
+                <Link
+                  href={item.href}
+                  className={getThemeClasses(`
+                    flex items-center gap-3 px-3 sm:px-4 py-2 sm:py-3 rounded-xl transition-all duration-300 font-medium text-sm sm:text-base group
+                    ${
+                      isActive
+                        ? "bg-gradient-to-r from-[#324D3E] to-[#4C3D19] text-white shadow-lg"
+                        : "text-[#324D3E] dark:text-gray-200 hover:bg-[#324D3E]/10 dark:hover:bg-gray-700 hover:text-[#4C3D19] dark:hover:text-white"
+                    }
+                  `, isActive
+                    ? "!bg-gradient-to-r !from-[#FFC1CC] !to-[#FFDEE9] !text-[#4c1d1d] !shadow-lg"
+                    : "!text-[#4c1d1d] hover:!bg-[#FFC1CC]/10 hover:!text-[#831843]")}
+                  onClick={() => setSidebarOpen(false)}
+                >
+                  <div className={getThemeClasses(
+                    `w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center rounded-lg mr-1 transition-all duration-300 ${
+                      isActive
+                        ? "bg-white/20"
+                        : "bg-transparent group-hover:bg-white/10"
+                    }`,
+                    `w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center rounded-lg mr-1 transition-all duration-300 ${
+                      index === 0 ? "!bg-[#FFC1CC]/40" :
+                      index === 1 ? "!bg-[#B5EAD7]/40" :
+                      index === 2 ? "!bg-[#C7CEEA]/40" :
+                      "!bg-[#FFDEE9]/40"
+                    } ${
+                      isActive
+                        ? index === 0 ? "!bg-[#FFC1CC]/60" :
+                          index === 1 ? "!bg-[#B5EAD7]/60" :
+                          index === 2 ? "!bg-[#C7CEEA]/60" :
+                          "!bg-[#FFDEE9]/60"
+                        : ""
+                    }`
+                  )}>
+                    <item.icon
+                      className={getThemeClasses(`w-5 h-5 sm:w-5 sm:h-5 flex-shrink-0 transition-colors duration-300 ${
+                        isActive
+                          ? "text-white"
+                          : `${item.color} group-hover:scale-110`
+                      }`, isActive
+                        ? "!text-[#4c1d1d]"
+                        : "!text-[#4c1d1d] group-hover:scale-110")}
+                    />
+                  </div>
+                  <span className="truncate">{item.name}</span>
+                </Link>
+              </motion.div>
+            );
+          })}
+        </motion.nav>
+
+        {/* User info at bottom */}
+        <motion.div
+          className={getThemeClasses("p-2 sm:p-4 border-t border-[#324D3E]/10 dark:border-gray-700 mt-auto", "!border-[#FFC1CC]/30")}
+          variants={navItemVariants}
+        >
+          <motion.div className={getThemeClasses("flex items-center gap-2 sm:gap-3 p-2 sm:p-3 rounded-xl hover:bg-[#324D3E]/5 dark:hover:bg-gray-700/50 transition-colors mb-1 sm:mb-2", "hover:!bg-[#FFC1CC]/10")}>
+            <motion.div
+              className={getThemeClasses("w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-r from-[#324D3E] to-[#4C3D19] rounded-full flex items-center justify-center flex-shrink-0", "!bg-gradient-to-r !from-[#FFC1CC] !to-[#FFDEE9]")}
+              whileHover={{
+                rotate: 360,
+                transition: { duration: 0.6 },
+              }}
+            >
+              <span className={getThemeClasses("text-white font-bold text-sm sm:text-base", "!text-[#4c1d1d]")}>
+                {session?.user?.name?.charAt(0).toUpperCase() || "S"}
+              </span>
+            </motion.div>
+            <div className="flex-1 min-w-0">
+              <p className={getThemeClasses("font-semibold text-[#324D3E] dark:text-white text-sm sm:text-base truncate", "!text-[#4c1d1d]")}>
+                {session?.user?.name || "Staff"}
+              </p>
+              <p className={getThemeClasses("text-xs sm:text-sm text-[#889063] dark:text-gray-400 truncate", "!text-[#6b7280]")}>
+                {getRoleDisplayName(userRole)}
+              </p>
+            </div>
+          </motion.div>
+
+          {/* Logout button */}
+          <motion.button
+            onClick={() => signOut({ callbackUrl: "/login" })}
+            className={getThemeClasses("w-full flex items-center gap-2 sm:gap-3 p-2 sm:p-3 rounded-xl text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors group", "!text-[#4c1d1d] hover:!bg-[#FFB3C6]/20")}
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+          >
+            <div className={getThemeClasses("w-8 h-8 sm:w-10 sm:h-10 bg-red-100 dark:bg-red-900/40 rounded-full flex items-center justify-center group-hover:bg-red-200 dark:group-hover:bg-red-800/60 transition-colors flex-shrink-0", "!bg-[#FFB3C6]/30 group-hover:!bg-[#FFB3C6]/50")}>
+              <LogOut className="w-4 h-4 sm:w-5 sm:h-5" />
+            </div>
+            <span className="font-medium text-sm sm:text-base">Keluar</span>
+          </motion.button>
+        </motion.div>
+      </motion.div>
 
       {/* Main content */}
-      <div className="flex-1 flex flex-col min-h-screen lg:min-h-0">
-        {/* Mobile header */}
-        <div className="lg:hidden flex items-center justify-between p-4 bg-white/80 backdrop-blur-lg border-b border-gray-200 sticky top-0 z-30">
-          <button
-            onClick={() => setSidebarOpen(true)}
-            className="p-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+      <div className="lg:ml-64 xl:ml-72">
+        {/* Mobile menu button */}
+        <div className="lg:hidden fixed top-4 right-4 z-40">
+          <motion.button
+            onClick={() => setSidebarOpen(!sidebarOpen)}
+            className={getThemeClasses("p-2 rounded-xl text-[#324D3E] dark:text-white bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg shadow-md hover:bg-[#324D3E]/10 dark:hover:bg-gray-700/50 transition-colors", "!text-[#4c1d1d] !bg-white/80 hover:!bg-[#FFC1CC]/20")}
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.9 }}
           >
             <Menu className="w-6 h-6" />
-          </button>
-          <div className="flex items-center gap-2">
-            <div className="relative w-8 h-8">
-              <Image
-                src="/images/koperasi-logo.jpg"
-                alt="Logo"
-                fill
-                className="object-cover rounded-lg"
-              />
-            </div>
-            <span className="font-semibold text-gray-900">Staff Portal</span>
-          </div>
+          </motion.button>
         </div>
 
         {/* Page content */}
-        <main className="flex-1 min-h-0">{children}</main>
+        <motion.main
+          className="p-3 sm:p-4 lg:p-6 min-h-screen"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3, duration: 0.6 }}
+        >
+          {children}
+        </motion.main>
       </div>
     </div>
   );

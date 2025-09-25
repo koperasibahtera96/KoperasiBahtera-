@@ -69,6 +69,28 @@ async function resolveMemberCode(payment: Record<string, any>): Promise<string> 
   }
 }
 
+/** Ambil data PlantInstance berdasarkan orderId untuk mendapatkan kavling dan blok */
+async function resolvePlantInstanceData(payment: Record<string, any>): Promise<{kavling: string; blok: string}> {
+  try {
+    const orderId = String(payment?.orderId || "");
+    if (!orderId) return {kavling: "—", blok: "—"};
+
+    const plantId = `PLANT-${orderId}-${orderId.slice(-8)}`
+
+    const res = await fetch(`/api/plants/${plantId}`);
+
+    if (!res.ok) return {kavling: "—", blok: "—"};
+
+    const data = await res.json();
+    return {
+      kavling: data?.kavling || "—",
+      blok: data?.blok || "—"
+    };
+  } catch {
+    return {kavling: "—", blok: "—"};
+  }
+}
+
 /* ---------- Export Gambar ---------- */
 export async function downloadInvoiceImage(
   payment: Record<string, any>,
@@ -89,7 +111,8 @@ export async function downloadInvoiceImage(
   );
 
   const orderId = s(payment?.orderId, "—");
-  const kavBlok = "Kav / Blok : …";
+  const plantData = await resolvePlantInstanceData(payment);
+  const kavBlok = `<b>Kav / Blok</b> : ${plantData.kavling} / ${plantData.blok}`;
   const dateRight = fmtDate(payment?.updatedAt || payment?.createdAt);
 
   // REG → deskripsi "Pendaftaran"
@@ -117,17 +140,16 @@ export async function downloadInvoiceImage(
   // Full & REG sama-sama tanpa "Pembayaran" & "Jangka Wkt"
   const hideTenorAndPeriod = isFullInvestment || isRegistration;
 
-  const LOGO = opts?.logoUrl ?? "/assets/bahtera-logo.png";
+  const INVOICE_BG = "/invoice.jpg";
   const WATERMARK = opts?.watermarkUrl ?? "/assets/watermark-bg.png";
 
   const W = 720;
   const H = 520;
-  const BORDER = 2;
 
   let wrapper: HTMLDivElement | null = null;
 
   try {
-    await Promise.all([loadImage(LOGO), loadImage(WATERMARK)]);
+    await Promise.all([loadImage(INVOICE_BG), loadImage(WATERMARK)]);
 
     wrapper = document.createElement("div");
     wrapper.style.position = "fixed";
@@ -138,11 +160,12 @@ export async function downloadInvoiceImage(
     const el = document.createElement("div");
     el.style.width = `${W}px`;
     el.style.height = `${H}px`;
-    el.style.background = "#ffffff";
-    el.style.border = `${BORDER}px solid #000`;
-    el.style.borderRadius = "6px";
+    el.style.backgroundImage = `url(${INVOICE_BG})`;
+    el.style.backgroundSize = "cover";
+    el.style.backgroundPosition = "center";
+    el.style.backgroundRepeat = "no-repeat";
     el.style.boxSizing = "border-box";
-    el.style.padding = "16px 16px 34px";
+    el.style.padding = "160px 50px 34px";
     el.style.fontFamily = `Arial, Helvetica, sans-serif`;
     el.style.color = "#111";
     el.style.position = "relative";
@@ -165,59 +188,6 @@ export async function downloadInvoiceImage(
     } as CSSStyleDeclaration);
     el.appendChild(wm);
 
-    /* HEADER */
-    const header = document.createElement("div");
-    header.style.display = "grid";
-    header.style.gridTemplateColumns = "100px 1fr";
-    header.style.columnGap = "10px";
-    header.style.alignItems = "center";
-    el.appendChild(header);
-
-    const logo = document.createElement("img");
-    logo.src = LOGO;
-    logo.crossOrigin = "anonymous";
-    Object.assign(logo.style, {
-      width: "86px",
-      height: "86px",
-      objectFit: "contain",
-      justifySelf: "start",
-    } as CSSStyleDeclaration);
-    header.appendChild(logo);
-
-    const titleBlock = document.createElement("div");
-    titleBlock.style.textAlign = "center";
-    titleBlock.style.alignSelf = "center";
-    header.appendChild(titleBlock);
-
-    const line1 = document.createElement("div");
-    line1.textContent = "KOPERASI";
-    line1.style.fontSize = "30px";
-    line1.style.fontWeight = "800";
-    line1.style.color = "#c62828";
-    titleBlock.appendChild(line1);
-
-    const line2 = document.createElement("div");
-    line2.textContent = "BINTANG MERAH SEJAHTERA";
-    line2.style.fontSize = "28px";
-    line2.style.fontWeight = "800";
-    line2.style.color = "#c62828";
-    titleBlock.appendChild(line2);
-
-    const hr = document.createElement("div");
-    hr.style.height = "3px";
-    hr.style.background = "#000";
-    hr.style.width = "85%";
-    hr.style.margin = "6px auto 8px auto";
-    hr.style.borderRadius = "2px";
-    el.appendChild(hr);
-
-    const invoiceTitle = document.createElement("div");
-    invoiceTitle.textContent = "INVOICE";
-    invoiceTitle.style.textAlign = "center";
-    invoiceTitle.style.fontWeight = "800";
-    invoiceTitle.style.fontSize = "20px";
-    invoiceTitle.style.margin = "0 0 10px";
-    el.appendChild(invoiceTitle);
 
     /* META */
     const meta = document.createElement("div");
@@ -256,34 +226,29 @@ export async function downloadInvoiceImage(
     meta.appendChild(rightMeta);
 
     /* TABLE */
-    const tableWrap = document.createElement("div");
-    tableWrap.style.border = "1px solid #b71c1c";
-    tableWrap.style.margin = "0 2px 8px";
-    tableWrap.style.borderRadius = "2px";
-    el.appendChild(tableWrap);
-
     const tbl = document.createElement("table");
     tbl.cellPadding = "0";
     tbl.cellSpacing = "0";
     tbl.style.width = "100%";
     tbl.style.borderCollapse = "collapse";
+    tbl.style.marginBottom = "8px";
     tbl.innerHTML = `
       <thead>
-        <tr style="background:#b71c1c; color:#fff; font-weight:700; font-size:14px;">
-          ${td("No", "width:52px; text-align:center;")}
-          ${td("Pembayaran")}
-          ${td("Nominal", "width:170px; text-align:center;")}
+        <tr style="background:transparent; color:#fff; font-weight:700; font-size:14px; transform:translateY(3px);">
+          ${td("No", "width:52px; text-align:center; background:transparent; color:#fff;")}
+          ${td("Pembayaran", "background:transparent; color:#fff;")}
+          ${td("Nominal", "width:170px; text-align:center; background:transparent; color:#fff;")}
         </tr>
       </thead>
       <tbody>
-        <tr style="background:#ffe9e9;">
-          ${td("1", "text-align:center;")}
-          ${td(tableDesc)}
-          ${td(fmtIDR(Number(amount)), "text-align:right;")}
+        <tr style="background:transparent; transform:translateY(-5px);">
+          ${td("1", "text-align:center; background:transparent; color:#000;")}
+          ${td(tableDesc, "background:transparent; color:#000;")}
+          ${td(fmtIDR(Number(amount)), "text-align:right; background:transparent; color:#000;")}
         </tr>
       </tbody>
     `;
-    tableWrap.appendChild(tbl);
+    el.appendChild(tbl);
 
     /* DETAIL */
     const detail = document.createElement("div");
@@ -311,7 +276,7 @@ export async function downloadInvoiceImage(
     const footer = document.createElement("div");
     footer.textContent = `Diunduh pada tanggal ${fmtDate()} pukul ${fmtTime()}`;
     footer.style.position = "absolute";
-    footer.style.left = "16px";
+    footer.style.left = "45px";
     footer.style.bottom = "10px";
     footer.style.fontSize = "12px";
     footer.style.color = "#444";

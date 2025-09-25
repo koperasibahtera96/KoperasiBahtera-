@@ -11,7 +11,9 @@ import {
   TrendingUp,
   Settings,
   FileText,
-  ClipboardCheck
+  ClipboardCheck,
+  ExternalLink,
+  ArrowRight
 } from "lucide-react";
 import { signOut, useSession } from "next-auth/react";
 import Image from "next/image";
@@ -35,6 +37,8 @@ const navigation = [
   { name: "Log Aktivitas", href: "/admin/logs", icon: FileText, color: "text-red-600" },
   { name: "Laporan", href: "/admin/laporan", icon: TrendingUp, color: "text-cyan-600" },
   { name: "Pengaturan", href: "/admin/settings", icon: Settings, color: "text-indigo-600" },
+  { name: "Marketing Portal", href: "/marketing", icon: ExternalLink, color: "text-violet-600" },
+  { name: "Checker Portal", href: "/checker", icon: ArrowRight, color: "text-amber-600" },
 ];
 
 const sidebarVariants: any = {

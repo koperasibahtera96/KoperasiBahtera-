@@ -6,7 +6,7 @@ import { motion } from 'framer-motion';
 import Image from 'next/image';
 import { useEffect, useState } from 'react';
 import { useTheme } from 'next-themes';
-import { Flag, CheckCircle, Clock, Star } from 'lucide-react';
+import { Flag, CheckCircle, Clock, Star, Save, Sparkles, Paperclip } from 'lucide-react';
 
 interface Review {
   _id: string;
@@ -15,11 +15,13 @@ interface Review {
   email: string;
   description: string;
   photoUrl?: string;
+  videoUrl?: string;
   rating: number;
   isApproved: boolean;
   isFlagged: boolean;
   flaggedWords?: string[];
   showOnLanding: boolean;
+  isFeatured: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -52,6 +54,18 @@ export default function ReviewManagementPage() {
   const [reviewFilter, setReviewFilter] = useState<'all' | 'pending' | 'approved' | 'flagged'>('pending');
   const [newWord, setNewWord] = useState('');
   const [addingWord, setAddingWord] = useState(false);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [creatingFeatured, setCreatingFeatured] = useState(false);
+  const [featuredFormData, setFeaturedFormData] = useState({
+    name: '',
+    city: '',
+    email: '',
+    description: '',
+    rating: 5,
+    mediaUrl: '',
+    mediaType: '' // 'photo' or 'video'
+  });
+  const [uploadingMedia, setUploadingMedia] = useState(false);
   const [confirmDialog, setConfirmDialog] = useState<{
     isOpen: boolean;
     title: string;
@@ -156,6 +170,31 @@ export default function ReviewManagementPage() {
       }
     } catch (error) {
       console.error('Error updating landing page display:', error);
+    } finally {
+      setProcessingId(null);
+    }
+  };
+
+  const handleFeaturedToggle = async (reviewId: string, isFeatured: boolean) => {
+    try {
+      setProcessingId(reviewId);
+      const response = await fetch('/api/admin/reviews', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ reviewId, isFeatured }),
+      });
+
+      if (response.ok) {
+        await fetchReviews();
+        showSuccess('Update Berhasil', `Review ${isFeatured ? 'dijadikan' : 'dihapus dari'} testimoni unggulan`);
+      } else {
+        const result = await response.json();
+        showError('Gagal Update Featured', result.error || 'Gagal mengupdate status testimoni unggulan');
+      }
+    } catch (error) {
+      console.error('Error updating featured status:', error);
     } finally {
       setProcessingId(null);
     }
@@ -276,6 +315,141 @@ export default function ReviewManagementPage() {
     }
   };
 
+  const handleMediaUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Determine if it's photo or video
+    const isVideo = file.type.startsWith('video/');
+    const isImage = file.type.startsWith('image/');
+
+    if (!isImage && !isVideo) {
+      showError('Format File Tidak Didukung', 'Hanya file gambar (JPG, PNG, WebP) dan video (MP4, WebM, OGG) yang diperbolehkan');
+      return;
+    }
+
+    // Check file size based on type
+    const maxSize = isVideo ? 15 * 1024 * 1024 : 5 * 1024 * 1024; // 15MB for video, 5MB for image
+    if (file.size > maxSize) {
+      showError('File Terlalu Besar', `Ukuran ${isVideo ? 'video' : 'foto'} maksimal ${isVideo ? '15MB' : '5MB'}`);
+      return;
+    }
+
+    // Validate file types
+    if (isImage) {
+      const allowedImageTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+      if (!allowedImageTypes.includes(file.type)) {
+        showError('Format File Tidak Didukung', 'Hanya file JPEG, PNG, dan WebP yang diperbolehkan untuk foto');
+        return;
+      }
+    } else if (isVideo) {
+      const allowedVideoTypes = ['video/mp4', 'video/webm', 'video/ogg'];
+      if (!allowedVideoTypes.includes(file.type)) {
+        showError('Format File Tidak Didukung', 'Hanya file MP4, WebM, dan OGG yang diperbolehkan untuk video');
+        return;
+      }
+    }
+
+    setUploadingMedia(true);
+
+    try {
+      const uploadFormData = new FormData();
+      uploadFormData.append(isVideo ? 'video' : 'photo', file);
+
+      const endpoint = isVideo ? '/api/reviews/upload-video' : '/api/reviews/upload';
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        body: uploadFormData,
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        setFeaturedFormData(prev => ({
+          ...prev,
+          mediaUrl: result.data.url,
+          mediaType: isVideo ? 'video' : 'photo'
+        }));
+        showSuccess(`${isVideo ? 'Video' : 'Foto'} Berhasil Diupload`, `${isVideo ? 'Video' : 'Foto'} testimonial berhasil diupload`);
+      } else {
+        throw new Error('Upload failed');
+      }
+    } catch (error) {
+      console.error('Media upload error:', error);
+      showError(`Gagal Upload ${isVideo ? 'Video' : 'Foto'}`, `Gagal mengupload ${isVideo ? 'video' : 'foto'}. Silakan coba lagi`);
+    } finally {
+      setUploadingMedia(false);
+      // Clear the input to prevent issues with file processing
+      if (e.target) {
+        e.target.value = '';
+      }
+    }
+  };
+
+  const handleCreateTestimonial = async (isFeatured: boolean) => {
+    if (!featuredFormData.name || !featuredFormData.city || !featuredFormData.email || !featuredFormData.description) {
+      showError('Form Tidak Lengkap', 'Nama, kota, email, dan deskripsi wajib diisi');
+      return;
+    }
+
+    setCreatingFeatured(true);
+
+    try {
+      // Prepare data based on media type
+      const submitData = {
+        name: featuredFormData.name,
+        city: featuredFormData.city,
+        email: featuredFormData.email,
+        description: featuredFormData.description,
+        rating: featuredFormData.rating,
+        photoUrl: featuredFormData.mediaType === 'photo' ? featuredFormData.mediaUrl : '',
+        videoUrl: featuredFormData.mediaType === 'video' ? featuredFormData.mediaUrl : '',
+        isFeatured
+      };
+
+      const response = await fetch('/api/admin/reviews/testimonial', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(submitData),
+      });
+
+      if (response.ok) {
+        // Close modal first
+        setShowCreateModal(false);
+
+        // Clear form data
+        setFeaturedFormData({
+          name: '',
+          city: '',
+          email: '',
+          description: '',
+          rating: 5,
+          mediaUrl: '',
+          mediaType: ''
+        });
+
+        // Refresh reviews
+        await fetchReviews();
+
+        // Show success message after modal is closed
+        const actionText = isFeatured ? 'Testimoni Unggulan' : 'Draft Testimoni';
+        const statusText = isFeatured ? 'dibuat dan ditampilkan di landing page' : 'disimpan sebagai draft';
+        setTimeout(() => {
+          showSuccess(`${actionText} Berhasil`, `${actionText} berhasil ${statusText}`);
+        }, 100);
+      } else {
+        const result = await response.json();
+        showError('Gagal Membuat Testimoni', result.error || 'Gagal membuat testimoni');
+      }
+    } catch (error) {
+      console.error('Error creating testimonial:', error);
+      showError('Gagal Membuat Testimoni', 'Terjadi kesalahan saat membuat testimoni');
+    } finally {
+      setCreatingFeatured(false);
+    }
+  };
+
   const renderStars = (rating: number) => {
     return Array.from({ length: 5 }, (_, i) => (
       <span key={i} className={`text-sm ${i < Math.floor(rating) ? 'text-yellow-400' : 'text-gray-300'}`}>
@@ -313,6 +487,14 @@ export default function ReviewManagementPage() {
       badges.push(
         <span key="landing" className={getThemeClasses("px-2 py-1 text-xs font-semibold bg-blue-100 dark:bg-blue-900/20 text-blue-800 dark:text-blue-300 rounded-full transition-colors duration-300", "!bg-[#FFE4E8] !text-[#4c1d1d]") }>
           <Star className="inline-block w-3 h-3 mr-1" /> Landing Page
+        </span>
+      );
+    }
+
+    if (review.isFeatured) {
+      badges.push(
+        <span key="featured" className={getThemeClasses("px-2 py-1 text-xs font-semibold bg-purple-100 dark:bg-purple-900/20 text-purple-800 dark:text-purple-300 rounded-full transition-colors duration-300", "!bg-[#E8D5FF] !text-[#4c1d1d]") }>
+          ⭐ Testimoni Unggulan
         </span>
       );
     }
@@ -363,26 +545,39 @@ export default function ReviewManagementPage() {
           {/* Reviews Tab */}
           {activeTab === 'reviews' && (
             <div className="space-y-6">
-              {/* Filter Reviews */}
-              <div className="flex flex-wrap gap-2">
-                {(['all', 'pending', 'approved', 'flagged'] as const).map((filter) => (
-                  <button
-                    key={filter}
-                    onClick={() => setReviewFilter(filter)}
-                    className={getThemeClasses(
-                      `px-4 py-2 text-sm font-medium rounded-lg transition-colors duration-300 font-[family-name:var(--font-poppins)] ${
-                        reviewFilter === filter
-                          ? 'bg-[#324D3E] dark:bg-[#4C3D19] text-white'
-                          : 'bg-gray-100 dark:bg-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-500'
-                      }`,
-                      reviewFilter === filter ? '!bg-gradient-to-r !from-[#FFC1CC] !to-[#FFDEE9] !text-[#4c1d1d]' : ''
-                    )}
-                  >
-                    {filter === 'all' ? 'Semua' :
-                     filter === 'pending' ? 'Menunggu' :
-                     filter === 'approved' ? 'Disetujui' : 'Terdeteksi'}
-                  </button>
-                ))}
+              {/* Filter Reviews and Create Button */}
+              <div className="flex justify-between items-center">
+                <div className="flex flex-wrap gap-2">
+                  {(['all', 'pending', 'approved', 'flagged'] as const).map((filter) => (
+                    <button
+                      key={filter}
+                      onClick={() => setReviewFilter(filter)}
+                      className={getThemeClasses(
+                        `px-4 py-2 text-sm font-medium rounded-lg transition-colors duration-300 font-[family-name:var(--font-poppins)] ${
+                          reviewFilter === filter
+                            ? 'bg-[#324D3E] dark:bg-[#4C3D19] text-white'
+                            : 'bg-gray-100 dark:bg-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-500'
+                        }`,
+                        reviewFilter === filter ? '!bg-gradient-to-r !from-[#FFC1CC] !to-[#FFDEE9] !text-[#4c1d1d]' : ''
+                      )}
+                    >
+                      {filter === 'all' ? 'Semua' :
+                       filter === 'pending' ? 'Menunggu' :
+                       filter === 'approved' ? 'Disetujui' : 'Terdeteksi'}
+                    </button>
+                  ))}
+                </div>
+
+                <button
+                  onClick={() => setShowCreateModal(true)}
+                  className={getThemeClasses(
+                    'px-4 py-2 bg-[#324D3E] dark:bg-[#4C3D19] text-white rounded-lg hover:bg-[#4A6741] dark:hover:bg-[#889063] active:bg-[#2C3E2B] transition-all duration-300 font-medium font-[family-name:var(--font-poppins)] focus:ring-2 focus:ring-[#324D3E] focus:ring-offset-2 flex items-center gap-2',
+                    '!bg-gradient-to-r !from-[#FFC1CC] !to-[#FFDEE9] !text-[#4c1d1d]'
+                  )}
+                >
+                  <Sparkles className="w-4 h-4" />
+                  Buat Testimoni Unggulan
+                </button>
               </div>
 
               {/* Reviews List */}
@@ -485,38 +680,87 @@ export default function ReviewManagementPage() {
                             </button>
                           </div>
 
-                          {/* Landing Page Controls - Only show for approved reviews */}
+                          {/* Landing Page and Featured Controls - Only show for approved reviews */}
                           {review.isApproved && (
-                            <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3 border border-blue-200 dark:border-blue-800 transition-colors duration-300">
-                              <div className="flex items-center justify-between">
-                                <div>
-                                  <h4 className="font-medium text-blue-900 dark:text-blue-300 transition-colors duration-300 font-[family-name:var(--font-poppins)]">Tampilkan di Landing Page</h4>
-                                  <p className="text-sm text-blue-700 dark:text-blue-400 transition-colors duration-300">
-                                    {review.showOnLanding
-                                      ? 'Review ini ditampilkan di landing page'
-                                      : 'Review ini tidak ditampilkan di landing page'
-                                    }
-                                  </p>
-                                </div>
-                                <button
-                                  onClick={() => handleLandingPageToggle(review._id, !review.showOnLanding)}
-                                  disabled={processingId === review._id}
-                                  className={getThemeClasses(
-                                    `px-4 py-2 text-sm rounded-lg transition-all duration-300 disabled:opacity-50 font-[family-name:var(--font-poppins)] ${
-                                      review.showOnLanding
-                                        ? 'bg-blue-600 dark:bg-blue-700 text-white hover:bg-blue-700 dark:hover:bg-blue-800'
-                                        : 'bg-blue-100 dark:bg-blue-800 text-blue-700 dark:text-blue-300 hover:bg-blue-200 dark:hover:bg-blue-700'
-                                    }`,
-                                    '!bg-gradient-to-r !from-[#C7CEEA] !to-[#EAF0FF] !text-[#4c1d1d]'
+                            <div className="space-y-3">
+                              {/* Landing Page Controls - Only show if NOT featured */}
+                              {!review.isFeatured && (
+                                <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3 border border-blue-200 dark:border-blue-800 transition-colors duration-300">
+                                  <div className="flex items-center justify-between">
+                                    <div>
+                                      <h4 className="font-medium text-blue-900 dark:text-blue-300 transition-colors duration-300 font-[family-name:var(--font-poppins)]">Tampilkan di Landing Page</h4>
+                                      <p className="text-sm text-blue-700 dark:text-blue-400 transition-colors duration-300">
+                                        {review.showOnLanding
+                                          ? 'Review ini ditampilkan di review investor biasa'
+                                          : 'Review ini tidak ditampilkan di landing page'
+                                        }
+                                      </p>
+                                    </div>
+                                    <button
+                                      onClick={() => handleLandingPageToggle(review._id, !review.showOnLanding)}
+                                      disabled={processingId === review._id}
+                                      className={getThemeClasses(
+                                        `px-4 py-2 text-sm rounded-lg transition-all duration-300 disabled:opacity-50 font-[family-name:var(--font-poppins)] ${
+                                          review.showOnLanding
+                                            ? 'bg-blue-600 dark:bg-blue-700 text-white hover:bg-blue-700 dark:hover:bg-blue-800'
+                                            : 'bg-blue-100 dark:bg-blue-800 text-blue-700 dark:text-blue-300 hover:bg-blue-200 dark:hover:bg-blue-700'
+                                        }`,
+                                        '!bg-gradient-to-r !from-[#C7CEEA] !to-[#EAF0FF] !text-[#4c1d1d]'
+                                      )}
+                                    >
+                                      {processingId === review._id ? 'Processing...' :
+                                       review.showOnLanding ? 'Sembunyikan' : 'Tampilkan'}
+                                    </button>
+                                  </div>
+                                  {review.showOnLanding && (
+                                    <div className="mt-2 text-xs text-blue-600 dark:text-blue-400 transition-colors duration-300">
+                                      ⭐ Review ini akan muncul di grid review investor biasa
+                                    </div>
                                   )}
-                                >
-                                  {processingId === review._id ? 'Processing...' :
-                                   review.showOnLanding ? 'Sembunyikan' : 'Tampilkan'}
-                                </button>
+                                </div>
+                              )}
+
+                              {/* Featured Testimonial Controls */}
+                              <div className="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-3 border border-purple-200 dark:border-purple-800 transition-colors duration-300">
+                                <div className="flex items-center justify-between">
+                                  <div>
+                                    <h4 className="font-medium text-purple-900 dark:text-purple-300 transition-colors duration-300 font-[family-name:var(--font-poppins)]">Testimoni Unggulan</h4>
+                                    <p className="text-sm text-purple-700 dark:text-purple-400 transition-colors duration-300">
+                                      {review.isFeatured
+                                        ? 'Review ini dijadikan testimoni unggulan di atas section review'
+                                        : 'Jadikan review ini sebagai testimoni unggulan yang ditampilkan secara menonjol'
+                                      }
+                                    </p>
+                                  </div>
+                                  <button
+                                    onClick={() => handleFeaturedToggle(review._id, !review.isFeatured)}
+                                    disabled={processingId === review._id}
+                                    className={getThemeClasses(
+                                      `px-4 py-2 text-sm rounded-lg transition-all duration-300 disabled:opacity-50 font-[family-name:var(--font-poppins)] ${
+                                        review.isFeatured
+                                          ? 'bg-purple-600 dark:bg-purple-700 text-white hover:bg-purple-700 dark:hover:bg-purple-800'
+                                          : 'bg-purple-100 dark:bg-purple-800 text-purple-700 dark:text-purple-300 hover:bg-purple-200 dark:hover:bg-purple-700'
+                                      }`,
+                                      '!bg-gradient-to-r !from-[#E8D5FF] !to-[#F3E8FF] !text-[#4c1d1d]'
+                                    )}
+                                  >
+                                    {processingId === review._id ? 'Processing...' :
+                                     review.isFeatured ? 'Batalkan' : 'Jadikan Unggulan'}
+                                  </button>
+                                </div>
+                                {review.isFeatured && (
+                                  <div className="mt-2 text-xs text-purple-600 dark:text-purple-400 transition-colors duration-300">
+                                    🌟 Testimoni ini akan ditampilkan secara menonjol di atas review investor lainnya
+                                  </div>
+                                )}
                               </div>
-                              {review.showOnLanding && (
-                                <div className="mt-2 text-xs text-blue-600 dark:text-blue-400 transition-colors duration-300">
-                                  ⭐ Review ini akan muncul di halaman utama website
+
+                              {/* Info message for featured reviews */}
+                              {review.isFeatured && (
+                                <div className="bg-amber-50 dark:bg-amber-900/20 rounded-lg p-3 border border-amber-200 dark:border-amber-800 transition-colors duration-300">
+                                  <p className="text-sm text-amber-800 dark:text-amber-300 transition-colors duration-300">
+                                    ℹ️ Testimoni unggulan otomatis ditampilkan di landing page muncul di paling atas review investor.
+                                  </p>
                                 </div>
                               )}
                             </div>
@@ -619,8 +863,277 @@ export default function ReviewManagementPage() {
           )}
         </motion.div>
       </div>
-      <AlertComponent />
-      
+      <div className="fixed top-0 left-0 right-0 z-[10001] pointer-events-none">
+        <div className="pointer-events-auto">
+          <AlertComponent />
+        </div>
+      </div>
+
+      {/* Create Featured Testimonial Modal */}
+      {showCreateModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-[9999] overflow-y-auto" onClick={(e) => e.target === e.currentTarget && setShowCreateModal(false)}>
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className={getThemeClasses(
+              "bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto border border-[#324D3E]/10 dark:border-gray-700 transition-colors duration-300 relative z-[10000]",
+              "!bg-gradient-to-br !from-[#FFF0F3]/95 !to-[#FFE4E8]/95 dark:!from-gray-800/95 dark:!to-gray-700/95"
+            )}
+          >
+            {/* Header */}
+            <div className={getThemeClasses(
+              "p-6 bg-gradient-to-r from-[#324D3E]/5 to-[#4C3D19]/5 dark:from-[#324D3E]/10 dark:to-[#4C3D19]/10 border-b border-[#324D3E]/10 dark:border-gray-700 transition-colors duration-300",
+              "!bg-gradient-to-r !from-[#FFC1CC]/20 !to-[#FFDEE9]/20 dark:!from-[#FFC1CC]/10 dark:!to-[#FFDEE9]/10"
+            )}>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="text-[#324D3E] dark:text-white">
+                    <Sparkles className="w-8 h-8" />
+                  </div>
+                  <div>
+                    <h3 className="text-2xl font-bold text-[#324D3E] dark:text-white font-[family-name:var(--font-poppins)] transition-colors duration-300">
+                      Buat Testimoni Unggulan
+                    </h3>
+                    <p className="text-sm text-[#889063] dark:text-gray-300 mt-1 transition-colors duration-300">
+                      Testimoni ini akan ditampilkan secara menonjol di landing page
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setShowCreateModal(false)}
+                  className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 text-2xl transition-colors duration-300 p-1 hover:bg-gray-100 dark:hover:bg-gray-600 rounded-lg"
+                >
+                  ×
+                </button>
+              </div>
+            </div>
+
+            {/* Form - Modal-optimized layout */}
+            <div className="p-6 space-y-6">
+              {/* Basic Information Row */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {/* Name */}
+                <div>
+                  <label className="block text-sm font-medium text-[#324D3E] dark:text-gray-300 mb-2 transition-colors duration-300">
+                    Nama *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={featuredFormData.name}
+                    onChange={(e) => setFeaturedFormData(prev => ({ ...prev, name: e.target.value }))}
+                    className="w-full border border-[#324D3E]/20 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-xl p-3 focus:border-[#324D3E] focus:ring-2 focus:ring-[#324D3E]/20 transition-all duration-300"
+                    placeholder="Masukkan Nama"
+                  />
+                </div>
+
+                {/* City */}
+                <div>
+                  <label className="block text-sm font-medium text-[#324D3E] dark:text-gray-300 mb-2 transition-colors duration-300">
+                    Kota *
+                  </label>
+                  <select
+                    required
+                    value={featuredFormData.city}
+                    onChange={(e) => setFeaturedFormData(prev => ({ ...prev, city: e.target.value }))}
+                    className="w-full border border-[#324D3E]/20 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-xl p-3 focus:border-[#324D3E] focus:ring-2 focus:ring-[#324D3E]/20 transition-all duration-300"
+                  >
+                    <option value="">Pilih Kota</option>
+                    <option value="Jakarta">Jakarta</option>
+                    <option value="Bandung">Bandung</option>
+                    <option value="Surabaya">Surabaya</option>
+                    <option value="Yogyakarta">Yogyakarta</option>
+                    <option value="Semarang">Semarang</option>
+                    <option value="Medan">Medan</option>
+                    <option value="Makassar">Makassar</option>
+                    <option value="Palembang">Palembang</option>
+                    <option value="Lainnya">Lainnya</option>
+                  </select>
+                </div>
+
+                {/* Email */}
+                <div>
+                  <label className="block text-sm font-medium text-[#324D3E] dark:text-gray-300 mb-2 transition-colors duration-300">
+                    Email (tidak di publikasikan) *
+                  </label>
+                  <input
+                    type="email"
+                    required
+                    value={featuredFormData.email}
+                    onChange={(e) => setFeaturedFormData(prev => ({ ...prev, email: e.target.value }))}
+                    className="w-full border border-[#324D3E]/20 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-xl p-3 focus:border-[#324D3E] focus:ring-2 focus:ring-[#324D3E]/20 transition-all duration-300"
+                    placeholder="Masukkan Email"
+                  />
+                </div>
+              </div>
+
+              {/* Rating */}
+              <div>
+                <label className="block text-sm font-medium text-[#324D3E] dark:text-gray-300 mb-2 transition-colors duration-300">
+                  Rating Kepuasan
+                </label>
+                <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1">
+                    {Array.from({ length: 5 }, (_, i) => (
+                      <button
+                        key={i}
+                        type="button"
+                        className={`text-2xl transition-colors duration-200 hover:scale-110 ${
+                          i < featuredFormData.rating ? 'text-yellow-400' : 'text-gray-300'
+                        }`}
+                        onClick={() => setFeaturedFormData(prev => ({ ...prev, rating: i + 1 }))}
+                      >
+                        ★
+                      </button>
+                    ))}
+                  </div>
+                  <span className="text-sm text-gray-600 dark:text-gray-400 ml-2 transition-colors duration-300">
+                    {featuredFormData.rating} dari 5 bintang
+                  </span>
+                </div>
+              </div>
+
+              {/* Description */}
+              <div>
+                <label className="block text-sm font-medium text-[#324D3E] dark:text-gray-300 mb-2 transition-colors duration-300">
+                  Deskripsi *
+                </label>
+                <textarea
+                  required
+                  value={featuredFormData.description}
+                  onChange={(e) => setFeaturedFormData(prev => ({ ...prev, description: e.target.value }))}
+                  className="w-full border border-[#324D3E]/20 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-xl p-3 focus:border-[#324D3E] focus:ring-2 focus:ring-[#324D3E]/20 transition-all duration-300 resize-none"
+                  placeholder="Masukkan Pengalaman Anda"
+                  maxLength={500}
+                  rows={4}
+                />
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 transition-colors duration-300">
+                  {featuredFormData.description.length}/500 karakter
+                </p>
+              </div>
+
+              {/* Media Upload */}
+              <div className="max-w-md mx-auto">
+                <label className="block text-sm font-medium text-[#324D3E] dark:text-white mb-2 transition-colors duration-300">
+                  Upload Media <span className={getThemeClasses("text-[#889063] font-semibold", "!text-[#FF6B9D]")}>(Foto atau Video)</span>
+                </label>
+                <div className={getThemeClasses(
+                  "relative border-2 border-dashed border-[#324D3E]/20 dark:border-gray-600 rounded-xl p-6 text-center hover:border-[#324D3E]/40 dark:hover:border-gray-500 transition-colors cursor-pointer bg-gray-50/50 dark:bg-gray-700/50",
+                  "!border-[#FFC1CC]/40 !bg-[#FFF0F3]/30 dark:!bg-gray-700/50 hover:!border-[#FF6B9D]/60"
+                )}>
+                  {featuredFormData.mediaUrl ? (
+                    <div className="space-y-3">
+                      <div className={getThemeClasses(
+                        "w-16 h-16 mx-auto bg-[#324D3E] dark:bg-[#4C3D19] rounded-xl flex items-center justify-center",
+                        "!bg-gradient-to-r !from-[#FF6B9D] !to-[#FFC1CC]"
+                      )}>
+                        {featuredFormData.mediaType === 'video' ? (
+                          <svg className="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M14 12l-4-3v6l4-3z"/>
+                            <path d="M17 2H7a5 5 0 00-5 5v10a5 5 0 005 5h10a5 5 0 005-5V7a5 5 0 00-5-5zm3 15a3 3 0 01-3 3H7a3 3 0 01-3-3V7a3 3 0 013-3h10a3 3 0 013 3v10z"/>
+                          </svg>
+                        ) : (
+                          <svg className="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8l-6-6z"/>
+                            <path d="M14 2v6h6"/>
+                          </svg>
+                        )}
+                      </div>
+                      <p className="text-sm text-[#324D3E] dark:text-white font-medium transition-colors duration-300">
+                        {featuredFormData.mediaType === 'video' ? 'Video' : 'Foto'} berhasil diupload
+                      </p>
+                      {uploadingMedia && <p className="text-sm text-blue-600 dark:text-blue-400">Mengupload...</p>}
+                      <button
+                        type="button"
+                        onClick={() => setFeaturedFormData(prev => ({ ...prev, mediaUrl: '', mediaType: '' }))}
+                        className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 hover:underline transition-colors duration-300"
+                      >
+                        Ganti {featuredFormData.mediaType === 'video' ? 'video' : 'foto'}
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      <div className={getThemeClasses(
+                        "w-16 h-16 mx-auto bg-[#889063] dark:bg-gray-600 rounded-xl flex items-center justify-center",
+                        "!bg-gradient-to-r !from-[#FFC1CC] !to-[#FFDEE9]"
+                      )}>
+                        <Paperclip className="w-8 h-8 text-white" />
+                      </div>
+                      <div>
+                        <p className="text-sm text-[#889063] dark:text-gray-300 font-medium transition-colors duration-300">
+                          {uploadingMedia ? 'Mengupload...' : 'Browse File Media'}
+                        </p>
+                        <p className="text-sm text-gray-500 dark:text-gray-400 transition-colors duration-300">
+                          Foto: Max 5MB (JPG, PNG, WebP)<br />
+                          Video: Max 15MB, 30 detik (MP4, WebM, OGG)
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                  <input
+                    type="file"
+                    accept="image/*,video/*"
+                    onChange={handleMediaUpload}
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                    disabled={uploadingMedia}
+                  />
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className={getThemeClasses(
+                "flex flex-col sm:flex-row gap-3 pt-6 border-t border-[#324D3E]/10 dark:border-gray-600 transition-colors duration-300",
+                "!border-t-[#FFC1CC]/30"
+              )}>
+                <button
+                  type="button"
+                  onClick={() => setShowCreateModal(false)}
+                  className="px-4 py-3 text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-600 hover:bg-gray-200 dark:hover:bg-gray-500 font-medium font-[family-name:var(--font-poppins)] rounded-lg transition-all duration-300"
+                >
+                  Batal
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleCreateTestimonial(false)}
+                  disabled={creatingFeatured || uploadingMedia}
+                  className={getThemeClasses(
+                    'flex-1 px-4 py-3 bg-gray-500 dark:bg-gray-600 text-white hover:bg-gray-600 dark:hover:bg-gray-500 font-medium font-[family-name:var(--font-poppins)] rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 flex items-center justify-center gap-2',
+                    '!bg-gradient-to-r !from-[#4A90A4] !to-[#5BA3B8] !text-white hover:!from-[#3E7A8C] hover:!to-[#4A8FA3]'
+                  )}
+                >
+                  {creatingFeatured ? (
+                    'Menyimpan...'
+                  ) : (
+                    <>
+                      <Save className="w-4 h-4" />
+                      Simpan Draft
+                    </>
+                  )}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleCreateTestimonial(true)}
+                  disabled={creatingFeatured || uploadingMedia}
+                  className={getThemeClasses(
+                    'flex-1 px-4 py-3 bg-[#324D3E] dark:bg-[#4C3D19] text-white hover:bg-[#4A6741] dark:hover:bg-[#889063] font-medium font-[family-name:var(--font-poppins)] rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 focus:ring-2 focus:ring-[#324D3E] focus:ring-offset-2 flex items-center justify-center gap-2',
+                    '!bg-gradient-to-r !from-[#FFC1CC] !to-[#FFDEE9] !text-[#4c1d1d] hover:!from-[#FF9FB8] hover:!to-[#FFC9DC]'
+                  )}
+                >
+                  {creatingFeatured ? (
+                    'Mempublikasi...'
+                  ) : (
+                    <>
+                      <Sparkles className="w-4 h-4" />
+                      Buat & Jadikan Unggulan
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        </div>
+      )}
+
       {/* Custom Confirmation Dialog */}
       {confirmDialog.isOpen && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-[70]">

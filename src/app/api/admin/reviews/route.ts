@@ -59,7 +59,7 @@ export async function PUT(request: NextRequest) {
     await dbConnect();
 
     const body = await request.json();
-    const { reviewId, isApproved, showOnLanding } = body;
+    const { reviewId, isApproved, showOnLanding, isFeatured } = body;
 
     if (!reviewId) {
       return NextResponse.json(
@@ -72,12 +72,13 @@ export async function PUT(request: NextRequest) {
     const updateData: any = {};
     if (typeof isApproved === 'boolean') {
       updateData.isApproved = isApproved;
-      // If rejecting, also remove from landing page
+      // If rejecting, also remove from landing page and featured status
       if (!isApproved) {
         updateData.showOnLanding = false;
+        updateData.isFeatured = false;
       }
     }
-    
+
     if (typeof showOnLanding === 'boolean') {
       // Only allow showing on landing if review is approved
       if (showOnLanding) {
@@ -90,11 +91,11 @@ export async function PUT(request: NextRequest) {
         }
 
         // Check if we already have 3 reviews on landing page
-        const currentLandingReviews = await Review.countDocuments({ 
-          showOnLanding: true, 
-          _id: { $ne: reviewId } 
+        const currentLandingReviews = await Review.countDocuments({
+          showOnLanding: true,
+          _id: { $ne: reviewId }
         });
-        
+
         if (currentLandingReviews >= 3) {
           return NextResponse.json(
             { success: false, error: 'Maximum 3 reviews can be shown on landing page' },
@@ -103,6 +104,34 @@ export async function PUT(request: NextRequest) {
         }
       }
       updateData.showOnLanding = showOnLanding;
+    }
+
+    if (typeof isFeatured === 'boolean') {
+      // Only allow featuring if review is approved
+      if (isFeatured) {
+        const reviewToCheck = await Review.findById(reviewId);
+        if (!reviewToCheck || !reviewToCheck.isApproved) {
+          return NextResponse.json(
+            { success: false, error: 'Only approved reviews can be featured' },
+            { status: 400 }
+          );
+        }
+
+        // Check if we already have a featured review
+        const currentFeaturedReview = await Review.findOne({
+          isFeatured: true,
+          _id: { $ne: reviewId }
+        });
+
+        if (currentFeaturedReview) {
+          // Remove featured status from the current featured review
+          await Review.findByIdAndUpdate(currentFeaturedReview._id, { isFeatured: false });
+        }
+
+        // If featuring this review, remove it from regular landing page
+        updateData.showOnLanding = false;
+      }
+      updateData.isFeatured = isFeatured;
     }
 
     const review = await Review.findByIdAndUpdate(
@@ -123,6 +152,8 @@ export async function PUT(request: NextRequest) {
       message = `Review ${isApproved ? 'approved' : 'rejected'} successfully`;
     } else if (typeof showOnLanding === 'boolean') {
       message = `Review ${showOnLanding ? 'added to' : 'removed from'} landing page`;
+    } else if (typeof isFeatured === 'boolean') {
+      message = `Review ${isFeatured ? 'set as' : 'removed from'} featured testimonial`;
     }
 
     return NextResponse.json({

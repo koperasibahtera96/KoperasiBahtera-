@@ -94,6 +94,14 @@ export default function PlantShowcaseSection() {
   const [contractDetails, setContractDetails] = useState<any>(null);
   const { showSuccess, showError, AlertComponent } = useAlert();
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [referralCode, setReferralCode] = useState("");
+
+  // Validate referral code format
+  const validateReferralCode = (code: string) => {
+    if (!code) return true; // Optional field
+    if (code.length !== 6) return false;
+    return /^[A-Z0-9]{6}$/.test(code);
+  };
 
   // Fetch plants data from database
   useEffect(() => {
@@ -276,10 +284,25 @@ export default function PlantShowcaseSection() {
 
   const handleConfirmOrder = async () => {
     if (!contractDetails) return;
-    
+
+    // Validate referral code if provided
+    if (referralCode && !validateReferralCode(referralCode)) {
+      showError("Kode Referral Tidak Valid", "Kode referral harus 6 karakter huruf kapital dan angka");
+      return;
+    }
+
     setIsLoading("Creating contract...");
 
     try {
+      console.log("Creating contract with data:", {
+        productName: contractDetails.productName,
+        productId: contractDetails.productId,
+        totalAmount: contractDetails.totalAmount,
+        paymentType: contractDetails.paymentType,
+        contractNumber: contractDetails.contractNumber,
+        referralCode: referralCode || undefined
+      });
+
       // Now create the actual contract in database
       const contractResponse = await fetch("/api/contract/create", {
         method: "POST",
@@ -289,17 +312,32 @@ export default function PlantShowcaseSection() {
           productId: contractDetails.productId,
           totalAmount: contractDetails.totalAmount,
           paymentType: contractDetails.paymentType,
-          contractNumber: contractDetails.contractNumber
+          contractNumber: contractDetails.contractNumber,
+          referralCode: referralCode || undefined
         }),
       });
 
-      const contractResult = await contractResponse.json();
+      console.log("Contract response status:", contractResponse.status, contractResponse.statusText);
 
-      if (!contractResponse.ok) {
-        console.error("Contract creation error:", contractResult);
+      let contractResult;
+      try {
+        contractResult = await contractResponse.json();
+        console.log("Contract result:", contractResult);
+      } catch (parseError) {
+        console.error("Failed to parse contract response:", parseError);
         showError(
           "Gagal Membuat Kontrak",
-          contractResult.error || "Terjadi kesalahan saat membuat kontrak"
+          "Gagal memproses respons server. Silakan coba lagi."
+        );
+        return;
+      }
+
+      if (!contractResponse.ok) {
+        console.error("Contract creation failed with status:", contractResponse.status);
+        console.error("Contract creation error details:", contractResult);
+        showError(
+          "Gagal Membuat Kontrak",
+          contractResult?.error || `Server error (${contractResponse.status}). Silakan coba lagi.`
         );
         return;
       }
@@ -321,6 +359,7 @@ export default function PlantShowcaseSection() {
       );
       setShowOrderConfirmation(false);
       setContractDetails(null);
+      setReferralCode(""); // Reset referral code
       // Redirect to contract signing page with actual contract ID
       window.location.href = `/contract/${actualContractId}`;
 
@@ -1112,6 +1151,7 @@ export default function PlantShowcaseSection() {
             onClick={() => {
               setShowOrderConfirmation(false);
               setContractDetails(null);
+              setReferralCode(""); // Reset referral code
             }}
           >
             <motion.div
@@ -1131,6 +1171,7 @@ export default function PlantShowcaseSection() {
                     onClick={() => {
                       setShowOrderConfirmation(false);
                       setContractDetails(null);
+                      setReferralCode(""); // Reset referral code
                     }}
                     className="text-[#324D3E]/60 hover:text-[#324D3E] transition-colors p-2 rounded-full hover:bg-[#324D3E]/10"
                   >
@@ -1206,6 +1247,32 @@ export default function PlantShowcaseSection() {
                   </div>
                 </div>
 
+                {/* Referral Code Input */}
+                <div className="bg-gradient-to-r from-[#324D3E]/10 to-[#4C3D19]/10 p-6 rounded-2xl border border-[#324D3E]/20 mb-6">
+                  <h4 className="font-bold mb-4 text-[#324D3E] font-[family-name:var(--font-poppins)]">
+                    Kode Referral (Opsional)
+                  </h4>
+                  <div className="space-y-3 text-sm">
+                    <div className="flex flex-col gap-2">
+                      <span className="text-[#324D3E]/80 font-medium">
+                        Masukkan Kode Referral:
+                      </span>
+                      <input
+                        type="text"
+                        value={referralCode}
+                        onChange={(e) => setReferralCode(e.target.value.toUpperCase())}
+                        className="px-3 py-3 border-2 border-[#324D3E]/20 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#324D3E] focus:border-[#324D3E] font-mono text-base text-[#324D3E] bg-white/80"
+                        placeholder="ABC123"
+                        maxLength={6}
+                        pattern="[A-Z0-9]{6}"
+                      />
+                      <p className="text-xs text-[#324D3E]/70 font-[family-name:var(--font-poppins)]">
+                        Kode referral 6 karakter huruf kapital dan angka
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
                 {/* Info Box */}
                 <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4 mb-6">
                   <div className="flex items-start gap-3">
@@ -1233,6 +1300,7 @@ export default function PlantShowcaseSection() {
                       onClick={() => {
                         setShowOrderConfirmation(false);
                         setContractDetails(null);
+                        setReferralCode(""); // Reset referral code
                       }}
                       className="flex-1 px-6 py-3 border-2 border-[#324D3E]/30 text-[#324D3E] rounded-full font-bold hover:bg-[#324D3E]/10 transition-all duration-300 font-[family-name:var(--font-poppins)]"
                     >

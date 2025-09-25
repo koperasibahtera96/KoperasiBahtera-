@@ -11,6 +11,31 @@ import bcrypt from "bcryptjs";
 import { getServerSession } from "next-auth/next";
 import { NextRequest, NextResponse } from "next/server";
 
+// Password validation function (same as register API)
+function validatePassword(password: string): { isValid: boolean; error?: string } {
+  if (password.length < 8) {
+    return { isValid: false, error: 'Password minimal 8 karakter' };
+  }
+
+  if (!/(?=.*[a-z])/.test(password)) {
+    return { isValid: false, error: 'Password harus mengandung huruf kecil' };
+  }
+
+  if (!/(?=.*[A-Z])/.test(password)) {
+    return { isValid: false, error: 'Password harus mengandung huruf besar' };
+  }
+
+  if (!/(?=.*\d)/.test(password)) {
+    return { isValid: false, error: 'Password harus mengandung angka' };
+  }
+
+  if (!/(?=.*[@$!%*?&])/.test(password)) {
+    return { isValid: false, error: 'Password harus mengandung karakter khusus (@$!%*?&)' };
+  }
+
+  return { isValid: true };
+}
+
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
@@ -23,6 +48,15 @@ export async function POST(request: NextRequest) {
           error:
             "Nama lengkap, nomor telepon, email, role, dan password wajib diisi",
         },
+        { status: 400 }
+      );
+    }
+
+    // Validate password strength
+    const passwordValidation = validatePassword(password);
+    if (!passwordValidation.isValid) {
+      return NextResponse.json(
+        { error: passwordValidation.error },
         { status: 400 }
       );
     }
@@ -143,6 +177,16 @@ export async function POST(request: NextRequest) {
       tries++;
     }
 
+    // Generate a unique 16-digit beneficiary NIK for staff users
+    let beneficiaryNik = generateNik();
+    tries = 0;
+    while (tries < 5) {
+      const existingBeneficiaryNik = await User.findOne({ beneficiaryNik });
+      if (!existingBeneficiaryNik) break;
+      beneficiaryNik = generateNik();
+      tries++;
+    }
+
     const user = new User({
       fullName: fullName.trim(),
       nik: nik, // Generated unique 16-digit NIK for staff
@@ -171,6 +215,11 @@ export async function POST(request: NextRequest) {
                   role === "Marketing Head" ? "Marketing Head" : "Staff Lapangan",
       occupationCode: prefix,
       userCode: userCode,
+      // Beneficiary Information - dummy values for staff
+      beneficiaryName: `Keluarga ${fullName.trim()}`,
+      beneficiaryNik: beneficiaryNik,
+      beneficiaryDateOfBirth: new Date(1980, 0, 1), // January 1, 1980 as default
+      beneficiaryRelationship: 'suami_istri', // Default to spouse
       role: dbRole,
       ...(referralCode && { referralCode }),
       isEmailVerified: true,
@@ -269,15 +318,41 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const page = parseInt(searchParams.get("page") || "1");
     const limit = parseInt(searchParams.get("limit") || "10");
+    const roleParam = searchParams.get("role") || "";
     const search = searchParams.get("search") || "";
 
     const skip = (page - 1) * limit;
 
+    // Determine which roles to include. If roleParam is provided, use that (supports comma-separated values).
+    const allowedRoles = ['staff','spv_staff','admin','finance','staff_finance','ketua','marketing','marketing_head'];
+    let rolesToQuery: string[] = [];
+    if (roleParam) {
+      // support either comma separated db roles or human-friendly labels
+      const parts = roleParam.split(',').map(p => p.trim()).filter(Boolean);
+      parts.forEach(p => {
+        const lower = p.toLowerCase();
+        // direct db role
+        if (allowedRoles.includes(lower)) rolesToQuery.push(lower);
+        // map human labels to db roles
+        if (lower === 'marketing head' || lower === 'marketing_head' || lower === 'marketinghead') rolesToQuery.push('marketing_head');
+        if (lower === 'marketing') rolesToQuery.push('marketing');
+        if (lower === 'admin') rolesToQuery.push('admin');
+        if (lower === 'finance') rolesToQuery.push('finance');
+        if (lower === 'staff finance' || lower === 'staff_finance') rolesToQuery.push('staff_finance');
+        if (lower === 'spv staff' || lower === 'spv_staff') rolesToQuery.push('spv_staff');
+        if (lower === 'ketua') rolesToQuery.push('ketua');
+        if (lower === 'staff') rolesToQuery.push('staff');
+      });
+      // dedupe and keep only allowed
+      rolesToQuery = Array.from(new Set(rolesToQuery)).filter(r => allowedRoles.includes(r));
+    }
+
+    const baseRoleQuery = rolesToQuery.length > 0 ? { $or: rolesToQuery.map(r => ({ role: r })) } : { $or: [{ role: "staff" }, { role: "spv_staff" }, { role: "admin" }, { role: "finance" }, { role: "staff_finance" }, { role: "ketua" }, { role: "marketing" }, { role: "marketing_head" }] };
+
     // Build search query
     const searchQuery = search
       ? {
-          $and: [
-            { $or: [{ role: "staff" }, { role: "spv_staff" }, { role: "admin" }, { role: "finance" }, { role: "staff_finance" }, { role: "marketing" }, { role: "marketing_head" }] },
+          $and: [baseRoleQuery,
             {
               $or: [
                 { fullName: { $regex: search, $options: "i" } },
@@ -288,7 +363,7 @@ export async function GET(request: NextRequest) {
             },
           ],
         }
-      : { $or: [{ role: "staff" }, { role: "spv_staff" }, { role: "admin" }, { role: "finance" }, { role: "staff_finance" }, { role: "ketua" }, { role: "marketing" }, { role: "marketing_head" }] };
+      : baseRoleQuery;
 
     // Get total count
     const total = await User.countDocuments(searchQuery);
@@ -405,11 +480,11 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    // Update user fields
+    // Map role to database role
     let updateDbRole = "staff";
     let updatePrefix = "ST";
     let updateOccupation = "Staff Lapangan";
-    
+
     switch (role) {
       case "SPV Staff":
         updateDbRole = "spv_staff";
@@ -441,23 +516,33 @@ export async function PUT(request: NextRequest) {
         updatePrefix = "MKT";
         updateOccupation = "Marketing Staff";
         break;
+      case "Marketing Head":
+        updateDbRole = "marketing_head";
+        updatePrefix = "MKH";
+        updateOccupation = "Marketing Head";
+        break;
       default:
         updateDbRole = "staff";
         updatePrefix = "ST";
         updateOccupation = "Staff Lapangan";
     }
-    
+
+    // Only update the fields that are actually in the admin form
     const updateData: any = {
       fullName: fullName.trim(),
       phoneNumber: phoneNumber.trim(),
       email: email.trim().toLowerCase(),
-      role: updateDbRole,
-      occupation: updateOccupation,
-      occupationCode: updatePrefix,
     };
 
+    // Only update role-related fields if the role has actually changed
+    if (staffUser.role !== updateDbRole) {
+      updateData.role = updateDbRole;
+      updateData.occupation = updateOccupation;
+      updateData.occupationCode = updatePrefix;
+    }
+
     // Generate referral code if role is changed to marketing and doesn't have one
-    if (updateDbRole === "marketing" && !staffUser.referralCode) {
+    if (staffUser.role !== updateDbRole && updateDbRole === "marketing" && !staffUser.referralCode) {
       let referralCode;
       let isUnique = false;
       while (!isUnique) {
@@ -470,8 +555,15 @@ export async function PUT(request: NextRequest) {
       updateData.referralCode = referralCode;
     }
 
-    // If password is provided, hash and update it
+    // If password is provided, validate and hash it
     if (password && password.trim() !== "") {
+      const passwordValidation = validatePassword(password.trim());
+      if (!passwordValidation.isValid) {
+        return NextResponse.json(
+          { error: passwordValidation.error },
+          { status: 400 }
+        );
+      }
       updateData.password = await bcrypt.hash(password.trim(), 12);
     }
 

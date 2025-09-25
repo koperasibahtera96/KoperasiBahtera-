@@ -131,6 +131,24 @@ export default function StaffPage() {
 
     try {
       const isEditing = showEditModal && editingStaff;
+
+      // Validate password if provided
+      if (formData.password && formData.password.trim() !== "") {
+        const passwordValidation = validatePassword(formData.password);
+        if (!passwordValidation.isValid) {
+          showError("Password tidak valid", passwordValidation.error || "Password tidak memenuhi syarat");
+          setSubmitting(false);
+          return;
+        }
+      }
+
+      // For new staff, password is required and must be validated
+      if (!isEditing && !formData.password) {
+        showError("Password diperlukan", "Password wajib diisi untuk staff baru");
+        setSubmitting(false);
+        return;
+      }
+
       const url = "/api/admin/staff";
       const method = isEditing ? "PUT" : "POST";
       const body = isEditing
@@ -186,6 +204,26 @@ export default function StaffPage() {
       password += chars.charAt(Math.floor(Math.random() * chars.length));
     }
     setFormData((prev) => ({ ...prev, password }));
+  };
+
+  // Password validation function (same as backend)
+  const validatePassword = (password: string) => {
+    if (password.length < 8) {
+      return { isValid: false, error: 'Password minimal 8 karakter' };
+    }
+    if (!/(?=.*[a-z])/.test(password)) {
+      return { isValid: false, error: 'Password harus mengandung huruf kecil' };
+    }
+    if (!/(?=.*[A-Z])/.test(password)) {
+      return { isValid: false, error: 'Password harus mengandung huruf besar' };
+    }
+    if (!/(?=.*\d)/.test(password)) {
+      return { isValid: false, error: 'Password harus mengandung angka' };
+    }
+    if (!/(?=.*[@$!%*?&])/.test(password)) {
+      return { isValid: false, error: 'Password harus mengandung karakter khusus (@$!%*?&)' };
+    }
+    return { isValid: true };
   };
 
   const handleEdit = (staff: StaffUser) => {
@@ -811,6 +849,15 @@ export default function StaffPage() {
                       Generate
                     </Button>
                   </div>
+                  <div className="text-xs text-[#889063] dark:text-gray-300 mt-1">
+                    <p>Password harus memenuhi kriteria:</p>
+                    <ul className="list-disc list-inside pl-2 mt-1 space-y-0.5">
+                      <li>Minimal 8 karakter</li>
+                      <li>Mengandung huruf besar dan kecil</li>
+                      <li>Mengandung angka</li>
+                      <li>Mengandung karakter khusus (@$!%*?&)</li>
+                    </ul>
+                  </div>
                 </div>
 
                 <div className="flex gap-3 pt-4">
@@ -952,6 +999,15 @@ export default function StaffPage() {
                     >
                       Generate
                     </Button>
+                  </div>
+                  <div className="text-xs text-[#889063] dark:text-gray-300 mt-1">
+                    <p>Password harus memenuhi kriteria:</p>
+                    <ul className="list-disc list-inside pl-2 mt-1 space-y-0.5">
+                      <li>Minimal 8 karakter</li>
+                      <li>Mengandung huruf besar dan kecil</li>
+                      <li>Mengandung angka</li>
+                      <li>Mengandung karakter khusus (@$!%*?&)</li>
+                    </ul>
                   </div>
                 </div>
 

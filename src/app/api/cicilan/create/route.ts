@@ -144,6 +144,10 @@ export async function POST(req: NextRequest) {
         adminStatus: "pending",
         status: "pending",
         isProcessed: false,
+        // Copy referral code from contract if it exists
+        ...(contract.referralCode && {
+          referralCode: contract.referralCode
+        }),
       });
 
       await firstInstallment.save({ session: mongoSession });

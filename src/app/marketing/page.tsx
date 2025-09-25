@@ -4,14 +4,14 @@ import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import StaffLayout from "@/components/staff/StaffLayout";
+import { useTheme } from "next-themes";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   Users,
   TrendingUp,
   DollarSign,
-  Calendar,
   Edit3,
   RefreshCw,
-  Download,
   Eye,
   AlertTriangle,
   X,
@@ -60,11 +60,25 @@ interface CommissionData {
 export default function MarketingHeadPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
+  const { theme } = useTheme();
+  const [mounted, setMounted] = useState(false);
 
   const [marketingStaff, setMarketingStaff] = useState<MarketingStaff[]>([]);
   const [commissionData, setCommissionData] = useState<CommissionData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // Helper function to get theme-aware classes
+  const getThemeClasses = (baseClasses: string, pinkClasses: string = "") => {
+    if (mounted && theme === "pink" && pinkClasses) {
+      return `${baseClasses} ${pinkClasses}`;
+    }
+    return baseClasses;
+  };
 
   // Edit referral code modal
   const [editModal, setEditModal] = useState<{
@@ -272,201 +286,193 @@ export default function MarketingHeadPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading marketing data...</p>
+      <StaffLayout>
+        <div className={getThemeClasses("min-h-screen bg-gradient-to-br from-green-50 via-white to-emerald-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 flex items-center justify-center", "!bg-gradient-to-br !from-[#FFDEE9] !via-white !to-[#FFDEE9]")}>
+          <motion.div
+            className="text-center"
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.3 }}
+          >
+            <div className={getThemeClasses("animate-spin rounded-full h-12 w-12 border-b-2 border-[#324D3E] mx-auto mb-4", "!border-[#4c1d1d]")}></div>
+            <p className={getThemeClasses("text-[#889063] dark:text-gray-400", "!text-[#6b7280]")}>Loading marketing data...</p>
+          </motion.div>
         </div>
-      </div>
+      </StaffLayout>
     );
   }
 
   return (
     <StaffLayout>
-      <div className="container max-w-7xl mx-auto px-4 py-8">
+      <motion.div
+        className="container max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-4 sm:py-6 lg:py-8"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6 }}
+      >
         {/* Header */}
-        <div className="mb-8">
+        <motion.div
+          className="mb-6 sm:mb-8"
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1, duration: 0.6 }}
+        >
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div>
-              <h1 className="text-3xl lg:text-4xl font-bold text-gray-900 mb-2">
+              <h1 className={getThemeClasses("text-2xl sm:text-3xl lg:text-4xl font-bold text-[#324D3E] dark:text-white mb-2", "!text-[#4c1d1d]")}>
                 Marketing Management
               </h1>
-              <p className="text-gray-600">
+              <p className={getThemeClasses("text-[#889063] dark:text-gray-400", "!text-[#6b7280]")}>
                 Monitor and manage marketing staff performance and commissions
               </p>
             </div>
-
-            <div className="flex gap-3">
-              <button
-                onClick={fetchData}
-                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-all duration-300"
-              >
-                <RefreshCw className="w-4 h-4" />
-                Refresh
-              </button>
-
-              <button className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-xl hover:bg-green-700 transition-all duration-300">
-                <Download className="w-4 h-4" />
-                Export Report
-              </button>
-            </div>
           </div>
-        </div>
+        </motion.div>
 
         {/* Error Display */}
-        {error && (
-          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl">
-            <div className="flex items-center gap-2">
-              <AlertTriangle className="w-5 h-5 text-red-600" />
-              <p className="text-red-800 font-medium">{error}</p>
-            </div>
-          </div>
-        )}
+        <AnimatePresence>
+          {error && (
+            <motion.div
+              className={getThemeClasses("mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl", "!bg-[#FFB3C6]/20 !border-[#FFB3C6]/50")}
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              transition={{ duration: 0.3 }}
+            >
+              <div className="flex items-center gap-2">
+                <AlertTriangle className={getThemeClasses("w-5 h-5 text-red-600 dark:text-red-400", "!text-[#4c1d1d]")} />
+                <p className={getThemeClasses("text-red-800 dark:text-red-200 font-medium", "!text-[#4c1d1d]")}>{error}</p>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Overall Summary Cards */}
         {commissionData && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            <div className="bg-white/80 backdrop-blur-lg rounded-2xl shadow-lg border border-gray-200 p-6">
+          <motion.div
+            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-6 sm:mb-8"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2, duration: 0.6 }}
+          >
+            <motion.div
+              className={getThemeClasses("bg-white/95 dark:bg-gray-800/95 backdrop-blur-lg rounded-2xl shadow-lg border border-[#324D3E]/10 dark:border-gray-700 p-4 sm:p-6", "!bg-white/95 !border-[#FFC1CC]/30")}
+              whileHover={{ scale: 1.02, y: -5 }}
+              transition={{ duration: 0.2 }}
+            >
               <div className="flex items-center gap-3">
-                <div className="p-3 bg-blue-100 rounded-xl">
-                  <Users className="w-6 h-6 text-blue-600" />
+                <div className={getThemeClasses("p-3 bg-blue-100 dark:bg-blue-900/30 rounded-xl", "!bg-[#FFC1CC]/40")}>
+                  <Users className={getThemeClasses("w-6 h-6 text-blue-600 dark:text-blue-400", "!text-[#4c1d1d]")} />
                 </div>
                 <div>
-                  <p className="text-sm text-gray-600 mb-1">Total Staff</p>
-                  <p className="text-2xl font-bold text-gray-900">
+                  <p className={getThemeClasses("text-sm text-[#889063] dark:text-gray-400 mb-1", "!text-[#6b7280]")}>Total Staff</p>
+                  <p className={getThemeClasses("text-2xl font-bold text-[#324D3E] dark:text-white", "!text-[#4c1d1d]")}>
                     {commissionData.overallSummary.totalStaff}
                   </p>
                 </div>
               </div>
-            </div>
+            </motion.div>
 
-            <div className="bg-white/80 backdrop-blur-lg rounded-2xl shadow-lg border border-gray-200 p-6">
+            <motion.div
+              className={getThemeClasses("bg-white/95 dark:bg-gray-800/95 backdrop-blur-lg rounded-2xl shadow-lg border border-[#324D3E]/10 dark:border-gray-700 p-4 sm:p-6", "!bg-white/95 !border-[#FFC1CC]/30")}
+              whileHover={{ scale: 1.02, y: -5 }}
+              transition={{ duration: 0.2 }}
+            >
               <div className="flex items-center gap-3">
-                <div className="p-3 bg-green-100 rounded-xl">
-                  <DollarSign className="w-6 h-6 text-green-600" />
+                <div className={getThemeClasses("p-3 bg-green-100 dark:bg-green-900/30 rounded-xl", "!bg-[#B5EAD7]/40")}>
+                  <DollarSign className={getThemeClasses("w-6 h-6 text-green-600 dark:text-green-400", "!text-[#4c1d1d]")} />
                 </div>
                 <div>
-                  <p className="text-sm text-gray-600 mb-1">Total Commissions</p>
-                  <p className="text-lg font-bold text-gray-900">
+                  <p className={getThemeClasses("text-sm text-[#889063] dark:text-gray-400 mb-1", "!text-[#6b7280]")}>Total Commissions</p>
+                  <p className={getThemeClasses("text-lg font-bold text-[#324D3E] dark:text-white", "!text-[#4c1d1d]")}>
                     {formatCurrency(commissionData.overallSummary.totalCommissions)}
                   </p>
                 </div>
               </div>
-            </div>
+            </motion.div>
 
-            <div className="bg-white/80 backdrop-blur-lg rounded-2xl shadow-lg border border-gray-200 p-6">
+            <motion.div
+              className={getThemeClasses("bg-white/95 dark:bg-gray-800/95 backdrop-blur-lg rounded-2xl shadow-lg border border-[#324D3E]/10 dark:border-gray-700 p-4 sm:p-6", "!bg-white/95 !border-[#FFC1CC]/30")}
+              whileHover={{ scale: 1.02, y: -5 }}
+              transition={{ duration: 0.2 }}
+            >
               <div className="flex items-center gap-3">
-                <div className="p-3 bg-purple-100 rounded-xl">
-                  <TrendingUp className="w-6 h-6 text-purple-600" />
+                <div className={getThemeClasses("p-3 bg-purple-100 dark:bg-purple-900/30 rounded-xl", "!bg-[#C7CEEA]/40")}>
+                  <TrendingUp className={getThemeClasses("w-6 h-6 text-purple-600 dark:text-purple-400", "!text-[#4c1d1d]")} />
                 </div>
                 <div>
-                  <p className="text-sm text-gray-600 mb-1">Total Referrals</p>
-                  <p className="text-2xl font-bold text-gray-900">
+                  <p className={getThemeClasses("text-sm text-[#889063] dark:text-gray-400 mb-1", "!text-[#6b7280]")}>Total Referrals</p>
+                  <p className={getThemeClasses("text-2xl font-bold text-[#324D3E] dark:text-white", "!text-[#4c1d1d]")}>
                     {commissionData.overallSummary.totalReferrals}
                   </p>
                 </div>
               </div>
-            </div>
-
-            <div className="bg-white/80 backdrop-blur-lg rounded-2xl shadow-lg border border-gray-200 p-6">
-              <div className="flex items-center gap-3">
-                <div className="p-3 bg-orange-100 rounded-xl">
-                  <Calendar className="w-6 h-6 text-orange-600" />
-                </div>
-                <div>
-                  <p className="text-sm text-gray-600 mb-1">This Month</p>
-                  <p className="text-2xl font-bold text-gray-900">
-                    {/* You can add monthly stats here */}
-                    --
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
+            </motion.div>
+          </motion.div>
         )}
 
         {/* Marketing Staff Table */}
-        <div className="bg-white/80 backdrop-blur-lg rounded-2xl shadow-lg border border-gray-200 overflow-hidden">
-          <div className="p-6 border-b border-gray-200">
-            <h2 className="text-xl font-semibold text-gray-900">Marketing Staff</h2>
+        <div className={getThemeClasses("bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 overflow-hidden p-0", '!bg-gradient-to-r !from-[#FFF0F3] !to-[#FFF7F9]')}>
+          <div className={getThemeClasses("p-6 border-b border-gray-200 dark:border-gray-700", '')}>
+            <h2 className={getThemeClasses("text-xl font-semibold text-gray-900 dark:text-white", '')}>Marketing Staff</h2>
           </div>
 
           <div className="overflow-x-auto">
             <table className="w-full">
-              <thead className="bg-gray-50">
+              <thead className={getThemeClasses("bg-gray-50 dark:bg-gray-900/30", '')}>
                 <tr>
-                  <th className="px-6 py-4 text-left text-sm font-medium text-gray-700">Staff</th>
-                  <th className="px-6 py-4 text-left text-sm font-medium text-gray-700">Referral Code</th>
-                  <th className="px-6 py-4 text-left text-sm font-medium text-gray-700">Total Commission</th>
-                  <th className="px-6 py-4 text-left text-sm font-medium text-gray-700">Referrals</th>
-                  <th className="px-6 py-4 text-left text-sm font-medium text-gray-700">Performance</th>
-                  <th className="px-6 py-4 text-left text-sm font-medium text-gray-700">Status</th>
-                  <th className="px-6 py-4 text-left text-sm font-medium text-gray-700">Actions</th>
+                  <th className={getThemeClasses("px-6 py-4 text-left text-sm font-medium text-gray-700 dark:text-gray-200", '')}>Staff</th>
+                  <th className={getThemeClasses("px-6 py-4 text-left text-sm font-medium text-gray-700 dark:text-gray-200", '')}>Referral Code</th>
+                  <th className={getThemeClasses("px-6 py-4 text-left text-sm font-medium text-gray-700 dark:text-gray-200", '')}>Total Commission</th>
+                  <th className={getThemeClasses("px-6 py-4 text-left text-sm font-medium text-gray-700 dark:text-gray-200", '')}>Referrals</th>
+                  
+                  <th className={getThemeClasses("px-6 py-4 text-left text-sm font-medium text-gray-700 dark:text-gray-200", '')}>Status</th>
+                  <th className={getThemeClasses("px-6 py-4 text-left text-sm font-medium text-gray-700 dark:text-gray-200", '')}>Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-200">
+              <tbody className={getThemeClasses("divide-y divide-gray-200 dark:divide-gray-700", '')}>
                 {marketingStaff.map((staff) => (
-                  <tr key={staff._id} className="hover:bg-gray-50 transition-colors">
+                  <tr key={staff._id} className={getThemeClasses("hover:bg-gray-50 transition-colors", "dark:hover:bg-gray-800/40") }>
                     <td className="px-6 py-4">
                       <div>
-                        <p className="font-medium text-gray-900">{staff.fullName}</p>
-                        <p className="text-sm text-gray-600">{staff.email}</p>
-                        <p className="text-xs text-gray-500">{staff.phoneNumber}</p>
+                        <p className={getThemeClasses("font-medium text-gray-900 dark:text-white", '')}>{staff.fullName}</p>
+                        <p className={getThemeClasses("text-sm text-gray-600 dark:text-gray-300", '')}>{staff.email}</p>
+                        <p className={getThemeClasses("text-xs text-gray-500 dark:text-gray-400", '')}>{staff.phoneNumber}</p>
                       </div>
                     </td>
 
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-2">
                         {staff.referralCode ? (
-                          <code className="px-3 py-1 bg-gray-100 rounded-lg text-sm font-mono">
+                          <code className={getThemeClasses("px-3 py-1 bg-gray-100 rounded-lg text-sm font-mono font-semibold dark:bg-gray-900/30 dark:text-gray-200", "!bg-[#FFF7F9] !text-[#4c1d1d]")}>
                             {staff.referralCode}
                           </code>
                         ) : (
-                          <span className="text-sm text-gray-500 italic">No code assigned</span>
+                          <span className={getThemeClasses("text-sm text-gray-500 italic dark:text-gray-400", "!text-[#4c1d1d]")}>No code assigned</span>
                         )}
                       </div>
                     </td>
 
                     <td className="px-6 py-4">
-                      <p className="font-semibold text-gray-900">
+                      <p className={getThemeClasses("font-semibold text-gray-900 dark:text-white", '')}>
                         {formatCurrency(staff.commissionSummary.totalCommission)}
                       </p>
                     </td>
 
                     <td className="px-6 py-4">
-                      <p className="font-semibold text-gray-900">
+                      <p className={getThemeClasses("font-semibold text-gray-900 dark:text-white", '')}>
                         {staff.commissionSummary.totalReferrals}
                       </p>
-                      <div className="flex gap-2 text-xs text-gray-600 mt-1">
+                      <div className={getThemeClasses("flex gap-2 text-xs text-gray-600 mt-1", "dark:text-gray-300") }>
                         <span>Full: {staff.commissionSummary.fullInvestments}</span>
                         <span>Cicilan: {staff.commissionSummary.cicilanInvestments}</span>
                       </div>
                     </td>
 
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-2">
-                        {staff.commissionSummary.totalReferrals > 10 ? (
-                          <span className="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full">
-                            High
-                          </span>
-                        ) : staff.commissionSummary.totalReferrals > 5 ? (
-                          <span className="px-2 py-1 bg-yellow-100 text-yellow-800 text-xs rounded-full">
-                            Medium
-                          </span>
-                        ) : (
-                          <span className="px-2 py-1 bg-gray-100 text-gray-800 text-xs rounded-full">
-                            Low
-                          </span>
-                        )}
-                      </div>
-                    </td>
+                    
 
                     <td className="px-6 py-4">
-                      <span className={`px-2 py-1 text-xs rounded-full ${
-                        staff.isActive
-                          ? 'bg-green-100 text-green-800'
-                          : 'bg-red-100 text-red-800'
-                      }`}>
+                      <span className={getThemeClasses(`px-2 py-1 text-xs rounded-full ${staff.isActive ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300'}`, '')}>
                         {staff.isActive ? 'Active' : 'Inactive'}
                       </span>
                     </td>
@@ -475,7 +481,7 @@ export default function MarketingHeadPage() {
                       <div className="flex items-center gap-2">
                         <button
                           onClick={() => handleEditReferralCode(staff)}
-                          className="p-1 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded transition-colors"
+                          className={getThemeClasses("p-1 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded transition-colors", "dark:text-blue-300 dark:hover:bg-blue-900/30")}
                           title="Edit referral code"
                         >
                           <Edit3 className="w-4 h-4" />
@@ -483,7 +489,7 @@ export default function MarketingHeadPage() {
 
                         <button
                           onClick={() => handleGenerateReferralCode(staff._id)}
-                          className="p-1 text-green-600 hover:text-green-800 hover:bg-green-50 rounded transition-colors"
+                          className={getThemeClasses("p-1 text-green-600 hover:text-green-800 hover:bg-green-50 rounded transition-colors", "dark:text-green-300 dark:hover:bg-green-900/30")}
                           title="Generate new code"
                         >
                           <RefreshCw className="w-4 h-4" />
@@ -491,7 +497,7 @@ export default function MarketingHeadPage() {
 
                         <button
                           onClick={() => handleViewCommissionHistory(staff)}
-                          className="p-1 text-gray-600 hover:text-gray-800 hover:bg-gray-50 rounded transition-colors"
+                          className={getThemeClasses("p-1 text-gray-600 hover:text-gray-800 hover:bg-gray-50 rounded transition-colors dark:text-white dark:hover:text-white dark:hover:bg-gray-800/30", "")}
                           title="View commission history"
                         >
                           <Eye className="w-4 h-4" />
@@ -519,7 +525,7 @@ export default function MarketingHeadPage() {
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Current Code
                     </label>
-                    <code className="block w-full px-3 py-2 bg-gray-100 rounded-lg text-sm font-mono">
+                    <code className={getThemeClasses("block w-full px-3 py-2 bg-gray-100 rounded-lg text-sm font-mono font-semibold dark:bg-gray-900/30 dark:text-gray-200", "!bg-[#FFF7F9] !text-[#4c1d1d]")}>
                       {editModal.staff.referralCode || "No code assigned"}
                     </code>
                   </div>
@@ -618,7 +624,7 @@ export default function MarketingHeadPage() {
                   </button>
                 </div>
                 <p className="text-sm text-gray-600 mt-1">
-                  Referral Code: <code className="bg-gray-100 px-2 py-1 rounded">{commissionHistory.staff.referralCode}</code>
+                  Referral Code: <code className={getThemeClasses("bg-gray-100 px-2 py-1 rounded font-semibold dark:bg-gray-900/30 dark:text-gray-200", "!bg-[#FFF7F9] !text-[#4c1d1d]")}>{commissionHistory.staff.referralCode}</code>
                 </p>
               </div>
 
@@ -664,8 +670,8 @@ export default function MarketingHeadPage() {
                             <div className="flex items-center gap-2 mb-1">
                               <span className={`px-2 py-1 text-xs rounded-full ${
                                 commission.paymentType === 'full-investment'
-                                  ? 'bg-blue-100 text-blue-800'
-                                  : 'bg-orange-100 text-orange-800'
+                                  ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300'
+                                  : 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300'
                               }`}>
                                 {commission.paymentType === 'full-investment' ? 'Full Payment' : 'Installment'}
                               </span>
@@ -749,7 +755,7 @@ export default function MarketingHeadPage() {
             </div>
           </div>
         )}
-      </div>
+      </motion.div>
     </StaffLayout>
   );
 }
