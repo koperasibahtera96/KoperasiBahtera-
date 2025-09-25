@@ -20,7 +20,7 @@ const ReviewSection = () => {
   const [reviews, setReviews] = useState<Review[]>([]);
   const [featuredReview, setFeaturedReview] = useState<Review | null>(null);
   const [loading, setLoading] = useState(true);
-  const [featuredLoading, setFeaturedLoading] = useState(true);
+  const [_featuredLoading, setFeaturedLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [isClient, setIsClient] = useState(false);
   const [screenType, setScreenType] = useState<'mobile' | 'tablet' | 'desktop'>('desktop');
