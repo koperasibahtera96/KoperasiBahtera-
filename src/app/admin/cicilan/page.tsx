@@ -6,8 +6,23 @@ import { useAlert } from "@/components/ui/Alert";
 import { InvestorGroup, Pagination } from "@/types/cicilan";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { useTheme } from "next-themes";
+import { Users, Clock, DollarSign, AlertTriangle } from "lucide-react";
 
 export default function AdminCicilanPage() {
+  const { theme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const getThemeClasses = (baseClasses: string, pinkClasses: string = "") => {
+    if (mounted && theme === "pink" && pinkClasses) {
+      return `${baseClasses} ${pinkClasses}`;
+    }
+    return baseClasses;
+  };
   const [investorGroups, setInvestorGroups] = useState<InvestorGroup[]>([]);
   const [pagination, setPagination] = useState<Pagination | null>(null);
   const [loading, setLoading] = useState(true);
@@ -86,17 +101,29 @@ export default function AdminCicilanPage() {
       <AlertComponent />
       <div className="space-y-6">
         {/* Header */}
-        <div>
-          <h1 className="text-3xl font-bold text-[#324D3E] dark:text-white font-[family-name:var(--font-poppins)] transition-colors duration-300">
-            Kelola Cicilan
-          </h1>
-          <p className="text-[#889063] dark:text-gray-300 mt-2 transition-colors duration-300">
-            Kelola pembayaran cicilan investasi dari pengguna
-          </p>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="min-w-0 flex-1">
+            <h1
+              className={getThemeClasses(
+                "text-3xl font-bold text-[#324D3E] dark:text-white font-[family-name:var(--font-poppins)] transition-colors duration-300",
+                "!text-[#4c1d1d]"
+              )}
+            >
+              Kelola Cicilan
+            </h1>
+            <p className="text-[#889063] dark:text-gray-300 mt-2 transition-colors duration-300">
+              Kelola pembayaran cicilan investasi dari pengguna
+            </p>
+          </div>
         </div>
 
         {/* Search and Filters */}
-        <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg rounded-2xl shadow-lg border border-[#324D3E]/10 dark:border-gray-700 p-4 sm:p-6 transition-colors duration-300 overflow-visible">
+        <div
+          className={getThemeClasses(
+            "bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg rounded-2xl shadow-lg border border-[#324D3E]/10 dark:border-gray-700 p-4 sm:p-6 transition-colors duration-300 overflow-visible",
+            "!bg-white/95 !border-[#FFC1CC]/30"
+          )}
+        >
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <div className="sm:col-span-2 lg:col-span-2">
               <label className="block text-sm font-medium text-[#324D3E] dark:text-white mb-2 font-[family-name:var(--font-poppins)] transition-colors duration-300">
@@ -150,7 +177,12 @@ export default function AdminCicilanPage() {
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg rounded-2xl shadow-lg border border-[#324D3E]/10 dark:border-gray-700 p-6 hover:shadow-xl hover:scale-105 transition-all duration-300">
+          <div
+            className={getThemeClasses(
+              "bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg rounded-2xl shadow-lg border border-[#324D3E]/10 dark:border-gray-700 p-6 hover:shadow-xl hover:scale-105 transition-all duration-300",
+              "!bg-white/95 !border-[#FFC1CC]/30"
+            )}
+          >
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-[#889063] dark:text-gray-300 font-[family-name:var(--font-poppins)] transition-colors duration-300">
@@ -161,29 +193,39 @@ export default function AdminCicilanPage() {
                 </p>
               </div>
               <div className="w-12 h-12 bg-[#324D3E]/10 rounded-xl flex items-center justify-center">
-                <span className="text-[#324D3E] text-xl">👥</span>
+                <Users className="text-[#324D3E] w-6 h-6" />
               </div>
             </div>
           </div>
-          <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg rounded-2xl shadow-lg border border-[#324D3E]/10 dark:border-gray-700 p-6 hover:shadow-xl hover:scale-105 transition-all duration-300">
+          <div
+            className={getThemeClasses(
+              "bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg rounded-2xl shadow-lg border border-[#324D3E]/10 dark:border-gray-700 p-6 hover:shadow-xl hover:scale-105 transition-all duration-300",
+              "!bg-white/95 !border-[#FFC1CC]/30"
+            )}
+          >
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-[#889063] dark:text-gray-300 font-[family-name:var(--font-poppins)] transition-colors duration-300">
-                  Perlu Review
+                  Pembayaran Terlambat
                 </p>
                 <p className="text-2xl font-bold text-[#889063] dark:text-gray-300 transition-colors duration-300">
                   {investorGroups.reduce(
-                    (sum, group) => sum + group.pendingReviews,
+                    (sum, group) => sum + (group.latePayments || 0),
                     0
                   )}
                 </p>
               </div>
               <div className="w-12 h-12 bg-[#889063]/10 rounded-xl flex items-center justify-center">
-                <span className="text-[#889063] text-xl">⏳</span>
+                <Clock className="text-[#889063] w-6 h-6" />
               </div>
             </div>
           </div>
-          <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg rounded-2xl shadow-lg border border-[#324D3E]/10 dark:border-gray-700 p-6 hover:shadow-xl hover:scale-105 transition-all duration-300">
+          <div
+            className={getThemeClasses(
+              "bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg rounded-2xl shadow-lg border border-[#324D3E]/10 dark:border-gray-700 p-6 hover:shadow-xl hover:scale-105 transition-all duration-300",
+              "!bg-white/95 !border-[#FFC1CC]/30"
+            )}
+          >
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-[#889063] dark:text-gray-300 font-[family-name:var(--font-poppins)] transition-colors duration-300">
@@ -197,7 +239,7 @@ export default function AdminCicilanPage() {
                 </p>
               </div>
               <div className="w-12 h-12 bg-[#4C3D19]/10 rounded-xl flex items-center justify-center">
-                <span className="text-[#4C3D19] text-xl">💰</span>
+                <DollarSign className="text-[#4C3D19] w-6 h-6" />
               </div>
             </div>
           </div>
@@ -215,14 +257,19 @@ export default function AdminCicilanPage() {
                 </p>
               </div>
               <div className="w-12 h-12 bg-red-100 rounded-xl flex items-center justify-center">
-                <span className="text-red-600 text-xl">⚠️</span>
+                <AlertTriangle className="text-red-600 w-6 h-6" />
               </div>
             </div>
           </div>
         </div>
 
         {/* Investor List */}
-        <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg rounded-2xl shadow-lg border border-[#324D3E]/10 dark:border-gray-700 transition-colors duration-300">
+        <div
+          className={getThemeClasses(
+            "bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg rounded-2xl shadow-lg border border-[#324D3E]/10 dark:border-gray-700 transition-colors duration-300",
+            "!bg-white/95 !border-[#FFC1CC]/30"
+          )}
+        >
           {loading ? (
             <div className="p-6 sm:p-8 text-center">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#324D3E] mx-auto mb-4"></div>
@@ -297,12 +344,12 @@ export default function AdminCicilanPage() {
                               Rp {investor.totalPaid.toLocaleString("id-ID")}
                             </div>
                           </div>
-                          <div className="bg-gradient-to-r from-yellow-50 to-yellow-100 dark:from-yellow-900/20 dark:to-yellow-800/20 p-3 sm:p-4 rounded-xl border border-yellow-200 dark:border-yellow-700/50 transition-colors duration-300">
-                            <div className="text-xs sm:text-sm text-yellow-700 dark:text-yellow-300 font-[family-name:var(--font-poppins)] transition-colors duration-300">
-                              Perlu Review
+                          <div className="bg-gradient-to-r from-orange-50 to-orange-100 dark:from-orange-900/20 dark:to-orange-800/20 p-3 sm:p-4 rounded-xl border border-orange-200 dark:border-orange-700/50 transition-colors duration-300">
+                            <div className="text-xs sm:text-sm text-orange-700 dark:text-orange-300 font-[family-name:var(--font-poppins)] transition-colors duration-300">
+                              Terlambat
                             </div>
-                            <div className="text-base sm:text-lg font-semibold text-yellow-600 dark:text-yellow-200 transition-colors duration-300">
-                              {investor.pendingReviews}
+                            <div className="text-base sm:text-lg font-semibold text-orange-600 dark:text-orange-200 transition-colors duration-300">
+                              {investor.latePayments || 0}
                             </div>
                           </div>
                         </div>
@@ -343,14 +390,14 @@ export default function AdminCicilanPage() {
 
                       <div className="flex flex-col gap-2 lg:min-w-0 lg:w-auto">
                         <div className="flex flex-wrap gap-2">
-                          {investor.pendingReviews > 0 && (
-                            <div className="bg-gradient-to-r from-yellow-100 to-yellow-200 text-yellow-800 px-2 sm:px-3 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-medium border border-yellow-300 text-center whitespace-nowrap">
-                              {investor.pendingReviews} Review
+                          {(investor.latePayments || 0) > 0 && (
+                            <div className="bg-gradient-to-r from-orange-100 to-orange-200 text-orange-800 px-2 sm:px-3 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-medium border border-orange-300 text-center whitespace-nowrap">
+                              {investor.latePayments} Terlambat
                             </div>
                           )}
                           {investor.overdueCount > 0 && (
                             <div className="bg-gradient-to-r from-red-100 to-red-200 text-red-800 px-2 sm:px-3 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-medium border border-red-300 text-center whitespace-nowrap">
-                              {investor.overdueCount} Terlambat
+                              {investor.overdueCount} Cicilan Terlambat
                             </div>
                           )}
                         </div>
@@ -359,7 +406,10 @@ export default function AdminCicilanPage() {
                         <div className="flex flex-col gap-2">
                           <button
                             onClick={() => handleViewDetails(investor.userId)}
-                            className="px-4 sm:px-6 py-2 sm:py-3 bg-gradient-to-r from-[#324D3E] to-[#4C3D19] text-white rounded-xl hover:shadow-lg hover:scale-105 transition-all duration-300 text-xs sm:text-sm font-semibold font-[family-name:var(--font-poppins)] whitespace-nowrap"
+                            className={getThemeClasses(
+                              "px-4 sm:px-6 py-2 sm:py-3 bg-gradient-to-r from-[#324D3E] to-[#4C3D19] text-white rounded-xl hover:shadow-lg hover:scale-105 transition-all duration-300 text-xs sm:text-sm font-semibold font-[family-name:var(--font-poppins)] whitespace-nowrap",
+                              "!bg-gradient-to-r !from-[#FFC1CC] !to-[#FFDEE9] !text-[#4c1d1d]"
+                            )}
                           >
                             Lihat Detail
                           </button>

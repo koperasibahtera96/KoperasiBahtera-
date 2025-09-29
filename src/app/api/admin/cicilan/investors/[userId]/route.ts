@@ -29,24 +29,65 @@ export async function GET(
 
     await dbConnect();
 
-    // Get investor data
-    const investor = await Investor.findOne({ userId }).populate("userId");
-    if (!investor) {
-      return NextResponse.json(
-        { error: "Investor not found" },
-        { status: 404 }
-      );
-    }
+    // Helper function to calculate late payments per investment
+    const calculateLatePayments = (
+      cicilanGroups: any[],
+      fullPaymentGroups: any[]
+    ) => {
+      const now = new Date();
+      let lateInvestmentsCount = 0;
 
-    // Get user info
-    const user = await User.findById(investor.userId);
+      // Check cicilan investments
+      cicilanGroups.forEach((group: any) => {
+        const hasLateInstallment = group.installments.some(
+          (inst: any) => new Date(inst.dueDate) < now && !inst.isPaid
+        );
+        if (hasLateInstallment) {
+          lateInvestmentsCount++;
+        }
+      });
+
+      // Check full payment investments
+      fullPaymentGroups.forEach((group: any) => {
+        if (group.installments && group.installments.length > 0) {
+          const installment = group.installments[0];
+          const isLate =
+            new Date(installment.dueDate) < now &&
+            installment.status === "pending";
+          if (isLate) {
+            lateInvestmentsCount++;
+          }
+        }
+      });
+
+      return lateInvestmentsCount;
+    };
+
+    // Get user info first
+    const user = await User.findById(userId);
     if (!user) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
+    // Check if user has any cicilan payments
+    const userCicilanPayments = await Payment.find({
+      userId: userId,
+      paymentType: "cicilan-installment",
+    });
+
+    if (userCicilanPayments.length === 0) {
+      return NextResponse.json(
+        { error: "No cicilan payments found for this user" },
+        { status: 404 }
+      );
+    }
+
+    // Get investor data (may not exist for users with only pending payments)
+    const investor = await Investor.findOne({ userId });
+
     // Get all payments for this user (both cicilan and full payments)
     const payments = await Payment.find({
-      userId: investor.userId,
+      userId: userId,
       paymentType: { $in: ["cicilan-installment", "full-investment"] },
     });
 
@@ -65,119 +106,129 @@ export async function GET(
       paymentsMap.set(key, payment);
     });
 
-    // Process cicilan investments and merge with payment data
-    const cicilanGroups = investor.investments
-      .filter((inv: any) => inv.paymentType === "cicilan")
-      .map((investment: any) => {
-        const installmentsWithPayments =
-          investment.installments?.map((installment: any) => {
-            const paymentKey = `${investment.investmentId}-${installment.installmentNumber}`;
-            const payment = paymentsMap.get(paymentKey);
+    // Just show payment data grouped by cicilanOrderId - simple approach
+    const cicilanOrderGroups = new Map();
 
-            // Merge installment data with payment data
-            return {
-              ...installment.toObject(),
-              // Payment-specific fields
-              orderId: payment?.orderId || null,
-              paymentId: payment?._id?.toString() || null,
-              proofImageUrl:
-                payment?.proofImageUrl || installment.proofImageUrl || null,
-              proofDescription: payment?.proofDescription || null,
-              adminStatus: payment?.adminStatus || "pending",
-              adminNotes: payment?.adminNotes || null,
-              adminReviewBy: payment?.adminReviewBy || null,
-              adminReviewDate: payment?.adminReviewDate || null,
-              submissionDate: payment?.createdAt || null,
-              status:
-                payment?.status ||
-                (installment.isPaid ? "approved" : "pending"),
-              // Use payment ID for _id (needed for review functionality)
-              _id: payment?._id?.toString() || installment._id.toString(),
-              installmentNumber: installment.installmentNumber,
-              amount: installment.amount,
-              dueDate: installment.dueDate,
-              isPaid: installment.isPaid,
-              paidDate: installment.paidDate,
-              totalInstallments: payment.totalInstallments,
-            };
-          }) || [];
+    cicilanPayments.forEach((payment) => {
+      const cicilanOrderId = payment.cicilanOrderId;
+      if (!cicilanOrderGroups.has(cicilanOrderId)) {
+        cicilanOrderGroups.set(cicilanOrderId, []);
+      }
+      cicilanOrderGroups.get(cicilanOrderId).push(payment);
+    });
 
-        // Find the first payment for this cicilan group to get totalInstallments
-        const firstPayment = cicilanPayments.find(
-          (p) => p.cicilanOrderId === investment.investmentId
+    // Create groups from actual payment data only
+    const cicilanGroups = Array.from(cicilanOrderGroups.entries()).map(
+      ([cicilanOrderId, payments]) => {
+        const sortedPayments = payments.sort(
+          (a: any, b: any) => a.installmentNumber - b.installmentNumber
         );
+        const firstPayment = sortedPayments[0];
+
+        // Convert payments to installment format
+        const installments = sortedPayments.map((payment: any) => ({
+          _id: payment._id.toString(),
+          orderId: payment.orderId,
+          installmentNumber: payment.installmentNumber,
+          amount: payment.installmentAmount,
+          dueDate: payment.dueDate,
+          status:
+            payment.transactionStatus === "settlement" ? "approved" : "pending",
+          adminStatus: payment.adminStatus || "pending",
+          proofImageUrl: payment.proofImageUrl || null,
+          proofDescription: payment.proofDescription || null,
+          adminNotes: payment.adminNotes || null,
+          adminReviewBy: payment.adminReviewBy || null,
+          adminReviewDate: payment.adminReviewDate || null,
+          submissionDate: payment.createdAt,
+          isPaid: payment.transactionStatus === "settlement",
+          paidDate:
+            payment.transactionStatus === "settlement"
+              ? payment.settlementTime
+              : null,
+          totalInstallments: payment.totalInstallments,
+        }));
 
         return {
-          cicilanOrderId: investment.investmentId,
-          productName: investment.productName,
-          productId: investment.productId || "unknown",
-          totalAmount: investment.totalAmount,
-          totalInstallments: firstPayment?.totalInstallments || 0,
-          installmentAmount: investment.installments?.[0]?.amount || 0,
-          paymentTerm: getPaymentTermFromInstallments(
-            investment.installments?.length || 0
-          ),
-          installments: installmentsWithPayments,
-          status: getInvestmentStatus(installmentsWithPayments),
-          createdAt: investment.investmentDate,
+          cicilanOrderId: cicilanOrderId,
+          productName: firstPayment.productName,
+          productId: firstPayment.productId || "unknown",
+          totalAmount:
+            firstPayment.installmentAmount * firstPayment.totalInstallments,
+          totalInstallments: firstPayment.totalInstallments,
+          installmentAmount: firstPayment.installmentAmount,
+          paymentTerm: firstPayment.paymentTerm,
+          installments: installments,
+          status: getInvestmentStatus(installments),
+          createdAt: firstPayment.createdAt,
         };
-      });
+      }
+    );
 
-    // Process full payment investments
-    const fullPaymentGroups = investor.investments
-      .filter((inv: any) => inv.paymentType === "full")
-      .map((investment: any) => {
-        // Find matching full payment
-        const fullPayment = fullPayments.find(
-          (p) =>
-            p.productName === investment.productName &&
-            p.amount === investment.totalAmount
-        );
+    // Handle full payments similarly if any exist
+    const fullPaymentGroups = fullPayments.map((payment: any) => {
+      // Build installments array first so we can reuse the same status helper
+      const installments = [
+        {
+          _id: payment._id.toString(),
+          orderId: payment.orderId,
+          installmentNumber: 1,
+          amount: payment.amount,
+          // prefer explicit dueDate on the payment, fall back to createdAt
+          dueDate: payment.dueDate || payment.createdAt,
+          status:
+            payment.transactionStatus === "settlement" ? "approved" : "pending",
+          // keep adminStatus consistent with cicilan (default to pending)
+          adminStatus: payment.adminStatus || "pending",
+          proofImageUrl: payment.proofImageUrl || null,
+          proofDescription: payment.proofDescription || null,
+          adminNotes: payment.adminNotes || null,
+          adminReviewBy: payment.adminReviewBy || null,
+          adminReviewDate: payment.adminReviewDate || null,
+          submissionDate: payment.createdAt,
+          isPaid: payment.transactionStatus === "settlement",
+          paidDate:
+            payment.transactionStatus === "settlement"
+              ? payment.settlementTime
+              : null,
+          totalInstallments: 1,
+        },
+      ];
 
-        return {
-          cicilanOrderId: investment.investmentId,
-          productName: investment.productName,
-          productId: investment.productId || "unknown",
-          totalAmount: investment.totalAmount,
-          totalInstallments: 1, // Full payment is always 1 installment
-          installmentAmount: investment.totalAmount,
-          paymentTerm: "full" as any, // Mark as full payment
-          installments: [
-            {
-              _id: fullPayment?._id?.toString() || investment._id.toString(),
-              orderId: fullPayment?.orderId || investment.investmentId,
-              installmentNumber: 1,
-              amount: investment.totalAmount,
-              dueDate: investment.investmentDate,
-              status: "approved", // Full payments are always approved since they go through Midtrans confirmation
-              adminStatus: "approved", // Full payments don't need admin approval
-              proofImageUrl: fullPayment?.proofImageUrl || null,
-              proofDescription: fullPayment?.proofDescription || null,
-              adminNotes: "Pembayaran lunas - tidak perlu review admin",
-              paidDate: investment.investmentDate,
-              submissionDate:
-                fullPayment?.createdAt || investment.investmentDate,
-              exists: true,
-            },
-          ],
-          status: "completed" as any, // Full payments are always completed
-          createdAt: investment.investmentDate,
-          isFullPayment: true, // Flag to identify full payments
-        };
-      });
+      return {
+        cicilanOrderId: payment.orderId,
+        productName: payment.productName,
+        productId: payment.productId || "unknown",
+        totalAmount: payment.amount,
+        totalInstallments: 1,
+        installmentAmount: payment.amount,
+        paymentTerm: "full",
+        installments,
+        // Use same status calculation as cicilan groups so badges are consistent
+        status: getInvestmentStatus(installments),
+        createdAt: payment.createdAt,
+        isFullPayment: true,
+      };
+    });
 
     // Combine cicilan and full payment groups
     const allGroups = [...cicilanGroups, ...fullPaymentGroups];
 
-    // Calculate statistics
-    const totalInvestments = investor.investments.length;
-    const totalAmount = investor.totalInvestasi;
-    const totalPaid = investor.totalPaid;
+    // Calculate statistics from payment data (for summary cards only)
+    const totalInvestments = cicilanGroups.length + fullPaymentGroups.length;
+    const totalAmount = [...cicilanGroups, ...fullPaymentGroups].reduce(
+      (sum, group) => sum + group.totalAmount,
+      0
+    );
+    const totalPaid = [...cicilanPayments, ...fullPayments]
+      .filter((p) => p.transactionStatus === "settlement")
+      .reduce((sum, p) => sum + p.amount, 0);
 
-    // Count pending reviews (only cicilan payments need reviews)
-    const pendingReviews = cicilanPayments.filter(
-      (p) => p.proofImageUrl && p.adminStatus === "pending"
-    ).length;
+    // Count late payments (per investment, not per installment)
+    const latePaymentsCount = calculateLatePayments(
+      cicilanGroups,
+      fullPaymentGroups
+    );
 
     // Count overdue installments (only cicilan payments can be overdue)
     const now = new Date();
@@ -194,17 +245,17 @@ export async function GET(
     }, 0);
 
     const investorDetail = {
-      userId: investor.userId.toString(),
+      userId: user._id.toString(),
       userInfo: {
         _id: user._id.toString(),
-        fullName: user.fullName || investor.name,
-        email: user.email || investor.email,
-        phoneNumber: user.phoneNumber || investor.phoneNumber,
+        fullName: user.fullName || (investor ? investor.name : ""),
+        email: user.email || (investor ? investor.email : ""),
+        phoneNumber: user.phoneNumber || (investor ? investor.phoneNumber : ""),
       },
       totalInvestments,
       totalAmount,
       totalPaid,
-      pendingReviews,
+      latePayments: latePaymentsCount,
       overdueCount,
       cicilanGroups: allGroups,
     };
@@ -217,15 +268,6 @@ export async function GET(
       { status: 500 }
     );
   }
-}
-
-// Helper function to determine payment term from number of installments
-function getPaymentTermFromInstallments(
-  installmentCount: number
-): "monthly" | "quarterly" | "annual" {
-  if (installmentCount <= 4) return "quarterly";
-  if (installmentCount <= 12) return "monthly";
-  return "annual";
 }
 
 // Helper function to determine investment status

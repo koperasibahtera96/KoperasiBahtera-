@@ -146,7 +146,7 @@ export default function LandingFooter() {
               className="space-y-2 text-gray-300"
               variants={containerVariants}
             >
-              {['Beranda', 'Investasi', 'Tentang Kami', 'Produk', 'FAQ'].map((link, index) => (
+              {['Beranda', 'Program', 'Tentang Kami', 'Produk', 'FAQ'].map((link, index) => (
                 <motion.li 
                   key={index}
                   variants={itemVariants}

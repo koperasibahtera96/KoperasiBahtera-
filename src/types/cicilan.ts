@@ -133,8 +133,18 @@ export interface CicilanGroup {
   contractDownloadedDate?: Date;
   isFullPayment?: boolean; // Flag to identify full payments
   // Contract admin approval status
-  contractApprovalStatus?: "pending" | "approved" | "rejected" | "permanently_rejected";
-  contractStatus?: "draft" | "signed" | "approved" | "rejected" | "permanently_rejected" | "paid";
+  contractApprovalStatus?:
+    | "pending"
+    | "approved"
+    | "rejected"
+    | "permanently_rejected";
+  contractStatus?:
+    | "draft"
+    | "signed"
+    | "approved"
+    | "rejected"
+    | "permanently_rejected"
+    | "paid";
   contractApprovedDate?: Date | string;
   paymentAllowed?: boolean;
   // Contract retry information
@@ -163,6 +173,7 @@ export interface InvestorDetail {
   pendingReviews: number;
   overdueCount: number;
   cicilanGroups: CicilanGroup[];
+  latePayments: number;
 }
 
 export interface InvestorGroup {
@@ -178,6 +189,7 @@ export interface InvestorGroup {
   totalPaid: number;
   pendingReviews: number;
   overdueCount: number;
+  latePayments: number;
   investments: {
     investmentId: string;
     productName: string;

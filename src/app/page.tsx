@@ -53,7 +53,7 @@ function LandingPageContent() {
       <section id="beranda" className="relative">
         <LandingHero />
       </section>
-      <section id="investasi" className="relative -mt-px">
+      <section id="program" className="relative -mt-px">
         <WhyInvestAndRulesSection />
       </section>
       <CTASection />

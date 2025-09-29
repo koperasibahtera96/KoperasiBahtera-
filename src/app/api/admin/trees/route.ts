@@ -3,9 +3,13 @@ import Investor from "@/models/Investor";
 import PlantInstance from "@/models/PlantInstance";
 import { NextResponse } from "next/server";
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
     await dbConnect();
+
+    const { searchParams } = new URL(request.url);
+    const filter = searchParams.get('filter') || 'all';
+    const blokFilter = searchParams.get('blok') || 'all';
 
     // Fetch all plant instances
     const plantInstances = await PlantInstance.find({});
@@ -13,11 +17,63 @@ export async function GET() {
     // Fetch all investors
     const investors = await Investor.find({});
 
-    // Group plant instances by plant type, then by owner
+    // Calculate new statistics based on planting status
+    const paketDibeli = investors.reduce((total, investor) => {
+      return total + (investor.investments?.length || 0);
+    }, 0);
+
+    // Helper function to determine status based on new 4-status logic
+    const getTreeStatus = (instance: any) => {
+      const history = instance.history || [];
+
+      // Check for "Panen" status (case insensitive)
+      const hasPanen = history.some((historyItem: any) =>
+        (historyItem.action || historyItem.type || '').toLowerCase() === 'panen'
+      );
+      if (hasPanen) return 'panen';
+
+      // Count non-pending/non-kontrak-baru entries
+      const nonInitialEntries = history.filter((historyItem: any) => {
+        const action = (historyItem.action || historyItem.type || '').toLowerCase();
+        return action !== 'pending contract' && action !== 'kontrak baru';
+      });
+
+      if (nonInitialEntries.length === 0) return 'menunggu-tanam';
+      if (nonInitialEntries.length === 1) return 'sudah-ditanam';
+      return 'tumbuh';
+    };
+
+    // Calculate statistics based on new 4-status logic
+    const menungguTanam = plantInstances.filter(instance => getTreeStatus(instance) === 'menunggu-tanam').length;
+    const sudahDitanam = plantInstances.filter(instance => getTreeStatus(instance) === 'sudah-ditanam').length;
+    const tumbuh = plantInstances.filter(instance => getTreeStatus(instance) === 'tumbuh').length;
+    const panen = plantInstances.filter(instance => getTreeStatus(instance) === 'panen').length;
+
+    // Apply filters
+    let filteredInstances = plantInstances;
+    if (filter !== 'all') {
+      filteredInstances = plantInstances.filter(instance => getTreeStatus(instance) === filter);
+    }
+
+    if (blokFilter !== 'all') {
+      filteredInstances = filteredInstances.filter(instance => {
+        const instanceBlok = (instance.blok || 'No Blok').toLowerCase();
+        return instanceBlok === blokFilter.toLowerCase();
+      });
+    }
+
+    // Group by blok for the fourth card (case insensitive)
+    const pohonPerBlok = plantInstances.reduce((acc, instance) => {
+      const blok = (instance.blok || 'No Blok').toLowerCase();
+      acc[blok] = (acc[blok] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+
+    // Group plant instances by plant type, then by owner (use filtered instances)
     const plantTypes = ["gaharu", "jengkol", "aren", "alpukat"];
     const groupedData = plantTypes.map((plantType) => {
-      // Find all plant instances of this type
-      const instancesOfType = plantInstances.filter(
+      // Find all plant instances of this type from filtered set
+      const instancesOfType = filteredInstances.filter(
         (instance) => instance.plantType === plantType
       );
 
@@ -65,19 +121,88 @@ export async function GET() {
           return {
             ownerName,
             totalInstances: (instances as any).length,
-            instances: (instances as any).map((instance: any) => ({
-              _id: instance._id,
-              id: instance.id,
-              instanceName: instance.instanceName,
-              baseAnnualROI: instance.baseAnnualROI,
-              qrCode: instance.qrCode,
-              owner: instance.owner,
-              location: instance.location,
-              status: instance.status,
-              lastUpdate: instance.lastUpdate,
-              createdAt: instance.createdAt,
-              updatedAt: instance.updatedAt,
-            })),
+            instances: (instances as any).map((instance: any) => {
+              // Calculate age and planting status from history using new 4-status logic
+              const history = instance.history || [];
+              const treeStatus = getTreeStatus(instance);
+
+              // Map status to display labels
+              const statusLabels = {
+                'menunggu-tanam': 'Menunggu Tanam',
+                'sudah-ditanam': 'Sudah Ditanam',
+                'tumbuh': 'Tumbuh',
+                'panen': 'Panen'
+              };
+              const statusPohon = statusLabels[treeStatus] || 'Menunggu Tanam';
+
+              // Find the first planting date and calculate age
+              let tanggalTanam = null;
+              let umur: string | number = 0;
+
+              // Look for the first non-pending/non-new contract action for planting date
+              const firstPlantingAction = history.find((h: any) => {
+                const action = (h.action || h.type || '').toLowerCase();
+                return action !== 'pending contract' && action !== 'kontrak baru';
+              });
+
+              if (firstPlantingAction) {
+                tanggalTanam = firstPlantingAction.addedAt || firstPlantingAction.date;
+
+                // Calculate age from planting date
+                const now = new Date();
+                let referenceDate;
+
+                if (tanggalTanam) {
+                  try {
+                    // Parse DD/MM/YYYY format
+                    const [day, month, year] = tanggalTanam.split('/');
+                    referenceDate = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+                  } catch {
+                    // Fallback to createdAt if parsing fails
+                    referenceDate = new Date(instance.createdAt);
+                  }
+                } else {
+                  // Fallback to createdAt if no planting date found
+                  referenceDate = new Date(instance.createdAt);
+                }
+
+                // Calculate detailed age breakdown
+                const timeDiff = now.getTime() - referenceDate.getTime();
+                const totalDays = Math.floor(timeDiff / (1000 * 60 * 60 * 24));
+
+                const years = Math.floor(totalDays / 365);
+                const months = Math.floor((totalDays % 365) / 30);
+                const days = totalDays % 30;
+
+                // Calculate detailed age for display
+                let ageDisplay = '';
+                if (years > 0) ageDisplay += `${years} tahun `;
+                if (months > 0) ageDisplay += `${months} bulan `;
+                if (days > 0) ageDisplay += `${days} hari`;
+
+                umur = ageDisplay.trim() || '0 hari';
+              }
+
+              return {
+                _id: instance._id,
+                id: instance.id,
+                instanceName: instance.instanceName,
+                baseAnnualROI: instance.baseAnnualROI,
+                qrCode: instance.qrCode,
+                owner: instance.owner,
+                location: instance.location,
+                blok: instance.blok,
+                kavling: instance.kavling,
+                status: instance.status,
+                lastUpdate: instance.lastUpdate,
+                createdAt: instance.createdAt,
+                updatedAt: instance.updatedAt,
+                tanggalTanam,
+                umur,
+                statusPohon,
+                history: instance.history
+              };
+            }),
             relatedInvestor: representativeInvestor
               ? {
                   _id: representativeInvestor._id,
@@ -127,27 +252,14 @@ export async function GET() {
       };
     });
 
-    // Calculate overall stats
+    // Calculate overall stats with new card data
     const stats = {
-      totalInstances: plantInstances.length,
-      totalInvestors: investors.length,
-      totalInvestment: investors.reduce(
-        (sum, investor) => sum + investor.totalInvestasi,
-        0
-      ),
-      totalPaid: investors.reduce(
-        (sum, investor) => sum + investor.totalPaid,
-        0
-      ),
-      byType: groupedData.reduce((acc, group) => {
-        acc[group.plantType] = {
-          instances: group.totalInstances,
-          investors: group.totalInvestors,
-          investment: group.totalInvestment,
-          paid: group.totalPaid,
-        };
-        return acc;
-      }, {} as Record<string, any>),
+      paketDibeli,
+      menungguTanam,
+      sudahDitanam,
+      tumbuh,
+      panen,
+      pohonPerBlok,
     };
 
     return NextResponse.json({

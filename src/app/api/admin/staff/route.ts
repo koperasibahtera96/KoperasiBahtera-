@@ -11,31 +11,6 @@ import bcrypt from "bcryptjs";
 import { getServerSession } from "next-auth/next";
 import { NextRequest, NextResponse } from "next/server";
 
-// Password validation function (same as register API)
-function validatePassword(password: string): { isValid: boolean; error?: string } {
-  if (password.length < 8) {
-    return { isValid: false, error: 'Password minimal 8 karakter' };
-  }
-
-  if (!/(?=.*[a-z])/.test(password)) {
-    return { isValid: false, error: 'Password harus mengandung huruf kecil' };
-  }
-
-  if (!/(?=.*[A-Z])/.test(password)) {
-    return { isValid: false, error: 'Password harus mengandung huruf besar' };
-  }
-
-  if (!/(?=.*\d)/.test(password)) {
-    return { isValid: false, error: 'Password harus mengandung angka' };
-  }
-
-  if (!/(?=.*[@$!%*?&])/.test(password)) {
-    return { isValid: false, error: 'Password harus mengandung karakter khusus (@$!%*?&)' };
-  }
-
-  return { isValid: true };
-}
-
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
@@ -48,15 +23,6 @@ export async function POST(request: NextRequest) {
           error:
             "Nama lengkap, nomor telepon, email, role, dan password wajib diisi",
         },
-        { status: 400 }
-      );
-    }
-
-    // Validate password strength
-    const passwordValidation = validatePassword(password);
-    if (!passwordValidation.isValid) {
-      return NextResponse.json(
-        { error: passwordValidation.error },
         { status: 400 }
       );
     }
@@ -93,7 +59,7 @@ export async function POST(request: NextRequest) {
     // Determine prefix based on role
     let prefix = "ST"; // Default for Staff
     let dbRole = "staff"; // Default for Staff
-    
+
     switch (role) {
       case "SPV Staff":
         prefix = "SPV";
@@ -206,20 +172,29 @@ export async function POST(request: NextRequest) {
       domisiliCity: "Kota domisili belum diisi",
       domisiliProvince: "Provinsi domisili belum diisi",
       domisiliPostalCode: "00000",
-      occupation: role === "SPV Staff" ? "SPV Staff" :
-                  role === "Admin" ? "Administrator" :
-                  role === "Finance" ? "Staff Keuangan" :
-                  role === "Staff Finance" ? "Staff Finance" :
-                  role === "Ketua" ? "Ketua" :
-                  role === "Marketing" ? "Marketing Staff" :
-                  role === "Marketing Head" ? "Marketing Head" : "Staff Lapangan",
+      occupation:
+        role === "SPV Staff"
+          ? "SPV Staff"
+          : role === "Admin"
+          ? "Administrator"
+          : role === "Finance"
+          ? "Staff Keuangan"
+          : role === "Staff Finance"
+          ? "Staff Finance"
+          : role === "Ketua"
+          ? "Ketua"
+          : role === "Marketing"
+          ? "Marketing Staff"
+          : role === "Marketing Head"
+          ? "Marketing Head"
+          : "Staff Lapangan",
       occupationCode: prefix,
       userCode: userCode,
       // Beneficiary Information - dummy values for staff
       beneficiaryName: `Keluarga ${fullName.trim()}`,
       beneficiaryNik: beneficiaryNik,
       beneficiaryDateOfBirth: new Date(1980, 0, 1), // January 1, 1980 as default
-      beneficiaryRelationship: 'suami_istri', // Default to spouse
+      beneficiaryRelationship: "suami_istri", // Default to spouse
       role: dbRole,
       ...(referralCode && { referralCode }),
       isEmailVerified: true,
@@ -237,11 +212,11 @@ export async function POST(request: NextRequest) {
     if (session?.user) {
       await logAdminAction({
         adminId: session.user.id,
-        adminName: session.user.name || 'Unknown',
-        adminEmail: session.user.email || 'Unknown',
-        action: 'create_staff',
+        adminName: session.user.name || "Unknown",
+        adminEmail: session.user.email || "Unknown",
+        action: "create_staff",
         description: `Created new staff: ${user.fullName} (${user.userCode}) with role ${user.role}`,
-        targetType: 'staff',
+        targetType: "staff",
         targetId: user._id.toString(),
         targetName: user.fullName,
         newData: {
@@ -250,9 +225,9 @@ export async function POST(request: NextRequest) {
           phoneNumber: user.phoneNumber,
           userCode: user.userCode,
           role: user.role,
-          occupation: user.occupation
+          occupation: user.occupation,
         },
-        request
+        request,
       });
     }
 
@@ -318,41 +293,25 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const page = parseInt(searchParams.get("page") || "1");
     const limit = parseInt(searchParams.get("limit") || "10");
-    const roleParam = searchParams.get("role") || "";
     const search = searchParams.get("search") || "";
 
     const skip = (page - 1) * limit;
 
-    // Determine which roles to include. If roleParam is provided, use that (supports comma-separated values).
-    const allowedRoles = ['staff','spv_staff','admin','finance','staff_finance','ketua','marketing','marketing_head'];
-    let rolesToQuery: string[] = [];
-    if (roleParam) {
-      // support either comma separated db roles or human-friendly labels
-      const parts = roleParam.split(',').map(p => p.trim()).filter(Boolean);
-      parts.forEach(p => {
-        const lower = p.toLowerCase();
-        // direct db role
-        if (allowedRoles.includes(lower)) rolesToQuery.push(lower);
-        // map human labels to db roles
-        if (lower === 'marketing head' || lower === 'marketing_head' || lower === 'marketinghead') rolesToQuery.push('marketing_head');
-        if (lower === 'marketing') rolesToQuery.push('marketing');
-        if (lower === 'admin') rolesToQuery.push('admin');
-        if (lower === 'finance') rolesToQuery.push('finance');
-        if (lower === 'staff finance' || lower === 'staff_finance') rolesToQuery.push('staff_finance');
-        if (lower === 'spv staff' || lower === 'spv_staff') rolesToQuery.push('spv_staff');
-        if (lower === 'ketua') rolesToQuery.push('ketua');
-        if (lower === 'staff') rolesToQuery.push('staff');
-      });
-      // dedupe and keep only allowed
-      rolesToQuery = Array.from(new Set(rolesToQuery)).filter(r => allowedRoles.includes(r));
-    }
-
-    const baseRoleQuery = rolesToQuery.length > 0 ? { $or: rolesToQuery.map(r => ({ role: r })) } : { $or: [{ role: "staff" }, { role: "spv_staff" }, { role: "admin" }, { role: "finance" }, { role: "staff_finance" }, { role: "ketua" }, { role: "marketing" }, { role: "marketing_head" }] };
-
     // Build search query
     const searchQuery = search
       ? {
-          $and: [baseRoleQuery,
+          $and: [
+            {
+              $or: [
+                { role: "staff" },
+                { role: "spv_staff" },
+                { role: "admin" },
+                { role: "finance" },
+                { role: "staff_finance" },
+                { role: "marketing" },
+                { role: "marketing_head" },
+              ],
+            },
             {
               $or: [
                 { fullName: { $regex: search, $options: "i" } },
@@ -363,7 +322,18 @@ export async function GET(request: NextRequest) {
             },
           ],
         }
-      : baseRoleQuery;
+      : {
+          $or: [
+            { role: "staff" },
+            { role: "spv_staff" },
+            { role: "admin" },
+            { role: "finance" },
+            { role: "staff_finance" },
+            { role: "ketua" },
+            { role: "marketing" },
+            { role: "marketing_head" },
+          ],
+        };
 
     // Get total count
     const total = await User.countDocuments(searchQuery);
@@ -451,7 +421,7 @@ export async function PUT(request: NextRequest) {
       email: staffUser.email,
       phoneNumber: staffUser.phoneNumber,
       role: staffUser.role,
-      occupation: staffUser.occupation
+      occupation: staffUser.occupation,
     };
 
     // Check for existing phone number (excluding current user)
@@ -480,7 +450,7 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    // Map role to database role
+    // Update user fields
     let updateDbRole = "staff";
     let updatePrefix = "ST";
     let updateOccupation = "Staff Lapangan";
@@ -516,33 +486,23 @@ export async function PUT(request: NextRequest) {
         updatePrefix = "MKT";
         updateOccupation = "Marketing Staff";
         break;
-      case "Marketing Head":
-        updateDbRole = "marketing_head";
-        updatePrefix = "MKH";
-        updateOccupation = "Marketing Head";
-        break;
       default:
         updateDbRole = "staff";
         updatePrefix = "ST";
         updateOccupation = "Staff Lapangan";
     }
 
-    // Only update the fields that are actually in the admin form
     const updateData: any = {
       fullName: fullName.trim(),
       phoneNumber: phoneNumber.trim(),
       email: email.trim().toLowerCase(),
+      role: updateDbRole,
+      occupation: updateOccupation,
+      occupationCode: updatePrefix,
     };
 
-    // Only update role-related fields if the role has actually changed
-    if (staffUser.role !== updateDbRole) {
-      updateData.role = updateDbRole;
-      updateData.occupation = updateOccupation;
-      updateData.occupationCode = updatePrefix;
-    }
-
     // Generate referral code if role is changed to marketing and doesn't have one
-    if (staffUser.role !== updateDbRole && updateDbRole === "marketing" && !staffUser.referralCode) {
+    if (updateDbRole === "marketing" && !staffUser.referralCode) {
       let referralCode;
       let isUnique = false;
       while (!isUnique) {
@@ -555,15 +515,8 @@ export async function PUT(request: NextRequest) {
       updateData.referralCode = referralCode;
     }
 
-    // If password is provided, validate and hash it
+    // If password is provided, hash and update it
     if (password && password.trim() !== "") {
-      const passwordValidation = validatePassword(password.trim());
-      if (!passwordValidation.isValid) {
-        return NextResponse.json(
-          { error: passwordValidation.error },
-          { status: 400 }
-        );
-      }
       updateData.password = await bcrypt.hash(password.trim(), 12);
     }
 
@@ -578,21 +531,21 @@ export async function PUT(request: NextRequest) {
         email: updatedUser.email,
         phoneNumber: updatedUser.phoneNumber,
         role: updatedUser.role,
-        occupation: updatedUser.occupation
+        occupation: updatedUser.occupation,
       };
 
       await logAdminAction({
         adminId: session.user.id,
-        adminName: session.user.name || 'Unknown',
-        adminEmail: session.user.email || 'Unknown',
-        action: 'update_staff',
+        adminName: session.user.name || "Unknown",
+        adminEmail: session.user.email || "Unknown",
+        action: "update_staff",
         description: `Updated staff: ${updatedUser.fullName} (${updatedUser.userCode})`,
-        targetType: 'staff',
+        targetType: "staff",
         targetId: updatedUser._id.toString(),
         targetName: updatedUser.fullName,
         oldData,
         newData,
-        request
+        request,
       });
     }
 
@@ -656,32 +609,50 @@ export async function DELETE(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
+      return NextResponse.json(
+        { error: "Authentication required" },
+        { status: 401 }
+      );
     }
 
     const body = await request.json();
     const { id } = body;
 
     if (!id) {
-      return NextResponse.json({ error: 'ID is required' }, { status: 400 });
+      return NextResponse.json({ error: "ID is required" }, { status: 400 });
     }
 
     // Prevent deleting self
     if (session.user.id === id) {
-      return NextResponse.json({ error: 'You cannot delete your own account' }, { status: 403 });
+      return NextResponse.json(
+        { error: "You cannot delete your own account" },
+        { status: 403 }
+      );
     }
 
     await dbConnect();
 
     const userToDelete = await User.findById(id);
     if (!userToDelete) {
-      return NextResponse.json({ error: 'Staff not found' }, { status: 404 });
+      return NextResponse.json({ error: "Staff not found" }, { status: 404 });
     }
 
     // Only allow deleting staff/admin roles (safety)
-    const allowedRoles = ['staff', 'spv_staff', 'admin', 'finance', 'staff_finance', 'marketing', 'ketua', 'marketing_head'];
+    const allowedRoles = [
+      "staff",
+      "spv_staff",
+      "admin",
+      "finance",
+      "staff_finance",
+      "marketing",
+      "ketua",
+      "marketing_head",
+    ];
     if (!allowedRoles.includes(userToDelete.role)) {
-      return NextResponse.json({ error: 'Deleting this user role is not allowed' }, { status: 403 });
+      return NextResponse.json(
+        { error: "Deleting this user role is not allowed" },
+        { status: 403 }
+      );
     }
 
     await User.findByIdAndDelete(id);
@@ -689,11 +660,11 @@ export async function DELETE(request: NextRequest) {
     // Log admin action
     await logAdminAction({
       adminId: session.user.id,
-      adminName: session.user.name || 'Unknown',
-      adminEmail: session.user.email || 'Unknown',
-      action: 'delete_staff',
+      adminName: session.user.name || "Unknown",
+      adminEmail: session.user.email || "Unknown",
+      action: "delete_staff",
       description: `Deleted staff: ${userToDelete.fullName} (${userToDelete.userCode})`,
-      targetType: 'staff',
+      targetType: "staff",
       targetId: id,
       targetName: userToDelete.fullName,
       oldData: {
@@ -702,16 +673,25 @@ export async function DELETE(request: NextRequest) {
         phoneNumber: userToDelete.phoneNumber,
         role: userToDelete.role,
       },
-      request
+      request,
     });
 
-    return NextResponse.json({ success: true, message: 'Staff deleted' }, { status: 200 });
+    return NextResponse.json(
+      { success: true, message: "Staff deleted" },
+      { status: 200 }
+    );
   } catch (error: unknown) {
-    console.error('Error deleting staff user:', error);
+    console.error("Error deleting staff user:", error);
     if (isMongooseError(error)) {
       const mongooseResponse = handleMongooseError(error);
       if (mongooseResponse) return mongooseResponse;
     }
-    return NextResponse.json({ success: false, error: (error as any)?.message || 'Internal server error' }, { status: 500 });
+    return NextResponse.json(
+      {
+        success: false,
+        error: (error as any)?.message || "Internal server error",
+      },
+      { status: 500 }
+    );
   }
 }

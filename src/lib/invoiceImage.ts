@@ -112,7 +112,7 @@ export async function downloadInvoiceImage(
 
   const orderId = s(payment?.orderId, "—");
   const plantData = await resolvePlantInstanceData(payment);
-  const kavBlok = `<b>Kav / Blok</b> : ${plantData.kavling} / ${plantData.blok}`;
+  const kavBlok = `<b>Blok / Kav</b> : ${plantData.blok} / ${plantData.kavling}`;
   const dateRight = fmtDate(payment?.updatedAt || payment?.createdAt);
 
   // REG → deskripsi "Pendaftaran"

@@ -30,6 +30,7 @@ const navigation = [
   { name: "Dashboard", href: "/admin", icon: BarChart3, color: "text-blue-600" },
   { name: "Verifikasi User", href: "/admin/verification", icon: CheckCircle, color: "text-green-600" },
   { name: "Persetujuan Kontrak", href: "/admin/contract-approvals", icon: ClipboardCheck, color: "text-emerald-600" },
+  { name: "Kelola Cicilan", href: "/admin/cicilan", icon: HardHat, color: "text-orange-600" },
   { name: "Manajemen Investor", href: "/admin/investors", icon: Users, color: "text-purple-600" },
   { name: "Kelola Komentar", href: "/admin/reviews", icon: MessageCircle, color: "text-pink-600" },
   { name: "Data Pohon", href: "/admin/trees", icon: Trees, color: "text-emerald-600" },

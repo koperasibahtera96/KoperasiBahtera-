@@ -702,9 +702,9 @@ export default function InvestasiPage() {
                           </span>
                         </div>
                         <div className="flex justify-between">
-                          <span className="text-gray-600">Kav / Blok:</span>
+                          <span className="text-gray-600">Blok / Kav:</span>
                           <span className="text-gray-900">
-                            {investment.plantInstance.kavling || "-"} / {investment.plantInstance.blok || "-"}
+                            {investment.plantInstance.blok || "-"} / {investment.plantInstance.kavling || "-"}
                           </span>
                         </div>
                         <div className="flex justify-between">
@@ -1062,8 +1062,8 @@ export default function InvestasiPage() {
                               <p>{selectedInvestment.plantInstance.location}</p>
                             </div>
                             <div>
-                              <span className="text-gray-600">Kav / Blok:</span>
-                              <p>{selectedInvestment.plantInstance.kavling || "-"} / {selectedInvestment.plantInstance.blok || "-"}</p>
+                              <span className="text-gray-600">Blok / Kav:</span>
+                              <p>{selectedInvestment.plantInstance.blok || "-"} / {selectedInvestment.plantInstance.kavling || "-"}</p>
                             </div>
                           </div>
                         </div>

@@ -182,7 +182,7 @@ export function Footer() {
   const quickLinks = [
     { href: '#beranda', label: 'Beranda' },
     { href: '#tentang', label: 'Tentang Kami' },
-    { href: '#investasi', label: 'Paket Investasi' },
+    { href: '#program', label: 'Paket Investasi' },
     { href: '#manfaat', label: 'Manfaat' },
     { href: '#kontak', label: 'Kontak' },
   ];

@@ -4,7 +4,7 @@ import { AdminLayout } from "@/components/admin/AdminLayout";
 import { useAlert } from "@/components/ui/Alert";
 import Image from "next/image";
 import { motion } from "framer-motion";
-import { RefreshCw, Check, X, Eye } from "lucide-react";
+import { RefreshCw, Check, X, Eye, FileSpreadsheet } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTheme } from "next-themes";
 
@@ -66,11 +66,12 @@ export default function ContractApprovalsPage() {
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const [statusFilter, setStatusFilter] = useState('pending');
+  const [statusFilter, setStatusFilter] = useState('all');
   const [selectedContract, setSelectedContract] = useState<ApprovalModalData | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
   const [rejectionReason, setRejectionReason] = useState('');
   const [adminNotes, setAdminNotes] = useState('');
+  const [exportLoading, setExportLoading] = useState(false);
   const { showSuccess, showError, AlertComponent } = useAlert();
 
   const fetchContracts = async () => {
@@ -173,6 +174,34 @@ export default function ContractApprovalsPage() {
     }
   };
 
+  const handleExport = async () => {
+    try {
+      setExportLoading(true);
+      const response = await fetch('/api/admin/contracts/export');
+
+      if (!response.ok) {
+        throw new Error('Export failed');
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `Laporan_Kontrak_${new Date().toISOString().split('T')[0]}.xlsx`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+
+      showSuccess("Success", "Data exported successfully");
+    } catch (error) {
+      console.error("Export error:", error);
+      showError("Error", "Failed to export data");
+    } finally {
+      setExportLoading(false);
+    }
+  };
+
   const getStatusBadgeColor = (status: string) => {
     switch (status) {
       case 'pending': return 'bg-yellow-100 text-yellow-800';
@@ -247,16 +276,28 @@ export default function ContractApprovalsPage() {
                 Review dan setujui tanda tangan kontrak user
               </p>
             </div>
-            <button
-              onClick={fetchContracts}
-              disabled={loading}
-              className={getThemeClasses("bg-[#324D3E]/10 dark:bg-[#324D3E]/20 hover:bg-[#324D3E]/20 dark:hover:bg-[#324D3E]/30 text-[#324D3E] dark:text-white px-3 sm:px-4 py-2 rounded-xl font-medium transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 text-sm sm:text-base whitespace-nowrap", "!text-[#4c1d1d] hover:!bg-[#FFDEE9]/30")}
-            >
-              <RefreshCw
-                className={`w-4 h-4 ${loading ? "animate-spin" : ""}`}
-              />
-              <span className="hidden sm:inline">Refresh</span>
-            </button>
+            <div className="flex gap-2">
+              <button
+                onClick={handleExport}
+                disabled={exportLoading}
+                className={getThemeClasses("bg-[#324D3E]/10 dark:bg-[#324D3E]/20 hover:bg-[#324D3E]/20 dark:hover:bg-[#324D3E]/30 text-[#324D3E] dark:text-white px-3 sm:px-4 py-2 rounded-xl font-medium transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 text-sm sm:text-base whitespace-nowrap", "!text-[#4c1d1d] hover:!bg-[#FFDEE9]/30 !bg-[#FFC1CC]/10")}
+              >
+                <FileSpreadsheet
+                  className={`w-4 h-4 ${exportLoading ? "animate-pulse" : ""}`}
+                />
+                <span className="hidden sm:inline">{exportLoading ? "Exporting..." : "Export XLSX"}</span>
+              </button>
+              <button
+                onClick={fetchContracts}
+                disabled={loading}
+                className={getThemeClasses("bg-[#324D3E]/10 dark:bg-[#324D3E]/20 hover:bg-[#324D3E]/20 dark:hover:bg-[#324D3E]/30 text-[#324D3E] dark:text-white px-3 sm:px-4 py-2 rounded-xl font-medium transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 text-sm sm:text-base whitespace-nowrap", "!text-[#4c1d1d] hover:!bg-[#FFDEE9]/30")}
+              >
+                <RefreshCw
+                  className={`w-4 h-4 ${loading ? "animate-spin" : ""}`}
+                />
+                <span className="hidden sm:inline">Refresh</span>
+              </button>
+            </div>
           </div>
         </motion.div>
 

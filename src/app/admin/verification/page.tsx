@@ -44,6 +44,7 @@ export default function UserVerificationPage() {
   const [selectedUser, setSelectedUser] = useState<PendingUser | null>(null);
   const [verificationNotes, setVerificationNotes] = useState('');
   const [selectedResubmissionId, setSelectedResubmissionId] = useState<string | null>(null);
+  const [activeFilter, setActiveFilter] = useState<'all' | 'resubmissions' | 'pending' | 'approved' | 'rejected'>('all');
   const { theme } = useTheme();
   const [mounted, setMounted] = useState(false);
 
@@ -106,6 +107,15 @@ export default function UserVerificationPage() {
   useEffect(() => {
     fetchPendingUsers();
   }, []);
+
+  // Filter users based on active filter
+  const filteredUsers = pendingUsers.filter(user => {
+    if (activeFilter === 'all') return true;
+    if (activeFilter === 'resubmissions') {
+      return resubmissions.some((r: any) => r.userId.toString() === user._id.toString() && r.status === 'pending');
+    }
+    return user.verificationStatus === activeFilter;
+  });
 
   // When a selectedUser is opened, auto-select the newest resubmission (if any)
   useEffect(() => {
@@ -188,12 +198,13 @@ export default function UserVerificationPage() {
 
         {/* Stats */}
         <motion.div
-          className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 mb-6 sm:mb-8"
+          className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-6 sm:mb-8"
           variants={containerVariants}
         >
           <motion.div
-            className={getThemeClasses("bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg rounded-2xl shadow-lg border border-[#324D3E]/10 dark:border-gray-700 p-4 sm:p-6 transition-colors duration-300", "!bg-white/80 !border-[#FFC1CC]/30")}
+            className={getThemeClasses("bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg rounded-2xl shadow-lg border border-[#324D3E]/10 dark:border-gray-700 p-4 sm:p-6 transition-colors duration-300 cursor-pointer hover:shadow-xl", "!bg-white/80 !border-[#FFC1CC]/30") + (activeFilter === 'resubmissions' ? ' ring-2 ring-[#324D3E] dark:ring-[#9EE3BF]' : '')}
             variants={itemVariants}
+            onClick={() => setActiveFilter(activeFilter === 'resubmissions' ? 'all' : 'resubmissions')}
           >
             <div className="flex items-center justify-between">
               <div>
@@ -207,8 +218,9 @@ export default function UserVerificationPage() {
           </motion.div>
 
           <motion.div
-            className={getThemeClasses("bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg rounded-2xl shadow-lg border border-[#324D3E]/10 dark:border-gray-700 p-4 sm:p-6 transition-colors duration-300", "!bg-white/80 !border-[#FFC1CC]/30")}
+            className={getThemeClasses("bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg rounded-2xl shadow-lg border border-[#324D3E]/10 dark:border-gray-700 p-4 sm:p-6 transition-colors duration-300 cursor-pointer hover:shadow-xl", "!bg-white/80 !border-[#FFC1CC]/30") + (activeFilter === 'pending' ? ' ring-2 ring-[#324D3E] dark:ring-[#9EE3BF]' : '')}
             variants={itemVariants}
+            onClick={() => setActiveFilter(activeFilter === 'pending' ? 'all' : 'pending')}
           >
             <div className="flex items-center justify-between">
               <div>
@@ -224,8 +236,9 @@ export default function UserVerificationPage() {
           </motion.div>
 
           <motion.div
-            className={getThemeClasses("bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg rounded-2xl shadow-lg border border-[#324D3E]/10 dark:border-gray-700 p-4 sm:p-6 transition-colors duration-300", "!bg-white/80 !border-[#FFC1CC]/30")}
+            className={getThemeClasses("bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg rounded-2xl shadow-lg border border-[#324D3E]/10 dark:border-gray-700 p-4 sm:p-6 transition-colors duration-300 cursor-pointer hover:shadow-xl", "!bg-white/80 !border-[#FFC1CC]/30") + (activeFilter === 'approved' ? ' ring-2 ring-[#324D3E] dark:ring-[#9EE3BF]' : '')}
             variants={itemVariants}
+            onClick={() => setActiveFilter(activeFilter === 'approved' ? 'all' : 'approved')}
           >
             <div className="flex items-center justify-between">
               <div>
@@ -241,8 +254,9 @@ export default function UserVerificationPage() {
           </motion.div>
 
           <motion.div
-            className={getThemeClasses("bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg rounded-2xl shadow-lg border border-[#324D3E]/10 dark:border-gray-700 p-4 sm:p-6 transition-colors duration-300", "!bg-white/80 !border-[#FFC1CC]/30")}
+            className={getThemeClasses("bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg rounded-2xl shadow-lg border border-[#324D3E]/10 dark:border-gray-700 p-4 sm:p-6 transition-colors duration-300 cursor-pointer hover:shadow-xl", "!bg-white/80 !border-[#FFC1CC]/30") + (activeFilter === 'rejected' ? ' ring-2 ring-[#324D3E] dark:ring-[#9EE3BF]' : '')}
             variants={itemVariants}
+            onClick={() => setActiveFilter(activeFilter === 'rejected' ? 'all' : 'rejected')}
           >
             <div className="flex items-center justify-between">
               <div>
@@ -265,27 +279,50 @@ export default function UserVerificationPage() {
         >
           <div className="p-6 border-b border-[#324D3E]/10 dark:border-gray-700 transition-colors duration-300">
             <div className="flex items-center justify-between">
-              <h2 className="text-xl font-bold text-[#324D3E] dark:text-white font-[family-name:var(--font-poppins)] transition-colors duration-300">
-                Daftar User
-              </h2>
-              <button
-                onClick={fetchPendingUsers}
-                className="text-[#4C3D19] dark:text-white hover:text-[#324D3E] dark:hover:text-gray-200 font-medium text-sm transition-colors flex items-center gap-2"
-              >
-                <RefreshCw className="w-4 h-4" />
-                Refresh
-              </button>
+              <div>
+                <h2 className="text-xl font-bold text-[#324D3E] dark:text-white font-[family-name:var(--font-poppins)] transition-colors duration-300">
+                  Daftar User
+                  {activeFilter !== 'all' && (
+                    <span className="ml-2 text-sm font-normal text-gray-500 dark:text-gray-300">
+                      ({activeFilter === 'resubmissions' ? 'Resubmisi' :
+                        activeFilter === 'pending' ? 'Menunggu' :
+                        activeFilter === 'approved' ? 'Disetujui' : 'Ditolak'})
+                    </span>
+                  )}
+                </h2>
+                <p className="text-sm text-gray-500 dark:text-gray-300 mt-1">
+                  Menampilkan {filteredUsers.length} dari {pendingUsers.length} user
+                </p>
+              </div>
+              <div className="flex items-center gap-3">
+                {activeFilter !== 'all' && (
+                  <button
+                    onClick={() => setActiveFilter('all')}
+                    className="text-[#4C3D19] dark:text-white hover:text-[#324D3E] dark:hover:text-gray-200 font-medium text-sm transition-colors flex items-center gap-2"
+                  >
+                    <X className="w-4 h-4" />
+                    Reset Filter
+                  </button>
+                )}
+                <button
+                  onClick={fetchPendingUsers}
+                  className="text-[#4C3D19] dark:text-white hover:text-[#324D3E] dark:hover:text-gray-200 font-medium text-sm transition-colors flex items-center gap-2"
+                >
+                  <RefreshCw className="w-4 h-4" />
+                  Refresh
+                </button>
+              </div>
             </div>
           </div>
 
           <div className="p-4 sm:p-6">
-            {pendingUsers.length === 0 ? (
+            {filteredUsers.length === 0 ? (
               <div className="text-center py-8 text-gray-500 dark:text-gray-200 text-sm sm:text-base transition-colors duration-300">
-                Tidak ada user yang perlu diverifikasi
+                {pendingUsers.length === 0 ? 'Tidak ada user yang perlu diverifikasi' : 'Tidak ada user yang cocok dengan filter'}
               </div>
             ) : (
               <div className="space-y-4">
-                {pendingUsers.map((user) => (
+                {filteredUsers.map((user) => (
                   <motion.div
                     key={user._id}
                     className="border border-gray-200 dark:border-gray-600 rounded-xl p-4 hover:shadow-md transition-all bg-white dark:bg-gray-700/50"

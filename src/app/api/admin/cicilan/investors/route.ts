@@ -21,34 +21,107 @@ export async function GET(request: NextRequest) {
 
     await dbConnect();
 
-    // Build query
-    const query: any = {
+    // Helper function to calculate late payments per investment
+    const calculateLatePayments = (investor: any, userPayments: any[]) => {
+      if (!investor) {
+        // For users without investor records, check if payments are overdue
+        const now = new Date();
+        const latePaymentGroups = new Set();
+
+        userPayments.forEach((payment: any) => {
+          if (new Date(payment.dueDate) < now && payment.transactionStatus === "pending") {
+            latePaymentGroups.add(payment.cicilanOrderId || payment.orderId);
+          }
+        });
+
+        return latePaymentGroups.size;
+      }
+
+      const now = new Date();
+      let lateInvestmentsCount = 0;
+
+      investor.investments.forEach((investment: any) => {
+        let isInvestmentLate = false;
+
+        if (investment.paymentType === "cicilan") {
+          // Check if any installment is overdue and unpaid
+          if (investment.installments && investment.installments.length > 0) {
+            isInvestmentLate = investment.installments.some((inst: any) =>
+              new Date(inst.dueDate) < now && !inst.isPaid
+            );
+          }
+        } else if (investment.paymentType === "full") {
+          // For full payments, check if payment is overdue
+          const relatedPayment = userPayments.find((p: any) =>
+            p.productName === investment.productName &&
+            p.amount === investment.totalAmount &&
+            p.paymentType === "full-investment"
+          );
+
+          if (relatedPayment) {
+            isInvestmentLate = new Date(relatedPayment.dueDate || relatedPayment.createdAt) < now &&
+                              relatedPayment.transactionStatus === "pending";
+          }
+        }
+
+        if (isInvestmentLate) {
+          lateInvestmentsCount++;
+        }
+      });
+
+      return lateInvestmentsCount;
+    };
+
+    // First, get all users who have cicilan payments (including pending ones)
+    const cicilanPayments = await Payment.find({
+      paymentType: "cicilan-installment",
+    });
+
+    // Get unique user IDs from cicilan payments
+    const cicilanUserIds = [
+      ...new Set(cicilanPayments.map((p) => p.userId.toString())),
+    ];
+
+    // Build query for existing investors
+    const investorQuery: any = {
       investments: { $exists: true, $ne: [] }, // Only investors with cicilan investments
       userId: { $ne: null, $exists: true }, // Only investors with valid userId
     };
 
-    // Add search filter
+    // Get existing investors
+    const existingInvestors = await Investor.find(investorQuery);
+    const existingInvestorUserIds = existingInvestors.map((inv) =>
+      inv.userId.toString()
+    );
+
+    // Combine user IDs: existing investors + users with pending cicilan payments
+    const allCicilanUserIds = [
+      ...new Set([...existingInvestorUserIds, ...cicilanUserIds]),
+    ];
+
+    // Apply search filter to users
+    const userQuery: any = { _id: { $in: allCicilanUserIds } };
     if (search) {
-      query.$or = [
-        { name: { $regex: search, $options: "i" } },
+      userQuery.$or = [
+        { fullName: { $regex: search, $options: "i" } },
         { email: { $regex: search, $options: "i" } },
       ];
     }
 
-    // Get total count
-    const totalCount = await Investor.countDocuments(query);
-
-    // Get investors with pagination (don't populate userId to avoid object issues)
-    const investors = await Investor.find(query)
+    // Get users with pagination
+    const totalCount = await User.countDocuments(userQuery);
+    const users = await User.find(userQuery)
       .sort({ updatedAt: -1 })
       .skip((page - 1) * limit)
       .limit(limit);
 
-    // Filter out investors with null userId and get user info
-    const validInvestors = investors.filter((inv) => inv.userId != null);
-    const userIds = validInvestors.map((inv) => inv.userId);
-    const users = await User.find({ _id: { $in: userIds } });
-    const usersMap = new Map(users.map((user) => [user._id.toString(), user]));
+    const userIds = users.map((user) => user._id);
+
+    // Get existing investors for these users
+    const investors = await Investor.find({ userId: { $in: userIds } });
+    const investorsMap = new Map(
+      investors.map((inv) => [inv.userId.toString(), inv])
+    );
 
     // Get payments for pending reviews count
     const payments = await Payment.find({
@@ -65,23 +138,49 @@ export async function GET(request: NextRequest) {
       paymentsMap.get(userId).push(payment);
     });
 
-    // Process investor data
-    const investorGroups = validInvestors.map((investor) => {
-      const user = usersMap.get(investor.userId.toString());
-      const userPayments = paymentsMap.get(investor.userId.toString()) || [];
+    // Process investor data for all users (existing investors + users with pending payments)
+    const investorGroups = users.map((user) => {
+      const investor = investorsMap.get(user._id.toString());
+      const userPayments = paymentsMap.get(user._id.toString()) || [];
 
-      // Count pending reviews
-      const pendingReviews = userPayments.filter(
-        (p: any) => p.proofImageUrl && p.adminStatus === "pending"
-      ).length;
+      // Count late payments (per investment, not per installment)
+      const latePaymentsCount = calculateLatePayments(investor, userPayments);
 
-      // Count overdue installments
-      const now = new Date();
-      const overdueCount = investor.investments.reduce(
-        (count: number, investment: any) => {
-          return (
-            count +
-            (investment.installments?.filter(
+      // If user has an existing investor record, use that data
+      if (investor) {
+        // Count overdue installments
+        const now = new Date();
+        const overdueCount = investor.investments.reduce(
+          (count: number, investment: any) => {
+            return (
+              count +
+              (investment.installments?.filter(
+                (inst: any) =>
+                  new Date(inst.dueDate) < now &&
+                  !inst.isPaid &&
+                  !userPayments.some(
+                    (p: any) =>
+                      p.cicilanOrderId === investment.investmentId &&
+                      p.installmentNumber === inst.installmentNumber &&
+                      p.proofImageUrl
+                  )
+              ).length || 0)
+            );
+          },
+          0
+        );
+
+        // Process investments summary
+        const investments = investor.investments.map((investment: any) => {
+          const paidCount =
+            investment.installments?.filter((i: any) => i.isPaid).length || 0;
+          const totalCount = investment.installments?.length || 0;
+
+          let investmentStatus: "active" | "completed" | "overdue" = "active";
+          if (paidCount === totalCount) {
+            investmentStatus = "completed";
+          } else {
+            const hasOverdue = investment.installments?.some(
               (inst: any) =>
                 new Date(inst.dueDate) < now &&
                 !inst.isPaid &&
@@ -91,63 +190,89 @@ export async function GET(request: NextRequest) {
                     p.installmentNumber === inst.installmentNumber &&
                     p.proofImageUrl
                 )
-            ).length || 0)
-          );
-        },
-        0
-      );
+            );
+            if (hasOverdue) investmentStatus = "overdue";
+          }
 
-      // Process investments summary
-      const investments = investor.investments.map((investment: any) => {
-        const paidCount =
-          investment.installments?.filter((i: any) => i.isPaid).length || 0;
-        const totalCount = investment.installments?.length || 0;
-
-        let investmentStatus: "active" | "completed" | "overdue" = "active";
-        if (paidCount === totalCount) {
-          investmentStatus = "completed";
-        } else {
-          const hasOverdue = investment.installments?.some(
-            (inst: any) =>
-              new Date(inst.dueDate) < now &&
-              !inst.isPaid &&
-              !userPayments.some(
-                (p: any) =>
-                  p.cicilanOrderId === investment.investmentId &&
-                  p.installmentNumber === inst.installmentNumber &&
-                  p.proofImageUrl
-              )
-          );
-          if (hasOverdue) investmentStatus = "overdue";
-        }
+          return {
+            cicilanOrderId: investment.investmentId,
+            productName: investment.productName,
+            productId: investment.productId || "unknown",
+            totalAmount: investment.totalAmount,
+            installmentCount: totalCount,
+            paidCount,
+            status: investmentStatus,
+            latestActivity: investment.investmentDate.toISOString(),
+          };
+        });
 
         return {
-          cicilanOrderId: investment.investmentId,
-          productName: investment.productName,
-          productId: investment.productId || "unknown",
-          totalAmount: investment.totalAmount,
-          installmentCount: totalCount,
-          paidCount,
-          status: investmentStatus,
-          latestActivity: investment.investmentDate.toISOString(),
+          userId: user._id.toString(),
+          userInfo: {
+            _id: user._id.toString(),
+            fullName: user.fullName,
+            email: user.email,
+            phoneNumber: user.phoneNumber,
+          },
+          totalInvestments: investor.investments.length,
+          totalAmount: investor.totalInvestasi,
+          totalPaid: investor.totalPaid,
+          latePayments: latePaymentsCount,
+          overdueCount,
+          investments,
         };
-      });
+      } else {
+        // User has pending cicilan payments but no investor record yet
+        // Create virtual investment data from payment records
+        const cicilanOrderGroups = new Map();
+        userPayments.forEach((payment: any) => {
+          if (
+            payment.cicilanOrderId &&
+            !cicilanOrderGroups.has(payment.cicilanOrderId)
+          ) {
+            cicilanOrderGroups.set(payment.cicilanOrderId, {
+              cicilanOrderId: payment.cicilanOrderId,
+              productName: payment.productName,
+              productId: payment.productId || "unknown",
+              totalAmount:
+                payment.installmentAmount * payment.totalInstallments,
+              installmentCount: payment.totalInstallments,
+              paidCount: 0, // No payments completed yet
+              status: "active" as const,
+              latestActivity: payment.createdAt.toISOString(),
+            });
+          }
+        });
 
-      return {
-        userId: investor.userId.toString(),
-        userInfo: {
-          _id: user?._id.toString() || investor.userId.toString(),
-          fullName: user?.fullName || investor.name,
-          email: user?.email || investor.email,
-          phoneNumber: user?.phoneNumber || investor.phoneNumber,
-        },
-        totalInvestments: investor.investments.length,
-        totalAmount: investor.totalInvestasi,
-        totalPaid: investor.totalPaid,
-        pendingReviews,
-        overdueCount,
-        investments,
-      };
+        const virtualInvestments = Array.from(cicilanOrderGroups.values());
+        const totalAmount = virtualInvestments.reduce(
+          (sum, inv) => sum + inv.totalAmount,
+          0
+        );
+
+        // Count overdue payments
+        const now = new Date();
+        const overdueCount = userPayments.filter(
+          (p: any) =>
+            new Date(p.dueDate) < now && p.transactionStatus === "pending"
+        ).length;
+
+        return {
+          userId: user._id.toString(),
+          userInfo: {
+            _id: user._id.toString(),
+            fullName: user.fullName,
+            email: user.email,
+            phoneNumber: user.phoneNumber,
+          },
+          totalInvestments: virtualInvestments.length,
+          totalAmount: totalAmount,
+          totalPaid: 0, // No payments completed yet
+          latePayments: latePaymentsCount,
+          overdueCount,
+          investments: virtualInvestments,
+        };
+      }
     });
 
     // Apply status filter after processing

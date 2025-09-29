@@ -8,10 +8,11 @@ import {
   ReviewInstallmentRequest,
   ReviewInstallmentResponse,
 } from "@/types/cicilan";
-import { MessageCircle } from "lucide-react";
+import { MessageCircle, Users, Clock, DollarSign } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { use, useEffect, useState } from "react";
+import { useTheme } from "next-themes";
 
 export default function InvestorDetailPage({
   params,
@@ -33,6 +34,19 @@ export default function InvestorDetailPage({
   const { showSuccess, showError, AlertComponent } = useAlert();
   const router = useRouter();
   const { userId } = use(params);
+  const { theme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const getThemeClasses = (baseClasses: string, pinkClasses: string = "") => {
+    if (mounted && theme === "pink" && pinkClasses) {
+      return `${baseClasses} ${pinkClasses}`;
+    }
+    return baseClasses;
+  };
 
   const fetchInvestorDetail = async () => {
     try {
@@ -198,6 +212,8 @@ export default function InvestorDetailPage({
         return "Selesai";
       case "overdue":
         return "Terlambat";
+      case "pending":
+        return "Pending";
       default:
         return status;
     }
@@ -282,7 +298,12 @@ export default function InvestorDetailPage({
               </svg>
               Kembali ke Daftar Investor
             </button>
-            <h1 className="text-2xl sm:text-3xl font-bold text-[#324D3E] dark:text-white font-[family-name:var(--font-poppins)]">
+            <h1
+              className={getThemeClasses(
+                "text-2xl sm:text-3xl font-bold text-[#324D3E] dark:text-white font-[family-name:var(--font-poppins)]",
+                "!text-[#4c1d1d]"
+              )}
+            >
               Detail Investor
             </h1>
             <p className="text-[#889063] dark:text-gray-300 mt-2 text-sm sm:text-base">
@@ -292,7 +313,12 @@ export default function InvestorDetailPage({
         </div>
 
         {/* Investor Info Card */}
-        <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg rounded-2xl shadow-lg border border-[#324D3E]/10 dark:border-gray-700 p-4 sm:p-6">
+        <div
+          className={getThemeClasses(
+            "bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg rounded-2xl shadow-lg border border-[#324D3E]/10 dark:border-gray-700 p-4 sm:p-6",
+            "!bg-white/95 !border-[#FFC1CC]/30"
+          )}
+        >
           <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 mb-6">
             <div className="w-12 h-12 sm:w-16 sm:h-16 bg-gradient-to-br from-[#324D3E]/10 to-[#4C3D19]/10 rounded-full flex items-center justify-center border-2 border-[#324D3E]/20 dark:border-gray-600 flex-shrink-0">
               <span className="text-[#324D3E] dark:text-white font-semibold text-xl sm:text-2xl font-[family-name:var(--font-poppins)]">
@@ -314,29 +340,44 @@ export default function InvestorDetailPage({
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
             <div className="bg-gradient-to-r from-[#324D3E]/5 to-[#324D3E]/10 dark:from-gray-700/50 dark:to-gray-700 p-3 sm:p-4 rounded-xl border border-[#324D3E]/10 dark:border-gray-600">
-              <div className="text-xs sm:text-sm text-[#889063] dark:text-gray-300 font-[family-name:var(--font-poppins)]">
-                Total Investasi
-              </div>
-              <div className="text-xl sm:text-2xl font-bold text-[#324D3E] dark:text-white">
-                {investorDetail.totalInvestments}
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="text-xs sm:text-sm text-[#889063] dark:text-gray-300 font-[family-name:var(--font-poppins)]">
+                    Total Investasi
+                  </div>
+                  <div className="text-xl sm:text-2xl font-bold text-[#324D3E] dark:text-white">
+                    {investorDetail.totalInvestments}
+                  </div>
+                </div>
+                <Users className="text-[#324D3E] dark:text-white w-6 h-6" />
               </div>
             </div>
             <div className="bg-gradient-to-r from-[#4C3D19]/5 to-[#4C3D19]/10 dark:from-emerald-800/30 dark:to-emerald-900/30 p-3 sm:p-4 rounded-xl border border-[#4C3D19]/10 dark:border-emerald-700/50">
-              <div className="text-xs sm:text-sm text-[#889063] dark:text-gray-300 font-[family-name:var(--font-poppins)]">
-                Nilai Investasi
-              </div>
-              <div className="text-lg sm:text-xl font-bold text-[#4C3D19] dark:text-emerald-300">
-                Rp {investorDetail.totalAmount.toLocaleString("id-ID")}
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="text-xs sm:text-sm text-[#889063] dark:text-gray-300 font-[family-name:var(--font-poppins)]">
+                    Nilai Investasi
+                  </div>
+                  <div className="text-lg sm:text-xl font-bold text-[#4C3D19] dark:text-emerald-300">
+                    Rp {investorDetail.totalAmount.toLocaleString("id-ID")}
+                  </div>
+                </div>
+                <DollarSign className="text-[#4C3D19] dark:text-emerald-300 w-6 h-6" />
               </div>
             </div>
             <div className="bg-gradient-to-r from-[#889063]/5 to-[#889063]/10 dark:from-blue-800/30 dark:to-blue-900/30 p-3 sm:p-4 rounded-xl border border-[#889063]/10 dark:border-blue-700/50">
-              <div className="text-xs sm:text-sm text-[#889063] dark:text-gray-300 font-[family-name:var(--font-poppins)]">
-                Sudah Dibayar
+              <div className="flex items-center justify-between mb-2">
+                <div>
+                  <div className="text-xs sm:text-sm text-[#889063] dark:text-gray-300 font-[family-name:var(--font-poppins)]">
+                    Sudah Dibayar
+                  </div>
+                  <div className="text-lg sm:text-xl font-bold text-[#889063] dark:text-blue-300">
+                    Rp {investorDetail.totalPaid.toLocaleString("id-ID")}
+                  </div>
+                </div>
+                <DollarSign className="text-[#889063] dark:text-blue-300 w-6 h-6" />
               </div>
-              <div className="text-lg sm:text-xl font-bold text-[#889063] dark:text-blue-300">
-                Rp {investorDetail.totalPaid.toLocaleString("id-ID")}
-              </div>
-              <div className="w-full bg-[#324D3E]/10 dark:bg-gray-700 rounded-full h-2 sm:h-3 mt-2">
+              <div className="w-full bg-[#324D3E]/10 dark:bg-gray-700 rounded-full h-2 sm:h-3">
                 <div
                   className="bg-gradient-to-r from-[#889063] to-[#4C3D19] h-2 sm:h-3 rounded-full transition-all duration-500"
                   style={{
@@ -349,18 +390,23 @@ export default function InvestorDetailPage({
                 />
               </div>
             </div>
-            <div className="bg-gradient-to-r from-yellow-50 to-yellow-100 dark:from-yellow-900/30 dark:to-yellow-800/30 p-3 sm:p-4 rounded-xl border border-yellow-200 dark:border-yellow-700/50">
-              <div className="text-xs sm:text-sm text-yellow-700 dark:text-yellow-300 font-[family-name:var(--font-poppins)]">
-                Perlu Review
-              </div>
-              <div className="text-xl sm:text-2xl font-bold text-yellow-600 dark:text-yellow-200">
-                {investorDetail.pendingReviews}
-              </div>
-              {investorDetail.overdueCount > 0 && (
-                <div className="text-xs sm:text-sm text-red-600 dark:text-red-400 mt-1 font-medium">
-                  {investorDetail.overdueCount} Terlambat
+            <div className="bg-gradient-to-r from-orange-50 to-orange-100 dark:from-orange-900/30 dark:to-orange-800/30 p-3 sm:p-4 rounded-xl border border-orange-200 dark:border-orange-700/50">
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="text-xs sm:text-sm text-orange-700 dark:text-orange-300 font-[family-name:var(--font-poppins)]">
+                    Pembayaran Terlambat
+                  </div>
+                  <div className="text-xl sm:text-2xl font-bold text-orange-600 dark:text-orange-200">
+                    {investorDetail.latePayments || 0}
+                  </div>
+                  {investorDetail.overdueCount > 0 && (
+                    <div className="text-xs sm:text-sm text-red-600 dark:text-red-400 mt-1 font-medium">
+                      {investorDetail.overdueCount} Cicilan Terlambat
+                    </div>
+                  )}
                 </div>
-              )}
+                <Clock className="text-orange-600 dark:text-orange-200 w-6 h-6" />
+              </div>
             </div>
           </div>
         </div>
@@ -383,9 +429,13 @@ export default function InvestorDetailPage({
                   <div className="flex-1">
                     <h3 className="text-lg sm:text-xl font-bold text-[#324D3E] dark:text-white font-[family-name:var(--font-poppins)] flex items-center gap-2">
                       {group.productName}
-                      {group.isFullPayment && (
+                      {group.isFullPayment ? (
                         <span className="text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-2 py-1 rounded-full font-medium">
-                          LUNAS
+                          Penuh
+                        </span>
+                      ) : (
+                        <span className="text-xs bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300 px-2 py-1 rounded-full font-medium">
+                          Cicilan
                         </span>
                       )}
                     </h3>
@@ -425,7 +475,7 @@ export default function InvestorDetailPage({
                     <div className="text-xs sm:text-sm text-[#889063] dark:text-gray-300 mt-2 font-[family-name:var(--font-poppins)]">
                       Progress:{" "}
                       {group.isFullPayment
-                        ? "1/1"
+                        ? `${(group.installments[0] as any)?.isPaid ? 1 : 0}/1`
                         : `${
                             group.installments.filter(
                               (i) => i.status === "approved"
@@ -438,7 +488,9 @@ export default function InvestorDetailPage({
                         style={{
                           width: `${
                             group.isFullPayment
-                              ? 100
+                              ? (group.installments[0] as any)?.isPaid
+                                ? 100
+                                : 0
                               : (group.installments.filter(
                                   (i) => i.status === "approved"
                                 ).length /
@@ -548,21 +600,23 @@ export default function InvestorDetailPage({
                               </button>
                             )}
 
-                          {/* WhatsApp Button - Only for Cicilan */}
-                          {!group.isFullPayment &&
-                            (effectiveStatus === "pending" ||
-                              effectiveStatus === "overdue") && (
-                              <button
-                                onClick={() => handleSendWhatsApp(installment)}
-                                disabled={whatsappLoading[installment._id!]}
-                                className="w-full mt-2 flex items-center justify-center gap-2 px-3 sm:px-4 py-2 sm:py-3 bg-green-600 text-white text-xs sm:text-sm rounded-xl hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-semibold font-[family-name:var(--font-poppins)]"
-                              >
-                                <MessageCircle className="w-4 h-4" />
-                                {whatsappLoading[installment._id!]
-                                  ? "Mengirim..."
-                                  : "Kirim Pengingat"}
-                              </button>
-                            )}
+                          {/* WhatsApp Button - show for cicilan and full payments when pending/overdue */}
+                          {(effectiveStatus === "pending" ||
+                            effectiveStatus === "overdue") && (
+                            <button
+                              onClick={() => handleSendWhatsApp(installment)}
+                              disabled={whatsappLoading[installment._id!]}
+                              className={getThemeClasses(
+                                "w-full mt-2 flex items-center justify-center gap-2 px-3 sm:px-4 py-2 sm:py-3 bg-green-600 text-white text-xs sm:text-sm rounded-xl hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed font-semibold font-[family-name:var(--font-poppins)]",
+                                "!bg-gradient-to-r !from-[#FFC1CC] !to-[#FFDEE9] !text-[#4c1d1d]"
+                              )}
+                            >
+                              <MessageCircle className="w-4 h-4" />
+                              {whatsappLoading[installment._id!]
+                                ? "Mengirim..."
+                                : "Kirim Pengingat"}
+                            </button>
+                          )}
                         </div>
                       );
                     })}

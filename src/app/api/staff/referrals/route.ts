@@ -19,11 +19,14 @@ export async function GET(_req: NextRequest) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
-    // Check if user has marketing role
-    if (user.role !== 'marketing') {
-      return NextResponse.json({ 
-        error: "Access denied. Marketing role required." 
-      }, { status: 403 });
+    // Check if user has marketing role (marketing or marketing_head)
+    if (!["marketing", "marketing_head"].includes(user.role)) {
+      return NextResponse.json(
+        {
+          error: "Access denied. Marketing or Marketing Head role required.",
+        },
+        { status: 403 }
+      );
     }
 
     // Get user's referral code
@@ -35,8 +38,8 @@ export async function GET(_req: NextRequest) {
           message: "No referral code assigned. Contact admin.",
           referrals: [],
           totalCommission: 0,
-          totalReferrals: 0
-        }
+          totalReferrals: 0,
+        },
       });
     }
 
@@ -45,27 +48,32 @@ export async function GET(_req: NextRequest) {
       referralCode: user.referralCode,
       $or: [
         { transactionStatus: "settlement" }, // Paid via Midtrans
-        { adminStatus: "approved" } // Approved manually (for cicilan)
-      ]
+        { adminStatus: "approved" }, // Approved manually (for cicilan)
+      ],
     })
-    .populate('userId', 'fullName email phoneNumber')
-    .sort({ createdAt: -1 });
+      .populate("userId", "fullName email phoneNumber")
+      .sort({ createdAt: -1 });
 
     // Calculate commissions
     let totalCommission = 0;
-    const referrals = referralPayments.map(payment => {
+    const referrals = referralPayments.map((payment) => {
       let commission = 0;
       let shouldIncludeCommission = false;
 
-      if (payment.paymentType === 'full-investment') {
+      if (payment.paymentType === "full-investment") {
         // Full payment: 2% of total amount
         commission = Math.round(payment.amount * 0.02);
         shouldIncludeCommission = true;
-      } else if (payment.paymentType === 'cicilan-installment') {
+      } else if (payment.paymentType === "cicilan-installment") {
         // Cicilan payment: Only calculate commission on first installment
-        if (payment.installmentNumber === 1 && payment.installmentAmount && payment.totalInstallments) {
+        if (
+          payment.installmentNumber === 1 &&
+          payment.installmentAmount &&
+          payment.totalInstallments
+        ) {
           // Calculate 2% of total contract amount (installmentAmount * totalInstallments)
-          const totalContractAmount = payment.installmentAmount * payment.totalInstallments;
+          const totalContractAmount =
+            payment.installmentAmount * payment.totalInstallments;
           commission = Math.round(totalContractAmount * 0.02);
           shouldIncludeCommission = true;
         } else {
@@ -73,7 +81,7 @@ export async function GET(_req: NextRequest) {
           commission = 0;
           shouldIncludeCommission = false;
         }
-      } else if (payment.paymentType === 'registration') {
+      } else if (payment.paymentType === "registration") {
         // Registration payments: No commission
         commission = 0;
         shouldIncludeCommission = false;
@@ -86,9 +94,9 @@ export async function GET(_req: NextRequest) {
       return {
         paymentId: payment._id,
         orderId: payment.orderId,
-        customerName: payment.userId?.fullName || 'Unknown',
-        customerEmail: payment.userId?.email || 'Unknown',
-        customerPhone: payment.userId?.phoneNumber || 'Unknown',
+        customerName: payment.userId?.fullName || "Unknown",
+        customerEmail: payment.userId?.email || "Unknown",
+        customerPhone: payment.userId?.phoneNumber || "Unknown",
         productName: payment.productName,
         paymentType: payment.paymentType,
         amount: payment.amount,
@@ -97,10 +105,11 @@ export async function GET(_req: NextRequest) {
         installmentNumber: payment.installmentNumber || null,
         totalInstallments: payment.totalInstallments || null,
         status: payment.transactionStatus || payment.adminStatus,
-        paymentDate: payment.transactionStatus === 'settlement'
-          ? payment.settlementTime || payment.createdAt
-          : payment.adminReviewDate || payment.createdAt,
-        createdAt: payment.createdAt
+        paymentDate:
+          payment.transactionStatus === "settlement"
+            ? payment.settlementTime || payment.createdAt
+            : payment.adminReviewDate || payment.createdAt,
+        createdAt: payment.createdAt,
       };
     });
 
@@ -114,19 +123,24 @@ export async function GET(_req: NextRequest) {
         totalCommission,
         totalReferrals: referrals.length,
         summary: {
-          fullPayments: referrals.filter(r => r.paymentType === 'full-investment').length,
-          cicilanPayments: referrals.filter(r => r.paymentType === 'cicilan-installment').length,
-          registrations: referrals.filter(r => r.paymentType === 'registration').length,
-        }
-      }
+          fullPayments: referrals.filter(
+            (r) => r.paymentType === "full-investment"
+          ).length,
+          cicilanPayments: referrals.filter(
+            (r) => r.paymentType === "cicilan-installment"
+          ).length,
+          registrations: referrals.filter(
+            (r) => r.paymentType === "registration"
+          ).length,
+        },
+      },
     });
-
   } catch (error) {
     console.error("Error fetching referral data:", error);
     return NextResponse.json(
-      { 
+      {
         error: "Failed to fetch referral data",
-        details: error instanceof Error ? error.message : "Unknown error"
+        details: error instanceof Error ? error.message : "Unknown error",
       },
       { status: 500 }
     );

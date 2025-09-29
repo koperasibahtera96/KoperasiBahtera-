@@ -4,7 +4,7 @@ import { AdminLayout } from '@/components/admin/AdminLayout';
 import { KetuaLayout } from '@/components/ketua/KetuaLayout';
 import { useAlert } from '@/components/ui/Alert';
 import { Select } from '@/components/ui/Select';
-import { RefreshCw } from 'lucide-react';
+import { RefreshCw, Download } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 import { useEffect, useState } from 'react';
 import { useTheme } from 'next-themes';
@@ -69,6 +69,12 @@ interface TreesData {
     totalInvestors: number;
     totalInvestment: number;
     totalPaid: number;
+    paketDibeli: number;
+    menungguTanam: number;
+    sudahDitanam: number;
+    tumbuh: number;
+    panen: number;
+    pohonPerBlok: Record<string, number>;
     byType: Record<string, {
       instances: number;
       investors: number;
@@ -92,10 +98,36 @@ export default function TreesPage() {
   const [treesData, setTreesData] = useState<TreesData | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedType, setSelectedType] = useState<string>('all');
+  const [selectedFilter, setSelectedFilter] = useState<string>('all');
+  const [selectedBlok, setSelectedBlok] = useState<string>('all');
   const [expandedTypes, setExpandedTypes] = useState<Set<string>>(new Set());
   const [expandedOwners, setExpandedOwners] = useState<Set<string>>(new Set());
 
   const { showError, AlertComponent } = useAlert();
+
+  // Export to Excel function
+  const exportToExcel = async () => {
+    try {
+      const response = await fetch('/api/admin/trees/export');
+
+      if (response.ok) {
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `laporan-data-pohon-${new Date().toISOString().split('T')[0]}.xlsx`;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+      } else {
+        showError('Gagal export', 'Terjadi kesalahan saat mengunduh file Excel');
+      }
+    } catch (error) {
+      console.error('Error exporting to Excel:', error);
+      showError('Kesalahan Jaringan', 'Gagal mengunduh file Excel. Periksa koneksi internet Anda.');
+    }
+  };
 
 
   // Format number helper functions
@@ -112,7 +144,11 @@ export default function TreesPage() {
   const fetchTreesData = async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/admin/trees');
+      const params = new URLSearchParams({
+        filter: selectedFilter,
+        blok: selectedBlok
+      });
+      const response = await fetch(`/api/admin/trees?${params}`);
 
       if (response.ok) {
         const data = await response.json();
@@ -132,7 +168,7 @@ export default function TreesPage() {
   useEffect(() => {
     fetchTreesData();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [selectedFilter, selectedBlok]);
 
   const getPlantTypeLabel = (plantType: string) => {
     const labels: Record<string, string> = {
@@ -164,6 +200,8 @@ export default function TreesPage() {
     setExpandedOwners(newExpanded);
   };
 
+  // Since API already filters by selectedFilter and selectedBlok,
+  // we only need to apply selectedType filter here
   const filteredData = treesData?.groupedData.filter(group =>
     selectedType === 'all' || group.plantType === selectedType
   ) || [];
@@ -193,18 +231,57 @@ export default function TreesPage() {
               <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
               <span className="hidden sm:inline">{loading ? 'Memuat...' : 'Refresh'}</span>
             </button>
+            <button
+              onClick={exportToExcel}
+              className={getThemeClasses(
+                "bg-green-600/10 dark:bg-green-700/50 hover:bg-green-600/20 dark:hover:bg-green-700 text-green-700 dark:text-green-300 px-3 sm:px-4 py-2 rounded-xl font-medium transition-all duration-200 flex items-center justify-center gap-2 text-sm sm:text-base whitespace-nowrap",
+                '!bg-gradient-to-r !from-[#C1FFC1] !to-[#E9FFE9] !text-[#1d4c1d]'
+              )}
+            >
+              <Download className="w-4 h-4" />
+              <span className="hidden sm:inline">Export Excel</span>
+            </button>
           </div>
         </div>
 
         {/* Stats Cards */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6 mb-6">
-          <div className={getThemeClasses(
-            "bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg rounded-2xl shadow-lg border border-[#324D3E]/10 dark:border-gray-700 p-4 sm:p-6 hover:shadow-xl hover:scale-105 transition-all duration-300",
-            '!bg-gradient-to-r !from-[#FFEFF3] !to-[#FFF5F7]'
-          )}>
+          <div
+            className={getThemeClasses(
+              `bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg rounded-2xl shadow-lg border border-[#324D3E]/10 dark:border-gray-700 p-4 sm:p-6 hover:shadow-xl hover:scale-105 transition-all duration-300 cursor-pointer ${selectedFilter === 'all' ? 'ring-2 ring-[#324D3E]' : ''}`,
+              '!bg-gradient-to-r !from-[#FFEFF3] !to-[#FFF5F7]'
+            )}
+            onClick={() => setSelectedFilter('all')}
+          >
             <div>
-              <p className="text-xs sm:text-sm font-medium text-[#889063] dark:text-gray-300 truncate">🌳 Total Instansi Pohon</p>
-              <p className="text-lg sm:text-xl lg:text-2xl font-bold text-[#324D3E] dark:text-white">{treesData?.stats.totalInstances || 0}</p>
+              <p className="text-xs sm:text-sm font-medium text-[#889063] dark:text-gray-300 truncate">📦 Jumlah Paket Dibeli</p>
+              <p className="text-lg sm:text-xl lg:text-2xl font-bold text-[#324D3E] dark:text-white">{(treesData?.stats as any)?.paketDibeli || 0}</p>
+            </div>
+          </div>
+
+          <div
+            className={getThemeClasses(
+              `bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg rounded-2xl shadow-lg border border-[#324D3E]/10 dark:border-gray-700 p-4 sm:p-6 hover:shadow-xl hover:scale-105 transition-all duration-300 cursor-pointer ${selectedFilter === 'menunggu-tanam' ? 'ring-2 ring-[#324D3E]' : ''}`,
+              '!bg-gradient-to-r !from-[#FFEFF3] !to-[#FFF5F7]'
+            )}
+            onClick={() => setSelectedFilter('menunggu-tanam')}
+          >
+            <div>
+              <p className="text-xs sm:text-sm font-medium text-[#889063] dark:text-gray-300 truncate">⏳ Jumlah Paket Menunggu Tanam</p>
+              <p className="text-lg sm:text-xl lg:text-2xl font-bold text-[#4C3D19] dark:text-emerald-300">{treesData?.stats.menungguTanam || 0}</p>
+            </div>
+          </div>
+
+          <div
+            className={getThemeClasses(
+              `bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg rounded-2xl shadow-lg border border-[#324D3E]/10 dark:border-gray-700 p-4 sm:p-6 hover:shadow-xl hover:scale-105 transition-all duration-300 cursor-pointer ${selectedFilter === 'sudah-ditanam' ? 'ring-2 ring-[#324D3E]' : ''}`,
+              '!bg-gradient-to-r !from-[#FFEFF3] !to-[#FFF5F7]'
+            )}
+            onClick={() => setSelectedFilter('sudah-ditanam')}
+          >
+            <div>
+              <p className="text-xs sm:text-sm font-medium text-[#889063] dark:text-gray-300 truncate">🌱 Jumlah Pohon Sudah Ditanam</p>
+              <p className="text-lg sm:text-xl lg:text-2xl font-bold text-[#889063] dark:text-blue-300">{treesData?.stats.sudahDitanam || 0}</p>
             </div>
           </div>
 
@@ -213,28 +290,10 @@ export default function TreesPage() {
             '!bg-gradient-to-r !from-[#FFEFF3] !to-[#FFF5F7]'
           )}>
             <div>
-              <p className="text-xs sm:text-sm font-medium text-[#889063] dark:text-gray-300 truncate">👥 Total Investor</p>
-              <p className="text-lg sm:text-xl lg:text-2xl font-bold text-[#4C3D19] dark:text-emerald-300">{treesData?.stats.totalInvestors || 0}</p>
-            </div>
-          </div>
-
-          <div className={getThemeClasses(
-            "bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg rounded-2xl shadow-lg border border-[#324D3E]/10 dark:border-gray-700 p-4 sm:p-6 hover:shadow-xl hover:scale-105 transition-all duration-300",
-            '!bg-gradient-to-r !from-[#FFEFF3] !to-[#FFF5F7]'
-          )}>
-            <div>
-              <p className="text-xs sm:text-sm font-medium text-[#889063] dark:text-gray-300 truncate">💰 Total Investasi</p>
-              <p className="text-lg sm:text-xl lg:text-2xl font-bold text-[#889063] dark:text-blue-300">{formatCurrency(treesData?.stats.totalInvestment || 0)}</p>
-            </div>
-          </div>
-
-          <div className={getThemeClasses(
-            "bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg rounded-2xl shadow-lg border border-[#324D3E]/10 dark:border-gray-700 p-4 sm:p-6 hover:shadow-xl hover:scale-105 transition-all duration-300",
-            '!bg-gradient-to-r !from-[#FFEFF3] !to-[#FFF5F7]'
-          )}>
-            <div>
-              <p className="text-xs sm:text-sm font-medium text-[#889063] dark:text-gray-300 truncate">💵 Total Terbayar</p>
-              <p className="text-lg sm:text-xl lg:text-2xl font-bold text-green-600 dark:text-green-400">{formatCurrency(treesData?.stats.totalPaid || 0)}</p>
+              <p className="text-xs sm:text-sm font-medium text-[#889063] dark:text-gray-300 truncate">🏘️ Jumlah Pohon per Blok</p>
+              <p className="text-lg sm:text-xl lg:text-2xl font-bold text-green-600 dark:text-green-400">
+                {treesData?.stats.pohonPerBlok ? Object.keys(treesData.stats.pohonPerBlok).length : 0} Blok
+              </p>
             </div>
           </div>
         </div>
@@ -253,7 +312,40 @@ export default function TreesPage() {
                 { value: 'alpukat', label: 'Alpukat' }
               ]}
             />
+            <Select
+              value={selectedBlok}
+              onValueChange={setSelectedBlok}
+              options={[
+                { value: 'all', label: 'Semua Blok' },
+                ...(treesData?.stats.pohonPerBlok ? Object.keys(treesData.stats.pohonPerBlok).map(blok => ({
+                  value: blok,
+                  label: `${blok} (${treesData.stats.pohonPerBlok[blok]} pohon)`
+                })) : [])
+              ]}
+            />
           </div>
+          {(selectedFilter !== 'all' || selectedBlok !== 'all') && (
+            <div className="mt-4 flex flex-wrap gap-2">
+              {selectedFilter !== 'all' && (
+                <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-[#324D3E]/10 text-[#324D3E]">
+                  Filter: {
+                    selectedFilter === 'menunggu-tanam' ? 'Menunggu Tanam' :
+                    selectedFilter === 'sudah-ditanam' ? 'Sudah Ditanam' :
+                    selectedFilter === 'tumbuh' ? 'Tumbuh' :
+                    selectedFilter === 'panen' ? 'Panen' :
+                    selectedFilter
+                  }
+                  <button onClick={() => setSelectedFilter('all')} className="ml-2 text-[#324D3E] hover:text-red-600">×</button>
+                </span>
+              )}
+              {selectedBlok !== 'all' && (
+                <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-[#4C3D19]/10 text-[#4C3D19]">
+                  Blok: {selectedBlok}
+                  <button onClick={() => setSelectedBlok('all')} className="ml-2 text-[#4C3D19] hover:text-red-600">×</button>
+                </span>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Trees Groups */}
@@ -400,113 +492,75 @@ export default function TreesPage() {
                           {/* Owner Content */}
                           {expandedOwners.has(ownerKey) && (
                             <div className="bg-white/50 dark:bg-gray-800/50 divide-y divide-gray-200 dark:divide-gray-700">
-                              {/* Plant Instances */}
+                              {/* Plant Instances Table */}
                               <div className="p-4 lg:p-6">
                                 <h5 className="text-sm font-semibold text-[#324D3E] dark:text-white mb-3">Instansi Pohon ({ownerGroup.instances.length})</h5>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                  {ownerGroup.instances.map((instance) => (
-                                    <div key={instance._id} className="bg-white dark:bg-gray-700/50 rounded-lg p-3 border border-gray-200 dark:border-gray-600 shadow-sm">
-                                      <div className="space-y-1">
-                                        <h6 className="font-medium text-[#324D3E] dark:text-white text-sm">{instance.instanceName}</h6>
-                                        <div className="text-xs text-[#889063] dark:text-gray-400 space-y-1">
-                                          <p>ID: {instance.id}</p>
-                                          <p>ROI: {instance.baseAnnualROI}%/tahun</p>
-                                          {instance.qrCode && <p>QR: {instance.qrCode}</p>}
-                                          {instance.location && <p>Lokasi: {instance.location}</p>}
-                                          {instance.status && <p>Status: {instance.status}</p>}
-                                          <p>Dibuat: {new Date(instance.createdAt).toLocaleDateString('id-ID')}</p>
-                                        </div>
-                                      </div>
-                                    </div>
-                                  ))}
+                                <div className="overflow-x-auto">
+                                  <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                                    <thead className="bg-gray-50 dark:bg-gray-700">
+                                      <tr>
+                                        <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">No. Kontrak</th>
+                                        <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Tanggal Pembelian</th>
+                                        <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Tanggal Tanam</th>
+                                        <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Lokasi</th>
+                                        <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Blok/Kavling</th>
+                                        <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Umur</th>
+                                        <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Status Pohon</th>
+                                        <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Kondisi</th>
+                                      </tr>
+                                    </thead>
+                                    <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                                      {ownerGroup.instances.map((instance) => {
+                                        // Find related investment for purchase date
+                                        const relatedInvestment = ownerGroup.relatedInvestments.find(inv =>
+                                          inv.investmentId.includes(instance.id.slice(-3)) // rough matching
+                                        );
+
+                                        return (
+                                          <tr key={instance._id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                                            <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-900 dark:text-white">{instance.id}</td>
+                                            <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                                              {relatedInvestment ? new Date(relatedInvestment.investmentDate).toLocaleDateString('id-ID') : new Date(instance.createdAt).toLocaleDateString('id-ID')}
+                                            </td>
+                                            <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                                              {(instance as any).tanggalTanam || '-'}
+                                            </td>
+                                            <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-900 dark:text-white">{instance.location || '-'}</td>
+                                            <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                                              {(instance as any).kavling || (instance as any).blok ?
+                                                `${(instance as any).kavling || '-'}/${(instance as any).blok || '-'}` : '-'}
+                                            </td>
+                                            <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                                              {(instance as any).umur || '-'}
+                                            </td>
+                                            <td className="px-3 py-2 whitespace-nowrap">
+                                              <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                                                (instance as any).statusPohon === 'Menunggu Tanam' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300' :
+                                                (instance as any).statusPohon === 'Sudah Ditanam' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300' :
+                                                (instance as any).statusPohon === 'Tumbuh' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' :
+                                                (instance as any).statusPohon === 'Panen' ? 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300' :
+                                                'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300'
+                                              }`}>
+                                                {(instance as any).statusPohon || '-'}
+                                              </span>
+                                            </td>
+                                            <td className="px-3 py-2 whitespace-nowrap">
+                                              <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                                                instance.status?.toLowerCase() === 'sakit' ? 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-300' :
+                                                instance.status?.toLowerCase() === 'mati' ? 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-300' :
+                                                'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'
+                                              }`}>
+                                                {instance.status?.toLowerCase() === 'sakit' ? 'Sakit' :
+                                                 instance.status?.toLowerCase() === 'mati' ? 'Mati' : 'Sehat'}
+                                              </span>
+                                            </td>
+                                          </tr>
+                                        );
+                                      })}
+                                    </tbody>
+                                  </table>
                                 </div>
                               </div>
-
-                              {/* Investor Details & Investments */}
-                              {ownerGroup.relatedInvestor && (
-                                <div className="p-4 lg:p-6">
-                                  <h5 className="text-sm font-semibold text-[#324D3E] dark:text-white mb-3">Detail Investor</h5>
-
-                                  <div className={getThemeClasses(
-                                    "bg-white dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-600 shadow-sm mb-4 overflow-hidden",
-                                    '!bg-gradient-to-r !from-[#FFEFF3] !to-[#FFF5F7] !border-[#FFC1CC]/30'
-                                  )}>
-                                    <div className="divide-y divide-gray-100 dark:divide-gray-700">
-                                      <div className="p-4">
-                                        <h6 className="font-medium text-[#324D3E] dark:text-white">{ownerGroup.relatedInvestor.name}</h6>
-                                        <div className="text-sm text-[#889063] dark:text-gray-400 mt-2">
-                                          <p className="mb-1">Email: {ownerGroup.relatedInvestor.email}</p>
-                                          {ownerGroup.relatedInvestor.phoneNumber && (
-                                            <p>Phone: {ownerGroup.relatedInvestor.phoneNumber}</p>
-                                          )}
-                                        </div>
-                                      </div>
-
-                                      <div className="p-4">
-                                        <div className="text-sm mb-3">
-                                          <p className="text-[#889063] dark:text-gray-400 mb-2">Total Investasi:</p>
-                                          <div className="flex items-baseline gap-3">
-                                            <div className={getThemeClasses("text-2xl font-semibold text-[#324D3E] dark:text-white", "!text-[#4c1d1d]")}>{formatCurrency(ownerGroup.relatedInvestor.totalInvestasi)}</div>
-                                            <div className={getThemeClasses("text-sm text-[#889063] dark:text-gray-400", "!text-[#4c1d1d]")}>Total Terbayar: <span className={getThemeClasses("font-semibold text-green-600 dark:text-green-400", "!text-[#4c1d1d]")}>{formatCurrency(ownerGroup.relatedInvestor.totalPaid)}</span></div>
-                                          </div>
-                                        </div>
-
-                                        <div>
-                                          <div className="bg-gray-200 dark:bg-gray-600 rounded-full h-3">
-                                            <div
-                                              className="bg-green-500 h-3 rounded-full"
-                                              style={{ width: `${ownerGroup.relatedInvestor.totalInvestasi > 0 ? (ownerGroup.relatedInvestor.totalPaid / ownerGroup.relatedInvestor.totalInvestasi) * 100 : 0}%` }}
-                                            ></div>
-                                          </div>
-                                          <p className="text-xs mt-2 text-[#889063] dark:text-gray-400">
-                                            Progress: {ownerGroup.relatedInvestor.totalInvestasi > 0 ? Math.round((ownerGroup.relatedInvestor.totalPaid / ownerGroup.relatedInvestor.totalInvestasi) * 100) : 0}%
-                                          </p>
-                                        </div>
-                                      </div>
-                                    </div>
-                                  </div>
-
-                                  {/* Related Investments */}
-                                  {ownerGroup.relatedInvestments.length > 0 && (
-                                    <div>
-                                      <h6 className="text-sm font-semibold text-[#324D3E] dark:text-white mb-3">Investasi Terkait ({ownerGroup.relatedInvestments.length})</h6>
-                                      <div className="divide-y divide-gray-100 dark:divide-gray-700 rounded-lg overflow-hidden">
-                                        {ownerGroup.relatedInvestments.map((investment) => (
-                                          <div key={investment.investmentId} className={getThemeClasses(
-                                            "p-4 bg-white dark:bg-gray-700/50",
-                                            '!bg-gradient-to-r !from-[#FFF0F3] !to-[#FFF7F9]'
-                                          )}>
-                                            <div className="flex items-center justify-between">
-                                              <div className="space-y-1">
-                                                <p className="font-medium text-[#324D3E] dark:text-white text-sm">{investment.productName}</p>
-                                                <div className="text-xs text-[#889063] dark:text-gray-400 space-y-1">
-                                                  <p>ID: {investment.investmentId}</p>
-                                                  <p>Tipe: {investment.paymentType === 'cicilan' ? 'Cicilan' : 'Lunas'}</p>
-                                                  <p>Tanggal: {new Date(investment.investmentDate).toLocaleDateString('id-ID')}</p>
-                                                </div>
-                                              </div>
-                                              <div className="text-right space-y-1">
-                                                <div className="text-sm">
-                                                  <p className="font-semibold text-[#324D3E] dark:text-white">{formatCurrency(investment.totalAmount)}</p>
-                                                  <p className="text-green-600 dark:text-green-400">{formatCurrency(investment.amountPaid)}</p>
-                                                </div>
-                                                <div className={`text-xs px-2 py-1 rounded-full ${
-                                                  investment.status === 'completed' ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' :
-                                                  investment.status === 'active' ? 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300' :
-                                                  investment.status === 'pending' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300' :
-                                                  'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300'
-                                                }`}>
-                                                  {investment.status}
-                                                </div>
-                                              </div>
-                                            </div>
-                                          </div>
-                                        ))}
-                                      </div>
-                                    </div>
-                                  )}
-                                </div>
-                              )}
                             </div>
                           )}
                         </div>

@@ -55,7 +55,13 @@ export async function POST(req: NextRequest) {
     const dueDate = payment.dueDate.toLocaleDateString("id-ID");
     const amount = payment.installmentAmount || payment.amount;
 
-    const message = whatsappTemplate(investorName, productName, dueDate, amount);
+    const message = whatsappTemplate(
+      investorName,
+      productName,
+      dueDate,
+      amount,
+      payment.paymentType
+    );
 
     // Send WhatsApp message
     const result = await sendWhatsAppMessage(userInfo.phoneNumber, message);

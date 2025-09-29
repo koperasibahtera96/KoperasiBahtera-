@@ -348,7 +348,16 @@ export async function POST(request: NextRequest) {
       const keyPattern = (error as { keyPattern: Record<string, unknown> }).keyPattern;
       const field = Object.keys(keyPattern)[0];
       const fieldName = field === 'email' ? 'Email' :
-                       field === 'phoneNumber' ? 'Nomor telepon' : field;
+                       field === 'phoneNumber' ? 'Nomor telepon' :
+                       field === 'userCode' ? 'Kode pengguna' : field;
+
+      if (field === 'userCode') {
+        return NextResponse.json(
+          { error: 'Terjadi kesalahan dalam membuat kode pengguna. Silakan coba lagi.' },
+          { status: 500 }
+        );
+      }
+
       return NextResponse.json(
         { error: `${fieldName} sudah terdaftar` },
         { status: 400 }

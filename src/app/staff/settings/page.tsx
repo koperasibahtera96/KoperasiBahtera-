@@ -35,29 +35,29 @@ export default function StaffSettingsPage() {
   const themes = [
     {
       id: "light",
-      name: "Light Mode",
-      description: "Clean and bright interface",
+      name: "Mode Terang",
+      description: "Antarmuka bersih dan terang",
       icon: Sun,
       colors: ["#ffffff", "#f8fafc", "#e2e8f0", "#cbd5e1"],
     },
     {
       id: "dark",
-      name: "Dark Mode",
-      description: "Easy on the eyes in low light",
+      name: "Mode Gelap",
+      description: "Mudah dilihat di kondisi cahaya redup",
       icon: Moon,
       colors: ["#1e293b", "#0f172a", "#334155", "#475569"],
     },
     {
       id: "system",
-      name: "System",
-      description: "Follow your device settings",
+      name: "Sistem",
+      description: "Ikuti pengaturan perangkat Anda",
       icon: Monitor,
       colors: ["#64748b", "#94a3b8", "#cbd5e1", "#e2e8f0"],
     },
     {
       id: "pink",
-      name: "Pink Theme",
-      description: "Soft and elegant pink palette",
+      name: "Tema Pink",
+      description: "Palet warna pink lembut dan elegan",
       icon: Palette,
       colors: ["#FFC1CC", "#FFDEE9", "#FFB3C6", "#FF91A4"],
     },
@@ -93,11 +93,11 @@ export default function StaffSettingsPage() {
               <SettingsIcon className={getThemeClasses("h-6 w-6 sm:h-8 sm:w-8 text-blue-600 dark:text-blue-400", "!text-[#4c1d1d]")} />
             </div>
             <h1 className={getThemeClasses("text-2xl sm:text-3xl md:text-4xl font-black text-[#324D3E] dark:text-white", "!text-[#4c1d1d]")}>
-              Settings
+              Pengaturan
             </h1>
           </div>
           <p className={getThemeClasses("text-base sm:text-lg text-[#889063] dark:text-gray-400 max-w-2xl mx-auto font-medium", "!text-[#6b7280]")}>
-            Customize your experience and preferences
+            Sesuaikan pengaturan dan preferensi Anda
           </p>
         </motion.div>
 
@@ -116,10 +116,10 @@ export default function StaffSettingsPage() {
               </div>
               <div>
                 <h2 className={getThemeClasses("text-lg sm:text-xl font-bold text-[#324D3E] dark:text-white", "!text-[#4c1d1d]")}>
-                  Theme Preferences
+                  Preferensi Tema
                 </h2>
                 <p className={getThemeClasses("text-sm text-[#889063] dark:text-gray-400", "!text-[#6b7280]")}>
-                  Choose your preferred color scheme
+                  Pilih skema warna yang Anda inginkan
                 </p>
               </div>
             </div>
@@ -216,10 +216,10 @@ export default function StaffSettingsPage() {
               </div>
               <div>
                 <h2 className={getThemeClasses("text-lg sm:text-xl font-bold text-[#324D3E] dark:text-white", "!text-[#4c1d1d]")}>
-                  Account Information
+                  Informasi Akun
                 </h2>
                 <p className={getThemeClasses("text-sm text-[#889063] dark:text-gray-400", "!text-[#6b7280]")}>
-                  Your profile details
+                  Detail profil Anda
                 </p>
               </div>
             </div>
@@ -227,30 +227,30 @@ export default function StaffSettingsPage() {
             <div className="space-y-4">
               <div className={getThemeClasses("p-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl", "!bg-[#FFC1CC]/10")}>
                 <label className={getThemeClasses("text-sm font-medium text-[#889063] dark:text-gray-400 block mb-2", "!text-[#6b7280]")}>
-                  Full Name
+                  Nama Lengkap
                 </label>
                 <p className={getThemeClasses("text-[#324D3E] dark:text-white font-semibold", "!text-[#4c1d1d]")}>
                   {session?.user?.name || "N/A"}
                 </p>
               </div>
 
-              <div className={getThemeClasses("p-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl", "!bg-[#FFC1CC]/10")}>
+              <div className={getThemeClasses("p-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl", "!bg-[#FFC1CC]/10")}> 
                 <label className={getThemeClasses("text-sm font-medium text-[#889063] dark:text-gray-400 block mb-2", "!text-[#6b7280]")}>
-                  Email Address
+                  Alamat Email
                 </label>
                 <p className={getThemeClasses("text-[#324D3E] dark:text-white font-semibold", "!text-[#4c1d1d]")}>
                   {session?.user?.email || "N/A"}
                 </p>
               </div>
 
-              <div className={getThemeClasses("p-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl", "!bg-[#FFC1CC]/10")}>
+              <div className={getThemeClasses("p-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl", "!bg-[#FFC1CC]/10")}> 
                 <label className={getThemeClasses("text-sm font-medium text-[#889063] dark:text-gray-400 block mb-2", "!text-[#6b7280]")}>
-                  Role
+                  Peran
                 </label>
                 <p className={getThemeClasses("text-[#324D3E] dark:text-white font-semibold", "!text-[#4c1d1d]")}>
-                  {session?.user?.role === 'marketing' ? 'Marketing Staff' :
-                   session?.user?.role === 'marketing_head' ? 'Marketing Head' :
-                   session?.user?.role === 'admin' ? 'Administrator' : 'Staff'}
+                  {session?.user?.role === 'marketing' ? 'Staf Marketing' :
+                   session?.user?.role === 'marketing_head' ? 'Kepala Marketing' :
+                   session?.user?.role === 'admin' ? 'Administrator' : 'Staf'}
                 </p>
               </div>
             </div>

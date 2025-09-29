@@ -4,7 +4,7 @@ import dbConnect from "@/lib/mongodb";
 import { createCommissionRecord } from "@/lib/commission";
 import { generateInvoiceNumber } from "@/lib/invoiceNumberGenerator";
 import { getFirstAdminName } from "@/lib/utils/admin";
-import generateUserCode from '@/lib/userCodeGenerator';
+import generateUserCode from "@/lib/userCodeGenerator";
 import { Investor } from "@/models";
 import Contract from "@/models/Contract";
 import Payment from "@/models/Payment";
@@ -12,6 +12,22 @@ import PlantInstance from "@/models/PlantInstance";
 import User from "@/models/User";
 import mongoose from "mongoose";
 import { NextRequest, NextResponse } from "next/server";
+
+// Helper function to recalculate investor totals from investment records
+const recalculateInvestorTotals = (investor: any) => {
+  investor.totalInvestasi = investor.investments.reduce(
+    (sum: number, inv: any) => sum + inv.totalAmount,
+    0
+  );
+  investor.totalPaid = investor.investments.reduce(
+    (sum: number, inv: any) => sum + inv.amountPaid,
+    0
+  );
+  investor.jumlahPohon = investor.investments.reduce(
+    (sum: number, inv: any) => sum + extractTreeCount(inv.productName),
+    0
+  );
+};
 
 // Helper function to extract tree count from product name
 function extractTreeCount(productName: string): number {
@@ -58,6 +74,25 @@ export async function POST(request: NextRequest) {
         { error: "Payment record not found" },
         { status: 404 }
       );
+    }
+
+    // Log payment processing status for debugging
+    console.log(
+      `🔍 Payment ${orderId} - isProcessed: ${payment.isProcessed}, currentStatus: ${payment.transactionStatus}`
+    );
+
+    // Early return if already processed for settlement/capture to prevent double processing
+    if (
+      payment.isProcessed &&
+      (transactionStatus === "settlement" || transactionStatus === "capture")
+    ) {
+      console.log(
+        `⚠️ Payment ${orderId} already processed, skipping duplicate webhook`
+      );
+      return NextResponse.json({
+        success: true,
+        message: "Payment already processed",
+      });
     }
 
     // Update payment status
@@ -110,9 +145,12 @@ export async function POST(request: NextRequest) {
         console.log("User already exists, skipping creation");
         payment.processingError = "User already exists";
       } else {
-  console.log("🔍 Creating user with customerData:", payment.customerData);
-  // Defensive: ensure password is present (already hashed when saved in Payment)
-  const hashedPassword = payment.customerData.password ?? null;
+        console.log(
+          "🔍 Creating user with customerData:",
+          payment.customerData
+        );
+        // Defensive: ensure password is present (already hashed when saved in Payment)
+        const hashedPassword = payment.customerData.password ?? null;
         const occupationData = occupationOptions.find(
           (opt) => opt.value === payment.customerData.occupation
         );
@@ -125,14 +163,20 @@ export async function POST(request: NextRequest) {
           beneficiaryName: String(payment.customerData.beneficiaryName || ""),
           beneficiaryNik: String(payment.customerData.beneficiaryNik || ""),
           beneficiaryDateOfBirth: payment.customerData.beneficiaryDateOfBirth
-            ? new Date(payment.customerData.beneficiaryDateOfBirth).toISOString()
+            ? new Date(
+                payment.customerData.beneficiaryDateOfBirth
+              ).toISOString()
             : null,
-          beneficiaryRelationship: String(payment.customerData.beneficiaryRelationship || ""),
+          beneficiaryRelationship: String(
+            payment.customerData.beneficiaryRelationship || ""
+          ),
         });
 
         // Build user data explicitly to avoid accidental extra properties
         const userData: any = {
-          email: String(payment.customerData.email || "").toLowerCase().trim(),
+          email: String(payment.customerData.email || "")
+            .toLowerCase()
+            .trim(),
           password: hashedPassword,
           fullName: String(payment.customerData.fullName || "").trim(),
           nik: String(payment.customerData.nik || "").trim(),
@@ -144,19 +188,35 @@ export async function POST(request: NextRequest) {
           ktpVillage: String(payment.customerData.ktpVillage || "").trim(),
           ktpCity: String(payment.customerData.ktpCity || "").trim(),
           ktpProvince: String(payment.customerData.ktpProvince || "").trim(),
-          ktpPostalCode: String(payment.customerData.ktpPostalCode || "").trim(),
-          domisiliAddress: String(payment.customerData.domisiliAddress || "").trim(),
-          domisiliVillage: String(payment.customerData.domisiliVillage || "").trim(),
+          ktpPostalCode: String(
+            payment.customerData.ktpPostalCode || ""
+          ).trim(),
+          domisiliAddress: String(
+            payment.customerData.domisiliAddress || ""
+          ).trim(),
+          domisiliVillage: String(
+            payment.customerData.domisiliVillage || ""
+          ).trim(),
           domisiliCity: String(payment.customerData.domisiliCity || "").trim(),
-          domisiliProvince: String(payment.customerData.domisiliProvince || "").trim(),
-          domisiliPostalCode: String(payment.customerData.domisiliPostalCode || "").trim(),
+          domisiliProvince: String(
+            payment.customerData.domisiliProvince || ""
+          ).trim(),
+          domisiliPostalCode: String(
+            payment.customerData.domisiliPostalCode || ""
+          ).trim(),
           occupation: String(payment.customerData.occupation || "").trim(),
-          beneficiaryName: String(payment.customerData.beneficiaryName || "").trim(),
-          beneficiaryNik: String(payment.customerData.beneficiaryNik || "").trim(),
+          beneficiaryName: String(
+            payment.customerData.beneficiaryName || ""
+          ).trim(),
+          beneficiaryNik: String(
+            payment.customerData.beneficiaryNik || ""
+          ).trim(),
           beneficiaryDateOfBirth: payment.customerData.beneficiaryDateOfBirth
             ? new Date(payment.customerData.beneficiaryDateOfBirth)
             : null,
-          beneficiaryRelationship: String(payment.customerData.beneficiaryRelationship || "").trim(),
+          beneficiaryRelationship: String(
+            payment.customerData.beneficiaryRelationship || ""
+          ).trim(),
           ktpImageUrl: String(payment.customerData.ktpImageUrl || "").trim(),
           faceImageUrl: String(payment.customerData.faceImageUrl || "").trim(),
           occupationCode,
@@ -173,8 +233,13 @@ export async function POST(request: NextRequest) {
           const user = new User(userData);
           createdUser = await user.save();
         } catch (userCreateError: any) {
-          console.error("Error creating user from payment.customerData:", userCreateError);
-          payment.processingError = `User creation failed: ${userCreateError.message || String(userCreateError)}`;
+          console.error(
+            "Error creating user from payment.customerData:",
+            userCreateError
+          );
+          payment.processingError = `User creation failed: ${
+            userCreateError.message || String(userCreateError)
+          }`;
           await payment.save();
           // mark as processed to avoid retry loops, but surface the error
           payment.isProcessed = false;
@@ -184,7 +249,9 @@ export async function POST(request: NextRequest) {
         if (createdUser) {
           payment.userId = createdUser._id;
           payment.isProcessed = true;
-          message = `Transaction successful - User created: ${createdUser.userCode || userCode}`;
+          message = `Transaction successful - User created: ${
+            createdUser.userCode || userCode
+          }`;
         }
       }
     }
@@ -193,7 +260,8 @@ export async function POST(request: NextRequest) {
     if (
       (transactionStatus === "settlement" ||
         (transactionStatus === "capture" && fraudStatus === "accept")) &&
-      orderId.startsWith("INV-BMS-")
+      orderId.startsWith("INV-BMS-") &&
+      !payment.isProcessed // Add idempotency check
     ) {
       const mongoSession = await mongoose.startSession();
       const txnId = `TXN-${Date.now()}-${Math.random()
@@ -215,8 +283,15 @@ export async function POST(request: NextRequest) {
           return "gaharu";
         };
 
-        const getBaseROI = (plantType: "gaharu" | "alpukat" | "jengkol" | "aren") => {
-          const roiMap = { gaharu: 0.15, alpukat: 0.12, jengkol: 0.1, aren: 0.18 };
+        const getBaseROI = (
+          plantType: "gaharu" | "alpukat" | "jengkol" | "aren"
+        ) => {
+          const roiMap = {
+            gaharu: 0.15,
+            alpukat: 0.12,
+            jengkol: 0.1,
+            aren: 0.18,
+          };
           return roiMap[plantType] || 0.12;
         };
 
@@ -229,22 +304,30 @@ export async function POST(request: NextRequest) {
 
         if (!savedPlantInstance) {
           // Get contract to check approval status
-          const contract = await Contract.findOne({ contractId: contractId }).session(mongoSession);
-          const isContractApproved = contract?.adminApprovalStatus === 'approved' && contract?.status === 'approved';
+          const contract = await Contract.findOne({
+            contractId: contractId,
+          }).session(mongoSession);
+          const isContractApproved =
+            contract?.adminApprovalStatus === "approved" &&
+            contract?.status === "approved";
 
-          const plantInstanceId = `PLANT-${payment.orderId}-${orderId.slice(-8)}`;
+          const plantInstanceId = `PLANT-${payment.orderId}-${orderId.slice(
+            -8
+          )}`;
           const productName = payment.productName || "gaharu";
           const plantType = getPlantType(productName);
-          const instanceName = `${plantType.charAt(0).toUpperCase() + plantType.slice(1)} - ${
-            user.fullName
-          }`;
+          const instanceName = `${
+            plantType.charAt(0).toUpperCase() + plantType.slice(1)
+          } - ${user.fullName}`;
           const adminName = await getFirstAdminName();
 
           const deterministicHistoryId = `HISTORY-${orderId}-NEW`;
 
           // Set status based on contract approval
           const plantStatus = isContractApproved ? "Kontrak Baru" : "Pending";
-          const historyAction = isContractApproved ? "Kontrak Baru" : "Pending Contract";
+          const historyAction = isContractApproved
+            ? "Kontrak Baru"
+            : "Pending Contract";
           const historyDescription = isContractApproved
             ? `Tanaman baru dibuat dengan pembayaran full untuk user ${user.fullName}`
             : `Tanaman dibuat, menunggu persetujuan kontrak untuk user ${user.fullName}`;
@@ -269,7 +352,7 @@ export async function POST(request: NextRequest) {
             lastUpdate: new Date().toLocaleDateString("id-ID", {
               day: "2-digit",
               month: "2-digit",
-              year: "numeric"
+              year: "numeric",
             }),
             history: [
               {
@@ -279,7 +362,7 @@ export async function POST(request: NextRequest) {
                 date: new Date().toLocaleDateString("id-ID", {
                   day: "2-digit",
                   month: "2-digit",
-                  year: "numeric"
+                  year: "numeric",
                 }),
                 description: historyDescription,
                 addedBy: adminName,
@@ -287,7 +370,9 @@ export async function POST(request: NextRequest) {
             ],
           });
 
-          savedPlantInstance = await plantInstance.save({ session: mongoSession });
+          savedPlantInstance = await plantInstance.save({
+            session: mongoSession,
+          });
         }
 
         const investmentRecord = {
@@ -302,7 +387,9 @@ export async function POST(request: NextRequest) {
           completionDate: new Date(),
         };
 
-        let investor = await Investor.findOne({ userId: user._id }).session(mongoSession);
+        let investor = await Investor.findOne({ userId: user._id }).session(
+          mongoSession
+        );
         if (investor) {
           const existingIndex = investor.investments.findIndex(
             (inv: any) => inv.investmentId === orderId
@@ -310,21 +397,22 @@ export async function POST(request: NextRequest) {
 
           if (existingIndex !== -1) {
             const existingInvestment = investor.investments[existingIndex];
-            existingInvestment.plantInstanceId = investmentRecord.plantInstanceId;
+            existingInvestment.plantInstanceId =
+              investmentRecord.plantInstanceId;
             existingInvestment.status = "approved";
 
+            // Only update amounts if this payment hasn't been processed yet
             if (existingInvestment.amountPaid === 0) {
               existingInvestment.amountPaid = payment.amount;
-              investor.totalPaid += payment.amount;
-              investor.jumlahPohon += extractTreeCount(payment.productName);
+              // Recalculate totals from investment records to prevent double-counting
+              recalculateInvestorTotals(investor);
             }
-            
+
             existingInvestment.completionDate = new Date();
           } else {
             investor.investments.push(investmentRecord);
-            investor.totalInvestasi += payment.amount;
-            investor.totalPaid += payment.amount;
-            investor.jumlahPohon += extractTreeCount(payment.productName);
+            // Recalculate totals from investment records to prevent double-counting
+            recalculateInvestorTotals(investor);
           }
           await investor.save({ session: mongoSession });
         } else {
@@ -343,11 +431,15 @@ export async function POST(request: NextRequest) {
         }
 
         // For new invoice format, contractId equals orderId
-        const contract = await Contract.findOne({ contractId: orderId }).session(mongoSession);
+        const contract = await Contract.findOne({
+          contractId: orderId,
+        }).session(mongoSession);
         if (contract) {
           contract.paymentCompleted = true;
           await contract.save({ session: mongoSession });
-          console.log(`📄 [${txnId}] Contract ${orderId} marked as paymentCompleted`);
+          console.log(
+            `📄 [${txnId}] Contract ${orderId} marked as paymentCompleted`
+          );
         }
 
         payment.contractRedirectUrl = `/contract/${orderId}`;
@@ -355,7 +447,9 @@ export async function POST(request: NextRequest) {
         payment.status = "completed";
 
         if (payment.referralCode && payment.paymentType === "full-investment") {
-          const commissionResult = await createCommissionRecord(payment._id.toString());
+          const commissionResult = await createCommissionRecord(
+            payment._id.toString()
+          );
           console.log(`Commission for ${orderId}: ${commissionResult.message}`);
         }
 
@@ -370,7 +464,8 @@ export async function POST(request: NextRequest) {
     if (
       (transactionStatus === "settlement" ||
         (transactionStatus === "capture" && fraudStatus === "accept")) &&
-      orderId.startsWith("CIC-INV-BMS-")
+      orderId.startsWith("CIC-INV-BMS-") &&
+      !payment.isProcessed // Add idempotency check
     ) {
       const mongoSession = await mongoose.startSession();
       const txnId = `TXN-${Date.now()}-${Math.random()
@@ -381,7 +476,7 @@ export async function POST(request: NextRequest) {
         // Find the payment record by orderId directly (since it's unique)
         const installmentPayment = await Payment.findOne({
           orderId: orderId,
-          paymentType: "cicilan-installment"
+          paymentType: "cicilan-installment",
         }).session(mongoSession);
 
         if (!installmentPayment) {
@@ -393,7 +488,9 @@ export async function POST(request: NextRequest) {
         const cicilanOrderId = installmentPayment.cicilanOrderId;
 
         console.log(`🔍 [${txnId}] Processing installment payment: ${orderId}`);
-        console.log(`🔍 [${txnId}] CicilanOrderId: ${cicilanOrderId}, Installment: ${installmentNumber}`);
+        console.log(
+          `🔍 [${txnId}] CicilanOrderId: ${cicilanOrderId}, Installment: ${installmentNumber}`
+        );
 
         // Update installment payment status
         installmentPayment.transactionId = transactionId;
@@ -406,7 +503,9 @@ export async function POST(request: NextRequest) {
         installmentPayment.adminReviewDate = new Date();
         installmentPayment.settlementTime = new Date();
 
-        const user = await User.findById(installmentPayment.userId).session(mongoSession);
+        const user = await User.findById(installmentPayment.userId).session(
+          mongoSession
+        );
         if (!user) throw new Error("User not found for installment payment");
 
         // Helper functions (same as admin approval logic)
@@ -421,8 +520,15 @@ export async function POST(request: NextRequest) {
           return "gaharu";
         };
 
-        const getBaseROI = (plantType: "gaharu" | "alpukat" | "jengkol" | "aren") => {
-          const roiMap = { gaharu: 0.15, alpukat: 0.12, jengkol: 0.1, aren: 0.18 };
+        const getBaseROI = (
+          plantType: "gaharu" | "alpukat" | "jengkol" | "aren"
+        ) => {
+          const roiMap = {
+            gaharu: 0.15,
+            alpukat: 0.12,
+            jengkol: 0.1,
+            aren: 0.18,
+          };
           return roiMap[plantType] || 0.12;
         };
 
@@ -436,7 +542,9 @@ export async function POST(request: NextRequest) {
         // Process based on installment number
         if (installmentNumber === 1) {
           // FIRST INSTALLMENT: Create PlantInstance and Investor record with FULL amounts
-          console.log(`📄 [${txnId}] First installment paid for cicilan ${cicilanOrderId} - creating PlantInstance and investor record`);
+          console.log(
+            `📄 [${txnId}] First installment paid for cicilan ${cicilanOrderId} - creating PlantInstance and investor record`
+          );
 
           // Check if PlantInstance already exists
           const existingPlantInstance = await PlantInstance.findOne({
@@ -447,21 +555,29 @@ export async function POST(request: NextRequest) {
 
           if (!savedPlantInstance) {
             // Get contract to check approval status
-            const contract = await Contract.findOne({ contractId: cicilanOrderId }).session(mongoSession);
-            const isContractApproved = contract?.adminApprovalStatus === 'approved' && contract?.status === 'approved';
+            const contract = await Contract.findOne({
+              contractId: cicilanOrderId,
+            }).session(mongoSession);
+            const isContractApproved =
+              contract?.adminApprovalStatus === "approved" &&
+              contract?.status === "approved";
 
             // Create new PlantInstance
             const plantInstanceId = `PLANT-${cicilanOrderId}-${Date.now()}`;
             const productName = installmentPayment.productName || "gaharu";
             const plantType = getPlantType(productName);
-            const instanceName = `${plantType.charAt(0).toUpperCase() + plantType.slice(1)} - ${user.fullName}`;
+            const instanceName = `${
+              plantType.charAt(0).toUpperCase() + plantType.slice(1)
+            } - ${user.fullName}`;
             const adminName = await getFirstAdminName();
 
             const deterministicHistoryId = `HISTORY-${cicilanOrderId}-NEW`;
 
             // Set status based on contract approval
             const plantStatus = isContractApproved ? "Kontrak Baru" : "Pending";
-            const historyAction = isContractApproved ? "Kontrak Baru" : "Pending Contract";
+            const historyAction = isContractApproved
+              ? "Kontrak Baru"
+              : "Pending Contract";
             const historyDescription = isContractApproved
               ? `Tanaman baru dibuat dengan cicilan untuk user ${user.fullName}`
               : `Tanaman dibuat, menunggu persetujuan kontrak untuk user ${user.fullName}`;
@@ -486,7 +602,7 @@ export async function POST(request: NextRequest) {
               lastUpdate: new Date().toLocaleDateString("id-ID", {
                 day: "2-digit",
                 month: "2-digit",
-                year: "numeric"
+                year: "numeric",
               }),
               history: [
                 {
@@ -496,7 +612,7 @@ export async function POST(request: NextRequest) {
                   date: new Date().toLocaleDateString("id-ID", {
                     day: "2-digit",
                     month: "2-digit",
-                    year: "numeric"
+                    year: "numeric",
                   }),
                   description: historyDescription,
                   addedBy: adminName,
@@ -504,12 +620,18 @@ export async function POST(request: NextRequest) {
               ],
             });
 
-            savedPlantInstance = await plantInstance.save({ session: mongoSession });
-            console.log(`🌱 [${txnId}] PlantInstance created: ${plantInstanceId} for cicilan ${cicilanOrderId}`);
+            savedPlantInstance = await plantInstance.save({
+              session: mongoSession,
+            });
+            console.log(
+              `🌱 [${txnId}] PlantInstance created: ${plantInstanceId} for cicilan ${cicilanOrderId}`
+            );
           }
 
           // Find or create Investor record
-          let investor = await Investor.findOne({ userId: user._id }).session(mongoSession);
+          let investor = await Investor.findOne({ userId: user._id }).session(
+            mongoSession
+          );
 
           if (investor) {
             // Update existing investor with FULL contract amounts
@@ -519,20 +641,24 @@ export async function POST(request: NextRequest) {
 
             if (existingInvestmentIndex !== -1) {
               // Update existing investment
-              const existingInvestment = investor.investments[existingInvestmentIndex];
-              existingInvestment.plantInstanceId = savedPlantInstance._id.toString();
+              const existingInvestment =
+                investor.investments[existingInvestmentIndex];
+              existingInvestment.plantInstanceId =
+                savedPlantInstance._id.toString();
               existingInvestment.status = "active";
 
               // Only update if not already paid (prevent double-counting)
               if (existingInvestment.amountPaid === 0) {
                 // Add FULL contract amount to totals (business logic requirement)
-                const fullContractAmount = installmentPayment.installmentAmount * installmentPayment.totalInstallments;
-                investor.totalInvestasi += fullContractAmount;
-                investor.totalPaid += installmentPayment.amount; // Only actual payment
-                investor.jumlahPohon += extractTreeCount(installmentPayment.productName);
+                const fullContractAmount =
+                  installmentPayment.installmentAmount *
+                  installmentPayment.totalInstallments;
 
                 existingInvestment.totalAmount = fullContractAmount;
                 existingInvestment.amountPaid = installmentPayment.amount; // Only actual payment
+
+                // Recalculate totals from investment records to prevent double-counting
+                recalculateInvestorTotals(investor);
               }
 
               // Add/update first installment record
@@ -540,9 +666,10 @@ export async function POST(request: NextRequest) {
                 existingInvestment.installments = [];
               }
 
-              const installmentIndex = existingInvestment.installments.findIndex(
-                (inst: any) => inst.installmentNumber === installmentNumber
-              );
+              const installmentIndex =
+                existingInvestment.installments.findIndex(
+                  (inst: any) => inst.installmentNumber === installmentNumber
+                );
 
               const installmentRecord = {
                 installmentNumber: installmentNumber,
@@ -555,7 +682,8 @@ export async function POST(request: NextRequest) {
               };
 
               if (installmentIndex !== -1) {
-                existingInvestment.installments[installmentIndex] = installmentRecord;
+                existingInvestment.installments[installmentIndex] =
+                  installmentRecord;
               } else {
                 existingInvestment.installments.push(installmentRecord);
               }
@@ -563,7 +691,9 @@ export async function POST(request: NextRequest) {
               existingInvestment.completionDate = new Date();
             } else {
               // Create new investment record
-              const fullContractAmount = installmentPayment.installmentAmount * installmentPayment.totalInstallments;
+              const fullContractAmount =
+                installmentPayment.installmentAmount *
+                installmentPayment.totalInstallments;
 
               const investmentRecord = {
                 investmentId: cicilanOrderId,
@@ -575,27 +705,30 @@ export async function POST(request: NextRequest) {
                 status: "active" as const,
                 investmentDate: new Date(),
                 completionDate: new Date(),
-                installments: [{
-                  installmentNumber: installmentNumber,
-                  amount: installmentPayment.amount,
-                  dueDate: installmentPayment.dueDate,
-                  isPaid: true,
-                  paidDate: new Date(),
-                  status: "approved",
-                  proofImageUrl: null,
-                }]
+                installments: [
+                  {
+                    installmentNumber: installmentNumber,
+                    amount: installmentPayment.amount,
+                    dueDate: installmentPayment.dueDate,
+                    isPaid: true,
+                    paidDate: new Date(),
+                    status: "approved",
+                    proofImageUrl: null,
+                  },
+                ],
               };
 
               investor.investments.push(investmentRecord);
-              investor.totalInvestasi += fullContractAmount; // FULL contract amount
-              investor.totalPaid += installmentPayment.amount; // Only actual payment
-              investor.jumlahPohon += extractTreeCount(installmentPayment.productName);
+              // Recalculate totals from investment records to prevent double-counting
+              recalculateInvestorTotals(investor);
             }
 
             await investor.save({ session: mongoSession });
           } else {
             // Create new investor record
-            const fullContractAmount = installmentPayment.installmentAmount * installmentPayment.totalInstallments;
+            const fullContractAmount =
+              installmentPayment.installmentAmount *
+              installmentPayment.totalInstallments;
 
             const investmentRecord = {
               investmentId: cicilanOrderId,
@@ -607,15 +740,17 @@ export async function POST(request: NextRequest) {
               status: "active" as const,
               investmentDate: new Date(),
               completionDate: new Date(),
-              installments: [{
-                installmentNumber: installmentNumber,
-                amount: installmentPayment.amount,
-                dueDate: installmentPayment.dueDate,
-                isPaid: true,
-                paidDate: new Date(),
-                status: "approved",
-                proofImageUrl: null,
-              }]
+              installments: [
+                {
+                  installmentNumber: installmentNumber,
+                  amount: installmentPayment.amount,
+                  dueDate: installmentPayment.dueDate,
+                  isPaid: true,
+                  paidDate: new Date(),
+                  status: "approved",
+                  proofImageUrl: null,
+                },
+              ],
             };
 
             investor = new Investor({
@@ -633,10 +768,14 @@ export async function POST(request: NextRequest) {
             await investor.save({ session: mongoSession });
           }
 
-          console.log(`💰 [${txnId}] Investor record created/updated for first cicilan installment`);
+          console.log(
+            `💰 [${txnId}] Investor record created/updated for first cicilan installment`
+          );
         } else {
           // SUBSEQUENT INSTALLMENTS: Only update totalPaid and add installment record
-          console.log(`📄 [${txnId}] Subsequent installment ${installmentNumber} paid for cicilan ${cicilanOrderId}`);
+          console.log(
+            `📄 [${txnId}] Subsequent installment ${installmentNumber} paid for cicilan ${cicilanOrderId}`
+          );
 
           const investor = await Investor.findOne({
             userId: installmentPayment.userId,
@@ -678,12 +817,14 @@ export async function POST(request: NextRequest) {
               investment.amountPaid += installmentPayment.amount;
             }
 
-            // Update total paid amount for the investor incrementally
-            investor.totalPaid += installmentPayment.amount;
+            // Recalculate totals from investment records to prevent double-counting
+            recalculateInvestorTotals(investor);
             await investor.save({ session: mongoSession });
           }
 
-          console.log(`💰 [${txnId}] Investor record updated for subsequent installment`);
+          console.log(
+            `💰 [${txnId}] Investor record updated for subsequent installment`
+          );
         }
 
         // Create next installment Payment record (sequential logic)
@@ -714,9 +855,9 @@ export async function POST(request: NextRequest) {
 
             // Create next installment payment record
             const nextInstallmentOrderId = await generateInvoiceNumber({
-              productName: installmentPayment.productName || 'Investment',
+              productName: installmentPayment.productName || "Investment",
               installmentNumber: nextInstallmentNumber,
-              paymentType: 'cicilan-installment'
+              paymentType: "cicilan-installment",
             });
             const nextInstallment = new Payment({
               orderId: nextInstallmentOrderId,
@@ -739,7 +880,9 @@ export async function POST(request: NextRequest) {
             });
 
             await nextInstallment.save({ session: mongoSession });
-            console.log(`📅 [${txnId}] Next installment created: ${nextInstallmentOrderId} due ${nextDueDate.toISOString()}`);
+            console.log(
+              `📅 [${txnId}] Next installment created: ${nextInstallmentOrderId} due ${nextDueDate.toISOString()}`
+            );
 
             // Also add the next installment to the investor record
             const investorForNextInstallment = await Investor.findOne({
@@ -777,7 +920,9 @@ export async function POST(request: NextRequest) {
                   await investorForNextInstallment.save({
                     session: mongoSession,
                   });
-                  console.log(`📊 [${txnId}] Added installment ${nextInstallmentNumber} to investor record`);
+                  console.log(
+                    `📊 [${txnId}] Added installment ${nextInstallmentNumber} to investor record`
+                  );
                 }
               }
             }
@@ -787,10 +932,17 @@ export async function POST(request: NextRequest) {
         // Create commission record if it's the first installment and has referral code
         if (installmentNumber === 1 && installmentPayment.referralCode) {
           try {
-            const commissionResult = await createCommissionRecord(installmentPayment._id.toString());
-            console.log(`💰 [${txnId}] Commission for installment ${orderId}: ${commissionResult.message}`);
+            const commissionResult = await createCommissionRecord(
+              installmentPayment._id.toString()
+            );
+            console.log(
+              `💰 [${txnId}] Commission for installment ${orderId}: ${commissionResult.message}`
+            );
           } catch (commissionError) {
-            console.error(`❌ [${txnId}] Commission error for ${orderId}:`, commissionError);
+            console.error(
+              `❌ [${txnId}] Commission error for ${orderId}:`,
+              commissionError
+            );
             // Don't fail the payment for commission errors
           }
         }

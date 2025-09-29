@@ -239,6 +239,10 @@ export async function POST(
         paymentType: 'full-investment'
       });
       if (!existingPayment) {
+        // set due date for full payment to 1 day after now
+        const dueDate = new Date();
+        dueDate.setDate(dueDate.getDate() + 1);
+
         const payment = new Payment({
           orderId: orderId,
           userId: user._id,
@@ -247,6 +251,7 @@ export async function POST(
           paymentType: 'full-investment',
           status: 'pending',
           transactionStatus: 'pending',
+          dueDate,
           customerData: {
             email: user.email,
             fullName: user.name || user.email.split('@')[0],
@@ -265,7 +270,8 @@ export async function POST(
           orderId: orderId,
           contractId: contract.contractId,
           amount: contract.totalAmount,
-          paymentType: 'full-investment'
+          paymentType: 'full-investment',
+          dueDate: dueDate.toISOString()
         });
       }
     }
