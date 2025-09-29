@@ -75,13 +75,7 @@ type Toast = {
   title: string;
   message?: string;
 };
-function ToastBox({
-  toast,
-  onClose,
-}: {
-  toast: Toast;
-  onClose: () => void;
-}) {
+function ToastBox({ toast, onClose }: { toast: Toast; onClose: () => void }) {
   if (!toast.open) return null;
   const isSuccess = toast.type === "success";
   return (
@@ -171,11 +165,7 @@ function BulkFinanceBar() {
         if (r.ok) {
           const j = await r.json();
           const nm =
-            j?.name ||
-            j?.user?.name ||
-            j?.profile?.name ||
-            j?.data?.name ||
-            "";
+            j?.name || j?.user?.name || j?.profile?.name || j?.data?.name || "";
           if (nm) setCurrentUserName(String(nm));
         }
       } catch {
@@ -233,22 +223,37 @@ function BulkFinanceBar() {
       const baseItems = data.items || [];
 
       // enrich kav/blok dari /api/kv (sama seperti di laporan-harian)
-      let enriched = baseItems.map((x) => ({ ...x, blok: null as any, kavling: null as any }));
+      let enriched = baseItems.map((x) => ({
+        ...x,
+        blok: null as any,
+        kavling: null as any,
+      }));
       if (baseItems.length) {
         const idsParam = baseItems.map((x) => x.instanceId).join(",");
-        const kvRes = await fetch(`/api/manajemen-anggota/kv?ids=${encodeURIComponent(idsParam)}`, {
-          cache: "no-store",
-        });
+        const kvRes = await fetch(
+          `/api/manajemen-anggota/kv?ids=${encodeURIComponent(idsParam)}`,
+          {
+            cache: "no-store",
+          }
+        );
         if (kvRes.ok) {
           const kvJson: {
-            items: { instanceId: string; blok: string | null; kavling: string | null }[];
+            items: {
+              instanceId: string;
+              blok: string | null;
+              kavling: string | null;
+            }[];
           } = await kvRes.json();
           const kvMap = new Map(
             (kvJson.items || []).map((k) => [String(k.instanceId), k])
           );
           enriched = baseItems.map((x) => {
             const hit = kvMap.get(String(x.instanceId));
-            return { ...x, blok: hit?.blok ?? null, kavling: hit?.kavling ?? null };
+            return {
+              ...x,
+              blok: hit?.blok ?? null,
+              kavling: hit?.kavling ?? null,
+            };
           });
         }
       }
@@ -336,7 +341,7 @@ function BulkFinanceBar() {
   };
 
   // Apakah perlu scroll untuk daftar bulk (>4 baris)?
-  const needScroll = instances.length > 4;
+  // const needScroll = instances.length > 4;
 
   return (
     <>

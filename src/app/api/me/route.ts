@@ -11,10 +11,8 @@ export async function GET() {
   // 1) NextAuth (jika ada di project)
   try {
     const mod = await import("next-auth");
-    // @ts-ignore - optional in case next-auth not installed
     const session = await mod.getServerSession?.();
     if (session?.user) {
-      // @ts-ignore
       id = String(session.user.id || id || "");
       name = String(session.user.name || name || "");
       email = String(session.user.email || email || "");
