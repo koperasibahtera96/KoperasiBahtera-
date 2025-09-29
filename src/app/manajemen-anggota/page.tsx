@@ -1,3 +1,4 @@
+// app/manajemen-anggota/page.tsx
 "use client";
 import type React from "react";
 import { useEffect, useRef, useState } from "react";
@@ -22,6 +23,7 @@ import {
   CheckCircle2,
   AlertTriangle,
   X,
+  Search as SearchIcon,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -117,12 +119,20 @@ function ToastBox({
 
 /* ==================== Bulk Finance Bar ==================== */
 function BulkFinanceBar() {
-  const { theme } = useTheme()
-  const [mounted, setMounted] = useState(false)
+  const { theme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+
   const [plantType, setPlantType] = useState<string>("");
   const [loading, setLoading] = useState(false);
   const [instances, setInstances] = useState<
-    { instanceId: string; contractNumber?: string; memberName: string; memberId: string }[]
+    {
+      instanceId: string;
+      contractNumber?: string;
+      memberName: string;
+      memberId: string;
+      blok?: string | null;
+      kavling?: string | null;
+    }[]
   >([]);
   const [rows, setRows] = useState<
     {
@@ -133,6 +143,9 @@ function BulkFinanceBar() {
       checked: boolean;
     }[]
   >([]);
+
+  // user login name for addedBy
+  const [currentUserName, setCurrentUserName] = useState<string>("");
 
   // UI states: input atas (string terformat) + toast
   const [bulkIncomeStr, setBulkIncomeStr] = useState("");
@@ -146,21 +159,38 @@ function BulkFinanceBar() {
 
   const showToast = (t: Omit<Toast, "open">) => {
     setToast({ open: true, ...t });
-    // auto close
     setTimeout(() => setToast((s) => ({ ...s, open: false })), 2500);
   };
 
   useEffect(() => {
-    setMounted(true)
-  }, [])
+    setMounted(true);
+    // Ambil nama user login (optional, aman bila endpoint tidak ada)
+    (async () => {
+      try {
+        const r = await fetch("/api/me", { cache: "no-store" });
+        if (r.ok) {
+          const j = await r.json();
+          const nm =
+            j?.name ||
+            j?.user?.name ||
+            j?.profile?.name ||
+            j?.data?.name ||
+            "";
+          if (nm) setCurrentUserName(String(nm));
+        }
+      } catch {
+        // ignore
+      }
+    })();
+  }, []);
 
   // Theme-aware helper function
   const getThemeClasses = (baseClasses: string, pinkClasses: string = "") => {
     if (mounted && theme === "pink" && pinkClasses) {
-      return `${baseClasses} ${pinkClasses}`
+      return `${baseClasses} ${pinkClasses}`;
     }
-    return baseClasses
-  }
+    return baseClasses;
+  };
 
   const allChecked = rows.length > 0 && rows.every((r) => r.checked);
   const someChecked = rows.some((r) => r.checked) && !allChecked;
@@ -179,6 +209,7 @@ function BulkFinanceBar() {
     );
   };
 
+  // === DI-UBAH: enrich Kav/Blok via /api/kv ===
   const fetchInstances = async (pt: string) => {
     if (!pt) return;
     setLoading(true);
@@ -191,11 +222,40 @@ function BulkFinanceBar() {
       );
       if (!r.ok) throw new Error("gagal load instances");
       const data: {
-        items: { instanceId: string; contractNumber?: string; memberName: string; memberId: string }[];
+        items: {
+          instanceId: string;
+          contractNumber?: string;
+          memberName: string;
+          memberId: string;
+        }[];
       } = await r.json();
-      setInstances(data.items || []);
+
+      const baseItems = data.items || [];
+
+      // enrich kav/blok dari /api/kv (sama seperti di laporan-harian)
+      let enriched = baseItems.map((x) => ({ ...x, blok: null as any, kavling: null as any }));
+      if (baseItems.length) {
+        const idsParam = baseItems.map((x) => x.instanceId).join(",");
+        const kvRes = await fetch(`/api/manajemen-anggota/kv?ids=${encodeURIComponent(idsParam)}`, {
+          cache: "no-store",
+        });
+        if (kvRes.ok) {
+          const kvJson: {
+            items: { instanceId: string; blok: string | null; kavling: string | null }[];
+          } = await kvRes.json();
+          const kvMap = new Map(
+            (kvJson.items || []).map((k) => [String(k.instanceId), k])
+          );
+          enriched = baseItems.map((x) => {
+            const hit = kvMap.get(String(x.instanceId));
+            return { ...x, blok: hit?.blok ?? null, kavling: hit?.kavling ?? null };
+          });
+        }
+      }
+
+      setInstances(enriched);
       setRows(
-        (data.items || []).map((x) => ({
+        enriched.map((x) => ({
           instanceId: x.instanceId,
           income: 0,
           expense: 0,
@@ -203,7 +263,7 @@ function BulkFinanceBar() {
           checked: true,
         }))
       );
-      // reset header inputs
+
       setBulkIncomeStr("");
       setBulkExpenseStr("");
     } catch (e) {
@@ -228,6 +288,8 @@ function BulkFinanceBar() {
         income: r.income,
         expense: r.expense,
         note: r.note?.trim() || "Bulk input",
+        // addedBy dari user login (UI only; server boleh abaikan bila tidak dipakai)
+        addedBy: currentUserName || undefined,
       }));
 
     if (!plantType || updates.length === 0) {
@@ -261,7 +323,6 @@ function BulkFinanceBar() {
         title: "Berhasil",
         message: `Berhasil update ${updated} instance.`,
       });
-      // Refresh setelah sukses agar data baru terlihat
       setTimeout(() => {
         if (typeof window !== "undefined") window.location.reload();
       }, 900);
@@ -274,9 +335,16 @@ function BulkFinanceBar() {
     }
   };
 
+  // Apakah perlu scroll untuk daftar bulk (>4 baris)?
+  const needScroll = instances.length > 4;
+
   return (
     <>
-      <ToastBox toast={toast} onClose={() => setToast((s) => ({ ...s, open: false }))} />
+      <ToastBox
+        toast={toast}
+        onClose={() => setToast((s) => ({ ...s, open: false }))}
+      />
+
       <div className="bg-white/90 dark:bg-gray-800/90 border border-[#324D3E]/10 dark:border-gray-700 rounded-3xl p-4 sm:p-6 mb-6">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:gap-4">
           <div className="sm:w-60">
@@ -290,33 +358,57 @@ function BulkFinanceBar() {
                 fetchInstances(v);
               }}
             >
-              <SelectTrigger className={getThemeClasses(
-                "w-full bg-white dark:bg-gray-700 border-[#324D3E]/20 dark:border-gray-600 text-[#324D3E] dark:text-white",
-                "!bg-white/90 !border-[#FFC1CC]/30 !text-[#4c1d1d]"
-              )}>
+              <SelectTrigger
+                className={getThemeClasses(
+                  "w-full bg-white dark:bg-gray-700 border-[#324D3E]/20 dark:border-gray-600 text-[#324D3E] dark:text-white",
+                  "!bg-white/90 !border-[#FFC1CC]/30 !text-[#4c1d1d]"
+                )}
+              >
                 <SelectValue placeholder="Pilih jenis tanaman" />
               </SelectTrigger>
-              <SelectContent className={getThemeClasses(
-                "bg-white dark:bg-gray-700 border-[#324D3E]/20 dark:border-gray-600",
-                "!bg-white/95 !border-[#FFC1CC]/30"
-              )}>
+              <SelectContent
+                className={getThemeClasses(
+                  "bg-white dark:bg-gray-700 border-[#324D3E]/20 dark:border-gray-600",
+                  "!bg-white/95 !border-[#FFC1CC]/30"
+                )}
+              >
                 {/* sesuaikan daftar berikut dengan PlantType di sistemmu */}
-                <SelectItem value="alpukat" className={getThemeClasses(
-                  "text-[#324D3E] dark:text-white hover:bg-[#324D3E]/10 dark:hover:bg-gray-600",
-                  "!text-[#4c1d1d] hover:!bg-[#FFC1CC]/20"
-                )}>Alpukat</SelectItem>
-                <SelectItem value="aren" className={getThemeClasses(
-                  "text-[#324D3E] dark:text-white hover:bg-[#324D3E]/10 dark:hover:bg-gray-600",
-                  "!text-[#4c1d1d] hover:!bg-[#FFC1CC]/20"
-                )}>Aren</SelectItem>
-                <SelectItem value="gaharu" className={getThemeClasses(
-                  "text-[#324D3E] dark:text-white hover:bg-[#324D3E]/10 dark:hover:bg-gray-600",
-                  "!text-[#4c1d1d] hover:!bg-[#FFC1CC]/20"
-                )}>Gaharu</SelectItem>
-                <SelectItem value="jengkol" className={getThemeClasses(
-                  "text-[#324D3E] dark:text-white hover:bg-[#324D3E]/10 dark:hover:bg-gray-600",
-                  "!text-[#4c1d1d] hover:!bg-[#FFC1CC]/20"
-                )}>Jengkol</SelectItem>
+                <SelectItem
+                  value="alpukat"
+                  className={getThemeClasses(
+                    "text-[#324D3E] dark:text-white hover:bg-[#324D3E]/10 dark:hover:bg-gray-600",
+                    "!text-[#4c1d1d] hover:!bg-[#FFC1CC]/20"
+                  )}
+                >
+                  Alpukat
+                </SelectItem>
+                <SelectItem
+                  value="aren"
+                  className={getThemeClasses(
+                    "text-[#324D3E] dark:text-white hover:bg-[#324D3E]/10 dark:hover:bg-gray-600",
+                    "!text-[#4c1d1d] hover:!bg-[#FFC1CC]/20"
+                  )}
+                >
+                  Aren
+                </SelectItem>
+                <SelectItem
+                  value="gaharu"
+                  className={getThemeClasses(
+                    "text-[#324D3E] dark:text-white hover:bg-[#324D3E]/10 dark:hover:bg-gray-600",
+                    "!text-[#4c1d1d] hover:!bg-[#FFC1CC]/20"
+                  )}
+                >
+                  Gaharu
+                </SelectItem>
+                <SelectItem
+                  value="jengkol"
+                  className={getThemeClasses(
+                    "text-[#324D3E] dark:text-white hover:bg-[#324D3E]/10 dark:hover:bg-gray-600",
+                    "!text-[#4c1d1d] hover:!bg-[#FFC1CC]/20"
+                  )}
+                >
+                  Jengkol
+                </SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -376,9 +468,13 @@ function BulkFinanceBar() {
         </div>
 
         {/* Tabel Instance + checkbox header & per baris */}
-        <div className="mt-4 overflow-x-auto rounded-xl border border-[#324D3E]/10 dark:border-gray-700">
+        <div
+          className={`mt-4 overflow-x-auto rounded-xl border border-[#324D3E]/10 dark:border-gray-700 ${
+            instances.length > 4 ? "max-h-[360px] overflow-y-auto" : ""
+          }`}
+        >
           <table className="min-w-full text-sm">
-            <thead className="bg-[#324D3E]/5 dark:bg-gray-700/50">
+            <thead className="bg-[#324D3E]/5 dark:bg-gray-700/50 sticky top-0 z-10">
               <tr>
                 <th className="p-3 text-left">
                   <div className="flex items-center gap-2">
@@ -390,7 +486,8 @@ function BulkFinanceBar() {
                     <span className="font-semibold">✔</span>
                   </div>
                 </th>
-                <th className="p-3 text-left">Instance</th>
+                <th className="p-3 text-left">INV</th>
+                <th className="p-3 text-left">Kav/Blok</th>
                 <th className="p-3 text-left">Anggota</th>
                 <th className="p-3 text-left">Pendapatan</th>
                 <th className="p-3 text-left">Pengeluaran</th>
@@ -416,6 +513,9 @@ function BulkFinanceBar() {
                     </td>
                     <td className="p-3 font-medium">
                       {it.contractNumber || it.instanceId}
+                    </td>
+                    <td className="p-3">
+                      {(it.kavling ?? "-") + " / " + (it.blok ?? "-")}
                     </td>
                     <td className="p-3">{it.memberName}</td>
                     <td className="p-3">
@@ -483,24 +583,24 @@ function BulkFinanceBar() {
 /* ================== END BulkFinanceBar ================== */
 
 export default function ManajemenAnggotaPage() {
-  const { theme } = useTheme()
-  const [mounted, setMounted] = useState(false)
+  const { theme } = useTheme();
+  const [mounted, setMounted] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [members, setMembers] = useState<Member[]>([]);
   const [loading, setLoading] = useState(true);
   const [_, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    setMounted(true)
-  }, [])
+    setMounted(true);
+  }, []);
 
   // Theme-aware helper function
   const getThemeClasses = (baseClasses: string, pinkClasses: string = "") => {
     if (mounted && theme === "pink" && pinkClasses) {
-      return `${baseClasses} ${pinkClasses}`
+      return `${baseClasses} ${pinkClasses}`;
     }
-    return baseClasses
-  }
+    return baseClasses;
+  };
 
   const [kpi, setKpi] = useState({
     totalInvestment: 0,
@@ -509,6 +609,9 @@ export default function ManajemenAnggotaPage() {
     investors: 0,
     loading: true,
   });
+
+  // ========= NEW: search anggota =========
+  const [memberQuery, setMemberQuery] = useState("");
 
   const membersPerPage = 5;
 
@@ -642,7 +745,6 @@ export default function ManajemenAnggotaPage() {
       } catch (e) {
         console.warn("[manajemen-anggota] enrich gagal:", e);
       } finally {
-        // kunci supaya efek ini TIDAK jalan berulang-ulang
         enrichedOnceRef.current = true;
       }
     })();
@@ -650,9 +752,25 @@ export default function ManajemenAnggotaPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [members.length]);
 
-  const totalPages = Math.ceil(members.length / membersPerPage);
+  // ===== Filter by search name =====
+  const filteredMembers = members.filter((m) =>
+    m.name.toLowerCase().includes(memberQuery.trim().toLowerCase())
+  );
+
+  const totalPages = Math.max(
+    1,
+    Math.ceil(filteredMembers.length / membersPerPage)
+  );
   const startIndex = (currentPage - 1) * membersPerPage;
-  const currentMembers = members.slice(startIndex, startIndex + membersPerPage);
+  const currentMembers = filteredMembers.slice(
+    startIndex,
+    startIndex + membersPerPage
+  );
+
+  // reset page jika filter berubah
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [memberQuery]);
 
   return (
     <FinanceSidebar>
@@ -680,16 +798,20 @@ export default function ManajemenAnggotaPage() {
           </div>
 
           <div className="mb-6">
-            <h1 className={getThemeClasses(
-              "text-2xl sm:text-3xl lg:text-4xl font-bold text-[#324D3E] dark:text-white mb-2 transition-colors duration-300",
-              "!text-[#4c1d1d]"
-            )}>
+            <h1
+              className={getThemeClasses(
+                "text-2xl sm:text-3xl lg:text-4xl font-bold text-[#324D3E] dark:text-white mb-2 transition-colors duration-300",
+                "!text-[#4c1d1d]"
+              )}
+            >
               Manajemen Anggota
             </h1>
-            <p className={getThemeClasses(
-              "text-[#889063] dark:text-gray-200 text-sm sm:text-base lg:text-lg transition-colors duration-300",
-              "!text-[#6b7280]"
-            )}>
+            <p
+              className={getThemeClasses(
+                "text-[#889063] dark:text-gray-200 text-sm sm:text-base lg:text-lg transition-colors duration-300",
+                "!text-[#6b7280]"
+              )}
+            >
               Kelola data investor dan kontrak investasi
             </p>
           </div>
@@ -738,51 +860,33 @@ export default function ManajemenAnggotaPage() {
           )}
         </motion.header>
 
+        {/* ======= Pembatas UI (garis + spasi) sebelum Bulk ======= */}
+        <div className="border-t border-[#324D3E]/10 dark:border-gray-700 my-2" />
+
         {/* === Bulk Input === */}
         <BulkFinanceBar />
 
         {/* Member List */}
         <div>
           <div className="flex items-center justify-between mb-6">
-            <h2 className={getThemeClasses(
-              "text-xl font-bold text-[#324D3E] dark:text-white transition-colors duration-300",
-              "!text-[#4c1d1d]"
-            )}>
-              Daftar Anggota ({members.length})
+            <h2
+              className={getThemeClasses(
+                "text-xl font-bold text-[#324D3E] dark:text-white transition-colors duration-300",
+                "!text-[#4c1d1d]"
+              )}
+            >
+              Daftar Anggota ({filteredMembers.length})
             </h2>
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
-                disabled={currentPage === 1}
-                className={getThemeClasses(
-                  "border-[#324D3E]/20 dark:border-gray-600 text-[#324D3E] dark:text-white hover:bg-[#324D3E] hover:text-white transition-colors duration-300",
-                  "!border-[#FFC1CC]/30 !text-[#4c1d1d] hover:!bg-[#FFC1CC] hover:!text-white"
-                )}
-              >
-                <ChevronLeft className="w-4 h-4" />
-              </Button>
-              <span className={getThemeClasses(
-                "text-sm text-[#889063] dark:text-gray-200 px-2 transition-colors duration-300",
-                "!text-[#6b7280]"
-              )}>
-                Halaman {currentPage} dari {totalPages}
-              </span>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() =>
-                  setCurrentPage((p) => Math.min(p + 1, totalPages))
-                }
-                disabled={currentPage === totalPages}
-                className={getThemeClasses(
-                  "border-[#324D3E]/20 dark:border-gray-600 text-[#324D3E] dark:text-white hover:bg-[#324D3E] hover:text-white transition-colors duration-300",
-                  "!border-[#FFC1CC]/30 !text-[#4c1d1d] hover:!bg-[#FFC1CC] hover:!text-white"
-                )}
-              >
-                <ChevronRight className="w-4 h-4" />
-              </Button>
+
+            {/* Search anggota by name */}
+            <div className="relative w-full max-w-xs">
+              <SearchIcon className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                value={memberQuery}
+                onChange={(e) => setMemberQuery(e.target.value)}
+                placeholder="Cari nama anggota…"
+                className="pl-9"
+              />
             </div>
           </div>
 
@@ -812,11 +916,56 @@ export default function ManajemenAnggotaPage() {
               ))}
             </div>
           ) : (
-            <div className="space-y-4">
-              {currentMembers.map((member) => (
-                <MemberCard key={member.id} member={member} />
-              ))}
-            </div>
+            <>
+              <div className="space-y-4">
+                {currentMembers.map((member) => (
+                  <MemberCard key={member.id} member={member} />
+                ))}
+                {currentMembers.length === 0 && (
+                  <div className="text-sm text-[#889063] dark:text-gray-300">
+                    Tidak ada anggota yang cocok dengan pencarian.
+                  </div>
+                )}
+              </div>
+
+              {/* ===== Pagination dipindah ke bawah ===== */}
+              <div className="mt-6 flex items-center justify-center gap-3">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
+                  disabled={currentPage === 1}
+                  className={getThemeClasses(
+                    "border-[#324D3E]/20 dark:border-gray-600 text-[#324D3E] dark:text-white hover:bg-[#324D3E] hover:text-white transition-colors duration-300",
+                    "!border-[#FFC1CC]/30 !text-[#4c1d1d] hover:!bg-[#FFC1CC] hover:!text-white"
+                  )}
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </Button>
+                <span
+                  className={getThemeClasses(
+                    "text-sm text-[#889063] dark:text-gray-200 px-2 transition-colors duration-300",
+                    "!text-[#6b7280]"
+                  )}
+                >
+                  Halaman {currentPage} dari {totalPages}
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() =>
+                    setCurrentPage((p) => Math.min(p + 1, totalPages))
+                  }
+                  disabled={currentPage === totalPages}
+                  className={getThemeClasses(
+                    "border-[#324D3E]/20 dark:border-gray-600 text-[#324D3E] dark:text-white hover:bg-[#324D3E] hover:text-white transition-colors duration-300",
+                    "!border-[#FFC1CC]/30 !text-[#4c1d1d] hover:!bg-[#FFC1CC] hover:!text-white"
+                  )}
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </Button>
+              </div>
+            </>
           )}
         </div>
       </div>
@@ -835,40 +984,76 @@ function SummaryCard({
   icon: React.ReactNode;
   colorClass: string;
 }) {
-  const { theme } = useTheme()
-  const [mounted, setMounted] = useState(false)
+  const { theme } = useTheme();
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    setMounted(true)
-  }, [])
+    setMounted(true);
+  }, []);
 
   const getThemeClasses = (baseClasses: string, pinkClasses: string = "") => {
     if (mounted && theme === "pink" && pinkClasses) {
-      return `${baseClasses} ${pinkClasses}`
+      return `${baseClasses} ${pinkClasses}`;
     }
-    return baseClasses
-  }
+    return baseClasses;
+  };
 
   const colors = {
     "text-chart-1": {
-      bg: mounted && theme === "pink" ? "bg-[#FFC1CC]" : "bg-[#324D3E]/10 dark:bg-[#324D3E]/20",
-      text: mounted && theme === "pink" ? "text-black" : "text-[#324D3E] dark:text-white",
-      hover: mounted && theme === "pink" ? "group-hover:bg-[#4c1d1d]" : "group-hover:bg-[#324D3E]/20 dark:group-hover:bg-[#324D3E]/30",
+      bg:
+        mounted && theme === "pink"
+          ? "bg-[#FFC1CC]"
+          : "bg-[#324D3E]/10 dark:bg-[#324D3E]/20",
+      text:
+        mounted && theme === "pink"
+          ? "text-black"
+          : "text-[#324D3E] dark:text-white",
+      hover:
+        mounted && theme === "pink"
+          ? "group-hover:bg-[#4c1d1d]"
+          : "group-hover:bg-[#324D3E]/20 dark:group-hover:bg-[#324D3E]/30",
     },
     "text-chart-2": {
-      bg: mounted && theme === "pink" ? "bg-[#B5EAD7]" : "bg-green-500/10 dark:bg-green-900/30",
-      text: mounted && theme === "pink" ? "text-black" : "text-green-600 dark:text-emerald-400",
-      hover: mounted && theme === "pink" ? "group-hover:bg-[#059669]" : "group-hover:bg-green-500/20 dark:group-hover:bg-green-800/40",
+      bg:
+        mounted && theme === "pink"
+          ? "bg-[#B5EAD7]"
+          : "bg-green-500/10 dark:bg-green-900/30",
+      text:
+        mounted && theme === "pink"
+          ? "text-black"
+          : "text-green-600 dark:text-emerald-400",
+      hover:
+        mounted && theme === "pink"
+          ? "group-hover:bg-[#059669]"
+          : "group-hover:bg-green-500/20 dark:group-hover:bg-green-800/40",
     },
     "text-chart-3": {
-      bg: mounted && theme === "pink" ? "bg-[#C7CEEA]" : "bg-blue-500/10 dark:bg-blue-900/30",
-      text: mounted && theme === "pink" ? "text-black" : "text-blue-600 dark:text-blue-400",
-      hover: mounted && theme === "pink" ? "group-hover:bg-[#7c3aed]" : "group-hover:bg-blue-500/20 dark:group-hover:bg-blue-800/40",
+      bg:
+        mounted && theme === "pink"
+          ? "bg-[#C7CEEA]"
+          : "bg-blue-500/10 dark:bg-blue-900/30",
+      text:
+        mounted && theme === "pink"
+          ? "text-black"
+          : "text-blue-600 dark:text-blue-400",
+      hover:
+        mounted && theme === "pink"
+          ? "group-hover:bg-[#7c3aed]"
+          : "group-hover:bg-blue-500/20 dark:group-hover:bg-blue-800/40",
     },
     "text-chart-4": {
-      bg: mounted && theme === "pink" ? "bg-[#FFF5BA]" : "bg-purple-500/10 dark:bg-purple-900/30",
-      text: mounted && theme === "pink" ? "text-black" : "text-purple-600 dark:text-purple-400",
-      hover: mounted && theme === "pink" ? "group-hover:bg-[#d97706]" : "group-hover:bg-purple-500/20 dark:group-hover:bg-purple-800/40",
+      bg:
+        mounted && theme === "pink"
+          ? "bg-[#FFF5BA]"
+          : "bg-purple-500/10 dark:bg-purple-900/30",
+      text:
+        mounted && theme === "pink"
+          ? "text-black"
+          : "text-purple-600 dark:text-purple-400",
+      hover:
+        mounted && theme === "pink"
+          ? "group-hover:bg-[#d97706]"
+          : "group-hover:bg-purple-500/20 dark:group-hover:bg-purple-800/40",
     },
   };
 
@@ -876,10 +1061,12 @@ function SummaryCard({
     colors[colorClass as keyof typeof colors] || colors["text-chart-1"];
 
   return (
-    <div className={getThemeClasses(
-      "group rounded-3xl bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl p-6 border border-[#324D3E]/10 dark:border-gray-700 shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300",
-      "!bg-white/95 !border-[#FFC1CC]/30"
-    )}>
+    <div
+      className={getThemeClasses(
+        "group rounded-3xl bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl p-6 border border-[#324D3E]/10 dark:border-gray-700 shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300",
+        "!bg-white/95 !border-[#FFC1CC]/30"
+      )}
+    >
       <div className="flex items-center justify-between mb-4">
         <div
           className={`flex h-12 w-12 items-center justify-center rounded-2xl ${color.bg} ${color.text} ${color.hover} transition-all duration-300 group-hover:scale-110`}
@@ -888,16 +1075,20 @@ function SummaryCard({
         </div>
       </div>
       <div className="space-y-2">
-        <p className={getThemeClasses(
-          "text-sm font-medium text-[#889063] dark:text-gray-200 transition-colors duration-300",
-          "!text-[#6b7280]"
-        )}>
+        <p
+          className={getThemeClasses(
+            "text-sm font-medium text-[#889063] dark:text-gray-200 transition-colors duration-300",
+            "!text-[#6b7280]"
+          )}
+        >
           {title}
         </p>
-        <p className={getThemeClasses(
-          "text-2xl font-bold text-[#324D3E] dark:text-white group-hover:text-[#4C3D19] dark:group-hover:text-gray-200 transition-colors duration-300",
-          "!text-[#4c1d1d] group-hover:!text-[#6b7280]"
-        )}>
+        <p
+          className={getThemeClasses(
+            "text-2xl font-bold text-[#324D3E] dark:text-white group-hover:text-[#4C3D19] dark:group-hover:text-gray-200 transition-colors duration-300",
+            "!text-[#4c1d1d] group-hover:!text-[#6b7280]"
+          )}
+        >
           {value}
         </p>
       </div>
@@ -906,44 +1097,52 @@ function SummaryCard({
 }
 
 function MemberCard({ member }: { member: Member }) {
-  const { theme } = useTheme()
-  const [mounted, setMounted] = useState(false)
+  const { theme } = useTheme();
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    setMounted(true)
-  }, [])
+    setMounted(true);
+  }, []);
 
   const getThemeClasses = (baseClasses: string, pinkClasses: string = "") => {
     if (mounted && theme === "pink" && pinkClasses) {
-      return `${baseClasses} ${pinkClasses}`
+      return `${baseClasses} ${pinkClasses}`;
     }
-    return baseClasses
-  }
+    return baseClasses;
+  };
 
   return (
-    <div className={getThemeClasses(
-      "bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl rounded-3xl p-6 border border-[#324D3E]/10 dark:border-gray-700 shadow-lg hover:shadow-xl hover:border-[#324D3E]/30 dark:hover:border-gray-600 transition-all duration-300",
-      "!bg-white/95 !border-[#FFC1CC]/30 hover:!border-[#FFC1CC]/50"
-    )}>
+    <div
+      className={getThemeClasses(
+        "bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl rounded-3xl p-6 border border-[#324D3E]/10 dark:border-gray-700 shadow-lg hover:shadow-xl hover:border-[#324D3E]/30 dark:hover:border-gray-600 transition-all duration-300",
+        "!bg-white/95 !border-[#FFC1CC]/30 hover:!border-[#FFC1CC]/50"
+      )}
+    >
       <div className="flex items-start justify-between mb-6">
         <div className="flex items-center gap-4">
-          <div className={getThemeClasses(
-            "flex h-12 w-12 items-center justify-center rounded-2xl bg-[#324D3E] text-white font-bold text-lg",
-            "!bg-[#FFC1CC] !text-black"
-          )}>
+          <div
+            className={getThemeClasses(
+              "flex h-12 w-12 items-center justify-center rounded-2xl bg-[#324D3E] text-white font-bold text-lg",
+              "!bg-[#FFC1CC] !text-black"
+            )}
+          >
             {member.name.charAt(0)}
           </div>
           <div>
-            <h3 className={getThemeClasses(
-              "text-xl font-bold text-[#324D3E] dark:text-white mb-1 transition-colors duration-300",
-              "!text-[#4c1d1d]"
-            )}>
+            <h3
+              className={getThemeClasses(
+                "text-xl font-bold text-[#324D3E] dark:text-white mb-1 transition-colors duration-300",
+                "!text-[#4c1d1d]"
+              )}
+            >
               {member.name}
             </h3>
-            <div className={getThemeClasses(
-              "flex items-center gap-4 text-sm text-[#889063] dark:text-gray-200 transition-colors duration-300",
-              "!text-[#6b7280]"
-            )}>
+            <div
+              className={getThemeClasses(
+                "flex items-center gap-4 text-sm text-[#889063] dark:text-gray-200 transition-colors duration-300",
+                "!text-[#6b7280]"
+              )}
+            >
               <span className="flex items-center gap-1">
                 <Mail className="h-4 w-4" />
                 {member.email}
@@ -974,10 +1173,12 @@ function MemberCard({ member }: { member: Member }) {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
         <div className="space-y-3">
-          <div className={getThemeClasses(
-            "flex items-center gap-2 text-sm text-[#889063] dark:text-gray-200 transition-colors duration-300",
-            "!text-[#6b7280]"
-          )}>
+          <div
+            className={getThemeClasses(
+              "flex items-center gap-2 text-sm text-[#889063] dark:text-gray-200 transition-colors duration-300",
+              "!text-[#6b7280]"
+            )}
+          >
             <Calendar className="h-4 w-4" />
             <span>
               Bergabung: {new Date(member.joinDate).toLocaleDateString("id-ID")}
@@ -986,44 +1187,56 @@ function MemberCard({ member }: { member: Member }) {
         </div>
         <div className="grid grid-cols-3 gap-4">
           <div>
-            <p className={getThemeClasses(
-              "text-sm font-medium text-[#889063] dark:text-gray-200 mb-1 transition-colors duration-300",
-              "!text-[#6b7280]"
-            )}>
+            <p
+              className={getThemeClasses(
+                "text-sm font-medium text-[#889063] dark:text-gray-200 mb-1 transition-colors duration-300",
+                "!text-[#6b7280]"
+              )}
+            >
               Investasi
             </p>
-            <p className={getThemeClasses(
-              "text-lg font-bold text-[#324D3E] dark:text-white transition-colors duration-300",
-              "!text-[#4c1d1d]"
-            )}>
+            <p
+              className={getThemeClasses(
+                "text-lg font-bold text-[#324D3E] dark:text-white transition-colors duration-300",
+                "!text-[#4c1d1d]"
+              )}
+            >
               {formatCurrency(member.totalInvestment)}
             </p>
           </div>
           <div>
-            <p className={getThemeClasses(
-              "text-sm font-medium text-[#889063] dark:text-gray-200 mb-1 transition-colors duration-300",
-              "!text-[#6b7280]"
-            )}>
+            <p
+              className={getThemeClasses(
+                "text-sm font-medium text-[#889063] dark:text-gray-200 mb-1 transition-colors duration-300",
+                "!text-[#6b7280]"
+              )}
+            >
               Keuntungan
             </p>
-            <p className={getThemeClasses(
-              "text-lg font-bold text-green-600 dark:text-emerald-400 transition-colors duration-300",
-              "!text-[#059669]"
-            )}>
+            <p
+              className={getThemeClasses(
+                "text-lg font-bold text-green-600 dark:text-emerald-400 transition-colors duration-300",
+                "!text-[#059669]"
+              )}
+            >
               {formatCurrency(member.totalProfit)}
             </p>
           </div>
           <div>
-            <p className={getThemeClasses(
-              "text-sm font-medium text-[#889063] dark:text-gray-200 mb-1 transition-colors duration-300",
-              "!text-[#6b7280]"
-            )}>
+            <p
+              className={getThemeClasses(
+                "text-sm font-medium text-[#889063] dark:text-gray-200 mb-1 transition-colors duration-300",
+                "!text-[#6b7280]"
+              )}
+            >
               ROI
             </p>
-            <p className={getThemeClasses(
-              "text-lg font-bold text-blue-600 dark:text-blue-400 transition-colors duration-300",
-              "!text-[#7c3aed]"
-            )}>
+            <p
+              className={getThemeClasses(
+                "text-lg font-bold text-blue-600 dark:text-blue-400 transition-colors durataion-300",
+                "!text-[#7c3aed]"
+              )}
+            >
               {formatPercentage(member.overallROI)}
             </p>
           </div>
@@ -1031,14 +1244,18 @@ function MemberCard({ member }: { member: Member }) {
       </div>
 
       {/* Investment Details */}
-      <div className={getThemeClasses(
-        "bg-[#324D3E]/5 dark:bg-gray-700/50 rounded-2xl p-4 border border-[#324D3E]/10 dark:border-gray-600 transition-colors duration-300",
-        "!bg-[#FFC1CC]/10 !border-[#FFC1CC]/30"
-      )}>
-        <h4 className={getThemeClasses(
-          "text-sm font-bold text-[#324D3E] dark:text-white mb-3 transition-colors duration-300",
-          "!text-[#4c1d1d]"
-        )}>
+      <div
+        className={getThemeClasses(
+          "bg-[#324D3E]/5 dark:bg-gray-700/50 rounded-2xl p-4 border border-[#324D3E]/10 dark:border-gray-600 transition-colors duration-300",
+          "!bg-[#FFC1CC]/10 !border-[#FFC1CC]/30"
+        )}
+      >
+        <h4
+          className={getThemeClasses(
+            "text-sm font-bold text-[#324D3E] dark:text-white mb-3 transition-colors durataion-300",
+            "!text-[#4c1d1d]"
+          )}
+        >
           Portfolio Investasi ({member.investments.length} tanaman)
         </h4>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
@@ -1051,30 +1268,38 @@ function MemberCard({ member }: { member: Member }) {
               )}
             >
               <div className="flex items-center justify-between mb-2">
-                <span className={getThemeClasses(
-                  "text-sm font-medium text-[#324D3E] dark:text-white transition-colors duration-300",
-                  "!text-[#4c1d1d]"
-                )}>
+                <span
+                  className={getThemeClasses(
+                    "text-sm font-medium text-[#324D3E] dark:text-white transition-colors durataion-300",
+                    "!text-[#4c1d1d]"
+                  )}
+                >
                   {investment.investmentId} - {member.name}
                 </span>
-                <span className={getThemeClasses(
-                  "text-xs text-blue-600 dark:text-blue-400 transition-colors duration-300",
-                  "!text-[#7c3aed]"
-                )}>
+                <span
+                  className={getThemeClasses(
+                    "text-xs text-blue-600 dark:text-blue-400 transition-colors durataion-300",
+                    "!text-[#7c3aed]"
+                  )}
+                >
                   {formatPercentage(investment.roi)}
                 </span>
               </div>
-              <div className={getThemeClasses(
-                "text-xs text-[#889063] dark:text-gray-200 space-y-1 transition-colors duration-300",
-                "!text-[#6b7280]"
-              )}>
+              <div
+                className={getThemeClasses(
+                  "text-xs text-[#889063] dark:text-gray-200 space-y-1 transition-colors durataion-300",
+                  "!text-[#6b7280]"
+                )}
+              >
                 <div>Investasi: {formatCurrency(investment.amount)}</div>
                 <div>
                   Profit:{" "}
-                  <span className={getThemeClasses(
-                    "text-green-600 dark:text-emerald-400 transition-colors duration-300",
-                    "!text-[#059669]"
-                  )}>
+                  <span
+                    className={getThemeClasses(
+                      "text-green-600 dark:text-emerald-400 transition-colors durataion-300",
+                      "!text-[#059669]"
+                    )}
+                  >
                     {formatCurrency(investment.profit)}
                   </span>
                 </div>
