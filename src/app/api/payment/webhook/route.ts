@@ -1,11 +1,11 @@
 import { occupationOptions } from "@/constant/OCCUPATION";
 import { midtransService } from "@/lib/midtrans";
 import dbConnect from "@/lib/mongodb";
-import { createCommissionRecord } from "@/lib/commission";
 import { generateInvoiceNumber } from "@/lib/invoiceNumberGenerator";
 import { getFirstAdminName } from "@/lib/utils/admin";
 import generateUserCode from "@/lib/userCodeGenerator";
 import { Investor } from "@/models";
+import CommissionHistory from "@/models/CommissionHistory";
 import Contract from "@/models/Contract";
 import Payment from "@/models/Payment";
 import PlantInstance from "@/models/PlantInstance";
@@ -451,14 +451,65 @@ export async function POST(request: NextRequest) {
         payment.isProcessed = true;
         payment.status = "completed";
 
-        if (payment.referralCode && payment.paymentType === "full-investment") {
-          const commissionResult = await createCommissionRecord(
-            payment._id.toString()
-          );
-          console.log(`Commission for ${orderId}: ${commissionResult.message}`);
-        }
-
         await payment.save({ session: mongoSession });
+
+        // Create commission record inside transaction
+        if (payment.referralCode && payment.paymentType === "full-investment") {
+          try {
+            // Check if commission already exists
+            const existingCommission = await CommissionHistory.findOne({
+              paymentId: payment._id
+            }).session(mongoSession);
+
+            if (!existingCommission) {
+              // Find marketing staff
+              const marketingStaff = await User.findOne({
+                referralCode: payment.referralCode,
+                role: 'marketing'
+              }).session(mongoSession);
+
+              if (marketingStaff) {
+                // Calculate commission
+                const commissionRate = 0.02; // 2%
+                const contractValue = payment.amount;
+                const commissionAmount = Math.round(contractValue * commissionRate);
+
+                // Create commission record
+                const commissionRecord = new CommissionHistory({
+                  marketingStaffId: marketingStaff._id,
+                  marketingStaffName: marketingStaff.fullName,
+                  referralCodeUsed: payment.referralCode,
+
+                  paymentId: payment._id,
+                  customerId: user._id,
+                  customerName: user.fullName,
+                  customerEmail: user.email,
+
+                  contractValue,
+                  commissionRate,
+                  commissionAmount,
+
+                  paymentType: payment.paymentType,
+                  earnedAt: payment.settlementTime || payment.transactionTime || new Date(),
+                  calculatedAt: new Date(),
+
+                  contractId: orderId,
+                  productName: payment.productName || 'Unknown Product',
+                });
+
+                await commissionRecord.save({ session: mongoSession });
+                console.log(`💰 Commission created: ${commissionAmount} for ${marketingStaff.fullName} (${payment.referralCode})`);
+              } else {
+                console.log(`⚠️ Marketing staff not found for referral code: ${payment.referralCode}`);
+              }
+            } else {
+              console.log(`ℹ️ Commission already exists for payment ${orderId}`);
+            }
+          } catch (commissionError) {
+            console.error(`❌ Commission error for ${orderId}:`, commissionError);
+            // Don't fail the payment for commission errors
+          }
+        }
       });
 
       await mongoSession.endSession();
@@ -947,12 +998,61 @@ export async function POST(request: NextRequest) {
         // Create commission record if it's the first installment and has referral code
         if (installmentNumber === 1 && installmentPayment.referralCode) {
           try {
-            const commissionResult = await createCommissionRecord(
-              installmentPayment._id.toString()
-            );
-            console.log(
-              `💰 [${txnId}] Commission for installment ${orderId}: ${commissionResult.message}`
-            );
+            // Check if commission already exists
+            const existingCommission = await CommissionHistory.findOne({
+              paymentId: installmentPayment._id
+            }).session(mongoSession);
+
+            if (!existingCommission) {
+              // Find marketing staff
+              const marketingStaff = await User.findOne({
+                referralCode: installmentPayment.referralCode,
+                role: 'marketing'
+              }).session(mongoSession);
+
+              if (marketingStaff) {
+                // Calculate full contract value for commission
+                const contractValue = installmentPayment.installmentAmount * installmentPayment.totalInstallments;
+                const commissionRate = 0.02; // 2%
+                const commissionAmount = Math.round(contractValue * commissionRate);
+
+                // Create commission record
+                const commissionRecord = new CommissionHistory({
+                  marketingStaffId: marketingStaff._id,
+                  marketingStaffName: marketingStaff.fullName,
+                  referralCodeUsed: installmentPayment.referralCode,
+
+                  paymentId: installmentPayment._id,
+                  cicilanOrderId: installmentPayment.cicilanOrderId,
+                  customerId: user._id,
+                  customerName: user.fullName,
+                  customerEmail: user.email,
+
+                  contractValue,
+                  commissionRate,
+                  commissionAmount,
+
+                  paymentType: installmentPayment.paymentType,
+                  earnedAt: installmentPayment.adminReviewDate || new Date(),
+                  calculatedAt: new Date(),
+
+                  contractId: cicilanOrderId,
+                  productName: installmentPayment.productName || 'Unknown Product',
+                  installmentDetails: {
+                    installmentAmount: installmentPayment.installmentAmount,
+                    totalInstallments: installmentPayment.totalInstallments,
+                    installmentNumber: installmentPayment.installmentNumber
+                  }
+                });
+
+                await commissionRecord.save({ session: mongoSession });
+                console.log(`💰 [${txnId}] Commission created: ${commissionAmount} for ${marketingStaff.fullName} (${installmentPayment.referralCode})`);
+              } else {
+                console.log(`⚠️ [${txnId}] Marketing staff not found for referral code: ${installmentPayment.referralCode}`);
+              }
+            } else {
+              console.log(`ℹ️ [${txnId}] Commission already exists for installment ${orderId}`);
+            }
           } catch (commissionError) {
             console.error(
               `❌ [${txnId}] Commission error for ${orderId}:`,

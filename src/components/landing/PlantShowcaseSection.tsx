@@ -1299,9 +1299,6 @@ export default function PlantShowcaseSection() {
                             maxLength={6}
                             pattern="[A-Z0-9]{6}"
                           />
-                          <p className="text-xs text-[#324D3E]/70 font-[family-name:var(--font-poppins)]">
-                            {t("plants.referralCodeFormat")}
-                          </p>
                         </div>
                       </div>
                     </div>

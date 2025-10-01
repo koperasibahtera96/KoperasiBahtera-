@@ -285,7 +285,9 @@ export function CicilanModal({
 
       onSuccess?.(
         t("cicilan.contractCreated"),
-        t("cicilan.contractCreatedMessage", { contractNumber: contractDetails.contractNumber })
+        t("cicilan.contractCreatedMessage", {
+          contractNumber: contractDetails.contractNumber,
+        })
       );
       onClose();
       setReferralCode(""); // Reset referral code
@@ -398,7 +400,9 @@ export function CicilanModal({
                     </div>
                     <div className="flex flex-col gap-2">
                       <span className="text-[#324D3E]/80 font-medium">
-                        {t("cicilan.installmentPer", { period: selectedTermDetails?.period })}
+                        {t("cicilan.installmentPer", {
+                          period: selectedTermDetails?.period,
+                        })}
                       </span>
                       <span className="font-bold text-emerald-600 text-base font-mono break-all">
                         Rp {installmentAmount.toLocaleString("id-ID")}
@@ -428,9 +432,6 @@ export function CicilanModal({
                         maxLength={6}
                         pattern="[A-Z0-9]{6}"
                       />
-                      <p className="text-xs text-[#324D3E]/70 font-[family-name:var(--font-poppins)]">
-                        {t("cicilan.referralCodeFormat")}
-                      </p>
                     </div>
                   </div>
                 </div>
@@ -481,7 +482,9 @@ export function CicilanModal({
                     disabled={isLoading}
                     className="flex-1 px-6 py-3 bg-gradient-to-r from-[#324D3E] to-[#4C3D19] text-white rounded-full font-bold hover:shadow-lg transition-all duration-300 font-[family-name:var(--font-poppins)] disabled:opacity-50"
                   >
-                    {isLoading ? t("cicilan.creatingContract") : t("cicilan.continue")}
+                    {isLoading
+                      ? t("cicilan.creatingContract")
+                      : t("cicilan.continue")}
                   </button>
                 </div>
               </div>
@@ -513,7 +516,10 @@ export function CicilanModal({
             <div className="flex-shrink-0 p-6 pb-0">
               <div className="flex justify-between items-center mb-6">
                 <h3 className="text-2xl font-bold text-[#324D3E] font-[family-name:var(--font-poppins)]">
-                  {t("cicilan.title", { plantName: plan?.investmentPlan?.name || plan?.name || "Paket" })}
+                  {t("cicilan.title", {
+                    plantName:
+                      plan?.investmentPlan?.name || plan?.name || "Paket",
+                  })}
                 </h3>
                 <button
                   onClick={onClose}
@@ -615,7 +621,8 @@ export function CicilanModal({
                           {t("cicilan.treeCount")}
                         </span>
                         <span className="font-bold text-[#324D3E] text-base font-mono break-all">
-                          {selectedPackage?.treeCount || "-"} {t("cicilan.trees")}
+                          {selectedPackage?.treeCount || "-"}{" "}
+                          {t("cicilan.trees")}
                         </span>
                       </div>
                       <div className="flex justify-between items-center">
@@ -678,7 +685,8 @@ export function CicilanModal({
                                 {term.period}
                               </div>
                               <div className="text-sm text-[#324D3E]/70 font-medium">
-                                {termInstallmentCount} {t("cicilan.timesPayment")}
+                                {termInstallmentCount}{" "}
+                                {t("cicilan.timesPayment")}
                               </div>
                             </div>
                           </div>
@@ -703,9 +711,7 @@ export function CicilanModal({
                   <ul className="text-sm text-[#324D3E]/80 space-y-2 font-medium">
                     <li className="flex items-start gap-2">
                       <span className="text-emerald-600 font-bold">1.</span>
-                      <span>
-                        {t("cicilan.step1")}
-                      </span>
+                      <span>{t("cicilan.step1")}</span>
                     </li>
                     <li className="flex items-start gap-2">
                       <span className="text-emerald-600 font-bold">2.</span>
@@ -713,21 +719,15 @@ export function CicilanModal({
                     </li>
                     <li className="flex items-start gap-2">
                       <span className="text-emerald-600 font-bold">3.</span>
-                      <span>
-                        {t("cicilan.step3")}
-                      </span>
+                      <span>{t("cicilan.step3")}</span>
                     </li>
                     <li className="flex items-start gap-2">
                       <span className="text-emerald-600 font-bold">4.</span>
-                      <span>
-                        {t("cicilan.step4")}
-                      </span>
+                      <span>{t("cicilan.step4")}</span>
                     </li>
                     <li className="flex items-start gap-2">
                       <span className="text-emerald-600 font-bold">5.</span>
-                      <span>
-                        {t("cicilan.step5")}
-                      </span>
+                      <span>{t("cicilan.step5")}</span>
                     </li>
                   </ul>
                 </div>
@@ -745,7 +745,9 @@ export function CicilanModal({
                     disabled={isLoading || !selectedPackage}
                     className="flex-1 px-6 py-3 bg-gradient-to-r from-[#324D3E] to-[#4C3D19] text-white rounded-full font-bold hover:shadow-lg transition-all duration-300 font-[family-name:var(--font-poppins)] disabled:opacity-50"
                   >
-                    {isLoading ? t("cicilan.processing") : t("cicilan.createContract")}
+                    {isLoading
+                      ? t("cicilan.processing")
+                      : t("cicilan.createContract")}
                   </button>
                 </div>
               </div>
