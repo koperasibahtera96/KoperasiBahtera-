@@ -2263,33 +2263,26 @@ export default function LaporanPage() {
                       groupedReports[investorId].trees.push(...newTrees);
                     }
 
-                    // merge statistics
-                    const target = groupedReports[investorId].statistics || {
-                      total: 0,
-                      byCondition: {},
-                      bySpecies: {},
-                    };
-                    target.total =
-                      (Number(target.total) || 0) +
-                      (Number(incomingStats.total) || 0);
-
-                    Object.entries(incomingStats.byCondition).forEach(
-                      ([k, v]) => {
-                        const key = String(k || "")
+                    // Recalculate statistics from actual merged trees instead of summing
+                    const allTrees = groupedReports[investorId].trees;
+                    const target = {
+                      total: allTrees.length,
+                      byCondition: allTrees.reduce((acc: any, tree: any) => {
+                        const key = String(tree.kondisi || "")
                           .trim()
                           .toLowerCase();
-                        target.byCondition[key] =
-                          (target.byCondition[key] || 0) + (Number(v) || 0);
-                      }
-                    );
-
-                    Object.entries(incomingStats.bySpecies).forEach(
-                      ([k, v]) => {
-                        const key = String(k || "").trim();
-                        target.bySpecies[key] =
-                          (target.bySpecies[key] || 0) + (Number(v) || 0);
-                      }
-                    );
+                        acc[key] = (acc[key] || 0) + 1;
+                        return acc;
+                      }, {} as Record<string, number>),
+                      bySpecies: allTrees.reduce((acc: any, tree: any) => {
+                        const key = String(tree.spesiesPohon || "")
+                          .split(' - ')[0]
+                          .trim()
+                          .toLowerCase();
+                        acc[key] = (acc[key] || 0) + 1;
+                        return acc;
+                      }, {} as Record<string, number>),
+                    };
 
                     groupedReports[investorId].statistics = target;
                   }

@@ -1381,7 +1381,7 @@ export default function PaymentsPage() {
             }}
           />
 
-          <div className="flex items-center justify-center h-full">
+          <div className="flex items-center justify-center h-ful w-full">
             <div className="text-center">
               <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-[#324D3E] mx-auto"></div>
               <p className="mt-4 text-white font-poppins">
@@ -1586,11 +1586,10 @@ export default function PaymentsPage() {
                                 </div>
                                 <div className="flex-1">
                                   <h4 className="font-semibold text-blue-800 font-poppins">
-                                    Kontrak Belum Ditandatangani
+                                    {t("payments.contract.notSigned")}
                                   </h4>
                                   <p className="text-sm text-blue-700 font-poppins">
-                                    Anda perlu menandatangani kontrak terlebih
-                                    dahulu sebelum melakukan pembayaran.
+                                    {t("payments.contract.notSignedMessage")}
                                     <button
                                       onClick={() =>
                                         router.push(
@@ -1599,7 +1598,7 @@ export default function PaymentsPage() {
                                       }
                                       className="text-blue-800 underline hover:text-blue-900 font-semibold ml-1"
                                     >
-                                      Tandatangani di sini
+                                      {t("payments.contract.signHere")}
                                     </button>
                                   </p>
                                 </div>
@@ -1634,7 +1633,9 @@ export default function PaymentsPage() {
                                   >
                                     <span className="flex items-center justify-center sm:justify-center gap-2">
                                       <Download size={16} />
-                                      <span className="truncate">Download</span>
+                                      <span className="truncate">
+                                        {t("payments.contract.download")}
+                                      </span>
                                     </span>
                                   </button>
                                 )}
@@ -1672,7 +1673,9 @@ export default function PaymentsPage() {
                               >
                                 <span className="flex items-center justify-center gap-2">
                                   <Download size={16} />
-                                  <span className="truncate">Download</span>
+                                  <span className="truncate">
+                                    {t("payments.contract.download")}
+                                  </span>
                                 </span>
                               </button>
                             )}
@@ -1690,16 +1693,25 @@ export default function PaymentsPage() {
                                 </div>
                                 <div>
                                   <h4 className="font-semibold text-red-800 font-poppins">
-                                    Kontrak Ditolak Permanen
+                                    {t("payments.contract.rejectedPermanent")}
                                   </h4>
                                   <p className="text-sm text-red-700 font-poppins">
-                                    Maksimal percobaan kontrak telah tercapai (
-                                    {group.maxAttempts || 3}x). Silakan hubungi
-                                    admin untuk bantuan lebih lanjut.
+                                    {t(
+                                      "payments.contract.rejectedPermanentMessage",
+                                      {
+                                        maxAttempts: String(
+                                          group.maxAttempts || 3
+                                        ),
+                                      }
+                                    )}
                                   </p>
                                   <p className="text-xs text-red-600 font-poppins mt-1">
-                                    Percobaan: {group.currentAttempt || 0}/
-                                    {group.maxAttempts || 3}
+                                    {t("payments.contract.attemptsCount", {
+                                      current: String(
+                                        group.currentAttempt || 0
+                                      ),
+                                      max: String(group.maxAttempts || 3),
+                                    })}
                                   </p>
                                 </div>
                               </div>
@@ -1712,13 +1724,15 @@ export default function PaymentsPage() {
                                 </div>
                                 <div>
                                   <h4 className="font-semibold text-orange-800 font-poppins">
-                                    Kontrak Memerlukan Review
+                                    {t("payments.contract.needsReview")}
                                   </h4>
                                   <p className="text-sm text-orange-700 font-poppins">
-                                    Percobaan kontrak:{" "}
-                                    {group.currentAttempt || 0}/
-                                    {group.maxAttempts || 3}. Silakan hubungi
-                                    admin untuk bantuan.
+                                    {t("payments.contract.needsReviewMessage", {
+                                      current: String(
+                                        group.currentAttempt || 0
+                                      ),
+                                      max: String(group.maxAttempts || 3),
+                                    })}
                                   </p>
                                 </div>
                               </div>
@@ -1732,13 +1746,18 @@ export default function PaymentsPage() {
                                   </div>
                                   <div>
                                     <h4 className="font-semibold text-red-800 font-poppins">
-                                      Kontrak Ditolak Admin
+                                      {t("payments.contract.rejectedByAdmin")}
                                     </h4>
                                     <p className="text-sm text-red-700 font-poppins">
-                                      Anda dapat mengajukan ulang kontrak dengan
-                                      menandatangani ulang. Percobaan:{" "}
-                                      {group.currentAttempt || 0}/
-                                      {group.maxAttempts || 3}
+                                      {t(
+                                        "payments.contract.rejectedByAdminMessage",
+                                        {
+                                          current: String(
+                                            group.currentAttempt || 0
+                                          ),
+                                          max: String(group.maxAttempts || 3),
+                                        }
+                                      )}
                                     </p>
                                   </div>
                                 </div>
@@ -1758,7 +1777,7 @@ export default function PaymentsPage() {
                                   <span className="flex items-center justify-center gap-2">
                                     <Edit3 size={16} />
                                     <span className="truncate">
-                                      Ajukan Ulang
+                                      {t("payments.contract.resubmit")}
                                     </span>
                                   </span>
                                 </button>
@@ -2023,7 +2042,8 @@ export default function PaymentsPage() {
                                           >
                                             <span className="flex items-center justify-center gap-2">
                                               <CreditCard size={16} />
-                                              {uploadingProof === installment._id
+                                              {uploadingProof ===
+                                              installment._id
                                                 ? "Membuat Pembayaran..."
                                                 : t("payments.buttons.payNow")}
                                             </span>
@@ -2046,7 +2066,8 @@ export default function PaymentsPage() {
                                           >
                                             <span className="flex items-center justify-center gap-2">
                                               <Upload size={16} />
-                                              {uploadingProof === installment._id
+                                              {uploadingProof ===
+                                              installment._id
                                                 ? "Mengunggah..."
                                                 : "Upload Bukti Bayar"}
                                             </span>
@@ -2055,7 +2076,8 @@ export default function PaymentsPage() {
 
                                         {/* Download Invoice Button for Successful Payments */}
                                         {(installment.status === "approved" ||
-                                          installment.status === "completed") && (
+                                          installment.status ===
+                                            "completed") && (
                                           <button
                                             onClick={() =>
                                               handleDownloadInvoice(
@@ -2282,11 +2304,10 @@ export default function PaymentsPage() {
                                 </div>
                                 <div className="flex-1">
                                   <h4 className="font-semibold text-blue-800 font-poppins">
-                                    Kontrak Belum Ditandatangani
+                                    {t("payments.contract.notSigned")}
                                   </h4>
                                   <p className="text-sm text-blue-700 font-poppins">
-                                    Anda perlu menandatangani kontrak terlebih
-                                    dahulu sebelum melakukan pembayaran.
+                                    {t("payments.contract.notSignedMessage")}
                                     <button
                                       onClick={() =>
                                         router.push(
@@ -2295,7 +2316,7 @@ export default function PaymentsPage() {
                                       }
                                       className="text-blue-800 underline hover:text-blue-900 font-semibold ml-1"
                                     >
-                                      Tandatangani di sini
+                                      {t("payments.contract.signHere")}
                                     </button>
                                   </p>
                                 </div>
@@ -2327,7 +2348,7 @@ export default function PaymentsPage() {
                                 >
                                   <span className="flex items-center justify-center gap-2">
                                     <Download size={16} />
-                                    Download
+                                    {t("payments.contract.download")}
                                   </span>
                                 </button>
                               </div>
@@ -2363,7 +2384,7 @@ export default function PaymentsPage() {
                             >
                               <span className="flex items-center justify-center gap-2">
                                 <Download size={16} />
-                                Download
+                                {t("payments.contract.download")}
                               </span>
                             </button>
                           </div>
@@ -2380,16 +2401,25 @@ export default function PaymentsPage() {
                                 </div>
                                 <div>
                                   <h4 className="font-semibold text-red-800 font-poppins">
-                                    Kontrak Ditolak Permanen
+                                    {t("payments.contract.rejectedPermanent")}
                                   </h4>
                                   <p className="text-sm text-red-700 font-poppins">
-                                    Maksimal percobaan kontrak telah tercapai (
-                                    {contract.maxAttempts || 3}x). Silakan
-                                    hubungi admin untuk bantuan lebih lanjut.
+                                    {t(
+                                      "payments.contract.rejectedPermanentMessage",
+                                      {
+                                        maxAttempts: String(
+                                          contract.maxAttempts || 3
+                                        ),
+                                      }
+                                    )}
                                   </p>
                                   <p className="text-xs text-red-600 font-poppins mt-1">
-                                    Percobaan: {contract.currentAttempt || 0}/
-                                    {contract.maxAttempts || 3}
+                                    {t("payments.contract.attemptsCount", {
+                                      current: String(
+                                        contract.currentAttempt || 0
+                                      ),
+                                      max: String(contract.maxAttempts || 3),
+                                    })}
                                   </p>
                                 </div>
                               </div>
@@ -2402,13 +2432,15 @@ export default function PaymentsPage() {
                                 </div>
                                 <div>
                                   <h4 className="font-semibold text-orange-800 font-poppins">
-                                    Kontrak Memerlukan Review
+                                    {t("payments.contract.needsReview")}
                                   </h4>
                                   <p className="text-sm text-orange-700 font-poppins">
-                                    Percobaan kontrak:{" "}
-                                    {contract.currentAttempt || 0}/
-                                    {contract.maxAttempts || 3}. Silakan hubungi
-                                    admin untuk bantuan.
+                                    {t("payments.contract.needsReviewMessage", {
+                                      current: String(
+                                        contract.currentAttempt || 0
+                                      ),
+                                      max: String(contract.maxAttempts || 3),
+                                    })}
                                   </p>
                                 </div>
                               </div>
@@ -2422,13 +2454,20 @@ export default function PaymentsPage() {
                                   </div>
                                   <div>
                                     <h4 className="font-semibold text-red-800 font-poppins">
-                                      Kontrak Ditolak Admin
+                                      {t("payments.contract.rejectedByAdmin")}
                                     </h4>
                                     <p className="text-sm text-red-700 font-poppins">
-                                      Anda dapat mengajukan ulang kontrak dengan
-                                      menandatangani ulang. Percobaan:{" "}
-                                      {contract.currentAttempt || 0}/
-                                      {contract.maxAttempts || 3}
+                                      {t(
+                                        "payments.contract.rejectedByAdminMessage",
+                                        {
+                                          current: String(
+                                            contract.currentAttempt || 0
+                                          ),
+                                          max: String(
+                                            contract.maxAttempts || 3
+                                          ),
+                                        }
+                                      )}
                                     </p>
                                   </div>
                                 </div>
@@ -2445,7 +2484,7 @@ export default function PaymentsPage() {
                                 >
                                   <span className="flex items-center justify-center gap-2">
                                     <Edit3 size={16} />
-                                    Ajukan Ulang
+                                    {t("payments.contract.resubmit")}
                                   </span>
                                 </button>
                               </div>
@@ -2706,7 +2745,10 @@ function ContractRetrySignatureModal({
 
   const handleRetrySubmit = async () => {
     if (!signatureData || !contractId) {
-      showError("Tanda Tangan Diperlukan", "Silakan buat tanda tangan Anda");
+      showError(
+        t("payments.retry.signatureRequired"),
+        t("payments.retry.signatureRequiredMessage")
+      );
       return;
     }
 
@@ -2739,7 +2781,7 @@ function ContractRetrySignatureModal({
       }
     } catch (error) {
       console.error("Error submitting retry:", error);
-      showError("Kesalahan", "Terjadi kesalahan saat mengajukan ulang kontrak");
+      showError(t("payments.retry.error"), t("payments.retry.errorMessage"));
     } finally {
       setSigning(false);
     }
@@ -2757,7 +2799,7 @@ function ContractRetrySignatureModal({
         <div className="p-6">
           <div className="flex justify-between items-center mb-6">
             <h3 className="text-xl font-bold text-[#324D3E] font-poppins">
-              Ajukan Ulang Kontrak
+              {t("payments.retry.title")}
             </h3>
             <button
               onClick={onClose}
@@ -2790,18 +2832,26 @@ function ContractRetrySignatureModal({
           {retryData && (
             <div className="bg-blue-50 p-4 rounded-2xl mb-6 border border-blue-200">
               <h4 className="font-semibold text-blue-800 font-poppins mb-2">
-                Status Pengajuan Ulang
+                {t("payments.retry.resubmissionStatus")}
               </h4>
               <p className="text-blue-700 font-poppins text-sm">
-                <strong>Percobaan:</strong> {retryData.currentAttempt || 0} dari{" "}
+                <strong>{t("payments.retry.attempts")}</strong>{" "}
+                {retryData.currentAttempt || 0} {t("payments.retry.of")}{" "}
                 {retryData.maxAttempts || 3}
               </p>
               {retryData.lastRejectionReason && (
-                <p className="text-red-700 font-poppins text-sm mt-2">
-                  <strong>Alasan penolakan terakhir:</strong>{" "}
-                  {retryData.lastRejectionReason}:{" "}
-                  {retryData.lastRejectionAdminNotes}
-                </p>
+                <>
+                  <p className="text-red-700 font-poppins text-sm mt-2">
+                    <strong>{t("payments.retry.lastRejectionReason")}</strong>{" "}
+                    {retryData.lastRejectionReason}
+                  </p>
+                  <p className="text-red-700 font-poppins text-sm mt-2">
+                    <strong>{t("payments.retry.adminNotes")}</strong>{" "}
+                    {retryData.lastRejectionAdminNotes
+                      ? retryData.lastRejectionAdminNotes
+                      : "-"}
+                  </p>
+                </>
               )}
             </div>
           )}
@@ -2809,10 +2859,10 @@ function ContractRetrySignatureModal({
           {!canRetry ? (
             <div className="bg-red-50 p-4 rounded-2xl border border-red-200 text-center">
               <p className="text-red-800 font-poppins font-semibold">
-                Maksimal percobaan pengajuan ulang telah tercapai (3 kali)
+                {t("payments.retry.maxAttemptsReached")}
               </p>
               <p className="text-red-700 font-poppins text-sm mt-2">
-                Silakan hubungi admin untuk bantuan lebih lanjut
+                {t("payments.retry.contactAdmin")}
               </p>
             </div>
           ) : (
@@ -2820,20 +2870,13 @@ function ContractRetrySignatureModal({
               {/* Instructions */}
               <div className="mb-6">
                 <h4 className="font-semibold text-[#324D3E] font-poppins mb-3">
-                  Instruksi Tanda Tangan Ulang
+                  {t("payments.retry.instructionsTitle")}
                 </h4>
                 <ul className="list-disc list-inside text-gray-700 font-poppins text-sm space-y-1">
-                  <li>Buat tanda tangan Anda di area yang disediakan</li>
-                  <li>
-                    Pastikan tanda tangan jelas dan sesuai dengan identitas Anda
-                  </li>
-                  <li>
-                    Tanda tangan yang sama dengan pengajuan sebelumnya lebih
-                    direkomendasikan
-                  </li>
-                  <li>
-                    Kontrak akan direview ulang oleh admin setelah pengajuan
-                  </li>
+                  <li>{t("payments.retry.instruction1")}</li>
+                  <li>{t("payments.retry.instruction2")}</li>
+                  <li>{t("payments.retry.instruction3")}</li>
+                  <li>{t("payments.retry.instruction4")}</li>
                 </ul>
               </div>
 
@@ -2841,7 +2884,7 @@ function ContractRetrySignatureModal({
               <div className="mb-6">
                 <DualSignatureInput
                   onSignatureChange={handleSignatureChange}
-                  label="Tanda Tangan Digital"
+                  label={t("payments.retry.signatureLabel")}
                   required
                   disabled={signing}
                 />
@@ -2854,7 +2897,7 @@ function ContractRetrySignatureModal({
                   onClick={onClose}
                   className="flex-1 px-4 py-3 border border-gray-300 text-gray-700 rounded-full hover:bg-gray-50 font-poppins font-medium transition-all duration-300"
                 >
-                  Batal
+                  {t("payments.retry.cancel")}
                 </button>
                 <button
                   onClick={handleRetrySubmit}
@@ -2863,7 +2906,9 @@ function ContractRetrySignatureModal({
                 >
                   <span className="flex items-center justify-center gap-2">
                     <Edit3 size={16} />
-                    {signing ? "Mengajukan..." : "Ajukan Ulang"}
+                    {signing
+                      ? t("payments.retry.submitting")
+                      : t("payments.retry.submit")}
                   </span>
                 </button>
               </div>

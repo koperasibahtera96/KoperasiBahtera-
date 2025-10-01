@@ -2,6 +2,7 @@ import React, { useState, useRef, useCallback } from 'react';
 import dynamic from 'next/dynamic';
 import { Upload, Edit3, Trash2, FileImage } from 'lucide-react';
 import Image from 'next/image';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 // Dynamically import SignatureCanvas to avoid SSR issues
 const SignatureCanvas = dynamic(() => import("react-signature-canvas"), {
@@ -25,6 +26,7 @@ export const DualSignatureInput: React.FC<DualSignatureInputProps> = ({
   label = "Tanda Tangan Digital",
   required = false
 }) => {
+  const { t } = useLanguage();
   const [signatureMode, setSignatureMode] = useState<'canvas' | 'upload'>('canvas');
   const [uploadedImage, setUploadedImage] = useState<string | null>(null);
   const [uploadedFileName, setUploadedFileName] = useState<string>('');
@@ -49,13 +51,13 @@ export const DualSignatureInput: React.FC<DualSignatureInputProps> = ({
 
     // Check file type
     if (!file.type.startsWith('image/')) {
-      alert('Please select an image file (PNG, JPG, etc.)');
+      alert(t('signature.errorInvalidFile'));
       return;
     }
 
     // Check file size (max 5MB)
     if (file.size > 5 * 1024 * 1024) {
-      alert('File size must be less than 5MB');
+      alert(t('signature.errorFileTooLarge'));
       return;
     }
 
@@ -160,7 +162,7 @@ export const DualSignatureInput: React.FC<DualSignatureInputProps> = ({
           } ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
         >
           <Edit3 size={16} />
-          Gambar Tanda Tangan
+          {t('signature.drawSignature')}
         </button>
         <button
           type="button"
@@ -173,7 +175,7 @@ export const DualSignatureInput: React.FC<DualSignatureInputProps> = ({
           } ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
         >
           <Upload size={16} />
-          Upload Gambar
+          {t('signature.uploadImage')}
         </button>
       </div>
 
@@ -205,7 +207,7 @@ export const DualSignatureInput: React.FC<DualSignatureInputProps> = ({
             </div>
             <div className="text-center mt-3">
               <p className="text-sm text-gray-500 font-poppins">
-                Gambar tanda tangan Anda di area di atas
+                {t('signature.drawInstructions')}
               </p>
             </div>
           </div>
@@ -230,7 +232,7 @@ export const DualSignatureInput: React.FC<DualSignatureInputProps> = ({
                     {uploadedFileName}
                   </p>
                   <p className="text-xs text-green-600 font-poppins mt-1">
-                    ✓ Gambar tanda tangan berhasil diupload
+                    {t('signature.uploadedSuccessfully')}
                   </p>
                 </div>
               </div>
@@ -255,10 +257,10 @@ export const DualSignatureInput: React.FC<DualSignatureInputProps> = ({
                 >
                   <Upload size={48} className="mx-auto text-gray-400 mb-4" />
                   <p className="text-gray-600 font-poppins font-medium mb-2">
-                    Klik untuk upload gambar tanda tangan
+                    {t('signature.clickToUpload')}
                   </p>
                   <p className="text-sm text-gray-500 font-poppins">
-                    Mendukung PNG, JPG, JPEG (Max 5MB)
+                    {t('signature.supportedFormats')}
                   </p>
                 </div>
               </div>
@@ -278,7 +280,7 @@ export const DualSignatureInput: React.FC<DualSignatureInputProps> = ({
               }`}
             >
               <Trash2 size={14} />
-              Hapus
+              {t('signature.clear')}
             </button>
           )}
         </div>
@@ -288,8 +290,8 @@ export const DualSignatureInput: React.FC<DualSignatureInputProps> = ({
       <div className="mt-2">
         <p className="text-xs text-gray-500 font-poppins">
           {signatureMode === 'canvas'
-            ? 'Gunakan mouse atau touch untuk menggambar tanda tangan Anda'
-            : 'Upload gambar tanda tangan yang sudah ada (foto tanda tangan di kertas, dll)'
+            ? t('signature.helperCanvas')
+            : t('signature.helperUpload')
           }
         </p>
       </div>

@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -7,8 +7,9 @@ import {
   DialogTrigger,
   DialogClose,
   DialogFooter,
-} from '@/components/ui/dialog';
-import { Button } from '@/components/ui/Button';
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/Button";
+import Image from "next/image";
 
 interface EnhancedLegalModalProps {
   triggerText: string;
@@ -23,7 +24,7 @@ export const EnhancedLegalModal: React.FC<EnhancedLegalModalProps> = ({
   title,
   children,
   onConfirm,
-  triggerElement
+  triggerElement,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [hasScrolledToEnd, setHasScrolledToEnd] = useState(false);
@@ -92,17 +93,29 @@ export const EnhancedLegalModal: React.FC<EnhancedLegalModalProps> = ({
         )}
       </DialogTrigger>
       <DialogContent className="sm:max-w-3xl max-h-[80vh] flex flex-col">
-        <DialogHeader>
-          <DialogTitle className="text-2xl font-bold text-gray-800">{title}</DialogTitle>
+        <DialogHeader className="relative z-10">
+          <DialogTitle className="text-2xl font-bold text-gray-800">
+            {title}
+          </DialogTitle>
         </DialogHeader>
         <div
           ref={contentRef}
-          className="flex-grow overflow-y-auto p-1 pr-6"
+          className="flex-grow overflow-y-auto p-1 pr-6 relative"
           onScroll={handleScroll}
         >
-          {children}
+          {/* Background Logo - Sticky and Centered */}
+          <div className="sticky top-1/2 -translate-y-1/2 flex items-center justify-center pointer-events-none opacity-10 h-0 w-full z-0">
+            <Image
+              width={64}
+              height={64}
+              src="/images/koperasi-logo-kartu-anggota.png"
+              alt="Koperasi Logo"
+              className="w-64 h-64 sm:w-80 sm:h-80 md:w-96 md:h-96 lg:w-[32rem] lg:h-[32rem] object-contain"
+            />
+          </div>
+          <div className="relative z-10">{children}</div>
         </div>
-        <DialogFooter className="mt-4 flex gap-2">
+        <DialogFooter className="mt-4 flex gap-2 relative z-10">
           <DialogClose asChild>
             <Button
               type="button"
@@ -118,11 +131,11 @@ export const EnhancedLegalModal: React.FC<EnhancedLegalModalProps> = ({
             disabled={!hasScrolledToEnd}
             className={`px-8 py-3 rounded-full font-semibold transition-all duration-300 shadow-lg font-[family-name:var(--font-poppins)] ${
               hasScrolledToEnd
-                ? 'bg-gradient-to-r from-[#364D32] to-[#889063] text-white hover:from-[#889063] hover:to-[#364D32]'
-                : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                ? "bg-gradient-to-r from-[#364D32] to-[#889063] text-white hover:from-[#889063] hover:to-[#364D32]"
+                : "bg-gray-300 text-gray-500 cursor-not-allowed"
             }`}
           >
-            {hasScrolledToEnd ? 'Saya Setuju' : 'Baca Hingga Akhir'}
+            {hasScrolledToEnd ? "Saya Setuju" : "Baca Hingga Akhir"}
           </Button>
         </DialogFooter>
       </DialogContent>

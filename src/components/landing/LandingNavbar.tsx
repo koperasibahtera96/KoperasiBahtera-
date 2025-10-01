@@ -141,32 +141,32 @@ export default function LandingNavbar({
     fetchResub();
   }, [session?.user]);
 
-  // Handle hash navigation when component mounts
-  useEffect(() => {
-    const handleHashNavigation = () => {
-      if (typeof window !== "undefined") {
-        const hash = window.location.hash.replace("#", "");
-        if (hash) {
-          setTimeout(() => {
-            const section = document.getElementById(hash);
-            if (section) {
-              section.scrollIntoView({ behavior: "smooth" });
-            }
-          }, 100); // Small delay to ensure DOM is ready
-        }
-      }
-    };
+  // // Handle hash navigation when component mounts
+  // useEffect(() => {
+  //   const handleHashNavigation = () => {
+  //     if (typeof window !== "undefined") {
+  //       const hash = window.location.hash.replace("#", "");
+  //       if (hash) {
+  //         setTimeout(() => {
+  //           const section = document.getElementById(hash);
+  //           if (section) {
+  //             section.scrollIntoView({ behavior: "smooth" });
+  //           }
+  //         }, 100); // Small delay to ensure DOM is ready
+  //       }
+  //     }
+  //   };
 
-    // Handle on mount
-    handleHashNavigation();
+  //   // Handle on mount
+  //   handleHashNavigation();
 
-    // Handle hash changes
-    window.addEventListener("hashchange", handleHashNavigation);
+  //   // Handle hash changes
+  //   window.addEventListener("hashchange", handleHashNavigation);
 
-    return () => {
-      window.removeEventListener("hashchange", handleHashNavigation);
-    };
-  }, []);
+  //   return () => {
+  //     window.removeEventListener("hashchange", handleHashNavigation);
+  //   };
+  // }, []);
 
   const handleLogout = async () => {
     await signOut({ redirect: true, callbackUrl: "/" });

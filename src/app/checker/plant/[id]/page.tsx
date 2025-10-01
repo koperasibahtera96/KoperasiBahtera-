@@ -51,7 +51,7 @@ function EditableField({
   fieldName,
   initialValue,
   onUpdate,
-  placeholder
+  placeholder,
 }: {
   plantId: string;
   fieldName: string;
@@ -82,14 +82,24 @@ function EditableField({
       if (response.ok) {
         onUpdate(value.trim() || "-");
         setIsEditing(false);
-        const fieldLabel = fieldName === 'location' ? 'Lokasi' : fieldName === 'blok' ? 'Blok' : 'Kavling';
+        const fieldLabel =
+          fieldName === "location"
+            ? "Lokasi"
+            : fieldName === "blok"
+            ? "Blok"
+            : "Kavling";
         showSuccess("Berhasil!", `${fieldLabel} berhasil diperbarui!`);
       } else {
         throw new Error(`Failed to update ${fieldName}`);
       }
     } catch (error) {
       console.error(`Error updating ${fieldName}:`, error);
-      const fieldLabel = fieldName === 'location' ? 'lokasi' : fieldName === 'blok' ? 'blok' : 'kavling';
+      const fieldLabel =
+        fieldName === "location"
+          ? "lokasi"
+          : fieldName === "blok"
+          ? "blok"
+          : "kavling";
       showError("Gagal memperbarui", `Gagal memperbarui ${fieldLabel}.`);
       setValue(initialValue);
     } finally {
@@ -104,12 +114,12 @@ function EditableField({
 
   if (isEditing) {
     return (
-      <div className="flex items-center gap-2 flex-1">
+      <div className="flex items-center gap-1 sm:gap-2 flex-1 min-w-0">
         <input
           type="text"
           value={value}
           onChange={(e) => setValue(e.target.value)}
-          className="flex-1 bg-white border border-[#324D3E]/20 rounded-lg px-2 py-1 text-sm text-[#324D3E] focus:outline-none focus:ring-1 focus:ring-[#324D3E]/40"
+          className="flex-1 min-w-0 bg-white border border-[#324D3E]/20 rounded-lg px-2 py-1 text-sm text-[#324D3E] focus:outline-none focus:ring-1 focus:ring-[#324D3E]/40"
           placeholder={placeholder}
           autoFocus
           disabled={isLoading}
@@ -118,7 +128,7 @@ function EditableField({
           size="sm"
           onClick={handleSave}
           disabled={isLoading}
-          className="bg-green-500 hover:bg-green-600 text-white px-2 py-1 h-7 text-xs"
+          className="bg-green-500 hover:bg-green-600 text-white px-1.5 sm:px-2 py-1 h-7 text-xs flex-shrink-0"
         >
           {isLoading ? "..." : "✓"}
         </Button>
@@ -127,7 +137,7 @@ function EditableField({
           variant="outline"
           onClick={handleCancel}
           disabled={isLoading}
-          className="border-gray-300 text-gray-600 hover:bg-gray-50 px-2 py-1 h-7 text-xs"
+          className="border-gray-300 text-gray-600 hover:bg-gray-50 px-1.5 sm:px-2 py-1 h-7 text-xs flex-shrink-0"
         >
           ✕
         </Button>
@@ -137,9 +147,7 @@ function EditableField({
 
   return (
     <div className="flex items-center gap-2">
-      <span className="font-semibold text-[#324D3E]">
-        {initialValue}
-      </span>
+      <span className="font-semibold text-[#324D3E]">{initialValue}</span>
       <Button
         size="sm"
         variant="ghost"
@@ -161,18 +169,19 @@ const statusColors: Record<string, string> = {
   "Kontrak Baru": "bg-gray-100 text-gray-800 border border-gray-300",
 
   // === Alpukat, Aren, Jengkol, Gaharu (ada overlap status) ===
-  "Penanaman": "bg-green-50 text-green-600 border border-green-200",
-  "Penyiraman": "bg-cyan-50 text-cyan-600 border border-cyan-200",
-  "Pemupukan": "bg-yellow-50 text-yellow-600 border border-yellow-200",
+  Penanaman: "bg-green-50 text-green-600 border border-green-200",
+  Penyiraman: "bg-cyan-50 text-cyan-600 border border-cyan-200",
+  Pemupukan: "bg-yellow-50 text-yellow-600 border border-yellow-200",
   "Penyiangan Gulma": "bg-lime-50 text-lime-700 border border-lime-200",
   "Penyemprotan Hama": "bg-red-50 text-red-600 border border-red-200",
   "Pemangkasan cabang": "bg-purple-50 text-purple-600 border border-purple-200",
-  "Pemangkasan daun": "bg-emerald-50 text-emerald-600 border border-emerald-200",
+  "Pemangkasan daun":
+    "bg-emerald-50 text-emerald-600 border border-emerald-200",
   "Perawatan pelepah": "bg-teal-50 text-teal-600 border border-teal-200",
   "Cek kesehatan": "bg-indigo-50 text-indigo-600 border border-indigo-200",
-  "Panen": "bg-pink-50 text-pink-600 border border-pink-200",
-  "Sakit": "bg-rose-50 text-rose-600 border border-rose-200",
-  "Lainnya": "bg-slate-50 text-slate-600 border border-slate-200",
+  Panen: "bg-pink-50 text-pink-600 border border-pink-200",
+  Sakit: "bg-rose-50 text-rose-600 border border-rose-200",
+  Lainnya: "bg-slate-50 text-slate-600 border border-slate-200",
 
   // === Gaharu specific ===
   "Inokulasi gaharu": "bg-orange-50 text-orange-600 border border-orange-200",
@@ -269,7 +278,9 @@ export default function PlantDetail({
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [selectedHistory, setSelectedHistory] = useState<PlantHistory | null>(null);
+  const [selectedHistory, setSelectedHistory] = useState<PlantHistory | null>(
+    null
+  );
   const [showModal, setShowModal] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editNotes, setEditNotes] = useState("");
@@ -287,7 +298,8 @@ export default function PlantDetail({
     updates: Record<string, boolean>;
     deletes: Record<string, boolean>;
   }>({ deletePlant: false, updates: {}, deletes: {} });
-  const { showError, showSuccess, showConfirmation, AlertComponent } = useAlert();
+  const { showError, showSuccess, showConfirmation, AlertComponent } =
+    useAlert();
 
   // ===== pagination state (baru, tanpa mengubah logic lain)
   const [currentPage, setCurrentPage] = useState(1);
@@ -302,7 +314,9 @@ export default function PlantDetail({
   // Fetch pending requests for this plant (pending status)
   const fetchPendingRequests = async () => {
     try {
-      const res = await fetch(`/api/admin/plant-requests?plantId=${id}&status=pending&limit=100`);
+      const res = await fetch(
+        `/api/admin/plant-requests?plantId=${id}&status=pending&limit=100`
+      );
       if (res.ok) {
         const data = await res.json();
         const items: any[] = data.data || [];
@@ -414,7 +428,10 @@ export default function PlantDetail({
     // formData.append("folder", "/plant-photos");
     // formData.append("tags", "checker,video");
 
-    const res = await fetch("/api/upload-video", { method: "POST", body: formData });
+    const res = await fetch("/api/upload-video", {
+      method: "POST",
+      body: formData,
+    });
     const data = await res.json();
     if (!res.ok || !data?.videoUrl) {
       throw new Error(data?.error || "Upload video gagal");
@@ -424,11 +441,17 @@ export default function PlantDetail({
 
   const handleSubmit = async () => {
     if (!reportStatus || !notes) {
-      showError("Mohon lengkapi data", "Status dan catatan laporan harus diisi.");
+      showError(
+        "Mohon lengkapi data",
+        "Status dan catatan laporan harus diisi."
+      );
       return;
     }
     if (reportStatus === "lainnya" && !customStatus.trim()) {
-      showError("Mohon lengkapi status custom", "Status custom harus diisi jika memilih 'Lainnya'.");
+      showError(
+        "Mohon lengkapi status custom",
+        "Status custom harus diisi jika memilih 'Lainnya'."
+      );
       return;
     }
 
@@ -472,7 +495,8 @@ export default function PlantDetail({
       const finalStatus =
         reportStatus === "lainnya"
           ? customStatus
-          : statusOptions.find((s) => s.value === reportStatus)?.label || reportStatus;
+          : statusOptions.find((s) => s.value === reportStatus)?.label ||
+            reportStatus;
 
       const newHistoryEntry: any = {
         id: Date.now(),
@@ -522,7 +546,8 @@ export default function PlantDetail({
       }
     } catch (error: unknown) {
       console.error("Error saving report:", error);
-      const errorMessage = error instanceof Error ? error.message : "Unknown error occurred";
+      const errorMessage =
+        error instanceof Error ? error.message : "Unknown error occurred";
       showError("Gagal menyimpan", `Gagal menyimpan laporan: ${errorMessage}`);
     } finally {
       setIsSubmitting(false);
@@ -543,10 +568,15 @@ export default function PlantDetail({
 
     try {
       const updatedHistory = (plantData.history || []).map((item) =>
-        item.id === selectedHistory.id ? { ...item, description: editNotes } : item
+        item.id === selectedHistory.id
+          ? { ...item, description: editNotes }
+          : item
       );
 
-      const updatedPlant: PlantInstance = { ...plantData, history: updatedHistory };
+      const updatedPlant: PlantInstance = {
+        ...plantData,
+        history: updatedHistory,
+      };
 
       const response = await fetch(`/api/plants/${id}`, {
         method: "PUT",
@@ -578,8 +608,13 @@ export default function PlantDetail({
       if (!confirmed) return;
 
       try {
-        const updatedHistory = (plantData.history || []).filter((item) => item.id !== historyId);
-        const updatedPlant: PlantInstance = { ...plantData, history: updatedHistory };
+        const updatedHistory = (plantData.history || []).filter(
+          (item) => item.id !== historyId
+        );
+        const updatedPlant: PlantInstance = {
+          ...plantData,
+          history: updatedHistory,
+        };
 
         const response = await fetch(`/api/plants/${id}`, {
           method: "PUT",
@@ -629,8 +664,12 @@ export default function PlantDetail({
         }
       } catch (error: unknown) {
         console.error("Error deleting plant:", error);
-        const errorMessage = error instanceof Error ? error.message : "Unknown error occurred";
-        showError("Gagal menghapus", `Gagal menghapus tanaman: ${errorMessage}`);
+        const errorMessage =
+          error instanceof Error ? error.message : "Unknown error occurred";
+        showError(
+          "Gagal menghapus",
+          `Gagal menghapus tanaman: ${errorMessage}`
+        );
       }
     } else if (session?.user.role === "spv_staff") {
       setRequestFormData({
@@ -648,9 +687,13 @@ export default function PlantDetail({
     if (selectedHistory?.imageUrl) {
       const link = document.createElement("a");
       link.href = selectedHistory.imageUrl;
-      const match = selectedHistory.imageUrl.match(/\.(mp4|webm|mov|m4v|ogg|png|jpe?g|webp|gif)(\?|#|$)/i);
+      const match = selectedHistory.imageUrl.match(
+        /\.(mp4|webm|mov|m4v|ogg|png|jpe?g|webp|gif)(\?|#|$)/i
+      );
       const ext = match ? match[1] : "bin";
-      link.download = `${plantData?.instanceName || ""}-${selectedHistory.type}-${selectedHistory.date}.${ext}`;
+      link.download = `${plantData?.instanceName || ""}-${
+        selectedHistory.type
+      }-${selectedHistory.date}.${ext}`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -662,11 +705,17 @@ export default function PlantDetail({
       showError("Error", "Tipe permintaan harus dipilih");
       return;
     }
-    if (requestFormData.requestType === "delete" && !requestFormData.deleteReason?.trim()) {
+    if (
+      requestFormData.requestType === "delete" &&
+      !requestFormData.deleteReason?.trim()
+    ) {
       showError("Error", "Alasan penghapusan harus diisi");
       return;
     }
-    if (requestFormData.requestType === "update_history" && !requestFormData.newDescription?.trim()) {
+    if (
+      requestFormData.requestType === "update_history" &&
+      !requestFormData.newDescription?.trim()
+    ) {
       showError("Error", "Deskripsi baru harus diisi");
       return;
     }
@@ -681,7 +730,10 @@ export default function PlantDetail({
       });
 
       if (response.ok) {
-        showSuccess("Berhasil!", "Permintaan berhasil diajukan dan akan direview oleh admin");
+        showSuccess(
+          "Berhasil!",
+          "Permintaan berhasil diajukan dan akan direview oleh admin"
+        );
         setShowRequestModal(false);
         setRequestFormData({
           requestType: "delete",
@@ -702,8 +754,12 @@ export default function PlantDetail({
       }
     } catch (error: unknown) {
       console.error("Error submitting request:", error);
-      const errorMessage = error instanceof Error ? error.message : "Unknown error occurred";
-      showError("Gagal mengajukan", `Gagal mengajukan permintaan: ${errorMessage}`);
+      const errorMessage =
+        error instanceof Error ? error.message : "Unknown error occurred";
+      showError(
+        "Gagal mengajukan",
+        `Gagal mengajukan permintaan: ${errorMessage}`
+      );
     } finally {
       setSubmittingRequest(false);
     }
@@ -720,185 +776,185 @@ export default function PlantDetail({
     setShowRequestModal(true);
   };
 
-const handleDownloadHistoryPDF = async () => {
-  if (!plantData) return;
+  const handleDownloadHistoryPDF = async () => {
+    if (!plantData) return;
 
-  const parseIDDate = (d: string) => {
-    const [dd, mm, yyyy] = d.split("/");
-    return new Date(Number(yyyy), Number(mm) - 1, Number(dd)).getTime();
-  };
+    const parseIDDate = (d: string) => {
+      const [dd, mm, yyyy] = d.split("/");
+      return new Date(Number(yyyy), Number(mm) - 1, Number(dd)).getTime();
+    };
 
-  try {
-    const pdf = new jsPDF();
-    const pageWidth = pdf.internal.pageSize.getWidth();
-    const pageHeight = pdf.internal.pageSize.getHeight();
-    let y = 20;
-
-    // ===== HEADER (tetap)
     try {
-      const logoResponse = await fetch("/images/koperasi-logo.jpg");
-      const logoBlob = await logoResponse.blob();
-      const logoReader = new FileReader();
+      const pdf = new jsPDF();
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+      let y = 20;
 
-      await new Promise<void>((resolve) => {
-        logoReader.onload = () => {
-          const logoData = logoReader.result as string;
-          pdf.addImage(logoData, "JPEG", 20, y, 30, 30);
-          resolve();
-        };
-        logoReader.readAsDataURL(logoBlob);
+      // ===== HEADER (tetap)
+      try {
+        const logoResponse = await fetch("/images/koperasi-logo.jpg");
+        const logoBlob = await logoResponse.blob();
+        const logoReader = new FileReader();
+
+        await new Promise<void>((resolve) => {
+          logoReader.onload = () => {
+            const logoData = logoReader.result as string;
+            pdf.addImage(logoData, "JPEG", 20, y, 30, 30);
+            resolve();
+          };
+          logoReader.readAsDataURL(logoBlob);
+        });
+
+        pdf.setFontSize(16);
+        pdf.setFont("helvetica", "bold");
+        pdf.text("Koperasi Bintang Merah Sejahtera", 60, y + 15);
+
+        y += 40;
+        pdf.line(20, y, pageWidth - 20, y);
+        y += 12; // sedikit dirapatkan
+      } catch {
+        pdf.setFontSize(16);
+        pdf.setFont("helvetica", "bold");
+        pdf.text("Koperasi Bintang Merah Sejahtera", 20, y);
+        y += 18;
+      }
+
+      // ===== Info tanaman (tetap)
+      pdf.setFontSize(18);
+      pdf.setFont("helvetica", "bold");
+      pdf.text(`Riwayat Tanaman: ${plantData.instanceName || ""}`, 20, y);
+      y += 9;
+
+      pdf.setFontSize(12);
+      pdf.setFont("helvetica", "normal");
+      pdf.text(`Jumlah Tanam: ${plantData.qrCode}`, 20, y);
+      y += 5;
+      pdf.text(`Pemilik: ${plantData.owner}`, 20, y);
+      y += 5;
+      pdf.text(`Lokasi: ${plantData.location}`, 20, y);
+      y += 10;
+
+      // ===== Sort: "Kontrak Baru" selalu paling atas, sisanya tanggal paling awal
+      const sortedHistory = [...(plantData.history || [])].sort((a, b) => {
+        const aIsKontrak = (a.type || "").toLowerCase() === "kontrak baru";
+        const bIsKontrak = (b.type || "").toLowerCase() === "kontrak baru";
+        if (aIsKontrak && !bIsKontrak) return -1;
+        if (!aIsKontrak && bIsKontrak) return 1;
+
+        const ta = parseIDDate(a.date);
+        const tb = parseIDDate(b.date);
+        if (ta !== tb) return ta - tb; // paling awal dulu
+        return (a.id ?? 0) - (b.id ?? 0);
       });
 
-      pdf.setFontSize(16);
-      pdf.setFont("helvetica", "bold");
-      pdf.text("Koperasi Bintang Merah Sejahtera", 60, y + 15);
+      // ===== Render item (lebih rapat)
+      const left = 20;
+      const right = pageWidth - 20;
+      const cardX = left - 2;
+      const cardW = right - cardX;
+      const mediaW = 50; // diperkecil agar card ringkas
+      const mediaH = 50;
+      const verticalGap = 8; // jarak antar card
 
-      y += 40;
-      pdf.line(20, y, pageWidth - 20, y);
-      y += 12; // sedikit dirapatkan
-    } catch {
-      pdf.setFontSize(16);
-      pdf.setFont("helvetica", "bold");
-      pdf.text("Koperasi Bintang Merah Sejahtera", 20, y);
-      y += 18;
-    }
+      for (let i = 0; i < sortedHistory.length; i++) {
+        const item = sortedHistory[i];
 
-    // ===== Info tanaman (tetap)
-    pdf.setFontSize(18);
-    pdf.setFont("helvetica", "bold");
-    pdf.text(`Riwayat Tanaman: ${plantData.instanceName || ""}`, 20, y);
-    y += 9;
-
-    pdf.setFontSize(12);
-    pdf.setFont("helvetica", "normal");
-    pdf.text(`Jumlah Tanam: ${plantData.qrCode}`, 20, y);
-    y += 5;
-    pdf.text(`Pemilik: ${plantData.owner}`, 20, y);
-    y += 5;
-    pdf.text(`Lokasi: ${plantData.location}`, 20, y);
-    y += 10;
-
-    // ===== Sort: "Kontrak Baru" selalu paling atas, sisanya tanggal paling awal
-    const sortedHistory = [...(plantData.history || [])].sort((a, b) => {
-      const aIsKontrak = (a.type || "").toLowerCase() === "kontrak baru";
-      const bIsKontrak = (b.type || "").toLowerCase() === "kontrak baru";
-      if (aIsKontrak && !bIsKontrak) return -1;
-      if (!aIsKontrak && bIsKontrak) return 1;
-
-      const ta = parseIDDate(a.date);
-      const tb = parseIDDate(b.date);
-      if (ta !== tb) return ta - tb; // paling awal dulu
-      return (a.id ?? 0) - (b.id ?? 0);
-    });
-
-    // ===== Render item (lebih rapat)
-    const left = 20;
-    const right = pageWidth - 20;
-    const cardX = left - 2;
-    const cardW = right - cardX;
-    const mediaW = 50;        // diperkecil agar card ringkas
-    const mediaH = 50;
-    const verticalGap = 8;    // jarak antar card
-
-    for (let i = 0; i < sortedHistory.length; i++) {
-      const item = sortedHistory[i];
-
-      // estimasi tinggi minimum card agar kira-kira bisa 3 per halaman
-      const minNeeded = 75;
-      if (y + minNeeded > pageHeight - 20) {
-        pdf.addPage();
-        y = 18; // margin atas halaman baru
-      }
-
-      const cardTop = y;
-      let cursor = y + 7;
-
-      // Title kiri & tanggal kanan (geser 4pt dari tepi)
-      pdf.setFontSize(14);
-      pdf.setFont("helvetica", "bold");
-      pdf.text(`${i + 1}. ${item.type}`, left, cursor);
-
-      pdf.setFontSize(10);
-      pdf.setFont("helvetica", "normal");
-      const dateText = `Tanggal: ${item.date}`;
-      const dateW = pdf.getTextWidth(dateText);
-      pdf.text(dateText, right - dateW - 4, cursor); // <= geser dari tepi
-
-      cursor += 5;
-
-      // Frame media (hitam pekat)
-      pdf.setDrawColor(0);
-      pdf.setLineWidth(0.4);
-      pdf.rect(left, cursor, mediaW, mediaH);
-
-      if (item.imageUrl) {
-        if (isVideoUrl(item.imageUrl)) {
-          pdf.setFontSize(9);
-          pdf.text("VIDEO (lihat di aplikasi)", left + 3, cursor + 10);
-        } else {
-          try {
-            const response = await fetch(item.imageUrl);
-            const blob = await response.blob();
-            const reader = new FileReader();
-
-            await new Promise<void>((resolve) => {
-              reader.onload = () => {
-                const imgData = reader.result as string;
-                pdf.addImage(
-                  imgData,
-                  "JPEG",
-                  left + 1.5,
-                  cursor + 1.5,
-                  mediaW - 3,
-                  mediaH - 3
-                );
-                resolve();
-              };
-              reader.readAsDataURL(blob);
-            });
-          } catch {
-            pdf.setFontSize(9);
-            pdf.text("Gambar tidak dapat dimuat", left + 3, cursor + 10);
-          }
+        // estimasi tinggi minimum card agar kira-kira bisa 3 per halaman
+        const minNeeded = 75;
+        if (y + minNeeded > pageHeight - 20) {
+          pdf.addPage();
+          y = 18; // margin atas halaman baru
         }
-      } else {
-        pdf.setFontSize(9);
-        pdf.text("Tidak ada media", left + 3, cursor + 10);
+
+        const cardTop = y;
+        let cursor = y + 7;
+
+        // Title kiri & tanggal kanan (geser 4pt dari tepi)
+        pdf.setFontSize(14);
+        pdf.setFont("helvetica", "bold");
+        pdf.text(`${i + 1}. ${item.type}`, left, cursor);
+
+        pdf.setFontSize(10);
+        pdf.setFont("helvetica", "normal");
+        const dateText = `Tanggal: ${item.date}`;
+        const dateW = pdf.getTextWidth(dateText);
+        pdf.text(dateText, right - dateW - 4, cursor); // <= geser dari tepi
+
+        cursor += 5;
+
+        // Frame media (hitam pekat)
+        pdf.setDrawColor(0);
+        pdf.setLineWidth(0.4);
+        pdf.rect(left, cursor, mediaW, mediaH);
+
+        if (item.imageUrl) {
+          if (isVideoUrl(item.imageUrl)) {
+            pdf.setFontSize(9);
+            pdf.text("VIDEO (lihat di aplikasi)", left + 3, cursor + 10);
+          } else {
+            try {
+              const response = await fetch(item.imageUrl);
+              const blob = await response.blob();
+              const reader = new FileReader();
+
+              await new Promise<void>((resolve) => {
+                reader.onload = () => {
+                  const imgData = reader.result as string;
+                  pdf.addImage(
+                    imgData,
+                    "JPEG",
+                    left + 1.5,
+                    cursor + 1.5,
+                    mediaW - 3,
+                    mediaH - 3
+                  );
+                  resolve();
+                };
+                reader.readAsDataURL(blob);
+              });
+            } catch {
+              pdf.setFontSize(9);
+              pdf.text("Gambar tidak dapat dimuat", left + 3, cursor + 10);
+            }
+          }
+        } else {
+          pdf.setFontSize(9);
+          pdf.text("Tidak ada media", left + 3, cursor + 10);
+        }
+
+        // Catatan di samping media
+        const textLeft = left + mediaW + 8;
+        pdf.setFontSize(10);
+        pdf.setFont("helvetica", "bold");
+        pdf.text("Catatan =", textLeft, cursor + 7);
+
+        pdf.setFont("helvetica", "normal");
+        const maxWidth = right - textLeft;
+        const wrapped = pdf.splitTextToSize(item.description || "-", maxWidth);
+        pdf.text(wrapped, textLeft, cursor + 13);
+
+        // hitung tinggi konten
+        const textHeight = (wrapped.length ? wrapped.length : 1) * 5 + 18;
+        const contentHeight = Math.max(mediaH + 6, textHeight);
+        const cardBottom = cardTop + contentHeight + 8;
+
+        // Border card (hitam pekat & lebih tegas)
+        pdf.setDrawColor(0);
+        pdf.setLineWidth(0.8);
+        pdf.rect(cardX, cardTop, cardW, cardBottom - cardTop, "S");
+
+        // pindah Y (jarak antar card diperkecil)
+        y = cardBottom + verticalGap;
       }
 
-      // Catatan di samping media
-      const textLeft = left + mediaW + 8;
-      pdf.setFontSize(10);
-      pdf.setFont("helvetica", "bold");
-      pdf.text("Catatan =", textLeft, cursor + 7);
-
-      pdf.setFont("helvetica", "normal");
-      const maxWidth = right - textLeft;
-      const wrapped = pdf.splitTextToSize(item.description || "-", maxWidth);
-      pdf.text(wrapped, textLeft, cursor + 13);
-
-      // hitung tinggi konten
-      const textHeight = (wrapped.length ? wrapped.length : 1) * 5 + 18;
-      const contentHeight = Math.max(mediaH + 6, textHeight);
-      const cardBottom = cardTop + contentHeight + 8;
-
-      // Border card (hitam pekat & lebih tegas)
-      pdf.setDrawColor(0);
-      pdf.setLineWidth(0.8);
-      pdf.rect(cardX, cardTop, cardW, cardBottom - cardTop, "S");
-
-      // pindah Y (jarak antar card diperkecil)
-      y = cardBottom + verticalGap;
+      pdf.save(
+        `Riwayat-${plantData.instanceName || ""}-${plantData.qrCode}.pdf`
+      );
+    } catch {
+      console.error("Error generating PDF");
+      showError("Gagal membuat PDF", "Gagal membuat PDF. Silakan coba lagi.");
     }
-
-    pdf.save(`Riwayat-${plantData.instanceName || ""}-${plantData.qrCode}.pdf`);
-  } catch {
-    console.error("Error generating PDF");
-    showError("Gagal membuat PDF", "Gagal membuat PDF. Silakan coba lagi.");
-  }
-};
-
-
+  };
 
   if (loading) {
     return (
@@ -908,15 +964,31 @@ const handleDownloadHistoryPDF = async () => {
           <LandingNavbar hideNavigation={true} />
         </header>
 
-        <main className="pt-16 sm:pt-20 px-2 sm:px-4 md:px-6 lg:px-8 max-w-7xl mx-auto" role="main">
+        <main
+          className="pt-16 sm:pt-20 px-2 sm:px-4 md:px-6 lg:px-8 max-w-7xl mx-auto"
+          role="main"
+        >
           <div className="space-y-4 sm:space-y-6 lg:space-y-8 py-4 sm:py-6 lg:py-8">
             <header className="text-center px-2 sm:px-0">
-              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-[#324D3E] mb-2 sm:mb-4">Detail Tanaman</h1>
-              <p className="text-[#889063] text-sm sm:text-base lg:text-lg">Memuat data tanaman...</p>
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-[#324D3E] mb-2 sm:mb-4">
+                Detail Tanaman
+              </h1>
+              <p className="text-[#889063] text-sm sm:text-base lg:text-lg">
+                Memuat data tanaman...
+              </p>
             </header>
-            <section className="bg-white/90 backdrop-blur-xl rounded-2xl sm:rounded-3xl shadow-xl border border-[#324D3E]/10 p-6 sm:p-8 lg:p-12 text-center" aria-label="Loading">
-              <div className="animate-spin rounded-full h-12 w-12 sm:h-16 sm:w-16 border-b-4 border-[#324D3E] mx-auto mb-4 sm:mb-6" role="status" aria-label="Loading"></div>
-              <p className="text-[#889063] text-sm sm:text-base lg:text-lg">Memuat data tanaman...</p>
+            <section
+              className="bg-white/90 backdrop-blur-xl rounded-2xl sm:rounded-3xl shadow-xl border border-[#324D3E]/10 p-6 sm:p-8 lg:p-12 text-center"
+              aria-label="Loading"
+            >
+              <div
+                className="animate-spin rounded-full h-12 w-12 sm:h-16 sm:w-16 border-b-4 border-[#324D3E] mx-auto mb-4 sm:mb-6"
+                role="status"
+                aria-label="Loading"
+              ></div>
+              <p className="text-[#889063] text-sm sm:text-base lg:text-lg">
+                Memuat data tanaman...
+              </p>
             </section>
           </div>
         </main>
@@ -931,14 +1003,26 @@ const handleDownloadHistoryPDF = async () => {
           <LandingNavbar hideNavigation={true} />
         </header>
 
-        <main className="pt-16 sm:pt-20 px-2 sm:px-4 md:px-6 lg:px-8 max-w-7xl mx-auto" role="main">
+        <main
+          className="pt-16 sm:pt-20 px-2 sm:px-4 md:px-6 lg:px-8 max-w-7xl mx-auto"
+          role="main"
+        >
           <div className="space-y-4 sm:space-y-6 lg:space-y-8 py-4 sm:py-6 lg:py-8">
             <header className="text-center px-2 sm:px-0">
-              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-[#324D3E] mb-2 sm:mb-4">Detail Tanaman</h1>
-              <p className="text-[#889063] text-sm sm:text-base lg:text-lg">Tanaman tidak ditemukan</p>
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-[#324D3E] mb-2 sm:mb-4">
+                Detail Tanaman
+              </h1>
+              <p className="text-[#889063] text-sm sm:text-base lg:text-lg">
+                Tanaman tidak ditemukan
+              </p>
             </header>
-            <section className="bg-white/90 backdrop-blur-xl rounded-2xl sm:rounded-3xl shadow-xl border border-[#324D3E]/10 p-6 sm:p-8 lg:p-12 text-center" aria-label="Error">
-              <h2 className="text-xl sm:text-2xl font-bold text-[#324D3E] mb-3 sm:mb-4">Tanaman Tidak Ditemukan</h2>
+            <section
+              className="bg-white/90 backdrop-blur-xl rounded-2xl sm:rounded-3xl shadow-xl border border-[#324D3E]/10 p-6 sm:p-8 lg:p-12 text-center"
+              aria-label="Error"
+            >
+              <h2 className="text-xl sm:text-2xl font-bold text-[#324D3E] mb-3 sm:mb-4">
+                Tanaman Tidak Ditemukan
+              </h2>
               <Link
                 href="/checker"
                 className="inline-flex items-center gap-2 px-4 sm:px-6 py-2 sm:py-3 bg-gradient-to-r from-[#324D3E] to-[#4C3D19] text-white font-medium rounded-xl sm:rounded-2xl hover:shadow-lg transition-all duration-300 text-sm sm:text-base"
@@ -960,7 +1044,10 @@ const handleDownloadHistoryPDF = async () => {
   const totalPages = Math.ceil(historyItems.length / ITEMS_PER_PAGE) || 1;
   const safePage = Math.min(Math.max(currentPage, 1), totalPages);
   const startIndex = (safePage - 1) * ITEMS_PER_PAGE;
-  const currentItems = historyItems.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+  const currentItems = historyItems.slice(
+    startIndex,
+    startIndex + ITEMS_PER_PAGE
+  );
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-emerald-50 font-[family-name:var(--font-poppins)]">
@@ -969,7 +1056,10 @@ const handleDownloadHistoryPDF = async () => {
         <LandingNavbar hideNavigation={true} />
       </header>
 
-      <main className="pt-16 sm:pt-20 px-2 sm:px-4 md:px-6 lg:px-8 max-w-7xl mx-auto" role="main">
+      <main
+        className="pt-16 sm:pt-20 px-2 sm:px-4 md:px-6 lg:px-8 max-w-7xl mx-auto"
+        role="main"
+      >
         <div className="space-y-4 sm:space-y-6 lg:space-y-8 py-4 sm:py-6 lg:py-8">
           {/* Header halaman */}
           <header className="text-center px-2 sm:px-0">
@@ -981,12 +1071,19 @@ const handleDownloadHistoryPDF = async () => {
               <span className="hidden sm:inline">Kembali ke Dashboard</span>
               <span className="sm:hidden">Kembali</span>
             </Link>
-            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-[#324D3E] mb-2 sm:mb-4 px-2">Detail Tanaman</h1>
-            <p className="text-[#889063] text-sm sm:text-base lg:text-lg px-2">Monitor dan kelola tanaman {plantData.instanceName || ""}</p>
+            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-[#324D3E] mb-2 sm:mb-4 px-2">
+              Detail Tanaman
+            </h1>
+            <p className="text-[#889063] text-sm sm:text-base lg:text-lg px-2">
+              Monitor dan kelola tanaman {plantData.instanceName || ""}
+            </p>
           </header>
 
           {/* Kartu info */}
-          <section className="bg-white/90 backdrop-blur-xl rounded-2xl sm:rounded-3xl shadow-xl border border-[#324D3E]/10 p-4 sm:p-6 lg:p-8 mb-4 sm:mb-6 lg:mb-8" aria-label="Plant Information">
+          <section
+            className="bg-white/90 backdrop-blur-xl rounded-2xl sm:rounded-3xl shadow-xl border border-[#324D3E]/10 p-4 sm:p-6 lg:p-8 mb-4 sm:mb-6 lg:mb-8"
+            aria-label="Plant Information"
+          >
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 lg:gap-8">
               <div className="flex items-center gap-3 sm:gap-4 md:col-span-2">
                 <div className="relative w-12 h-12 sm:w-16 sm:h-16 bg-gradient-to-br from-[#324D3E] to-[#4C3D19] rounded-xl sm:rounded-2xl overflow-hidden shadow-lg flex-shrink-0">
@@ -1006,7 +1103,9 @@ const handleDownloadHistoryPDF = async () => {
                 </div>
 
                 <div className="min-w-0 flex-1">
-                  <p className="text-xs sm:text-sm text-[#889063] mb-1">Jenis Tanaman</p>
+                  <p className="text-xs sm:text-sm text-[#889063] mb-1">
+                    Jenis Tanaman
+                  </p>
                   <h2 className="text-lg sm:text-xl lg:text-2xl font-bold text-[#324D3E] truncate">
                     {plantData.instanceName || ""}
                   </h2>
@@ -1015,7 +1114,9 @@ const handleDownloadHistoryPDF = async () => {
 
               <div className="grid grid-cols-1 sm:grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4 md:col-span-2">
                 <div className="bg-white/60 rounded-xl sm:rounded-2xl p-3 sm:p-4 border border-[#324D3E]/10">
-                  <p className="text-xs sm:text-sm text-[#889063] mb-1">No. Kontrak</p>
+                  <p className="text-xs sm:text-sm text-[#889063] mb-1">
+                    No. Kontrak
+                  </p>
                   <div className="flex items-center gap-2">
                     <FileText className="w-3 h-3 sm:w-4 sm:h-4 text-[#4C3D19] flex-shrink-0" />
                     <span className="font-semibold text-[#324D3E] text-sm sm:text-base truncate">
@@ -1025,7 +1126,9 @@ const handleDownloadHistoryPDF = async () => {
                 </div>
 
                 <div className="bg-white/60 rounded-xl sm:rounded-2xl p-3 sm:p-4 border border-[#324D3E]/10">
-                  <p className="text-xs sm:text-sm text-[#889063] mb-1">Pemilik</p>
+                  <p className="text-xs sm:text-sm text-[#889063] mb-1">
+                    Pemilik
+                  </p>
                   <div className="flex items-center gap-2">
                     <User className="w-3 h-3 sm:w-4 sm:h-4 text-[#4C3D19] flex-shrink-0" />
                     <span className="font-semibold text-[#324D3E] text-sm sm:text-base truncate">
@@ -1035,15 +1138,20 @@ const handleDownloadHistoryPDF = async () => {
                 </div>
 
                 <div className="bg-white/60 rounded-xl sm:rounded-2xl p-3 sm:p-4 border border-[#324D3E]/10">
-                  <p className="text-xs sm:text-sm text-[#889063] mb-1">Lokasi Tanam</p>
+                  <p className="text-xs sm:text-sm text-[#889063] mb-1">
+                    Lokasi Tanam
+                  </p>
                   <div className="flex items-center gap-2 min-w-0">
                     <MapPin className="w-3 h-3 sm:w-4 sm:h-4 text-[#4C3D19] flex-shrink-0" />
-                    {(session?.user.role === "admin" || session?.user.role === "spv_staff") ? (
+                    {session?.user.role === "admin" ||
+                    session?.user.role === "spv_staff" ? (
                       <EditableField
                         plantId={id}
                         fieldName="location"
                         initialValue={plantData.location || "-"}
-                        onUpdate={(newLocation) => setPlantData({ ...plantData, location: newLocation })}
+                        onUpdate={(newLocation) =>
+                          setPlantData({ ...plantData, location: newLocation })
+                        }
                         placeholder="Masukkan lokasi tanam..."
                       />
                     ) : (
@@ -1055,15 +1163,20 @@ const handleDownloadHistoryPDF = async () => {
                 </div>
 
                 <div className="bg-white/60 rounded-xl sm:rounded-2xl p-3 sm:p-4 border border-[#324D3E]/10">
-                  <p className="text-xs sm:text-sm text-[#889063] mb-1">Kavling</p>
+                  <p className="text-xs sm:text-sm text-[#889063] mb-1">
+                    Kavling
+                  </p>
                   <div className="flex items-center gap-2 min-w-0">
                     <MapPin className="w-3 h-3 sm:w-4 sm:h-4 text-[#4C3D19] flex-shrink-0" />
-                    {(session?.user.role === "admin" || session?.user.role === "spv_staff") ? (
+                    {session?.user.role === "admin" ||
+                    session?.user.role === "spv_staff" ? (
                       <EditableField
                         plantId={id}
                         fieldName="kavling"
                         initialValue={plantData.kavling || "-"}
-                        onUpdate={(newKavling) => setPlantData({ ...plantData, kavling: newKavling })}
+                        onUpdate={(newKavling) =>
+                          setPlantData({ ...plantData, kavling: newKavling })
+                        }
                         placeholder="Masukkan kavling..."
                       />
                     ) : (
@@ -1078,12 +1191,15 @@ const handleDownloadHistoryPDF = async () => {
                   <p className="text-xs sm:text-sm text-[#889063] mb-1">Blok</p>
                   <div className="flex items-center gap-2 min-w-0">
                     <MapPin className="w-3 h-3 sm:w-4 sm:h-4 text-[#4C3D19] flex-shrink-0" />
-                    {(session?.user.role === "admin" || session?.user.role === "spv_staff") ? (
+                    {session?.user.role === "admin" ||
+                    session?.user.role === "spv_staff" ? (
                       <EditableField
                         plantId={id}
                         fieldName="blok"
                         initialValue={plantData.blok || "-"}
-                        onUpdate={(newBlok) => setPlantData({ ...plantData, blok: newBlok })}
+                        onUpdate={(newBlok) =>
+                          setPlantData({ ...plantData, blok: newBlok })
+                        }
                         placeholder="Masukkan blok..."
                       />
                     ) : (
@@ -1095,7 +1211,9 @@ const handleDownloadHistoryPDF = async () => {
                 </div>
 
                 <div className="bg-white/60 rounded-xl sm:rounded-2xl p-3 sm:p-4 border border-[#324D3E]/10">
-                  <p className="text-xs sm:text-sm text-[#889063] mb-1">Jumlah Tanam</p>
+                  <p className="text-xs sm:text-sm text-[#889063] mb-1">
+                    Jumlah Tanam
+                  </p>
                   <div className="flex items-center gap-2">
                     <FileText className="w-3 h-3 sm:w-4 sm:h-4 text-[#4C3D19] flex-shrink-0" />
                     <span className="font-semibold text-[#324D3E] text-sm sm:text-base break-all">
@@ -1121,20 +1239,29 @@ const handleDownloadHistoryPDF = async () => {
                 {/* Toggle Foto/Video, uploaders, status, notes, tombol — TIDAK diubah */}
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                   <span className="text-xs sm:text-sm text-[#889063]">
-                    Wajib lampirkan salah satu: <b>Foto ≤2MB</b> atau <b>Video ≤30 detik</b>
+                    Wajib lampirkan salah satu: <b>Foto ≤2MB</b> atau{" "}
+                    <b>Video ≤30 detik</b>
                   </span>
                   <div className="inline-flex overflow-hidden rounded-lg sm:rounded-xl border border-[#324D3E]/20 self-start sm:self-auto">
                     <button
                       type="button"
                       onClick={() => setUploadMode("photo")}
-                      className={`px-3 sm:px-4 py-2 text-xs sm:text-sm ${uploadMode === "photo" ? "bg-[#324D3E] text-white" : "bg-white text-[#324D3E]"}`}
+                      className={`px-3 sm:px-4 py-2 text-xs sm:text-sm ${
+                        uploadMode === "photo"
+                          ? "bg-[#324D3E] text-white"
+                          : "bg-white text-[#324D3E]"
+                      }`}
                     >
                       Foto
                     </button>
                     <button
                       type="button"
                       onClick={() => setUploadMode("video")}
-                      className={`px-3 sm:px-4 py-2 text-xs sm:text-sm ${uploadMode === "video" ? "bg-[#324D3E] text-white" : "bg-white text-[#324D3E]"}`}
+                      className={`px-3 sm:px-4 py-2 text-xs sm:text-sm ${
+                        uploadMode === "video"
+                          ? "bg-[#324D3E] text-white"
+                          : "bg-white text-[#324D3E]"
+                      }`}
                     >
                       Video
                     </button>
@@ -1143,36 +1270,71 @@ const handleDownloadHistoryPDF = async () => {
 
                 {uploadMode === "photo" ? (
                   <div>
-                    <label className="block text-xs sm:text-sm font-medium text-[#324D3E] mb-2 sm:mb-3">Foto Tanaman (Wajib, Max 2MB)</label>
+                    <label className="block text-xs sm:text-sm font-medium text-[#324D3E] mb-2 sm:mb-3">
+                      Foto Tanaman (Wajib, Max 2MB)
+                    </label>
                     <div className="border-2 border-dashed border-[#324D3E]/30 rounded-xl sm:rounded-2xl p-4 sm:p-6 lg:p-8 text-center hover:border-[#324D3E] hover:bg-[#324D3E]/5 transition-all duration-300 cursor-pointer">
-                      <input type="file" accept="image/*" onChange={handlePhotoChange} className="hidden" id="photo-upload" aria-label="Upload photo file" />
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handlePhotoChange}
+                        className="hidden"
+                        id="photo-upload"
+                        aria-label="Upload photo file"
+                      />
                       <label htmlFor="photo-upload" className="cursor-pointer">
                         <Upload className="w-8 h-8 sm:w-10 sm:h-10 lg:w-12 lg:h-12 mx-auto mb-3 sm:mb-4 text-[#889063]" />
                         <p className="text-[#324D3E] mb-2 font-medium text-sm sm:text-base">
-                          {selectedPhoto ? selectedPhoto.name : "Klik untuk upload atau seret foto"}
+                          {selectedPhoto
+                            ? selectedPhoto.name
+                            : "Klik untuk upload atau seret foto"}
                         </p>
-                        {selectedPhoto && <p className="text-xs sm:text-sm text-[#889063]">Ukuran: {(selectedPhoto.size / 1024 / 1024).toFixed(2)} MB</p>}
+                        {selectedPhoto && (
+                          <p className="text-xs sm:text-sm text-[#889063]">
+                            Ukuran:{" "}
+                            {(selectedPhoto.size / 1024 / 1024).toFixed(2)} MB
+                          </p>
+                        )}
                       </label>
                     </div>
                   </div>
                 ) : (
                   <div>
-                    <label className="block text-xs sm:text-sm font-medium text-[#324D3E] mb-2 sm:mb-3">Video Laporan (Durasi maksimal 30 detik)</label>
+                    <label className="block text-xs sm:text-sm font-medium text-[#324D3E] mb-2 sm:mb-3">
+                      Video Laporan (Durasi maksimal 30 detik)
+                    </label>
                     <div className="border-2 border-dashed border-[#324D3E]/30 rounded-xl sm:rounded-2xl p-4 sm:p-6 lg:p-8 text-center hover:border-[#324D3E] hover:bg-[#324D3E]/5 transition-all duration-300 cursor-pointer">
-                      <input type="file" accept="video/*" onChange={handleVideoChange} className="hidden" id="video-upload" aria-label="Upload video file" />
+                      <input
+                        type="file"
+                        accept="video/*"
+                        onChange={handleVideoChange}
+                        className="hidden"
+                        id="video-upload"
+                        aria-label="Upload video file"
+                      />
                       <label htmlFor="video-upload" className="cursor-pointer">
                         <Upload className="w-8 h-8 sm:w-10 sm:h-10 lg:w-12 lg:h-12 mx-auto mb-3 sm:mb-4 text-[#889063]" />
                         <p className="text-[#324D3E] mb-2 font-medium text-sm sm:text-base">
-                          {selectedVideo ? selectedVideo.name : "Klik untuk upload atau seret video"}
+                          {selectedVideo
+                            ? selectedVideo.name
+                            : "Klik untuk upload atau seret video"}
                         </p>
-                        {selectedVideo && <p className="text-xs sm:text-sm text-[#889063]">Ukuran: {(selectedVideo.size / 1024 / 1024).toFixed(2)} MB • Maks 30 detik</p>}
+                        {selectedVideo && (
+                          <p className="text-xs sm:text-sm text-[#889063]">
+                            Ukuran:{" "}
+                            {(selectedVideo.size / 1024 / 1024).toFixed(2)} MB •
+                            Maks 30 detik
+                          </p>
+                        )}
                       </label>
                     </div>
                   </div>
                 )}
 
                 <div>
-                  <label className="block text-xs sm:text-sm font-medium text-[#324D3E] mb-2 sm:mb-3">Status Laporan</label>
+                  <label className="block text-xs sm:text-sm font-medium text-[#324D3E] mb-2 sm:mb-3">
+                    Status Laporan
+                  </label>
                   <Select
                     value={reportStatus}
                     onValueChange={(value) => {
@@ -1185,7 +1347,11 @@ const handleDownloadHistoryPDF = async () => {
                     </SelectTrigger>
                     <SelectContent className="bg-white border-[#324D3E]/20 rounded-lg sm:rounded-xl">
                       {statusOptions.map((option) => (
-                        <SelectItem key={option.value} value={option.value} className="text-[#324D3E] text-sm sm:text-base">
+                        <SelectItem
+                          key={option.value}
+                          value={option.value}
+                          className="text-[#324D3E] text-sm sm:text-base"
+                        >
                           {option.label}
                         </SelectItem>
                       ))}
@@ -1195,7 +1361,9 @@ const handleDownloadHistoryPDF = async () => {
 
                 {reportStatus === "lainnya" && (
                   <div>
-                    <label className="block text-xs sm:text-sm font-medium text-[#324D3E] mb-2 sm:mb-3">Status Custom</label>
+                    <label className="block text-xs sm:text-sm font-medium text-[#324D3E] mb-2 sm:mb-3">
+                      Status Custom
+                    </label>
                     <input
                       type="text"
                       placeholder="Masukkan status custom..."
@@ -1207,7 +1375,9 @@ const handleDownloadHistoryPDF = async () => {
                 )}
 
                 <div>
-                  <label className="block text-xs sm:text-sm font-medium text-[#324D3E] mb-2 sm:mb-3">Catatan</label>
+                  <label className="block text-xs sm:text-sm font-medium text-[#324D3E] mb-2 sm:mb-3">
+                    Catatan
+                  </label>
                   <Textarea
                     placeholder="Contoh: Pemupukan NPK dosis 10gr atau Laporan tanaman terkena banjir..."
                     value={notes}
@@ -1243,7 +1413,8 @@ const handleDownloadHistoryPDF = async () => {
                       <Download className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
                       <span className="text-xs sm:text-sm">Download PDF</span>
                     </Button>
-                    {(session?.user.role === "admin" || session?.user.role === "spv_staff") && (
+                    {(session?.user.role === "admin" ||
+                      session?.user.role === "spv_staff") && (
                       <>
                         {session?.user.role === "spv_staff" ? (
                           pendingRequests?.deletePlant ? (
@@ -1254,7 +1425,9 @@ const handleDownloadHistoryPDF = async () => {
                               title="Permintaan penghapusan tanaman sedang diajukan"
                             >
                               <Trash2 className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
-                              <span className="text-xs sm:text-sm">Permintaan sedang diajukan</span>
+                              <span className="text-xs sm:text-sm">
+                                Permintaan sedang diajukan
+                              </span>
                             </Button>
                           ) : (
                             <Button
@@ -1263,7 +1436,9 @@ const handleDownloadHistoryPDF = async () => {
                               size="sm"
                             >
                               <Trash2 className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
-                              <span className="text-xs sm:text-sm">Request Delete</span>
+                              <span className="text-xs sm:text-sm">
+                                Request Delete
+                              </span>
                             </Button>
                           )
                         ) : (
@@ -1273,7 +1448,9 @@ const handleDownloadHistoryPDF = async () => {
                             size="sm"
                           >
                             <Trash2 className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
-                            <span className="text-xs sm:text-sm">Delete Plant</span>
+                            <span className="text-xs sm:text-sm">
+                              Delete Plant
+                            </span>
                           </Button>
                         )}
                       </>
@@ -1284,7 +1461,10 @@ const handleDownloadHistoryPDF = async () => {
               <CardContent className="p-4 sm:p-6 lg:p-8">
                 <div className="space-y-3 sm:space-y-4">
                   {currentItems.map((item, index) => (
-                    <div key={`${item.id}-${index}`} className="flex gap-3 sm:gap-4 p-4 sm:p-6 bg-white/60 rounded-xl sm:rounded-2xl border border-[#324D3E]/10 hover:bg-white/80 transition-all duration-300">
+                    <div
+                      key={`${item.id}-${index}`}
+                      className="flex gap-3 sm:gap-4 p-4 sm:p-6 bg-white/60 rounded-xl sm:rounded-2xl border border-[#324D3E]/10 hover:bg-white/80 transition-all duration-300"
+                    >
                       <div className="w-16 h-16 sm:w-20 sm:h-20 bg-[#324D3E]/10 rounded-xl sm:rounded-2xl flex items-center justify-center flex-shrink-0">
                         {item.imageUrl ? (
                           isVideoUrl(item.imageUrl) ? (
@@ -1311,7 +1491,12 @@ const handleDownloadHistoryPDF = async () => {
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-2">
-                          <Badge className={`${statusColors[item.type] || "bg-gray-100 text-gray-800"} rounded-lg sm:rounded-xl px-2 sm:px-3 py-1 text-xs sm:text-sm self-start`}>
+                          <Badge
+                            className={`${
+                              statusColors[item.type] ||
+                              "bg-gray-100 text-gray-800"
+                            } rounded-lg sm:rounded-xl px-2 sm:px-3 py-1 text-xs sm:text-sm self-start`}
+                          >
                             {item.type}
                           </Badge>
 
@@ -1320,14 +1505,18 @@ const handleDownloadHistoryPDF = async () => {
                               <User className="w-3 h-3 flex-shrink-0" />
                               <span className="truncate">{item.addedBy}</span>
                             </span>
-                            <span className="text-[#324D3E]/30 hidden sm:inline">•</span>
+                            <span className="text-[#324D3E]/30 hidden sm:inline">
+                              •
+                            </span>
                             <span className="flex items-center gap-1">
                               <Clock className="w-3 h-3 flex-shrink-0" />
                               {item.date}
                             </span>
                           </div>
                         </div>
-                        <p className="text-xs sm:text-sm text-[#324D3E] mb-3 break-words">{item.description}</p>
+                        <p className="text-xs sm:text-sm text-[#324D3E] mb-3 break-words">
+                          {item.description}
+                        </p>
                         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-0">
                           <div className="flex flex-wrap gap-1 sm:gap-2">
                             <Button
@@ -1340,8 +1529,9 @@ const handleDownloadHistoryPDF = async () => {
                               <span className="hidden sm:inline">Detail</span>
                               <span className="sm:hidden">View</span>
                             </Button>
-                            {(session?.user.role === "admin" || session?.user.role === "spv_staff") && (
-                              session?.user.role === "spv_staff" ? (
+                            {(session?.user.role === "admin" ||
+                              session?.user.role === "spv_staff") &&
+                              (session?.user.role === "spv_staff" ? (
                                 pendingRequests?.updates?.[item.id] ? (
                                   <Button
                                     size="sm"
@@ -1350,18 +1540,24 @@ const handleDownloadHistoryPDF = async () => {
                                     title="Permintaan update riwayat sedang diajukan"
                                   >
                                     <Edit className="w-3 h-3 mr-1" />
-                                    <span className="hidden sm:inline">Permintaan sedang diajukan</span>
+                                    <span className="hidden sm:inline">
+                                      Permintaan sedang diajukan
+                                    </span>
                                     <span className="sm:hidden">Pending</span>
                                   </Button>
                                 ) : (
                                   <Button
                                     size="sm"
                                     variant="outline"
-                                    onClick={() => handleRequestHistoryUpdate(item)}
+                                    onClick={() =>
+                                      handleRequestHistoryUpdate(item)
+                                    }
                                     className="bg-yellow-500 hover:bg-yellow-600 text-white border-yellow-500 rounded-lg sm:rounded-xl text-xs sm:text-sm px-2 sm:px-3 py-1"
                                   >
                                     <Edit className="w-3 h-3 mr-1" />
-                                    <span className="hidden sm:inline">Request Update</span>
+                                    <span className="hidden sm:inline">
+                                      Request Edit
+                                    </span>
                                     <span className="sm:hidden">Edit</span>
                                   </Button>
                                 )
@@ -1378,14 +1574,16 @@ const handleDownloadHistoryPDF = async () => {
                                   className="bg-yellow-500 hover:bg-yellow-600 text-white border-yellow-500 rounded-lg sm:rounded-xl text-xs sm:text-sm px-2 sm:px-3 py-1"
                                 >
                                   <Edit className="w-3 h-3 mr-1" />
-                                  <span className="hidden sm:inline">Update</span>
+                                  <span className="hidden sm:inline">
+                                    Update
+                                  </span>
                                   <span className="sm:hidden">Edit</span>
                                 </Button>
-                              )
-                            )}
+                              ))}
                           </div>
-                          {(session?.user.role === "admin" || session?.user.role === "spv_staff") && (
-                            session?.user.role === "spv_staff" ? (
+                          {(session?.user.role === "admin" ||
+                            session?.user.role === "spv_staff") &&
+                            (session?.user.role === "spv_staff" ? (
                               pendingRequests?.deletes?.[item.id] ? (
                                 <Button
                                   size="sm"
@@ -1399,7 +1597,9 @@ const handleDownloadHistoryPDF = async () => {
                                 <Button
                                   size="sm"
                                   variant="outline"
-                                  onClick={() => handleDeleteHistoryItem(item.id)}
+                                  onClick={() =>
+                                    handleDeleteHistoryItem(item.id)
+                                  }
                                   className="bg-red-500 hover:bg-red-600 text-white border-red-500 p-1.5 sm:p-2 min-w-0 rounded-lg sm:rounded-xl self-start sm:self-auto"
                                   title="Request Delete"
                                 >
@@ -1416,8 +1616,7 @@ const handleDownloadHistoryPDF = async () => {
                               >
                                 <Trash2 className="w-3 h-3" />
                               </Button>
-                            )
-                          )}
+                            ))}
                         </div>
                       </div>
                     </div>
@@ -1436,25 +1635,29 @@ const handleDownloadHistoryPDF = async () => {
                       Prev
                     </Button>
 
-                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
-                      <Button
-                        key={p}
-                        size="sm"
-                        onClick={() => setCurrentPage(p)}
-                        className={`${
-                          safePage === p
-                            ? "bg-[#324D3E] text-white"
-                            : "bg-gray-200 text-[#324D3E]"
-                        }`}
-                      >
-                        {p}
-                      </Button>
-                    ))}
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).map(
+                      (p) => (
+                        <Button
+                          key={p}
+                          size="sm"
+                          onClick={() => setCurrentPage(p)}
+                          className={`${
+                            safePage === p
+                              ? "bg-[#324D3E] text-white"
+                              : "bg-gray-200 text-[#324D3E]"
+                          }`}
+                        >
+                          {p}
+                        </Button>
+                      )
+                    )}
 
                     <Button
                       size="sm"
                       disabled={safePage === totalPages}
-                      onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                      onClick={() =>
+                        setCurrentPage((p) => Math.min(totalPages, p + 1))
+                      }
                       className="bg-gray-200 text-[#324D3E] disabled:opacity-50"
                     >
                       Next
@@ -1502,7 +1705,9 @@ const handleDownloadHistoryPDF = async () => {
                             />
                           ) : (
                             <Image
-                              src={selectedHistory.imageUrl || "/placeholder.svg"}
+                              src={
+                                selectedHistory.imageUrl || "/placeholder.svg"
+                              }
                               alt={`Plant media for ${selectedHistory.type} on ${selectedHistory.date}`}
                               fill
                               sizes="(max-width: 1024px) 100vw, 50vw"
@@ -1521,10 +1726,17 @@ const handleDownloadHistoryPDF = async () => {
                       <Card className="bg-gray-50 border-gray-200">
                         <CardContent className="p-4">
                           <div className="flex items-center justify-between mb-2">
-                            <Badge className={`${statusColors[selectedHistory.type] || "bg-gray-100 text-gray-800"}`}>
+                            <Badge
+                              className={`${
+                                statusColors[selectedHistory.type] ||
+                                "bg-gray-100 text-gray-800"
+                              }`}
+                            >
                               {selectedHistory.type}
                             </Badge>
-                            <span className="text-sm text-gray-500">{selectedHistory.date}</span>
+                            <span className="text-sm text-gray-500">
+                              {selectedHistory.date}
+                            </span>
                           </div>
                         </CardContent>
                       </Card>
@@ -1533,7 +1745,9 @@ const handleDownloadHistoryPDF = async () => {
                     <div className="space-y-4">
                       <Card className="bg-gray-50 border-gray-200">
                         <CardHeader>
-                          <CardTitle className="text-lg text-gray-900">Catatan</CardTitle>
+                          <CardTitle className="text-lg text-gray-900">
+                            Catatan
+                          </CardTitle>
                         </CardHeader>
                         <CardContent>
                           {isEditing ? (
@@ -1545,19 +1759,31 @@ const handleDownloadHistoryPDF = async () => {
                                 placeholder="Masukkan catatan..."
                               />
                               <div className="flex gap-2">
-                                <Button onClick={handleUpdateHistory} className="bg-emerald-500 hover:bg-emerald-600">
+                                <Button
+                                  onClick={handleUpdateHistory}
+                                  className="bg-emerald-500 hover:bg-emerald-600"
+                                >
                                   Simpan
                                 </Button>
-                                <Button variant="outline" onClick={() => setIsEditing(false)} className="border-gray-300 text-gray-700">
+                                <Button
+                                  variant="outline"
+                                  onClick={() => setIsEditing(false)}
+                                  className="border-gray-300 text-gray-700"
+                                >
                                   Batal
                                 </Button>
                               </div>
                             </div>
                           ) : (
                             <div className="space-y-4">
-                              <p className="text-gray-700 leading-relaxed">{selectedHistory.description}</p>
+                              <p className="text-gray-700 leading-relaxed">
+                                {selectedHistory.description}
+                              </p>
                               {session?.user.role === "admin" && (
-                                <Button onClick={() => setIsEditing(true)} className="bg-yellow-500 hover:bg-yellow-600 text-white">
+                                <Button
+                                  onClick={() => setIsEditing(true)}
+                                  className="bg-yellow-500 hover:bg-yellow-600 text-white"
+                                >
                                   <Edit className="w-4 h-4 mr-2" />
                                   Ubah Catatan
                                 </Button>
@@ -1571,7 +1797,10 @@ const handleDownloadHistoryPDF = async () => {
 
                   <div className="flex items-center justify-end gap-2 mt-6">
                     {selectedHistory?.imageUrl && (
-                      <Button onClick={handleDownloadPhoto} className="bg-gradient-to-r from-[#324D3E] to-[#4C3D19] hover:shadow-lg text-white rounded-xl">
+                      <Button
+                        onClick={handleDownloadPhoto}
+                        className="bg-gradient-to-r from-[#324D3E] to-[#4C3D19] hover:shadow-lg text-white rounded-xl"
+                      >
                         <Download className="w-4 h-4 mr-2" />
                         Download Foto/Video
                       </Button>
@@ -1588,7 +1817,9 @@ const handleDownloadHistoryPDF = async () => {
               <div className="bg-white/95 backdrop-blur-xl rounded-2xl sm:rounded-3xl max-w-md w-full max-h-[95vh] sm:max-h-[90vh] overflow-y-auto shadow-2xl border border-[#324D3E]/10">
                 <div className="p-4 sm:p-6">
                   <div className="flex justify-between items-center mb-4 sm:mb-6">
-                    <h2 className="text-lg sm:text-xl font-bold text-[#324D3E] truncate pr-2">Ajukan Permintaan</h2>
+                    <h2 className="text-lg sm:text-xl font-bold text-[#324D3E] truncate pr-2">
+                      Ajukan Permintaan
+                    </h2>
                     <Button
                       variant="ghost"
                       size="sm"
@@ -1608,10 +1839,17 @@ const handleDownloadHistoryPDF = async () => {
                   >
                     {requestFormData.requestType === "delete" && (
                       <div>
-                        <label className="block text-sm font-medium text-[#324D3E] mb-2">Alasan Penghapusan Tanaman</label>
+                        <label className="block text-sm font-medium text-[#324D3E] mb-2">
+                          Alasan Penghapusan Tanaman
+                        </label>
                         <Textarea
                           value={requestFormData.deleteReason || ""}
-                          onChange={(e) => setRequestFormData((prev) => ({ ...prev, deleteReason: e.target.value }))}
+                          onChange={(e) =>
+                            setRequestFormData((prev) => ({
+                              ...prev,
+                              deleteReason: e.target.value,
+                            }))
+                          }
                           placeholder="Jelaskan alasan mengapa tanaman perlu dihapus..."
                           className="bg-white border-[#324D3E]/20 min-h-[100px] text-[#324D3E] placeholder:text-[#889063] rounded-xl focus:ring-2 focus:ring-[#324D3E]/20"
                           required
@@ -1622,14 +1860,27 @@ const handleDownloadHistoryPDF = async () => {
                     {requestFormData.requestType === "update_history" && (
                       <>
                         <div>
-                          <label className="block text-sm font-medium text-[#324D3E] mb-2">Catatan Asli</label>
-                          <Textarea value={requestFormData.originalDescription || ""} readOnly className="bg-gray-50 border-[#324D3E]/20 min-h-[80px] text-[#324D3E] rounded-xl" />
+                          <label className="block text-sm font-medium text-[#324D3E] mb-2">
+                            Catatan Asli
+                          </label>
+                          <Textarea
+                            value={requestFormData.originalDescription || ""}
+                            readOnly
+                            className="bg-gray-50 border-[#324D3E]/20 min-h-[80px] text-[#324D3E] rounded-xl"
+                          />
                         </div>
                         <div>
-                          <label className="block text-sm font-medium text-[#324D3E] mb-2">Catatan Baru</label>
+                          <label className="block text-sm font-medium text-[#324D3E] mb-2">
+                            Catatan Baru
+                          </label>
                           <Textarea
                             value={requestFormData.newDescription || ""}
-                            onChange={(e) => setRequestFormData((prev) => ({ ...prev, newDescription: e.target.value }))}
+                            onChange={(e) =>
+                              setRequestFormData((prev) => ({
+                                ...prev,
+                                newDescription: e.target.value,
+                              }))
+                            }
                             placeholder="Masukkan catatan yang baru..."
                             className="bg-white border-[#324D3E]/20 min-h-[100px] text-[#324D3E] placeholder:text-[#889063] rounded-xl focus:ring-2 focus:ring-[#324D3E]/20"
                             required
@@ -1641,17 +1892,31 @@ const handleDownloadHistoryPDF = async () => {
                     {requestFormData.requestType === "delete_history" && (
                       <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-4">
                         <p className="text-sm text-yellow-800">
-                          Anda akan mengajukan permintaan untuk menghapus riwayat tanaman ini. Admin akan meninjau permintaan Anda sebelum menghapus riwayat.
+                          Anda akan mengajukan permintaan untuk menghapus
+                          riwayat tanaman ini. Admin akan meninjau permintaan
+                          Anda sebelum menghapus riwayat.
                         </p>
                       </div>
                     )}
 
                     <div className="flex gap-3 pt-4">
-                      <Button type="button" variant="outline" onClick={() => setShowRequestModal(false)} className="flex-1 border-[#324D3E]/20 text-[#324D3E] hover:bg-[#324D3E]/10 hover:border-[#324D3E] rounded-xl" disabled={submittingRequest}>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => setShowRequestModal(false)}
+                        className="flex-1 border-[#324D3E]/20 text-[#324D3E] hover:bg-[#324D3E]/10 hover:border-[#324D3E] rounded-xl"
+                        disabled={submittingRequest}
+                      >
                         Batal
                       </Button>
-                      <Button type="submit" disabled={submittingRequest} className="flex-1 bg-gradient-to-r from-[#324D3E] to-[#4C3D19] hover:from-[#4C3D3E] hover:to-[#324D3E] text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300">
-                        {submittingRequest ? "Mengajukan..." : "Ajukan Permintaan"}
+                      <Button
+                        type="submit"
+                        disabled={submittingRequest}
+                        className="flex-1 bg-gradient-to-r from-[#324D3E] to-[#4C3D19] hover:from-[#4C3D3E] hover:to-[#324D3E] text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300"
+                      >
+                        {submittingRequest
+                          ? "Mengajukan..."
+                          : "Ajukan Permintaan"}
                       </Button>
                     </div>
                   </form>

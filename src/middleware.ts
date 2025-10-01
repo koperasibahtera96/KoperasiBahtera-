@@ -71,7 +71,7 @@ export default async function middleware(req: NextRequest) {
       return NextResponse.next();
     } else {
       console.log(`❌ User role '${userRole}' denied access to ${pathname}`);
-      return NextResponse.redirect(new URL("/", req.url));
+      return NextResponse.redirect(new URL("/login", req.url));
     }
   }
 
@@ -159,7 +159,7 @@ export default async function middleware(req: NextRequest) {
   console.log(
     `❌ Unhandled route ${pathname} for role ${userRole} - access denied`
   );
-  return NextResponse.redirect(new URL("/", req.url));
+  return NextResponse.redirect(new URL("/login", req.url));
 }
 
 export const config = {

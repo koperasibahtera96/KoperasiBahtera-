@@ -149,19 +149,25 @@ export async function GET(_request: NextRequest) {
 
     // Get recent investors (last 4) - sorted by most recent investment or creation date
     const recentInvestors = investors
-      .map(investor => {
+      .map((investor) => {
         // Get the most recent investment date for this investor
-        const mostRecentInvestmentDate = investor.investments && investor.investments.length > 0
-          ? Math.max(...investor.investments.map((inv: any) => new Date(inv.investmentDate).getTime()))
-          : new Date(investor.createdAt).getTime();
+        const mostRecentInvestmentDate =
+          investor.investments && investor.investments.length > 0
+            ? Math.max(
+                ...investor.investments.map((inv: any) =>
+                  new Date(inv.investmentDate).getTime()
+                )
+              )
+            : new Date(investor.createdAt).getTime();
 
         return {
           ...investor.toObject(),
-          mostRecentActivity: new Date(mostRecentInvestmentDate)
+          mostRecentActivity: new Date(mostRecentInvestmentDate),
         };
       })
       .sort(
-        (a, b) => b.mostRecentActivity.getTime() - a.mostRecentActivity.getTime()
+        (a, b) =>
+          b.mostRecentActivity.getTime() - a.mostRecentActivity.getTime()
       )
       .slice(0, 4)
       .map((investor) => ({
@@ -190,9 +196,9 @@ export async function GET(_request: NextRequest) {
     // Format total investment
     const formattedTotalInvestment =
       totalInvestment >= 1000000000
-        ? `Rp ${(totalInvestment / 1000000000).toFixed(1)}B`
+        ? `Rp ${(totalInvestment / 1000000000).toFixed(1)}M`
         : totalInvestment >= 1000000
-        ? `Rp ${(totalInvestment / 1000000).toFixed(1)}M`
+        ? `Rp ${(totalInvestment / 1000000).toFixed(1)}Jt`
         : `Rp ${totalInvestment.toLocaleString("id-ID")}`;
 
     // Calculate month-over-month percentage changes

@@ -90,7 +90,7 @@ export default function LandingHero() {
 
       {/* Content */}
       <motion.div
-        className="relative z-10 ml-4 sm:ml-8 md:ml-12 lg:ml-16 xl:ml-24 max-w-4xl px-3 md:px-5 lg:px-6 text-left"
+        className="relative z-10 ml-4 sm:ml-8 md:ml-12 lg:ml-16 xl:ml-24 max-w-[85%] px-3 md:px-5 lg:px-6 text-left"
         variants={containerVariants}
       >
         <div>
@@ -104,7 +104,7 @@ export default function LandingHero() {
 
           {/* Main Title */}
           <motion.h1
-            className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl max-w-[1052px] font-bold leading-tight mb-4 sm:mb-6 md:mb-7 font-[family-name:var(--font-poppins)]"
+            className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl max-w-[85%] font-bold leading-tight mb-4 sm:mb-6 md:mb-7 font-[family-name:var(--font-poppins)]"
             variants={containerVariants}
           >
             <motion.span

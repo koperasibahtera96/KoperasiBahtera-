@@ -12,7 +12,7 @@ interface SignatureAttempt {
   attemptNumber: number;
   signatureData: string;
   submittedAt: string;
-  reviewStatus: 'pending' | 'approved' | 'rejected';
+  reviewStatus: "pending" | "approved" | "rejected";
   rejectionReason?: string;
   adminNotes?: string;
 }
@@ -32,7 +32,7 @@ interface ContractForApproval {
   adminApprovalStatus: string;
   productName: string;
   totalAmount: number;
-  paymentType: 'full' | 'cicilan';
+  paymentType: "full" | "cicilan";
   user: User;
   currentAttempt: number;
   maxAttempts: number;
@@ -43,7 +43,7 @@ interface ContractForApproval {
 
 interface ApprovalModalData {
   contract: ContractForApproval;
-  action: 'approve' | 'reject';
+  action: "approve" | "reject";
 }
 
 export default function ContractApprovalsPage() {
@@ -66,11 +66,12 @@ export default function ContractApprovalsPage() {
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const [statusFilter, setStatusFilter] = useState('all');
-  const [selectedContract, setSelectedContract] = useState<ApprovalModalData | null>(null);
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [selectedContract, setSelectedContract] =
+    useState<ApprovalModalData | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
-  const [rejectionReason, setRejectionReason] = useState('');
-  const [adminNotes, setAdminNotes] = useState('');
+  const [rejectionReason, setRejectionReason] = useState("");
+  const [adminNotes, setAdminNotes] = useState("");
   const [exportLoading, setExportLoading] = useState(false);
   const { showSuccess, showError, AlertComponent } = useAlert();
 
@@ -98,26 +99,29 @@ export default function ContractApprovalsPage() {
 
   useEffect(() => {
     fetchContracts();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentPage, statusFilter]);
 
   const handleApproval = async (contractId: string) => {
     try {
       setActionLoading(true);
-      const response = await fetch(`/api/admin/contracts/${contractId}/approve`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          notes: adminNotes
-        })
-      });
+      const response = await fetch(
+        `/api/admin/contracts/${contractId}/approve`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            notes: adminNotes,
+          }),
+        }
+      );
 
       if (response.ok) {
-        showSuccess("Success", "Contract approved successfully");
+        showSuccess("Success", "Kontrak Berhasil Disetujui");
         setSelectedContract(null);
-        setAdminNotes('');
+        setAdminNotes("");
         fetchContracts();
       } else {
         const error = await response.json();
@@ -139,28 +143,31 @@ export default function ContractApprovalsPage() {
 
     try {
       setActionLoading(true);
-      const response = await fetch(`/api/admin/contracts/${contractId}/reject`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          rejectionReason: rejectionReason.trim(),
-          adminNotes: adminNotes.trim()
-        })
-      });
+      const response = await fetch(
+        `/api/admin/contracts/${contractId}/reject`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            rejectionReason: rejectionReason.trim(),
+            adminNotes: adminNotes.trim(),
+          }),
+        }
+      );
 
       if (response.ok) {
         const result = await response.json();
         showSuccess(
           "Success",
           result.data.isPermanentRejection
-            ? "Contract permanently rejected (max attempts reached)"
-            : "Contract rejected - user can retry"
+            ? "Kontrak permanently ditolak (maksimal percobaan pengajuan ulang tercapai)"
+            : "Kontrak ditolak - pengguna dapat mencoba lagi"
         );
         setSelectedContract(null);
-        setRejectionReason('');
-        setAdminNotes('');
+        setRejectionReason("");
+        setAdminNotes("");
         fetchContracts();
       } else {
         const error = await response.json();
@@ -177,17 +184,19 @@ export default function ContractApprovalsPage() {
   const handleExport = async () => {
     try {
       setExportLoading(true);
-      const response = await fetch('/api/admin/contracts/export');
+      const response = await fetch("/api/admin/contracts/export");
 
       if (!response.ok) {
-        throw new Error('Export failed');
+        throw new Error("Export failed");
       }
 
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
+      const a = document.createElement("a");
       a.href = url;
-      a.download = `Laporan_Kontrak_${new Date().toISOString().split('T')[0]}.xlsx`;
+      a.download = `Laporan_Kontrak_${
+        new Date().toISOString().split("T")[0]
+      }.xlsx`;
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);
@@ -204,11 +213,16 @@ export default function ContractApprovalsPage() {
 
   const getStatusBadgeColor = (status: string) => {
     switch (status) {
-      case 'pending': return 'bg-yellow-100 text-yellow-800';
-      case 'approved': return 'bg-green-100 text-green-800';
-      case 'rejected': return 'bg-red-100 text-red-800';
-      case 'permanently_rejected': return 'bg-red-200 text-red-900';
-      default: return 'bg-gray-100 text-gray-800';
+      case "pending":
+        return "bg-yellow-100 text-yellow-800";
+      case "approved":
+        return "bg-green-100 text-green-800";
+      case "rejected":
+        return "bg-red-100 text-red-800";
+      case "permanently_rejected":
+        return "bg-red-200 text-red-900";
+      default:
+        return "bg-gray-100 text-gray-800";
     }
   };
 
@@ -241,14 +255,44 @@ export default function ContractApprovalsPage() {
       <AdminLayout>
         <div className="space-y-8">
           <div>
-            <h1 className={getThemeClasses("text-3xl font-bold text-gray-900 dark:text-white", "!text-[#4c1d1d]")}>Persetujuan Kontrak</h1>
-            <p className={getThemeClasses("text-gray-600 dark:text-gray-200 mt-2", "!text-[#6b7280]")}>Memuat data...</p>
+            <h1
+              className={getThemeClasses(
+                "text-3xl font-bold text-gray-900 dark:text-white",
+                "!text-[#4c1d1d]"
+              )}
+            >
+              Persetujuan Kontrak
+            </h1>
+            <p
+              className={getThemeClasses(
+                "text-gray-600 dark:text-gray-200 mt-2",
+                "!text-[#6b7280]"
+              )}
+            >
+              Memuat data...
+            </p>
           </div>
           <div className="grid grid-cols-1 gap-6">
             {[1, 2, 3].map((i) => (
-              <div key={i} className={getThemeClasses("bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 animate-pulse", "!bg-[#FFC1CC] !border-[#FFC1CC]/30")}>
-                <div className={getThemeClasses("h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/2 mb-2", "!bg-[#FFDEE9]")}></div>
-                <div className={getThemeClasses("h-8 bg-gray-200 dark:bg-gray-700 rounded w-3/4", "!bg-[#FFDEE9]")}></div>
+              <div
+                key={i}
+                className={getThemeClasses(
+                  "bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 animate-pulse",
+                  "!bg-[#FFC1CC] !border-[#FFC1CC]/30"
+                )}
+              >
+                <div
+                  className={getThemeClasses(
+                    "h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/2 mb-2",
+                    "!bg-[#FFDEE9]"
+                  )}
+                ></div>
+                <div
+                  className={getThemeClasses(
+                    "h-8 bg-gray-200 dark:bg-gray-700 rounded w-3/4",
+                    "!bg-[#FFDEE9]"
+                  )}
+                ></div>
               </div>
             ))}
           </div>
@@ -269,7 +313,12 @@ export default function ContractApprovalsPage() {
         <motion.div variants={itemVariants} className="mb-6 sm:mb-8">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div className="min-w-0 flex-1">
-              <h1 className={getThemeClasses("text-2xl sm:text-3xl lg:text-4xl font-bold text-[#324D3E] dark:text-white font-[family-name:var(--font-poppins)] transition-colors duration-300", "!text-[#4c1d1d]") }>
+              <h1
+                className={getThemeClasses(
+                  "text-2xl sm:text-3xl lg:text-4xl font-bold text-[#324D3E] dark:text-white font-[family-name:var(--font-poppins)] transition-colors duration-300",
+                  "!text-[#4c1d1d]"
+                )}
+              >
                 Persetujuan Kontrak
               </h1>
               <p className="text-[#889063] dark:text-gray-200 mt-1 sm:mt-2 text-sm sm:text-base transition-colors duration-300">
@@ -280,17 +329,25 @@ export default function ContractApprovalsPage() {
               <button
                 onClick={handleExport}
                 disabled={exportLoading}
-                className={getThemeClasses("bg-[#324D3E]/10 dark:bg-[#324D3E]/20 hover:bg-[#324D3E]/20 dark:hover:bg-[#324D3E]/30 text-[#324D3E] dark:text-white px-3 sm:px-4 py-2 rounded-xl font-medium transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 text-sm sm:text-base whitespace-nowrap", "!text-[#4c1d1d] hover:!bg-[#FFDEE9]/30 !bg-[#FFC1CC]/10")}
+                className={getThemeClasses(
+                  "bg-[#324D3E]/10 dark:bg-[#324D3E]/20 hover:bg-[#324D3E]/20 dark:hover:bg-[#324D3E]/30 text-[#324D3E] dark:text-white px-3 sm:px-4 py-2 rounded-xl font-medium transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 text-sm sm:text-base whitespace-nowrap",
+                  "!text-[#4c1d1d] hover:!bg-[#FFDEE9]/30 !bg-[#FFC1CC]/10"
+                )}
               >
                 <FileSpreadsheet
                   className={`w-4 h-4 ${exportLoading ? "animate-pulse" : ""}`}
                 />
-                <span className="hidden sm:inline">{exportLoading ? "Exporting..." : "Export XLSX"}</span>
+                <span className="hidden sm:inline">
+                  {exportLoading ? "Exporting..." : "Export XLSX"}
+                </span>
               </button>
               <button
                 onClick={fetchContracts}
                 disabled={loading}
-                className={getThemeClasses("bg-[#324D3E]/10 dark:bg-[#324D3E]/20 hover:bg-[#324D3E]/20 dark:hover:bg-[#324D3E]/30 text-[#324D3E] dark:text-white px-3 sm:px-4 py-2 rounded-xl font-medium transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 text-sm sm:text-base whitespace-nowrap", "!text-[#4c1d1d] hover:!bg-[#FFDEE9]/30")}
+                className={getThemeClasses(
+                  "bg-[#324D3E]/10 dark:bg-[#324D3E]/20 hover:bg-[#324D3E]/20 dark:hover:bg-[#324D3E]/30 text-[#324D3E] dark:text-white px-3 sm:px-4 py-2 rounded-xl font-medium transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 text-sm sm:text-base whitespace-nowrap",
+                  "!text-[#4c1d1d] hover:!bg-[#FFDEE9]/30"
+                )}
               >
                 <RefreshCw
                   className={`w-4 h-4 ${loading ? "animate-spin" : ""}`}
@@ -309,7 +366,10 @@ export default function ContractApprovalsPage() {
               setStatusFilter(e.target.value);
               setCurrentPage(1);
             }}
-            className={getThemeClasses("px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#324D3E] focus:border-transparent bg-white dark:bg-gray-800 text-gray-900 dark:text-white transition-colors duration-300", "!border-[#FFC1CC]/30 !text-[#4c1d1d] !bg-white")}
+            className={getThemeClasses(
+              "px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-[#324D3E] focus:border-transparent bg-white dark:bg-gray-800 text-gray-900 dark:text-white transition-colors duration-300",
+              "!border-[#FFC1CC]/30 !text-[#4c1d1d] !bg-white"
+            )}
           >
             <option value="pending">Pending Approval</option>
             <option value="approved">Approved</option>
@@ -320,7 +380,12 @@ export default function ContractApprovalsPage() {
         </div>
 
         {/* Contracts Table */}
-        <div className={getThemeClasses("bg-white dark:bg-gray-800 shadow-lg rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700 transition-colors duration-300", "!bg-white/95 !border-[#FFC1CC]/30")}>
+        <div
+          className={getThemeClasses(
+            "bg-white dark:bg-gray-800 shadow-lg rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700 transition-colors duration-300",
+            "!bg-white/95 !border-[#FFC1CC]/30"
+          )}
+        >
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
               <thead className="bg-gray-50 dark:bg-gray-900">
@@ -344,7 +409,13 @@ export default function ContractApprovalsPage() {
               </thead>
               <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                 {contracts.map((contract) => (
-                  <tr key={contract.contractId} className={getThemeClasses("hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-200", "hover:!bg-[#FFEEF0]") }>
+                  <tr
+                    key={contract.contractId}
+                    className={getThemeClasses(
+                      "hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-200",
+                      "hover:!bg-[#FFEEF0]"
+                    )}
+                  >
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div>
                         <div className="text-sm font-medium text-gray-900 dark:text-white">
@@ -354,10 +425,13 @@ export default function ContractApprovalsPage() {
                           {contract.productName}
                         </div>
                         <div className="text-sm text-gray-500 dark:text-gray-400">
-                          Rp {contract.totalAmount.toLocaleString('id-ID')} ({contract.paymentType})
+                          Rp {contract.totalAmount.toLocaleString("id-ID")} (
+                          {contract.paymentType})
                         </div>
                         <div className="text-xs text-gray-400 dark:text-gray-500">
-                          {new Date(contract.createdAt).toLocaleDateString('id-ID')}
+                          {new Date(contract.createdAt).toLocaleDateString(
+                            "id-ID"
+                          )}
                         </div>
                       </div>
                     </td>
@@ -379,34 +453,63 @@ export default function ContractApprovalsPage() {
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div>
                         <div className="text-sm text-gray-900 dark:text-white">
-                          Attempt {contract.currentAttempt} of {contract.maxAttempts}
+                          Attempt {contract.currentAttempt} of{" "}
+                          {contract.maxAttempts}
                         </div>
                         {contract.lastSignature && (
                           <div className="text-xs text-gray-500 dark:text-gray-400">
-                            Submitted: {new Date(contract.lastSignature.submittedAt).toLocaleDateString('id-ID')}
+                            Submitted:{" "}
+                            {new Date(
+                              contract.lastSignature.submittedAt
+                            ).toLocaleDateString("id-ID")}
                           </div>
                         )}
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={getThemeClasses(`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusBadgeColor(contract.adminApprovalStatus)}`, "!text-[#4c1d1d]") }>
-                        {contract.adminApprovalStatus.replace('_', ' ').toUpperCase()}
+                      <span
+                        className={getThemeClasses(
+                          `inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusBadgeColor(
+                            contract.adminApprovalStatus
+                          )}`,
+                          "!text-[#4c1d1d]"
+                        )}
+                      >
+                        {contract.adminApprovalStatus
+                          .replace("_", " ")
+                          .toUpperCase()}
                       </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       <div className="flex flex-col sm:flex-row gap-2">
-                        {contract.adminApprovalStatus === 'pending' && (
+                        {contract.adminApprovalStatus === "pending" && (
                           <>
                             <button
-                              onClick={() => setSelectedContract({ contract, action: 'approve' })}
-                              className={getThemeClasses("inline-flex items-center justify-center px-3 py-2 border border-transparent text-xs font-medium rounded-lg text-white bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 dark:focus:ring-offset-gray-800 transition-all duration-200 shadow-sm hover:shadow-md", "!bg-gradient-to-r !from-[#B5EAD7] !to-[#E6FFF0] !text-[#4c1d1d] !shadow-md")}
+                              onClick={() =>
+                                setSelectedContract({
+                                  contract,
+                                  action: "approve",
+                                })
+                              }
+                              className={getThemeClasses(
+                                "inline-flex items-center justify-center px-3 py-2 border border-transparent text-xs font-medium rounded-lg text-white bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 dark:focus:ring-offset-gray-800 transition-all duration-200 shadow-sm hover:shadow-md",
+                                "!bg-gradient-to-r !from-[#B5EAD7] !to-[#E6FFF0] !text-[#4c1d1d] !shadow-md"
+                              )}
                             >
                               <Check className="w-3 h-3 mr-1" />
                               Approve
                             </button>
                             <button
-                              onClick={() => setSelectedContract({ contract, action: 'reject' })}
-                              className={getThemeClasses("inline-flex items-center justify-center px-3 py-2 border border-transparent text-xs font-medium rounded-lg text-white bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 dark:focus:ring-offset-gray-800 transition-all duration-200 shadow-sm hover:shadow-md", "!bg-gradient-to-r !from-[#FFC1CC] !to-[#FFE4E8] !text-[#4c1d1d] !shadow-md")}
+                              onClick={() =>
+                                setSelectedContract({
+                                  contract,
+                                  action: "reject",
+                                })
+                              }
+                              className={getThemeClasses(
+                                "inline-flex items-center justify-center px-3 py-2 border border-transparent text-xs font-medium rounded-lg text-white bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 dark:focus:ring-offset-gray-800 transition-all duration-200 shadow-sm hover:shadow-md",
+                                "!bg-gradient-to-r !from-[#FFC1CC] !to-[#FFE4E8] !text-[#4c1d1d] !shadow-md"
+                              )}
                             >
                               <X className="w-3 h-3 mr-1" />
                               Reject
@@ -414,8 +517,13 @@ export default function ContractApprovalsPage() {
                           </>
                         )}
                         <button
-                          onClick={() => setSelectedContract({ contract, action: 'approve' })}
-                          className={getThemeClasses("inline-flex items-center justify-center px-3 py-2 border border-transparent text-xs font-medium rounded-lg text-white bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:focus:ring-offset-gray-800 transition-all duration-200 shadow-sm hover:shadow-md", "!bg-gradient-to-r !from-[#C7CEEA] !to-[#EAF0FF] !text-[#4c1d1d] !shadow-md")}
+                          onClick={() =>
+                            setSelectedContract({ contract, action: "approve" })
+                          }
+                          className={getThemeClasses(
+                            "inline-flex items-center justify-center px-3 py-2 border border-transparent text-xs font-medium rounded-lg text-white bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:focus:ring-offset-gray-800 transition-all duration-200 shadow-sm hover:shadow-md",
+                            "!bg-gradient-to-r !from-[#C7CEEA] !to-[#EAF0FF] !text-[#4c1d1d] !shadow-md"
+                          )}
                         >
                           <Eye className="w-3 h-3 mr-1" />
                           View Details
@@ -430,7 +538,9 @@ export default function ContractApprovalsPage() {
 
           {contracts.length === 0 && (
             <div className="text-center py-12">
-              <div className="text-gray-500 dark:text-gray-400">No contracts found for the selected filter.</div>
+              <div className="text-gray-500 dark:text-gray-400">
+                No contracts found for the selected filter.
+              </div>
             </div>
           )}
         </div>
@@ -439,19 +549,21 @@ export default function ContractApprovalsPage() {
         {totalPages > 1 && (
           <div className="mt-6 flex justify-center">
             <div className="flex space-x-2">
-              {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                <button
-                  key={page}
-                  onClick={() => setCurrentPage(page)}
-                  className={`px-3 py-2 rounded-lg font-medium transition-all duration-200 ${
-                    page === currentPage
-                      ? 'bg-[#324D3E] text-white shadow-md'
-                      : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 border border-gray-300 dark:border-gray-600 shadow-sm hover:shadow-md'
-                  }`}
-                >
-                  {page}
-                </button>
-              ))}
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map(
+                (page) => (
+                  <button
+                    key={page}
+                    onClick={() => setCurrentPage(page)}
+                    className={`px-3 py-2 rounded-lg font-medium transition-all duration-200 ${
+                      page === currentPage
+                        ? "bg-[#324D3E] text-white shadow-md"
+                        : "bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 border border-gray-300 dark:border-gray-600 shadow-sm hover:shadow-md"
+                    }`}
+                  >
+                    {page}
+                  </button>
+                )
+              )}
             </div>
           </div>
         )}
@@ -466,20 +578,36 @@ export default function ContractApprovalsPage() {
           exit={{ opacity: 0 }}
         >
           <motion.div
-            className={getThemeClasses("bg-white dark:bg-gray-800 rounded-2xl max-w-6xl w-full max-h-[95vh] sm:max-h-[90vh] flex flex-col mt-2 sm:mt-0 transition-colors duration-300 border border-gray-200 dark:border-gray-700", "!bg-white/95 !border-[#FFC1CC]/30")}
+            className={getThemeClasses(
+              "bg-white dark:bg-gray-800 rounded-2xl max-w-6xl w-full max-h-[95vh] sm:max-h-[90vh] flex flex-col mt-2 sm:mt-0 transition-colors duration-300 border border-gray-200 dark:border-gray-700",
+              "!bg-white/95 !border-[#FFC1CC]/30"
+            )}
             initial={{ scale: 0.9, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0.9, opacity: 0 }}
           >
             {/* Fixed Header */}
-            <div className={getThemeClasses("flex-shrink-0 p-6 border-b border-gray-200 dark:border-gray-700", "!border-[#FFC1CC]/30 !bg-white/95")}>
+            <div
+              className={getThemeClasses(
+                "flex-shrink-0 p-6 border-b border-gray-200 dark:border-gray-700",
+                "!border-[#FFC1CC]/30 !bg-white/95"
+              )}
+            >
               <div className="flex justify-between items-center">
-                <h2 className={getThemeClasses("text-2xl font-bold text-gray-900 dark:text-white", "!text-[#4c1d1d]") }>
+                <h2
+                  className={getThemeClasses(
+                    "text-2xl font-bold text-gray-900 dark:text-white",
+                    "!text-[#4c1d1d]"
+                  )}
+                >
                   Contract Review - {selectedContract.contract.contractNumber}
                 </h2>
                 <button
                   onClick={() => setSelectedContract(null)}
-                  className={getThemeClasses("text-gray-400 hover:text-gray-600 dark:text-gray-300 dark:hover:text-gray-100 transition-colors", "!text-[#6b7280] hover:!text-[#4c1d1d]")}
+                  className={getThemeClasses(
+                    "text-gray-400 hover:text-gray-600 dark:text-gray-300 dark:hover:text-gray-100 transition-colors",
+                    "!text-[#6b7280] hover:!text-[#4c1d1d]"
+                  )}
                 >
                   <span className="sr-only">Close</span>
                   <X className="h-6 w-6" />
@@ -493,22 +621,50 @@ export default function ContractApprovalsPage() {
                 {/* Contract and User Info */}
                 <div className="space-y-4">
                   <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg border border-gray-200 dark:border-gray-600">
-                    <h3 className="font-semibold text-gray-900 dark:text-white mb-2">Contract Information</h3>
+                    <h3 className="font-semibold text-gray-900 dark:text-white mb-2">
+                      Contract Information
+                    </h3>
                     <div className="space-y-1 text-sm text-gray-700 dark:text-gray-300">
-                      <div><strong>Product:</strong> {selectedContract.contract.productName}</div>
-                      <div><strong>Amount:</strong> Rp {selectedContract.contract.totalAmount.toLocaleString('id-ID')}</div>
-                      <div><strong>Payment Type:</strong> {selectedContract.contract.paymentType.toUpperCase()}</div>
-                      <div><strong>Attempt:</strong> {selectedContract.contract.currentAttempt} of {selectedContract.contract.maxAttempts}</div>
+                      <div>
+                        <strong>Product:</strong>{" "}
+                        {selectedContract.contract.productName}
+                      </div>
+                      <div>
+                        <strong>Amount:</strong> Rp{" "}
+                        {selectedContract.contract.totalAmount.toLocaleString(
+                          "id-ID"
+                        )}
+                      </div>
+                      <div>
+                        <strong>Payment Type:</strong>{" "}
+                        {selectedContract.contract.paymentType.toUpperCase()}
+                      </div>
+                      <div>
+                        <strong>Attempt:</strong>{" "}
+                        {selectedContract.contract.currentAttempt} of{" "}
+                        {selectedContract.contract.maxAttempts}
+                      </div>
                     </div>
                   </div>
 
                   <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg border border-gray-200 dark:border-gray-600">
-                    <h3 className="font-semibold text-gray-900 dark:text-white mb-2">User Information</h3>
+                    <h3 className="font-semibold text-gray-900 dark:text-white mb-2">
+                      User Information
+                    </h3>
                     <div className="space-y-1 text-sm text-gray-700 dark:text-gray-300">
-                      <div><strong>Name:</strong> {selectedContract.contract.user.fullName}</div>
-                      <div><strong>Email:</strong> {selectedContract.contract.user.email}</div>
+                      <div>
+                        <strong>Name:</strong>{" "}
+                        {selectedContract.contract.user.fullName}
+                      </div>
+                      <div>
+                        <strong>Email:</strong>{" "}
+                        {selectedContract.contract.user.email}
+                      </div>
                       {selectedContract.contract.user.phoneNumber && (
-                        <div><strong>Phone:</strong> {selectedContract.contract.user.phoneNumber}</div>
+                        <div>
+                          <strong>Phone:</strong>{" "}
+                          {selectedContract.contract.user.phoneNumber}
+                        </div>
                       )}
                     </div>
                   </div>
@@ -516,7 +672,9 @@ export default function ContractApprovalsPage() {
                   {/* KTP Image */}
                   {selectedContract.contract.user.ktpImageUrl && (
                     <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
-                      <h3 className="font-semibold text-gray-900 dark:text-white mb-2">KTP Image</h3>
+                      <h3 className="font-semibold text-gray-900 dark:text-white mb-2">
+                        KTP Image
+                      </h3>
                       <div className="border rounded-lg overflow-hidden bg-white dark:bg-gray-800 max-h-96">
                         <div className="p-2">
                           <Image
@@ -525,7 +683,12 @@ export default function ContractApprovalsPage() {
                             width={600}
                             height={400}
                             className="w-full h-auto object-contain max-h-80 cursor-pointer hover:scale-105 transition-transform duration-200"
-                            onClick={() => window.open(selectedContract.contract.user.ktpImageUrl, '_blank')}
+                            onClick={() =>
+                              window.open(
+                                selectedContract.contract.user.ktpImageUrl,
+                                "_blank"
+                              )
+                            }
                           />
                         </div>
                       </div>
@@ -540,21 +703,37 @@ export default function ContractApprovalsPage() {
                 <div className="space-y-4">
                   {selectedContract.contract.lastSignature && (
                     <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
-                      <h3 className="font-semibold text-gray-900 dark:text-white mb-2">User Signature</h3>
+                      <h3 className="font-semibold text-gray-900 dark:text-white mb-2">
+                        User Signature
+                      </h3>
                       <div className="border rounded-lg bg-white dark:bg-gray-800 max-h-80 overflow-hidden">
                         <div className="p-4">
                           <Image
-                            src={selectedContract.contract.lastSignature.signatureData}
+                            src={
+                              selectedContract.contract.lastSignature
+                                .signatureData
+                            }
                             alt="User Signature"
                             width={500}
                             height={250}
                             className="w-full h-auto object-contain max-h-60 cursor-pointer hover:scale-105 transition-transform duration-200"
-                            onClick={() => window.open(selectedContract?.contract?.lastSignature?.signatureData, '_blank')}
+                            onClick={() =>
+                              window.open(
+                                selectedContract?.contract?.lastSignature
+                                  ?.signatureData,
+                                "_blank"
+                              )
+                            }
                           />
                         </div>
                       </div>
                       <div className="mt-2 text-sm text-gray-600 dark:text-gray-300">
-                        <div>Submitted: {new Date(selectedContract.contract.lastSignature.submittedAt).toLocaleString('id-ID')}</div>
+                        <div>
+                          Submitted:{" "}
+                          {new Date(
+                            selectedContract.contract.lastSignature.submittedAt
+                          ).toLocaleString("id-ID")}
+                        </div>
                         <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                           Click signature to view full size
                         </div>
@@ -565,24 +744,38 @@ export default function ContractApprovalsPage() {
                   {/* Previous Rejections */}
                   {selectedContract.contract.lastSignature?.rejectionReason && (
                     <div className="bg-red-50 dark:bg-red-900/20 p-4 rounded-lg border border-red-200 dark:border-red-800">
-                      <h3 className="font-semibold text-red-900 dark:text-red-100 mb-2">Previous Rejection</h3>
+                      <h3 className="font-semibold text-red-900 dark:text-red-100 mb-2">
+                        Previous Rejection
+                      </h3>
                       <div className="text-sm text-red-800 dark:text-red-200 space-y-2">
-                        <div><strong>Reason:</strong> {selectedContract.contract.lastSignature.rejectionReason}</div>
+                        <div>
+                          <strong>Reason:</strong>{" "}
+                          {
+                            selectedContract.contract.lastSignature
+                              .rejectionReason
+                          }
+                        </div>
                         {selectedContract.contract.lastSignature.adminNotes && (
-                          <div><strong>Notes:</strong> {selectedContract.contract.lastSignature.adminNotes}</div>
+                          <div>
+                            <strong>Notes:</strong>{" "}
+                            {selectedContract.contract.lastSignature.adminNotes}
+                          </div>
                         )}
                       </div>
                     </div>
                   )}
 
                   {/* Action Form */}
-                  {selectedContract.contract.adminApprovalStatus === 'pending' && (
+                  {selectedContract.contract.adminApprovalStatus ===
+                    "pending" && (
                     <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg p-4">
                       <h3 className="font-semibold text-gray-900 dark:text-white mb-4">
-                        {selectedContract.action === 'approve' ? 'Approve Contract' : 'Reject Contract'}
+                        {selectedContract.action === "approve"
+                          ? "Approve Contract"
+                          : "Reject Contract"}
                       </h3>
 
-                      {selectedContract.action === 'reject' && (
+                      {selectedContract.action === "reject" && (
                         <div className="space-y-4">
                           <div>
                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -590,16 +783,28 @@ export default function ContractApprovalsPage() {
                             </label>
                             <select
                               value={rejectionReason}
-                              onChange={(e) => setRejectionReason(e.target.value)}
+                              onChange={(e) =>
+                                setRejectionReason(e.target.value)
+                              }
                               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-[#324D3E] focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                               required
                             >
                               <option value="">Select reason...</option>
-                              <option value="Signature does not match KTP">Signature does not match KTP</option>
-                              <option value="Signature too unclear">Signature too unclear</option>
-                              <option value="Invalid signature format">Invalid signature format</option>
-                              <option value="KTP image quality too poor">KTP image quality too poor</option>
-                              <option value="Other documentation issues">Other documentation issues</option>
+                              <option value="Signature does not match KTP">
+                                Signature does not match KTP
+                              </option>
+                              <option value="Signature too unclear">
+                                Signature too unclear
+                              </option>
+                              <option value="Invalid signature format">
+                                Invalid signature format
+                              </option>
+                              <option value="KTP image quality too poor">
+                                KTP image quality too poor
+                              </option>
+                              <option value="Other documentation issues">
+                                Other documentation issues
+                              </option>
                             </select>
                           </div>
                         </div>
@@ -621,26 +826,44 @@ export default function ContractApprovalsPage() {
                       <div className="flex space-x-3 mt-6">
                         <button
                           onClick={() => {
-                            if (selectedContract.action === 'approve') {
-                              handleApproval(selectedContract.contract.contractId);
+                            if (selectedContract.action === "approve") {
+                              handleApproval(
+                                selectedContract.contract.contractId
+                              );
                             } else {
-                              handleRejection(selectedContract.contract.contractId);
+                              handleRejection(
+                                selectedContract.contract.contractId
+                              );
                             }
                           }}
-                          disabled={actionLoading || (selectedContract.action === 'reject' && !rejectionReason)}
-                          className={getThemeClasses(`flex-1 py-2 px-4 rounded-md font-medium disabled:opacity-50 disabled:cursor-not-allowed ${
-                            selectedContract.action === 'approve'
-                              ? 'bg-green-600 hover:bg-green-700 text-white'
-                              : 'bg-red-600 hover:bg-red-700 text-white'
-                          }`, selectedContract.action === 'approve' ? "!bg-gradient-to-r !from-[#B5EAD7] !to-[#E6FFF0] !text-[#4c1d1d] !shadow-md" : "!bg-gradient-to-r !from-[#FFC1CC] !to-[#FFE4E8] !text-[#4c1d1d] !shadow-md")}
-                        >
-                          {actionLoading ? 'Processing...' : (
-                            selectedContract.action === 'approve' ? 'Approve Contract' : 'Reject Contract'
+                          disabled={
+                            actionLoading ||
+                            (selectedContract.action === "reject" &&
+                              !rejectionReason)
+                          }
+                          className={getThemeClasses(
+                            `flex-1 py-2 px-4 rounded-md font-medium disabled:opacity-50 disabled:cursor-not-allowed ${
+                              selectedContract.action === "approve"
+                                ? "bg-green-600 hover:bg-green-700 text-white"
+                                : "bg-red-600 hover:bg-red-700 text-white"
+                            }`,
+                            selectedContract.action === "approve"
+                              ? "!bg-gradient-to-r !from-[#B5EAD7] !to-[#E6FFF0] !text-[#4c1d1d] !shadow-md"
+                              : "!bg-gradient-to-r !from-[#FFC1CC] !to-[#FFE4E8] !text-[#4c1d1d] !shadow-md"
                           )}
+                        >
+                          {actionLoading
+                            ? "Processing..."
+                            : selectedContract.action === "approve"
+                            ? "Approve Contract"
+                            : "Reject Contract"}
                         </button>
                         <button
                           onClick={() => setSelectedContract(null)}
-                          className={getThemeClasses("flex-1 py-2 px-4 rounded-md border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors", "!border-[#FFC1CC]/30 !text-[#4c1d1d] hover:!bg-[#FFDEE9]/30")}
+                          className={getThemeClasses(
+                            "flex-1 py-2 px-4 rounded-md border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors",
+                            "!border-[#FFC1CC]/30 !text-[#4c1d1d] hover:!bg-[#FFDEE9]/30"
+                          )}
                         >
                           Cancel
                         </button>
