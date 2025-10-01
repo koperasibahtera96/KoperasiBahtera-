@@ -5,6 +5,7 @@ import { useAlert } from "@/components/ui/Alert";
 import { DualSignatureInput } from "@/components/ui/dual-signature-input";
 import { downloadInvoiceImage } from "@/lib/invoiceImage";
 import { CicilanGroup, CicilanInstallmentWithPayment } from "@/types/cicilan";
+import { useLanguage } from "@/contexts/LanguageContext";
 import jsPDF from "jspdf";
 import {
   Calendar,
@@ -22,7 +23,7 @@ import {
 import { useSession } from "next-auth/react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 
 // Type alias for backward compatibility
 type Installment = CicilanInstallmentWithPayment;
@@ -36,11 +37,22 @@ interface FullPaymentContract {
   totalAmount: number;
   paymentType: string;
   paymentUrl?: string;
-  adminApprovalStatus: "pending" | "approved" | "rejected" | "permanently_rejected";
+  adminApprovalStatus:
+    | "pending"
+    | "approved"
+    | "rejected"
+    | "permanently_rejected";
   adminApprovedDate?: Date | string;
-  status: "draft" | "signed" | "approved" | "rejected" | "permanently_rejected" | "paid";
+  status:
+    | "draft"
+    | "signed"
+    | "approved"
+    | "rejected"
+    | "permanently_rejected"
+    | "paid";
   contractNumber: string;
   contractDate: Date | string;
+  dueDate: Date | string; // Due date for payment
   paymentAllowed: boolean;
   paymentCompleted: boolean;
   createdAt: Date | string;
@@ -59,10 +71,13 @@ interface FullPaymentContract {
 export default function PaymentsPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
+  const { t } = useLanguage();
   const [groupedInstallments, setGroupedInstallments] = useState<
     CicilanGroup[]
   >([]);
-  const [fullPaymentContracts, setFullPaymentContracts] = useState<FullPaymentContract[]>([]);
+  const [fullPaymentContracts, setFullPaymentContracts] = useState<
+    FullPaymentContract[]
+  >([]);
   const [isLoading, setIsLoading] = useState(true);
   const [uploadingProof, setUploadingProof] = useState<string | null>(null);
   const [filter, setFilter] = useState<
@@ -73,7 +88,7 @@ export default function PaymentsPage() {
 
   // Function to toggle group expansion
   const toggleGroupExpansion = (groupId: string) => {
-    setExpandedGroups(prev => {
+    setExpandedGroups((prev) => {
       const newSet = new Set(prev);
       if (newSet.has(groupId)) {
         newSet.delete(groupId);
@@ -84,6 +99,36 @@ export default function PaymentsPage() {
     });
   };
 
+  // fetchInstallments: fetches user cicilan and full payment data from server
+  const fetchInstallments = useCallback(async () => {
+    try {
+      // Build query params from current searchTerm and filter
+      const params = new URLSearchParams();
+      if (searchTerm && searchTerm.trim() !== "") {
+        params.append("search", searchTerm.trim());
+      }
+      if (filter && filter !== "all") {
+        params.append("filter", filter);
+      }
+      const url =
+        "/api/cicilan/user" +
+        (params.toString() ? `?${params.toString()}` : "");
+
+      const response = await fetch(url);
+      if (response.ok) {
+        const data = await response.json();
+        setGroupedInstallments(data.cicilanGroups);
+        setFullPaymentContracts(data.fullPaymentContracts || []);
+      } else {
+        console.error("Failed to fetch installments");
+      }
+    } catch (error) {
+      console.error("Error fetching installments:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [searchTerm, filter]);
+
   const [uploadModal, setUploadModal] = useState<{
     isOpen: boolean;
     installment: Installment | null;
@@ -91,14 +136,18 @@ export default function PaymentsPage() {
   const [retryModal, setRetryModal] = useState<{
     isOpen: boolean;
     contractId: string | null;
-    contractType: 'installment' | 'full-payment' | null;
+    contractType: "installment" | "full-payment" | null;
     productName: string | null;
-  }>({ isOpen: false, contractId: null, contractType: null, productName: null });
+  }>({
+    isOpen: false,
+    contractId: null,
+    contractType: null,
+    productName: null,
+  });
   const { showSuccess, showError, AlertComponent } = useAlert();
 
   const handleFullPayment = async (contract: FullPaymentContract) => {
     try {
-      // Call create-investment API to create Payment record and get Midtrans URL
       const response = await fetch("/api/payment/create-investment", {
         method: "POST",
         headers: {
@@ -121,18 +170,26 @@ export default function PaymentsPage() {
 
       if (data.success && data.data?.redirect_url) {
         // Open the Midtrans payment URL
-        window.open(data.data.redirect_url, '_blank');
+        window.open(data.data.redirect_url, "_blank");
       } else {
-        showError("Gagal", data.error || "Gagal membuat pembayaran");
+        showError(
+          t("payments.errors.paymentFailed"),
+          data.error || t("payments.errors.paymentFailedMessage")
+        );
       }
     } catch (error) {
       console.error("Error creating payment:", error);
-      showError("Kesalahan", "Terjadi kesalahan saat membuat pembayaran");
+      showError(
+        t("payments.errors.general"),
+        t("payments.errors.generalMessage")
+      );
     }
   };
 
-
-  const handleDownloadInvoice = (installment: Installment, group: CicilanGroup) => {
+  const handleDownloadInvoice = (
+    installment: Installment,
+    group: CicilanGroup
+  ) => {
     // Prepare payment data for invoice
     const paymentData = {
       orderId: installment.orderId || group.cicilanOrderId,
@@ -141,12 +198,18 @@ export default function PaymentsPage() {
       amount: installment.amount,
       itemName: `${group.productName} - Cicilan #${installment.installmentNumber}`,
       paymentType: "cicilan-installment",
-      transactionStatus: installment.status === "approved" ? "settlement" : installment.status,
+      transactionStatus:
+        installment.status === "approved" ? "settlement" : installment.status,
       updatedAt: installment.paidDate || installment.updatedAt,
       createdAt: installment.createdAt,
       installmentNumber: installment.installmentNumber,
       totalInstallments: group.installments.length,
-      billingPeriod: group.paymentTerm === "monthly" ? "Bulanan" : group.paymentTerm === "quarterly" ? "Triwulan" : "Tahunan",
+      billingPeriod:
+        group.paymentTerm === "monthly"
+          ? t("payments.billingPeriod.monthly")
+          : group.paymentTerm === "quarterly"
+          ? t("payments.billingPeriod.quarterly")
+          : t("payments.billingPeriod.yearly"),
       ref: installment._id,
     };
 
@@ -171,41 +234,83 @@ export default function PaymentsPage() {
 
     downloadInvoiceImage(paymentData);
   };
-  
+
   const handleDownloadContract = async (contractId: string) => {
     try {
       // First get the contract data to generate the PDF
       const response = await fetch(`/api/contract/${contractId}/download`, {
         method: "GET",
       });
-      
+
       if (response.ok) {
         const data = await response.json();
-        
+
         if (data.success) {
           // Create PDF with the signature data (may be null for some contracts)
           await generateContractPDF(data.contractData, data.signatureData);
         } else {
-          showError("Error", data.error || "Failed to download contract");
+          showError(
+            t("payments.errors.general"),
+            data.error || t("payments.errors.contractDownloadFailed")
+          );
         }
       } else {
-        showError("Error", "Failed to fetch contract data");
+        showError(
+          t("payments.errors.general"),
+          t("payments.errors.contractDataFailed")
+        );
       }
     } catch (error) {
       console.error("Error downloading contract:", error);
-      showError("Error", "An error occurred while downloading the contract");
+      showError(
+        t("payments.errors.general"),
+        t("payments.errors.contractDownloadError")
+      );
     }
   };
-  
+
   // Function to generate PDF from contract data
   // Helper function to convert number to Indonesian words
   const convertNumberToWords = (num: number): string => {
     if (num === 0) return "nol rupiah";
 
     const units = ["", "ribu", "juta", "miliar", "triliun"];
-    const ones = ["", "satu", "dua", "tiga", "empat", "lima", "enam", "tujuh", "delapan", "sembilan"];
-    const teens = ["sepuluh", "sebelas", "dua belas", "tiga belas", "empat belas", "lima belas", "enam belas", "tujuh belas", "delapan belas", "sembilan belas"];
-    const tens = ["", "", "dua puluh", "tiga puluh", "empat puluh", "lima puluh", "enam puluh", "tujuh puluh", "delapan puluh", "sembilan puluh"];
+    const ones = [
+      "",
+      "satu",
+      "dua",
+      "tiga",
+      "empat",
+      "lima",
+      "enam",
+      "tujuh",
+      "delapan",
+      "sembilan",
+    ];
+    const teens = [
+      "sepuluh",
+      "sebelas",
+      "dua belas",
+      "tiga belas",
+      "empat belas",
+      "lima belas",
+      "enam belas",
+      "tujuh belas",
+      "delapan belas",
+      "sembilan belas",
+    ];
+    const tens = [
+      "",
+      "",
+      "dua puluh",
+      "tiga puluh",
+      "empat puluh",
+      "lima puluh",
+      "enam puluh",
+      "tujuh puluh",
+      "delapan puluh",
+      "sembilan puluh",
+    ];
 
     function convertHundreds(n: number): string {
       let result = "";
@@ -256,9 +361,15 @@ export default function PaymentsPage() {
   };
 
   // Function to generate PDF from contract data
-  const generateContractPDF = async (contractData: any, signatureData: string | null) => {
+  const generateContractPDF = async (
+    contractData: any,
+    signatureData: string | null
+  ) => {
     if (!contractData) {
-      showError("Error", "Contract data not available");
+      showError(
+        t("payments.errors.general"),
+        t("payments.errors.contractNotAvailable")
+      );
       return;
     }
 
@@ -274,7 +385,11 @@ export default function PaymentsPage() {
         const pageText = `- ${pageNumber} -`;
         const pageWidth = pdf.internal.pageSize.width;
         const textWidth = pdf.getTextWidth(pageText);
-        pdf.text(pageText, (pageWidth - textWidth) / 2, pdf.internal.pageSize.height - 10);
+        pdf.text(
+          pageText,
+          (pageWidth - textWidth) / 2,
+          pdf.internal.pageSize.height - 10
+        );
         pdf.setTextColor(0, 0, 0);
       };
 
@@ -299,12 +414,19 @@ export default function PaymentsPage() {
       pdf.setFontSize(12);
       pdf.setTextColor(0, 0, 0);
       pdf.setFont("helvetica", "bold");
-      pdf.text("SURAT PERJANJIAN KERJASAMA", 105, headerYPosition, { align: "center" });
+      pdf.text("SURAT PERJANJIAN KERJASAMA", 105, headerYPosition, {
+        align: "center",
+      });
       pdf.text("(KONTRAK)", 105, headerYPosition + 8, { align: "center" });
 
       pdf.setFontSize(10);
       pdf.setFont("helvetica", "normal");
-      pdf.text(`Nomor: ${contractData.contractNumber}`, 105, headerYPosition + 18, { align: "center" });
+      pdf.text(
+        `Nomor: ${contractData.contractNumber}`,
+        105,
+        headerYPosition + 18,
+        { align: "center" }
+      );
 
       let yPosition = headerYPosition + 30;
       const leftMargin = 20;
@@ -316,12 +438,18 @@ export default function PaymentsPage() {
       yPosition += 15;
 
       const contractDate = new Date(contractData.contractDate);
-      const dayName = contractDate.toLocaleDateString("id-ID", { weekday: "long" });
+      const dayName = contractDate.toLocaleDateString("id-ID", {
+        weekday: "long",
+      });
       const day = contractDate.getDate();
-      const monthName = contractDate.toLocaleDateString("id-ID", { month: "long" });
+      const monthName = contractDate.toLocaleDateString("id-ID", {
+        month: "long",
+      });
       const year = contractDate.getFullYear();
-      const dayStr = day.toString().padStart(2, '0');
-      const monthStr = (contractDate.getMonth() + 1).toString().padStart(2, '0');
+      const dayStr = day.toString().padStart(2, "0");
+      const monthStr = (contractDate.getMonth() + 1)
+        .toString()
+        .padStart(2, "0");
 
       pdf.setFontSize(10);
       pdf.setFont("helvetica", "normal");
@@ -338,14 +466,22 @@ export default function PaymentsPage() {
       const lineHeight = 5;
       const colonPosition = leftMargin + 70;
 
-      pdf.text("Nama", leftMargin, yPosition);
+      pdf.text(t("payments.pdf.name"), leftMargin, yPosition);
       pdf.text(":", colonPosition, yPosition);
-      pdf.text(`${contractData.investor.name || ""}`, colonPosition + 5, yPosition);
+      pdf.text(
+        `${contractData.investor.name || ""}`,
+        colonPosition + 5,
+        yPosition
+      );
       yPosition += lineHeight;
 
       pdf.text("NIK", leftMargin, yPosition);
       pdf.text(":", colonPosition, yPosition);
-      pdf.text(`${contractData.investor.nik || ""}`, colonPosition + 5, yPosition);
+      pdf.text(
+        `${contractData.investor.nik || ""}`,
+        colonPosition + 5,
+        yPosition
+      );
       yPosition += lineHeight;
 
       let dobText = "";
@@ -353,69 +489,108 @@ export default function PaymentsPage() {
         const dob = new Date(contractData.investor.dateOfBirth);
         dobText = dob.toLocaleDateString("id-ID");
       }
-      pdf.text("Tempat/Tgl Lahir", leftMargin, yPosition);
+      pdf.text(t("payments.pdf.birthPlace"), leftMargin, yPosition);
       pdf.text(":", colonPosition, yPosition);
       pdf.text(`${dobText}`, colonPosition + 5, yPosition);
       yPosition += lineHeight;
 
-      pdf.text("Email", leftMargin, yPosition);
+      pdf.text(t("payments.pdf.email"), leftMargin, yPosition);
       pdf.text(":", colonPosition, yPosition);
-      pdf.text(`${contractData.investor.email || ""}`, colonPosition + 5, yPosition);
+      pdf.text(
+        `${contractData.investor.email || ""}`,
+        colonPosition + 5,
+        yPosition
+      );
       yPosition += lineHeight;
 
-      pdf.text("Nomor Kontak", leftMargin, yPosition);
+      pdf.text(t("payments.pdf.contact"), leftMargin, yPosition);
       pdf.text(":", colonPosition, yPosition);
-      pdf.text(`${contractData.investor.phoneNumber || ""}`, colonPosition + 5, yPosition);
+      pdf.text(
+        `${contractData.investor.phoneNumber || ""}`,
+        colonPosition + 5,
+        yPosition
+      );
       yPosition += lineHeight;
 
-      pdf.text("Pekerjaan", leftMargin, yPosition);
+      pdf.text(t("payments.pdf.job"), leftMargin, yPosition);
       pdf.text(":", colonPosition, yPosition);
-      pdf.text(`${contractData.investor.occupation || ""}`, colonPosition + 5, yPosition);
+      pdf.text(
+        `${contractData.investor.occupation || ""}`,
+        colonPosition + 5,
+        yPosition
+      );
       yPosition += lineHeight;
 
       let fullAddress = contractData.investor.address || "";
-      if (contractData.investor.village) fullAddress += `, ${contractData.investor.village}`;
-      if (contractData.investor.city) fullAddress += `, ${contractData.investor.city}`;
-      if (contractData.investor.province) fullAddress += `, ${contractData.investor.province}`;
-      if (contractData.investor.postalCode) fullAddress += ` ${contractData.investor.postalCode}`;
+      if (contractData.investor.village)
+        fullAddress += `, ${contractData.investor.village}`;
+      if (contractData.investor.city)
+        fullAddress += `, ${contractData.investor.city}`;
+      if (contractData.investor.province)
+        fullAddress += `, ${contractData.investor.province}`;
+      if (contractData.investor.postalCode)
+        fullAddress += ` ${contractData.investor.postalCode}`;
 
-      pdf.text("Alamat", leftMargin, yPosition);
+      pdf.text(t("payments.pdf.address"), leftMargin, yPosition);
       pdf.text(":", colonPosition, yPosition);
-      const addressLines = pdf.splitTextToSize(`${fullAddress}`, rightMargin - colonPosition - 5);
+      const addressLines = pdf.splitTextToSize(
+        `${fullAddress}`,
+        rightMargin - colonPosition - 5
+      );
       pdf.text(addressLines, colonPosition + 5, yPosition);
       yPosition += lineHeight * addressLines.length + 8;
 
-      const pihakPertamaText = "Bertindak untuk dan atas nama diri sendiri. selanjutnya disebut sebagai Pihak Pertama.";
-      const pihakPertamaLines = pdf.splitTextToSize(pihakPertamaText, rightMargin - leftMargin);
+      const pihakPertamaText =
+        "Bertindak untuk dan atas nama diri sendiri. selanjutnya disebut sebagai Pihak Pertama.";
+      const pihakPertamaLines = pdf.splitTextToSize(
+        pihakPertamaText,
+        rightMargin - leftMargin
+      );
       pdf.text(pihakPertamaLines, leftMargin, yPosition);
       yPosition += lineHeight * pihakPertamaLines.length + 8;
 
-      pdf.text("Nama", leftMargin, yPosition);
+      pdf.text(t("payments.pdf.name"), leftMargin, yPosition);
       pdf.text(":", colonPosition, yPosition);
-      pdf.text("Halim Perdana Kusuma, S.H., M.H.", colonPosition + 5, yPosition);
+      pdf.text(
+        "Halim Perdana Kusuma, S.H., M.H.",
+        colonPosition + 5,
+        yPosition
+      );
       yPosition += lineHeight;
 
-      pdf.text("Tempat/Tgl Lahir", leftMargin, yPosition);
+      pdf.text(t("payments.pdf.birthPlace"), leftMargin, yPosition);
       pdf.text(":", colonPosition, yPosition);
       pdf.text("Sukaraja, 11 September 1986", colonPosition + 5, yPosition);
       yPosition += lineHeight;
 
-      pdf.text("Alamat", leftMargin, yPosition);
+      pdf.text(t("payments.pdf.address"), leftMargin, yPosition);
       pdf.text(":", colonPosition, yPosition);
-      const koprasi_address = "Komplek Taman Mutiara Indah blok J3 No.17 RT004 RW017 Kaligandu, Kota Serang, Banten";
-      const koperasiAddressLines = pdf.splitTextToSize(koprasi_address, rightMargin - colonPosition - 5);
+      const koprasi_address =
+        "Komplek Taman Mutiara Indah blok J3 No.17 RT004 RW017 Kaligandu, Kota Serang, Banten";
+      const koperasiAddressLines = pdf.splitTextToSize(
+        koprasi_address,
+        rightMargin - colonPosition - 5
+      );
       pdf.text(koperasiAddressLines, colonPosition + 5, yPosition);
       yPosition += lineHeight * koperasiAddressLines.length + 5;
 
-      const pihakKeduaText = "Bertindak untuk dan atas nama KOPERASI BINTANG MERAH SEJAHTERA, selanjutnya disebut sebagai Pihak Kedua.";
-      const pihakKeduaLines = pdf.splitTextToSize(pihakKeduaText, rightMargin - leftMargin);
+      const pihakKeduaText =
+        "Bertindak untuk dan atas nama KOPERASI BINTANG MERAH SEJAHTERA, selanjutnya disebut sebagai Pihak Kedua.";
+      const pihakKeduaLines = pdf.splitTextToSize(
+        pihakKeduaText,
+        rightMargin - leftMargin
+      );
       pdf.text(pihakKeduaLines, leftMargin, yPosition);
       yPosition += lineHeight * pihakKeduaLines.length + 6;
 
-      const totalAmountText = `Rp${contractData.investment.totalAmount.toLocaleString("id-ID")},-`;
-      const totalAmountWords = convertNumberToWords(contractData.investment.totalAmount);
+      const totalAmountText = `Rp${contractData.investment.totalAmount.toLocaleString(
+        "id-ID"
+      )},-`;
+      const totalAmountWords = convertNumberToWords(
+        contractData.investment.totalAmount
+      );
 
-      let plantTypesText = "GAHARU, ALPUKAT, JENGKOL, AREN";
+      let plantTypesText = "GAHARU, ALPUKAT, JENGKOL, AREN, KELAPA";
       if (contractData.investment.productName) {
         const productName = contractData.investment.productName.toLowerCase();
         if (productName.includes("alpukat")) {
@@ -426,11 +601,17 @@ export default function PaymentsPage() {
           plantTypesText = "JENGKOL";
         } else if (productName.includes("aren")) {
           plantTypesText = "AREN";
+        } else if (productName.includes("kelapa")) {
+          plantTypesText = "KELAPA";
         }
       }
 
-      const preambleIntroText = "Bahwa sebelum ditandatanganinya Surat Perjanjian ini, Para pihak terlebih dahulu menerangkan hal–hal sebagai berikut:";
-      const preambleIntroLines = pdf.splitTextToSize(preambleIntroText, rightMargin - leftMargin);
+      const preambleIntroText =
+        "Bahwa sebelum ditandatanganinya Surat Perjanjian ini, Para pihak terlebih dahulu menerangkan hal–hal sebagai berikut:";
+      const preambleIntroLines = pdf.splitTextToSize(
+        preambleIntroText,
+        rightMargin - leftMargin
+      );
       pdf.text(preambleIntroLines, leftMargin, yPosition);
       yPosition += lineHeight * preambleIntroLines.length + 3;
 
@@ -438,7 +619,7 @@ export default function PaymentsPage() {
         `1. Bahwa Pihak Pertama adalah selaku yang memiliki modal sebesar ${totalAmountText} (${totalAmountWords}) untuk selanjutnya disebut sebagai MODAL KERJASAMA untuk project (${plantTypesText});`,
         `2. Bahwa Pihak Kedua adalah Pengelola Dana Kerjasama untuk project (${plantTypesText}) berlokasi di Kabupten Musi Rawas Utara Provinsi Sumatera Selatan;`,
         `3. Bahwa Pihak Pertama dan Pihak Kedua setuju untuk saling mengikatkan diri dalam suatu perjanjian Kerjasama di project (${plantTypesText}) sesuai dengan ketentuan hukum yang berlaku.`,
-        `4. Bahwa berdasarkan hal-hal tersebut di atas, kedua belah pihak menyatakan sepakat dan setuju untuk mengadakan Perjanjian Kerjasama ini yang dilaksanakan dengan ketentuan dan syarat-syarat sebagai berikut:`
+        `4. Bahwa berdasarkan hal-hal tersebut di atas, kedua belah pihak menyatakan sepakat dan setuju untuk mengadakan Perjanjian Kerjasama ini yang dilaksanakan dengan ketentuan dan syarat-syarat sebagai berikut:`,
       ];
 
       preambleTexts.forEach((text) => {
@@ -475,28 +656,28 @@ export default function PaymentsPage() {
             "Laporan Usaha adalah laporan tertulis dan/atau elektronik yang disampaikan PIHAK PERTAMA kepada PIHAK KEDUA secara periodik.",
             "Masa Perawatan adalah periode sejak bibit ditanam hingga pohon siap dipanen.",
             "Force Majeure adalah keadaan di luar kemampuan Para Pihak yang menyebabkan salah satu pihak tidak dapat melaksanakan kewajibannya.",
-            "Para Pihak adalah PIHAK PERTAMA dan PIHAK KEDUA yang menandatangani perjanjian ini."
-          ]
+            "Para Pihak adalah PIHAK PERTAMA dan PIHAK KEDUA yang menandatangani perjanjian ini.",
+          ],
         },
         {
           title: "PASAL II\nMAKSUD DAN TUJUAN",
           content: [
-            `Pihak Pertama dalam perjanjian ini memberi DANA KERJASAMA kepada Pihak Kedua sebesar ${totalAmountText} (${totalAmountWords}) untuk 1 (satu) paket penanaman dan Pihak Kedua dengan ini telah menerima penyerahan DANA KERJASAMA tersebut dari Pihak Pertama serta menyanggupi untuk melaksanakan pengelolaan DANA KERJASAMA tersebut.`
-          ]
+            `Pihak Pertama dalam perjanjian ini memberi DANA KERJASAMA kepada Pihak Kedua sebesar ${totalAmountText} (${totalAmountWords}) untuk 1 (satu) paket penanaman dan Pihak Kedua dengan ini telah menerima penyerahan DANA KERJASAMA tersebut dari Pihak Pertama serta menyanggupi untuk melaksanakan pengelolaan DANA KERJASAMA tersebut.`,
+          ],
         },
         {
           title: "PASAL III\nRUANG LINGKUP",
           content: [
             `Dalam pelaksanaan perjanjian ini, Pihak Pertama memberi DANA kepada Pihak Kedua sebesar ${totalAmountText} (${totalAmountWords}) untuk 1 (satu) paket penanaman dan Pihak Kedua dengan ini telah menerima penyerahan DANA tersebut dari Pihak Pertama serta menyanggupi untuk melaksanakan pengelolaan DANA.`,
             `Pihak Kedua dengan ini berjanji dan mengikatkan diri untuk melaksanakan perputaran DANA pada Usaha Peningkatan Modal di project (${plantTypesText}) yang berlokasi di Kabupten Musi Rawas Utara Provinsi Sumatera Selatan setelah ditandatanganinya perjanjian ini.`,
-            "Pihak Kedua dengan ini berjanji dan mengikatkan diri untuk memberikan keuntungan kepada Pihak Pertama di mulai dari setelah masa panen pertama;"
-          ]
+            "Pihak Kedua dengan ini berjanji dan mengikatkan diri untuk memberikan keuntungan kepada Pihak Pertama di mulai dari setelah masa panen pertama;",
+          ],
         },
         {
           title: "PASAL IV\nJANGKA WAKTU KERJASAMA",
           content: [
-            "Perjanjian kerjasama ini dilakukan dan diterima untuk jangka waktu 10 (sepuluh puluh) tahun, terhitung sejak tanggal di tanda tanganinya perjanjian ini;"
-          ]
+            "Perjanjian kerjasama ini dilakukan dan diterima untuk jangka waktu 10 (sepuluh puluh) tahun, terhitung sejak tanggal di tanda tanganinya perjanjian ini;",
+          ],
         },
         {
           title: "PASAL V\nHAK DAN KEWAJIBAN PIHAK PERTAMA",
@@ -507,8 +688,8 @@ export default function PaymentsPage() {
             "Menerima laporan perkembangan usaha secara berkala;",
             "Melakukan pengawasan terhadap usaha dengan pemberitahuan terlebih dahulu;",
             "Tidak melakukan intervensi teknis dalam pengelolaan usaha;",
-            "Menjaga kerahasiaan informasi terkait operasional usaha."
-          ]
+            "Menjaga kerahasiaan informasi terkait operasional usaha.",
+          ],
         },
         {
           title: "PASAL VI\nHAK DAN KEWAJIBAN PIHAK KEDUA",
@@ -522,8 +703,8 @@ export default function PaymentsPage() {
             "Melaksanakan penanaman, perawatan, hingga pemanenan pohon sesuai standar;",
             "Memberikan laporan perkembangan usaha;",
             "Membagi keuntungan kepada PIHAK KEDUA sesuai dengan jadwal yang ditentukan;",
-            "Menjaga transparansi penggunaan dana dan membuka akses audit."
-          ]
+            "Menjaga transparansi penggunaan dana dan membuka akses audit.",
+          ],
         },
         {
           title: "PASAL VII\nPEMBAGIAN HASIL",
@@ -532,8 +713,8 @@ export default function PaymentsPage() {
             `Kedua belah pihak sepakat dan setuju bahwa perjanjian kerjasama ini dilakukan dengan cara pemberian keuntungan yang diperoleh dalam Usaha Peningkatan Modal Usaha di project (${plantTypesText}) berlokasi di Kabupten Musi Rawas Utara Provinsi Sumatera Selatan;`,
             "Keuntungan yang akan di Terima Pihak Pertama dibagi dengan skema: 70% (tujuh puluh persen) untuk PIHAK PERTAMA dan 30% (tiga puluh persen) untuk PIHAK KEDUA;",
             "Pembagian keuntungan dilakukan paling lambat 7 (tujuh) hari Kerja setelah masa panen.",
-            "Pembayaran keuntungan dilakukan melalui transfer ke rekening PIHAK KEDUA."
-          ]
+            "Pembayaran keuntungan dilakukan melalui transfer ke rekening PIHAK KEDUA.",
+          ],
         },
         {
           title: "PASAL VIII\nKEADAAN MEMAKSA (FORCE MAJEURE)",
@@ -541,30 +722,30 @@ export default function PaymentsPage() {
             "Yang termasuk dalam Force Majeure adalah akibat dari kejadian-kejadian diluar kuasa dan kehendak dari kedua belah pihak diantaranya termasuk tidak terbatas bencana alam, banjir, badai, topan, gempa bumi, kebakaran, perang, huru-hara, pemberontakan, demonstrasi, pemogokan, kegagalan koperasi.",
             "Pihak yang mengalami Force Majeure wajib memberitahukan secara tertulis kepada pihak lainnya selambat-lambatnya 7 (tujuh) hari sejak terjadinya keadaan tersebut dengan bukti pendukung yang sah.",
             "Apabila Force Majeure berlangsung tidak lebih dari 30 (tiga puluh) hari, kewajiban para pihak ditunda hingga keadaan berakhir.",
-            "Apabila Force Majeure berlangsung lebih dari 90 (Sembilan puluh) hari sehingga pelaksanaan perjanjian tidak mungkin dilanjutkan, maka para pihak sepakat untuk membicarakan kembali atau mengakhiri perjanjian tanpa tuntutan ganti rugi."
-          ]
+            "Apabila Force Majeure berlangsung lebih dari 90 (Sembilan puluh) hari sehingga pelaksanaan perjanjian tidak mungkin dilanjutkan, maka para pihak sepakat untuk membicarakan kembali atau mengakhiri perjanjian tanpa tuntutan ganti rugi.",
+          ],
         },
         {
           title: "PASAL IX\nWANPRESTASI",
           content: [
             "Dalam hal salah satu pihak telah melanggar kewajibannya yang tercantum dalam salah satu Pasal perjanjian ini, telah cukup bukti dan tanpa perlu dibuktikan lebih lanjut, bahwa pihak yang melanggar tersebut telah melakukan tindakan Wanprestasi.",
-            "Pihak yang merasa dirugikan atas tindakan Wanprestasi tersebut dalam ayat 1 diatas, berhak meminta ganti kerugian dari pihak yang melakukan wanprestasi tersebut atas sejumlah kerugian yang dideritanya, kecuali dalam hal kerugian tersebut disebabkan karena adanya suatu keadaan memaksa, seperti tercantum dalam Pasal VIII."
-          ]
+            "Pihak yang merasa dirugikan atas tindakan Wanprestasi tersebut dalam ayat 1 diatas, berhak meminta ganti kerugian dari pihak yang melakukan wanprestasi tersebut atas sejumlah kerugian yang dideritanya, kecuali dalam hal kerugian tersebut disebabkan karena adanya suatu keadaan memaksa, seperti tercantum dalam Pasal VIII.",
+          ],
         },
         {
           title: "PASAL X\nPERSELISIHAN",
           content: [
-            "Bilamana dalam pelaksanaan perjanjian Kerjasama ini terdapat perselisihan antara kedua belah pihak baik dalam pelaksanaannya ataupun dalam penafsiran salah satu Pasal dalam perjanjian ini, maka kedua belah pihak sepakat untuk sedapat mungkin menyelesaikan perselisihan tersebut dengan cara musyawarah. Apabila musyawarah telah dilakukan oleh kedua belah pihak, namun ternyata tidak berhasil mencapai suatu kemufakatan maka Para Pihak sepakat bahwa semua sengketa yang timbul dari perjanjian ini akan diselesaikan pada Kantor Kepaniteraan Pengadilan Negeri Jakarta Selatan."
-          ]
+            "Bilamana dalam pelaksanaan perjanjian Kerjasama ini terdapat perselisihan antara kedua belah pihak baik dalam pelaksanaannya ataupun dalam penafsiran salah satu Pasal dalam perjanjian ini, maka kedua belah pihak sepakat untuk sedapat mungkin menyelesaikan perselisihan tersebut dengan cara musyawarah. Apabila musyawarah telah dilakukan oleh kedua belah pihak, namun ternyata tidak berhasil mencapai suatu kemufakatan maka Para Pihak sepakat bahwa semua sengketa yang timbul dari perjanjian ini akan diselesaikan pada Kantor Kepaniteraan Pengadilan Negeri Jakarta Selatan.",
+          ],
         },
         {
           title: "PASAL XI\nATURAN PENUTUP",
           content: [
             "Hal-hal yang belum diatur atau belum cukup diatur dalam perjanjian ini apabila dikemudian hari dibutuhkan dan dipandang perlu akan ditetapkan tersendiri secara musyawarah dan selanjutnya akan ditetapkan dalam suatu ADDENDUM yang berlaku mengikat bagi kedua belah pihak, yang akan direkatkan dan merupakan bagian yang tidak terpisahkan dari Perjanjian ini.",
             "",
-            "Demikianlah surat perjanjian kerjasama ini dibuat dalam rangkap 2 (dua), untuk masing-masing pihak, yang ditandatangani di atas kertas bermaterai cukup, yang masing-masing mempunyai kekuatan hukum yang sama dan berlaku sejak ditandatangani."
-          ]
-        }
+            "Demikianlah surat perjanjian kerjasama ini dibuat dalam rangkap 2 (dua), untuk masing-masing pihak, yang ditandatangani di atas kertas bermaterai cukup, yang masing-masing mempunyai kekuatan hukum yang sama dan berlaku sejak ditandatangani.",
+          ],
+        },
       ];
 
       pdf.setFontSize(10);
@@ -579,7 +760,7 @@ export default function PaymentsPage() {
         pdf.setFontSize(10);
         pdf.setFont("helvetica", "bold");
         pdf.setTextColor(0, 0, 0);
-        const titleLines = article.title.split('\n');
+        const titleLines = article.title.split("\n");
         titleLines.forEach((titleLine) => {
           pdf.text(titleLine, leftMargin, yPosition);
           yPosition += lineHeight;
@@ -602,7 +783,10 @@ export default function PaymentsPage() {
             pdf.setFont("helvetica", "normal");
           }
 
-          const lines = pdf.splitTextToSize(paragraph, rightMargin - leftMargin);
+          const lines = pdf.splitTextToSize(
+            paragraph,
+            rightMargin - leftMargin
+          );
           pdf.text(lines, leftMargin, yPosition);
           yPosition += lineHeight * (lines.length + 0.3);
         });
@@ -614,7 +798,7 @@ export default function PaymentsPage() {
       const closingDateStr = closingDate.toLocaleDateString("id-ID", {
         day: "numeric",
         month: "long",
-        year: "numeric"
+        year: "numeric",
       });
 
       if (yPosition > 220) {
@@ -650,7 +834,8 @@ export default function PaymentsPage() {
       const signatureAreaX = pihakKeduaX - 25;
       const signatureStartY = yPosition;
 
-      const nameYPosition = signatureStartY + signatureAreaHeight + (lineHeight * 1);
+      const nameYPosition =
+        signatureStartY + signatureAreaHeight + lineHeight * 1;
 
       if (signatureData) {
         try {
@@ -658,8 +843,10 @@ export default function PaymentsPage() {
             throw new Error("signatureData is not a valid PNG base64 string");
           }
 
-          const signatureCenterX = signatureAreaX + (signatureAreaWidth / 2) - (60 / 2);
-          const signatureCenterY = signatureStartY + (signatureAreaHeight / 2) - (15 / 2);
+          const signatureCenterX =
+            signatureAreaX + signatureAreaWidth / 2 - 60 / 2;
+          const signatureCenterY =
+            signatureStartY + signatureAreaHeight / 2 - 15 / 2;
 
           pdf.addImage(
             signatureData,
@@ -670,11 +857,14 @@ export default function PaymentsPage() {
             15
           );
         } catch (err: any) {
-          showError("Failed to add signature image to PDF", err?.message || String(err));
+          showError(
+            "Failed to add signature image to PDF",
+            err?.message || String(err)
+          );
         }
       } else {
-        const placeholderX = signatureAreaX + (signatureAreaWidth / 2) - 40;
-        const placeholderY = signatureStartY + (signatureAreaHeight / 2);
+        const placeholderX = signatureAreaX + signatureAreaWidth / 2 - 40;
+        const placeholderY = signatureStartY + signatureAreaHeight / 2;
         pdf.text("_________________", placeholderX, placeholderY);
       }
 
@@ -695,7 +885,9 @@ export default function PaymentsPage() {
       pdf.setFontSize(8);
       pdf.setTextColor(100, 100, 100);
       pdf.text(
-        `Ditandatangani secara digital pada: ${new Date().toLocaleString("id-ID")}`,
+        `Ditandatangani secara digital pada: ${new Date().toLocaleString(
+          "id-ID"
+        )}`,
         leftMargin + 5,
         yPosition + 5
       );
@@ -708,34 +900,33 @@ export default function PaymentsPage() {
 
       addPageNumber();
 
-      pdf.save(`Kontrak_${contractData.contractNumber}_${contractData.investor.name}.pdf`);
+      pdf.save(
+        `Kontrak_${contractData.contractNumber}_${contractData.investor.name}.pdf`
+      );
 
       showSuccess("Berhasil", "Kontrak berhasil diunduh");
     } catch (error) {
       console.error("Error generating PDF:", error);
-      showError("Error", "Gagal membuat PDF kontrak");
+      showError(
+        t("payments.errors.general"),
+        t("payments.errors.pdfGenerationFailed")
+      );
     }
   };
-  useEffect(() => {
-    if (status === "unauthenticated") {
-      router.push("/login");
-      return;
-    }
-
-    if (status === "authenticated") {
-      fetchInstallments();
-    }
-  }, [status, router]);
 
   // Handle payment success/error/pending from Midtrans redirect
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
-    const paymentSuccess = urlParams.get('paymentSuccess');
-    const paymentError = urlParams.get('paymentError');
-    const paymentPending = urlParams.get('paymentPending');
+    const paymentSuccess = urlParams.get("paymentSuccess");
+    const paymentError = urlParams.get("paymentError");
+    const paymentPending = urlParams.get("paymentPending");
 
     if (paymentSuccess) {
-      showSuccess("Pembayaran Berhasil!", "Cicilan Anda telah berhasil dibayar. Data sedang diperbarui...", { autoClose: false });
+      showSuccess(
+        "Pembayaran Berhasil!",
+        "Cicilan Anda telah berhasil dibayar. Data sedang diperbarui...",
+        { autoClose: false }
+      );
       // Refresh data after successful payment
       setTimeout(() => {
         fetchInstallments();
@@ -745,46 +936,52 @@ export default function PaymentsPage() {
       const newUrl = window.location.pathname;
       window.history.replaceState({}, document.title, newUrl);
     } else if (paymentError) {
-      showError("Pembayaran Gagal", "Terjadi kesalahan saat memproses pembayaran. Silakan coba lagi.");
+      showError(
+        t("payments.errors.paymentFailed"),
+        t("payments.errors.paymentProcessError")
+      );
       // Clean URL parameters
       const newUrl = window.location.pathname;
       window.history.replaceState({}, document.title, newUrl);
     } else if (paymentPending) {
-      showSuccess("Pembayaran Pending", "Pembayaran Anda sedang diproses. Mohon tunggu konfirmasi.", { autoClose: false });
+      showSuccess(
+        "Pembayaran Pending",
+        "Pembayaran Anda sedang diproses. Mohon tunggu konfirmasi.",
+        { autoClose: false }
+      );
       // Clean URL parameters
       const newUrl = window.location.pathname;
       window.history.replaceState({}, document.title, newUrl);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Fix scroll height calculation issues
   useEffect(() => {
     // Ensure proper scroll behavior and prevent layout issues
     const originalOverflow = document.body.style.overflow;
-    document.body.style.overflowX = 'hidden';
+    document.body.style.overflowX = "hidden";
 
     return () => {
       document.body.style.overflow = originalOverflow;
     };
   }, []);
 
-  const fetchInstallments = async () => {
-    try {
-      const response = await fetch("/api/cicilan/user");
-      if (response.ok) {
-        const data = await response.json();
-        setGroupedInstallments(data.cicilanGroups);
-        setFullPaymentContracts(data.fullPaymentContracts || []);
-      } else {
-        console.error("Failed to fetch installments");
-      }
-    } catch (error) {
-      console.error("Error fetching installments:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  // Debounce searchTerm so we don't flood the server on every keystroke
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      fetchInstallments();
+    }, 250);
+
+    return () => clearTimeout(handler);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchTerm]);
+
+  // Fetch immediately when filter changes
+  useEffect(() => {
+    fetchInstallments();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filter]);
 
   const handleUploadProof = async (
     paymentId: string,
@@ -806,7 +1003,7 @@ export default function PaymentsPage() {
       const uploadData = await uploadResponse.json();
 
       if (!uploadData.success) {
-        showError("Gagal Mengunggah Gambar", uploadData.error);
+        showError(t("payments.errors.uploadImageFailed"), uploadData.error);
         return;
       }
 
@@ -822,7 +1019,12 @@ export default function PaymentsPage() {
             paymentId,
             proofImageUrl: uploadData.imageUrl,
             proofDescription: description,
-            referralCode: groupedInstallments.find(g => g.cicilanOrderId === (uploadModal as any).installment?.cicilanOrderId)?.referralCode || "",
+            referralCode:
+              groupedInstallments.find(
+                (g) =>
+                  g.cicilanOrderId ===
+                  (uploadModal as any).installment?.cicilanOrderId
+              )?.referralCode || "",
           }),
         }
       );
@@ -833,7 +1035,7 @@ export default function PaymentsPage() {
         showSuccess("Berhasil!", "Bukti pembayaran berhasil dikirim!");
         await fetchInstallments(); // Refresh data
       } else {
-        showError("Gagal Mengirim Bukti Pembayaran", submitData.error);
+        showError(t("payments.errors.general"), submitData.error);
       }
     } catch (error) {
       console.error("Error uploading proof:", error);
@@ -847,7 +1049,10 @@ export default function PaymentsPage() {
   };
 
   // New function to handle Midtrans payment for installments
-  const handlePayInstallment = async (paymentId: string, installmentNumber: number) => {
+  const handlePayInstallment = async (
+    paymentId: string,
+    installmentNumber: number
+  ) => {
     try {
       setUploadingProof(paymentId); // Reuse loading state
 
@@ -869,14 +1074,11 @@ export default function PaymentsPage() {
           `Halaman pembayaran cicilan ${installmentNumber} telah dibuka di tab baru. Selesaikan pembayaran untuk melanjutkan.`
         );
       } else {
-        showError("Gagal Membuat Pembayaran", data.error);
+        showError(t("payments.errors.paymentFailed"), data.error);
       }
     } catch (error) {
       console.error("Error creating installment payment:", error);
-      showError(
-        "Kesalahan",
-        "Terjadi kesalahan saat membuat pembayaran"
-      );
+      showError("Kesalahan", "Terjadi kesalahan saat membuat pembayaran");
     } finally {
       setUploadingProof(null);
     }
@@ -905,19 +1107,19 @@ export default function PaymentsPage() {
   const getStatusText = (status: string) => {
     switch (status) {
       case "pending":
-        return "Belum Bayar";
+        return t("payments.status.pending");
       case "submitted":
-        return "Menunggu Review";
+        return t("payments.status.submitted");
       case "approved":
-        return "Disetujui";
+        return t("payments.status.approved");
       case "completed":
-        return "Selesai";
+        return t("payments.status.completed");
       case "rejected":
-        return "Ditolak";
+        return t("payments.status.rejected");
       case "overdue":
-        return "Terlambat";
+        return t("payments.status.overdue");
       case "not_created":
-        return "Belum Tersedia";
+        return t("payments.status.notCreated");
       default:
         return status;
     }
@@ -943,8 +1145,7 @@ export default function PaymentsPage() {
 
     // Only allow payment for pending installments that exist
     return (
-      installment.status === "pending" &&
-      (installment as any).exists !== false
+      installment.status === "pending" && (installment as any).exists !== false
     );
   };
 
@@ -965,7 +1166,8 @@ export default function PaymentsPage() {
 
     // Only show for old cicilan orders that still use manual upload
     // New orders will use Midtrans payment
-    const isOldOrder = installment.orderId && installment.orderId.startsWith("CIC-CONTRACT-");
+    const isOldOrder =
+      installment.orderId && installment.orderId.startsWith("CIC-CONTRACT-");
 
     if (!isOldOrder) {
       return false; // New orders use Midtrans payment
@@ -992,32 +1194,53 @@ export default function PaymentsPage() {
 
   // Calculate portfolio statistics
   const getPortfolioStats = () => {
-    const totalInvestments = groupedInstallments.length + fullPaymentContracts.length;
-    const totalAmount = groupedInstallments.reduce(
-      (sum, group) => sum + group.totalAmount,
-      0
-    ) + fullPaymentContracts.reduce((sum, contract) => sum + contract.totalAmount, 0);
-    const totalPaid = groupedInstallments.reduce((sum, group) => {
-      return (
-        sum +
-        group.installments
-          .filter((inst) => inst.status === "approved" || inst.status === "completed")
-          .reduce((installSum, inst) => installSum + inst.amount, 0)
+    const totalInvestments =
+      groupedInstallments.length + fullPaymentContracts.length;
+    const totalAmount =
+      groupedInstallments.reduce((sum, group) => sum + group.totalAmount, 0) +
+      fullPaymentContracts.reduce(
+        (sum, contract) => sum + contract.totalAmount,
+        0
       );
-    }, 0) + fullPaymentContracts.reduce((sum, contract) =>
-      sum + (contract.paymentCompleted ? contract.totalAmount : 0), 0);
+    const totalPaid =
+      groupedInstallments.reduce((sum, group) => {
+        return (
+          sum +
+          group.installments
+            .filter(
+              (inst) =>
+                inst.status === "approved" || inst.status === "completed"
+            )
+            .reduce((installSum, inst) => installSum + inst.amount, 0)
+        );
+      }, 0) +
+      fullPaymentContracts.reduce(
+        (sum, contract) =>
+          sum + (contract.paymentCompleted ? contract.totalAmount : 0),
+        0
+      );
 
     const allInstallments = groupedInstallments.flatMap(
       (group) => group.installments
     );
-    const overdueCount = allInstallments.filter(
-      (inst) =>
-        inst.dueDate && isOverdue(inst.dueDate) && inst.status === "pending"
-    ).length;
-    const upcomingCount = allInstallments.filter(
-      (inst) =>
-        inst.dueDate && !isOverdue(inst.dueDate) && inst.status === "pending"
-    ).length + fullPaymentContracts.filter(contract => !contract.paymentCompleted).length;
+    const overdueCount =
+      allInstallments.filter(
+        (inst) =>
+          inst.dueDate && isOverdue(inst.dueDate) && inst.status === "pending"
+      ).length +
+      fullPaymentContracts.filter((contract) => {
+        if (!contract.paymentCompleted && contract.dueDate) {
+          return isOverdue(contract.dueDate);
+        }
+        return false;
+      }).length;
+    const upcomingCount =
+      allInstallments.filter(
+        (inst) =>
+          inst.dueDate && !isOverdue(inst.dueDate) && inst.status === "pending"
+      ).length +
+      fullPaymentContracts.filter((contract) => !contract.paymentCompleted)
+        .length;
 
     return {
       totalInvestments,
@@ -1032,9 +1255,14 @@ export default function PaymentsPage() {
   const getFilteredInstallments = () => {
     let filtered = groupedInstallments.filter((group) => {
       if (searchTerm) {
-        return group.productName
+        const q = searchTerm.toLowerCase().trim();
+        const nameMatch = group.productName
+          ? group.productName.toLowerCase().includes(q)
+          : false;
+        const idMatch = (group.contractId || group.cicilanOrderId || "")
           .toLowerCase()
-          .includes(searchTerm.toLowerCase());
+          .includes(q);
+        return nameMatch || idMatch;
       }
       return true;
     });
@@ -1075,9 +1303,14 @@ export default function PaymentsPage() {
   const getFilteredFullPayments = (): FullPaymentContract[] => {
     let filtered = fullPaymentContracts.filter((contract) => {
       if (searchTerm) {
-        return contract.productName
+        const q = searchTerm.toLowerCase().trim();
+        const nameMatch = contract.productName
+          ? contract.productName.toLowerCase().includes(q)
+          : false;
+        const idMatch = (contract.contractId || contract.paymentId || "")
           .toLowerCase()
-          .includes(searchTerm.toLowerCase());
+          .includes(q);
+        return nameMatch || idMatch;
       }
       return true;
     });
@@ -1088,7 +1321,11 @@ export default function PaymentsPage() {
           case "completed":
             return contract.paymentCompleted;
           case "overdue":
-            return false; // Full payments don't have overdue concept
+            // Full payments are overdue if not completed and past due date
+            if (!contract.paymentCompleted && contract.dueDate) {
+              return isOverdue(contract.dueDate);
+            }
+            return false;
           case "active":
             return !contract.paymentCompleted;
           case "full-payment":
@@ -1112,24 +1349,45 @@ export default function PaymentsPage() {
 
     // Create a combined array with type indicators
     const combined = [
-      ...installments.map(item => ({ ...item, type: 'installment' as const })),
-      ...fullPayments.map(item => ({ ...item, type: 'fullPayment' as const }))
+      ...installments.map((item) => ({
+        ...item,
+        type: "installment" as const,
+      })),
+      ...fullPayments.map((item) => ({
+        ...item,
+        type: "fullPayment" as const,
+      })),
     ];
 
     // Sort by creation date (newest first)
-    return combined.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    return combined.sort(
+      (a, b) =>
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    );
   };
 
   if (status === "loading" || isLoading) {
     return (
       <>
+        <AlertComponent />
         <LandingHeader />
-        <div className="min-h-screen flex items-center justify-center">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-[#324D3E] mx-auto"></div>
-            <p className="mt-4 text-gray-600 font-poppins">
-              Memuat data pembayaran...
-            </p>
+        <div className="relative py-16" style={{ minHeight: "100vh" }}>
+          {/* Blurred background image */}
+          <div
+            className="fixed inset-0 bg-cover bg-center bg-no-repeat -z-10"
+            style={{
+              backgroundImage: "url(/landing/hero-bg.png)",
+              filter: "blur(5px) brightness(0.7)",
+            }}
+          />
+
+          <div className="flex items-center justify-center h-full">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-[#324D3E] mx-auto"></div>
+              <p className="mt-4 text-white font-poppins">
+                Memuat data pembayaran...
+              </p>
+            </div>
           </div>
         </div>
       </>
@@ -1140,28 +1398,30 @@ export default function PaymentsPage() {
     <>
       <AlertComponent />
       <LandingHeader />
-      <div className="relative py-16" style={{ minHeight: '100vh' }}>
+      <div className="relative py-16" style={{ minHeight: "100vh" }}>
         {/* Blurred background image */}
         <div
           className="fixed inset-0 bg-cover bg-center bg-no-repeat -z-10"
           style={{
             backgroundImage: "url(/landing/hero-bg.png)",
             filter: "blur(8px)",
-            transform: "scale(1.1)" // Prevent blur edge artifacts
+            transform: "scale(1.1)", // Prevent blur edge artifacts
           }}
         ></div>
         {/* Background overlay */}
         <div className="fixed inset-0 bg-black/30 -z-10"></div>
         <div className="max-w-7xl mx-auto px-4 mt-12 relative z-10">
           {/* Dashboard Overview */}
-          {(groupedInstallments.length > 0 || fullPaymentContracts.length > 0) && (
+          {(groupedInstallments.length > 0 ||
+            fullPaymentContracts.length > 0) && (
             <div className="mb-8">
               <PortfolioOverview stats={getPortfolioStats()} />
             </div>
           )}
 
           {/* Search and Filter Controls */}
-          {(groupedInstallments.length > 0 || fullPaymentContracts.length > 0) && (
+          {(groupedInstallments.length > 0 ||
+            fullPaymentContracts.length > 0) && (
             <div className="mb-6">
               <SearchAndFilter
                 searchTerm={searchTerm}
@@ -1175,589 +1435,741 @@ export default function PaymentsPage() {
             </div>
           )}
 
-          {groupedInstallments.length === 0 && fullPaymentContracts.length === 0 ? (
+          {groupedInstallments.length === 0 &&
+          fullPaymentContracts.length === 0 ? (
             <div className="text-center py-12 bg-white rounded-3xl shadow-lg">
               <div className="flex justify-center text-[#324D3E] mb-4">
                 <CreditCard size={64} />
               </div>
               <h3 className="text-xl font-semibold text-[#324D3E] mb-2 font-poppins">
-                Belum ada pembayaran paket
+                {t("payments.empty.noPayments")}
               </h3>
               <p className="text-gray-600 mb-6 font-poppins">
-                Mulai pembelian sekarang!
+                {t("payments.empty.startPurchase")}
               </p>
               <button
                 onClick={() => router.push("/#produk")}
                 className="px-6 py-3 bg-gradient-to-r from-[#324D3E] to-[#4C3D19] text-white rounded-full hover:shadow-lg transition-all duration-300 font-poppins font-medium"
               >
-                Lihat Paket Tanaman
+                {t("payments.empty.viewPackages")}
               </button>
             </div>
           ) : (
             <div className="space-y-12 pb-16">
               {getAllSortedContracts().map((item) => {
-                if (item.type === 'installment') {
+                if (item.type === "installment") {
                   const group = item;
                   return (
                     <div
                       key={group.cicilanOrderId}
                       className="bg-gradient-to-br from-[#FFFCE3] to-white rounded-3xl shadow-lg border-2 border-[#324D3E]/20 p-8 hover:shadow-xl transition-shadow duration-200"
                     >
-                    {/* Cicilan Header */}
-                    <div className="mb-8">
-                      <div className="flex flex-col lg:flex-row lg:justify-between lg:items-start mb-4 gap-4">
-                        <div className="flex-1">
-                          <h2 className="text-2xl font-bold text-[#324D3E] font-poppins">
-                            {group.productName}
-                          </h2>
-                          <p className="text-sm text-gray-600 font-poppins">
-                            Order ID: {group.cicilanOrderId}
-                          </p>
-                          <p className="text-lg font-semibold text-[#4C3D19] mt-1 font-poppins">
-                            Total Paket: Rp{" "}
-                            {group.totalAmount.toLocaleString("id-ID")}
-                            <span className="text-sm text-gray-500 ml-2 font-normal">
-                              • Dibuat: {new Date(group.createdAt).toLocaleDateString('id-ID')} {new Date(group.createdAt).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
-                            </span>
-                          </p>
-                          <div className="flex flex-wrap gap-4 mt-2 text-sm text-gray-600 font-poppins">
-                            <span className="flex items-center gap-2">
-                              <Calendar size={16} />
-                              {group.paymentTerm === "monthly"
-                                ? "Bulanan"
-                                : group.paymentTerm === "quarterly"
-                                ? "Triwulan"
-                                : "Tahunan"}
-                            </span>
-                            <span className="flex items-center gap-2">
-                              <DollarSign size={16} />
-                              Rp{" "}
-                              {group.installmentAmount.toLocaleString("id-ID")}
-                              /cicilan
-                            </span>
+                      {/* Cicilan Header */}
+                      <div className="mb-8">
+                        <div className="flex flex-col lg:flex-row lg:justify-between lg:items-start mb-4 gap-4">
+                          <div className="flex-1">
+                            <h2 className="text-2xl font-bold text-[#324D3E] font-poppins">
+                              {group.productName}
+                            </h2>
+                            <p className="text-sm text-gray-600 font-poppins">
+                              Order ID: {group.cicilanOrderId}
+                            </p>
+                            <p className="text-lg font-semibold text-[#4C3D19] mt-1 font-poppins">
+                              {t("payments.cards.totalPackage")} Rp{" "}
+                              {group.totalAmount.toLocaleString("id-ID")}
+                              <span className="text-sm text-gray-500 ml-2 font-normal">
+                                {t("payments.cards.created")}{" "}
+                                {new Date(group.createdAt).toLocaleDateString(
+                                  "id-ID"
+                                )}{" "}
+                                {new Date(group.createdAt).toLocaleTimeString(
+                                  "id-ID",
+                                  { hour: "2-digit", minute: "2-digit" }
+                                )}
+                              </span>
+                            </p>
+                            <div className="flex flex-wrap gap-4 mt-2 text-sm text-gray-600 font-poppins">
+                              <span className="flex items-center justify-center gap-2">
+                                <Calendar size={16} />
+                                {group.paymentTerm === "monthly"
+                                  ? "Bulanan"
+                                  : group.paymentTerm === "quarterly"
+                                  ? "Triwulan"
+                                  : "Tahunan"}
+                              </span>
+                              <span className="flex items-center justify-center gap-2">
+                                <DollarSign size={16} />
+                                Rp{" "}
+                                {group.installmentAmount.toLocaleString(
+                                  "id-ID"
+                                )}
+                                /cicilan
+                              </span>
+                            </div>
                           </div>
-                        </div>
-                        <div className="lg:text-right">
-                          <div className="text-sm text-gray-600 font-poppins">
-                            Progress Pembayaran
-                          </div>
-                          <div className="text-2xl font-bold text-[#324D3E] font-poppins">
-                            {
-                              group.installments.filter(
-                                (i) => i.status === "approved" || i.status === "completed"
-                              ).length
-                            }
-                            /{group.installments.length}
-                          </div>
-                          <div className="w-full lg:w-32 bg-gray-200 rounded-full h-2 mt-2">
+                          <div className="lg:text-right">
                             <div
-                              className="bg-gradient-to-r from-[#324D3E] to-[#4C3D19] h-2 rounded-full"
-                              style={{
-                                width: `${
-                                  (group.installments.filter(
-                                    (i) => i.status === "approved" || i.status === "completed"
-                                  ).length /
-                                    group.installments.length) *
-                                  100
-                                }%`,
-                              }}
-                            />
+                              className={`text-sm font-poppins ${
+                                // Check if any installment is overdue
+                                group.installments.some(
+                                  (inst) =>
+                                    inst.dueDate &&
+                                    isOverdue(inst.dueDate) &&
+                                    inst.status === "pending"
+                                )
+                                  ? "text-red-600" // Red text for overdue
+                                  : "text-gray-600" // Original gray text
+                              }`}
+                            >
+                              {t("payments.progress.title")}
+                            </div>
+                            <div
+                              className={`text-2xl font-bold font-poppins ${
+                                // Check if any installment is overdue
+                                group.installments.some(
+                                  (inst) =>
+                                    inst.dueDate &&
+                                    isOverdue(inst.dueDate) &&
+                                    inst.status === "pending"
+                                )
+                                  ? "text-red-600" // Red text for overdue
+                                  : "text-[#324D3E]" // Original green text
+                              }`}
+                            >
+                              {
+                                group.installments.filter(
+                                  (i) =>
+                                    i.status === "approved" ||
+                                    i.status === "completed"
+                                ).length
+                              }
+                              /{group.installments.length}
+                            </div>
+                            <div className="w-full lg:w-32 bg-gray-200 rounded-full h-2 mt-2">
+                              <div
+                                className={`h-2 rounded-full ${
+                                  // Check if any installment is overdue
+                                  group.installments.some(
+                                    (inst) =>
+                                      inst.dueDate &&
+                                      isOverdue(inst.dueDate) &&
+                                      inst.status === "pending"
+                                  )
+                                    ? "bg-gradient-to-r from-red-500 to-red-600" // Red gradient for overdue
+                                    : "bg-gradient-to-r from-[#324D3E] to-[#4C3D19]" // Original green gradient
+                                }`}
+                                style={{
+                                  width: `${
+                                    (group.installments.filter(
+                                      (i) =>
+                                        i.status === "approved" ||
+                                        i.status === "completed"
+                                    ).length /
+                                      group.installments.length) *
+                                    100
+                                  }%`,
+                                }}
+                              />
+                            </div>
                           </div>
                         </div>
                       </div>
-                    </div>
 
-                    {/* Contract Approval Status */}
-                    {group.contractApprovalStatus === "pending" && (
-                      <>
-                        {!group.hasEverSigned ? (
-                          <div className="bg-gradient-to-r from-blue-50 to-sky-50 rounded-2xl p-4 border border-blue-200 mb-6">
-                            <div className="flex items-center gap-3">
-                              <div className="bg-blue-100 rounded-full p-2">
-                                <Clock className="w-5 h-5 text-blue-600" />
-                              </div>
-                              <div className="flex-1">
-                                <h4 className="font-semibold text-blue-800 font-poppins">
-                                  Kontrak Belum Ditandatangani
-                                </h4>
-                                <p className="text-sm text-blue-700 font-poppins">
-                                  Anda perlu menandatangani kontrak terlebih dahulu sebelum melakukan pembayaran.
-                                  <button
-                                    onClick={() => router.push(`/contract/${group.contractId}`)}
-                                    className="text-blue-800 underline hover:text-blue-900 font-semibold ml-1"
-                                  >
-                                    Tandatangani di sini
-                                  </button>
-                                </p>
-                              </div>
-                            </div>
-                          </div>
-                        ) : (
-                          <div className="bg-gradient-to-r from-yellow-50 to-amber-50 rounded-2xl p-4 border border-amber-200 mb-6">
-                            <div className="flex items-center justify-between gap-3">
+                      {/* Contract Approval Status */}
+                      {group.contractApprovalStatus === "pending" && (
+                        <>
+                          {!group.hasEverSigned ? (
+                            <div className="bg-gradient-to-r from-blue-50 to-sky-50 rounded-2xl p-4 border border-blue-200 mb-6">
                               <div className="flex items-center gap-3">
-                                <div className="bg-amber-100 rounded-full p-2">
-                                  <Clock className="w-5 h-5 text-amber-600" />
+                                <div className="bg-blue-100 rounded-full p-2">
+                                  <Clock className="w-5 h-5 text-blue-600" />
                                 </div>
-                                <div>
-                                  <h4 className="font-semibold text-amber-800 font-poppins">
-                                    Kontrak Menunggu Persetujuan Admin
+                                <div className="flex-1">
+                                  <h4 className="font-semibold text-blue-800 font-poppins">
+                                    Kontrak Belum Ditandatangani
                                   </h4>
-                                  <p className="text-sm text-amber-700 font-poppins">
-                                    Anda sudah dapat melakukan pembayaran cicilan, namun kontrak masih menunggu review admin
+                                  <p className="text-sm text-blue-700 font-poppins">
+                                    Anda perlu menandatangani kontrak terlebih
+                                    dahulu sebelum melakukan pembayaran.
+                                    <button
+                                      onClick={() =>
+                                        router.push(
+                                          `/contract/${group.contractId}`
+                                        )
+                                      }
+                                      className="text-blue-800 underline hover:text-blue-900 font-semibold ml-1"
+                                    >
+                                      Tandatangani di sini
+                                    </button>
                                   </p>
                                 </div>
                               </div>
-                              {group.contractStatus !== "draft" && (
-                                <button
-                                  onClick={() => handleDownloadContract(group.contractId || "")}
-                                  className="px-3 py-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white text-sm rounded-full hover:shadow-lg transition-all duration-300 font-poppins font-medium whitespace-nowrap"
-                                >
-                                  <span className="flex items-center gap-2">
-                                    <Download size={16} />
-                                    Download
-                                  </span>
-                                </button>
-                              )}
                             </div>
-                          </div>
-                        )}
-                      </>
-                    )}
-
-                    {group.contractApprovalStatus === "approved" && (
-                      <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-2xl p-4 border border-green-200 mb-6">
-                        <div className="flex items-center justify-between gap-3">
-                          <div className="flex items-center gap-3">
-                            <div className="bg-green-100 rounded-full p-2">
-                              <CheckCircle className="w-5 h-5 text-green-600" />
+                          ) : (
+                            <div className="bg-gradient-to-r from-yellow-50 to-amber-50 rounded-2xl p-4 border border-amber-200 mb-6">
+                              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                                <div className="flex items-center gap-3">
+                                  <div className="bg-amber-100 rounded-full p-2">
+                                    <Clock className="w-5 h-5 text-amber-600" />
+                                  </div>
+                                  <div>
+                                    <h4 className="font-semibold text-amber-800 font-poppins">
+                                      {t(
+                                        "payments.cards.contractPendingApproval"
+                                      )}
+                                    </h4>
+                                    <p className="text-sm text-amber-700 font-poppins">
+                                      {t("payments.cards.canMakePayment")}
+                                    </p>
+                                  </div>
+                                </div>
+                                {group.contractStatus !== "draft" && (
+                                  <button
+                                    onClick={() =>
+                                      handleDownloadContract(
+                                        group.contractId || ""
+                                      )
+                                    }
+                                    className="w-full sm:w-auto px-3 py-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white text-sm rounded-full hover:shadow-lg transition-all duration-300 font-poppins font-medium"
+                                  >
+                                    <span className="flex items-center justify-center sm:justify-center gap-2">
+                                      <Download size={16} />
+                                      <span className="truncate">Download</span>
+                                    </span>
+                                  </button>
+                                )}
+                              </div>
                             </div>
-                            <div>
-                              <h4 className="font-semibold text-green-800 font-poppins">
-                                Kontrak Telah Disetujui Admin
-                              </h4>
-                              <p className="text-sm text-green-700 font-poppins">
-                                Disetujui pada: {group.contractApprovedDate ? formatDate(group.contractApprovedDate) : "Tidak diketahui"}
-                              </p>
-                            </div>
-                          </div>
-                          {group.contractStatus !== "draft" && (
-                            <button
-                              onClick={() => handleDownloadContract(group.contractId || "")}
-                              className="px-3 py-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white text-sm rounded-full hover:shadow-lg transition-all duration-300 font-poppins font-medium whitespace-nowrap"
-                            >
-                              <span className="flex items-center gap-2">
-                                <Download size={16} />
-                                Download
-                              </span>
-                            </button>
                           )}
-                        </div>
-                      </div>
-                    )}
+                        </>
+                      )}
 
-                    {group.contractApprovalStatus === "rejected" && (
-                      <>
-                        {group.isPermanentlyRejected ? (
-                          <div className="bg-gradient-to-r from-red-50 to-rose-50 rounded-2xl p-4 border border-red-200 mb-6">
+                      {group.contractApprovalStatus === "approved" && (
+                        <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-2xl p-4 border border-green-200 mb-6">
+                          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                             <div className="flex items-center gap-3">
-                              <div className="bg-red-100 rounded-full p-2">
-                                <Clock className="w-5 h-5 text-red-600" />
+                              <div className="bg-green-100 rounded-full p-2">
+                                <CheckCircle className="w-5 h-5 text-green-600" />
                               </div>
                               <div>
-                                <h4 className="font-semibold text-red-800 font-poppins">
-                                  Kontrak Ditolak Permanen
+                                <h4 className="font-semibold text-green-800 font-poppins">
+                                  {t("payments.approval.contractApproved")}
                                 </h4>
-                                <p className="text-sm text-red-700 font-poppins">
-                                  Maksimal percobaan kontrak telah tercapai ({group.maxAttempts || 3}x).
-                                  Silakan hubungi admin untuk bantuan lebih lanjut.
-                                </p>
-                                <p className="text-xs text-red-600 font-poppins mt-1">
-                                  Percobaan: {group.currentAttempt || 0}/{group.maxAttempts || 3}
+                                <p className="text-sm text-green-700 font-poppins">
+                                  {t("payments.approval.approvedOn")}{" "}
+                                  {group.contractApprovedDate
+                                    ? formatDate(group.contractApprovedDate)
+                                    : "Tidak diketahui"}
                                 </p>
                               </div>
                             </div>
+                            {group.contractStatus !== "draft" && (
+                              <button
+                                onClick={() =>
+                                  handleDownloadContract(group.contractId || "")
+                                }
+                                className="w-full sm:w-auto px-3 py-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white text-sm rounded-full hover:shadow-lg transition-all duration-300 font-poppins font-medium"
+                              >
+                                <span className="flex items-center justify-center gap-2">
+                                  <Download size={16} />
+                                  <span className="truncate">Download</span>
+                                </span>
+                              </button>
+                            )}
                           </div>
-                        ) : group.isMaxRetryReached ? (
-                          <div className="bg-gradient-to-r from-orange-50 to-amber-50 rounded-2xl p-4 border border-orange-200 mb-6">
-                            <div className="flex items-center gap-3">
-                              <div className="bg-orange-100 rounded-full p-2">
-                                <Clock className="w-5 h-5 text-orange-600" />
-                              </div>
-                              <div>
-                                <h4 className="font-semibold text-orange-800 font-poppins">
-                                  Kontrak Memerlukan Review
-                                </h4>
-                                <p className="text-sm text-orange-700 font-poppins">
-                                  Percobaan kontrak: {group.currentAttempt || 0}/{group.maxAttempts || 3}.
-                                  Silakan hubungi admin untuk bantuan.
-                                </p>
-                              </div>
-                            </div>
-                          </div>
-                        ) : (
-                          <div className="bg-gradient-to-r from-red-50 to-rose-50 rounded-2xl p-4 border border-red-200 mb-6">
-                            <div className="flex items-center justify-between gap-3">
+                        </div>
+                      )}
+
+                      {group.contractApprovalStatus === "rejected" && (
+                        <>
+                          {group.isPermanentlyRejected ? (
+                            <div className="bg-gradient-to-r from-red-50 to-rose-50 rounded-2xl p-4 border border-red-200 mb-6">
                               <div className="flex items-center gap-3">
                                 <div className="bg-red-100 rounded-full p-2">
                                   <Clock className="w-5 h-5 text-red-600" />
                                 </div>
                                 <div>
                                   <h4 className="font-semibold text-red-800 font-poppins">
-                                    Kontrak Ditolak Admin
+                                    Kontrak Ditolak Permanen
                                   </h4>
                                   <p className="text-sm text-red-700 font-poppins">
-                                    Anda dapat mengajukan ulang kontrak dengan menandatangani ulang.
-                                    Percobaan: {group.currentAttempt || 0}/{group.maxAttempts || 3}
+                                    Maksimal percobaan kontrak telah tercapai (
+                                    {group.maxAttempts || 3}x). Silakan hubungi
+                                    admin untuk bantuan lebih lanjut.
+                                  </p>
+                                  <p className="text-xs text-red-600 font-poppins mt-1">
+                                    Percobaan: {group.currentAttempt || 0}/
+                                    {group.maxAttempts || 3}
                                   </p>
                                 </div>
                               </div>
-                              <button
-                                onClick={() => setRetryModal({
-                                  isOpen: true,
-                                  contractId: group.contractId || group.cicilanOrderId,
-                                  contractType: 'installment',
-                                  productName: group.productName
-                                })}
-                                className="px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white text-sm rounded-full hover:shadow-lg transition-all duration-300 font-poppins font-medium whitespace-nowrap"
-                              >
-                                <span className="flex items-center gap-2">
-                                  <Edit3 size={16} />
-                                  Ajukan Ulang
-                                </span>
-                              </button>
+                            </div>
+                          ) : group.isMaxRetryReached ? (
+                            <div className="bg-gradient-to-r from-orange-50 to-amber-50 rounded-2xl p-4 border border-orange-200 mb-6">
+                              <div className="flex items-center gap-3">
+                                <div className="bg-orange-100 rounded-full p-2">
+                                  <Clock className="w-5 h-5 text-orange-600" />
+                                </div>
+                                <div>
+                                  <h4 className="font-semibold text-orange-800 font-poppins">
+                                    Kontrak Memerlukan Review
+                                  </h4>
+                                  <p className="text-sm text-orange-700 font-poppins">
+                                    Percobaan kontrak:{" "}
+                                    {group.currentAttempt || 0}/
+                                    {group.maxAttempts || 3}. Silakan hubungi
+                                    admin untuk bantuan.
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="bg-gradient-to-r from-red-50 to-rose-50 rounded-2xl p-4 border border-red-200 mb-6">
+                              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                                <div className="flex items-center gap-3">
+                                  <div className="bg-red-100 rounded-full p-2">
+                                    <Clock className="w-5 h-5 text-red-600" />
+                                  </div>
+                                  <div>
+                                    <h4 className="font-semibold text-red-800 font-poppins">
+                                      Kontrak Ditolak Admin
+                                    </h4>
+                                    <p className="text-sm text-red-700 font-poppins">
+                                      Anda dapat mengajukan ulang kontrak dengan
+                                      menandatangani ulang. Percobaan:{" "}
+                                      {group.currentAttempt || 0}/
+                                      {group.maxAttempts || 3}
+                                    </p>
+                                  </div>
+                                </div>
+                                <button
+                                  onClick={() =>
+                                    setRetryModal({
+                                      isOpen: true,
+                                      contractId:
+                                        group.contractId ||
+                                        group.cicilanOrderId,
+                                      contractType: "installment",
+                                      productName: group.productName,
+                                    })
+                                  }
+                                  className="w-full sm:w-auto px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white text-sm rounded-full hover:shadow-lg transition-all duration-300 font-poppins font-medium"
+                                >
+                                  <span className="flex items-center justify-center gap-2">
+                                    <Edit3 size={16} />
+                                    <span className="truncate">
+                                      Ajukan Ulang
+                                    </span>
+                                  </span>
+                                </button>
+                              </div>
+                            </div>
+                          )}
+                        </>
+                      )}
+
+                      {/* Referral Code Section - Display only if it exists */}
+                      {(group as any).referralCode && (
+                        <div className="max-w-md bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl p-3 border border-green-200 mb-4">
+                          <div className="flex items-center justify-center gap-2">
+                            <div className="bg-green-100 rounded-full p-1.5">
+                              <CheckCircle className="w-4 h-4 text-green-600" />
+                            </div>
+                            <div className="flex-1">
+                              <h4 className="font-medium text-green-800 font-poppins text-sm">
+                                {t("payments.cards.referralCodeRegistered")}
+                              </h4>
+                              <p className="text-xs text-green-700 font-poppins">
+                                <span className="font-mono font-bold">
+                                  {(group as any).referralCode}
+                                </span>{" "}
+                                - {t("payments.ui.referralCodeUsed")}
+                              </p>
                             </div>
                           </div>
-                        )}
-                      </>
-                    )}
-
-                    {/* Referral Code Section - Display only if it exists */}
-                    {(group as any).referralCode && (
-                      <div className="max-w-md bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl p-3 border border-green-200 mb-4">
-                        <div className="flex items-center gap-2">
-                          <div className="bg-green-100 rounded-full p-1.5">
-                            <CheckCircle className="w-4 h-4 text-green-600" />
-                          </div>
-                          <div className="flex-1">
-                            <h4 className="font-medium text-green-800 font-poppins text-sm">
-                              Kode Referral Terdaftar
-                            </h4>
-                            <p className="text-xs text-green-700 font-poppins">
-                              <span className="font-mono font-bold">{(group as any).referralCode}</span> - Digunakan untuk pembayaran ini
-                            </p>
-                          </div>
                         </div>
-                      </div>
-                    )}
+                      )}
 
-                    {/* Individual Installment Cards */}
-                    <div className="space-y-4">
-                      <h3 className="text-lg font-semibold text-[#324D3E] mb-4 font-poppins">
-                        Jadwal Angsuran ({group.installments.length} angsuran)
-                      </h3>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                        {(() => {
-                          // Filter installments first
-                          const filteredInstallments = group.installments.filter((installment) => {
-                            // Show all paid/submitted/rejected installments
-                            if (
-                              installment.status === "approved" ||
-                              installment.status === "completed" ||
-                              installment.status === "submitted" ||
-                              installment.status === "rejected"
-                            ) {
-                              return true;
-                            }
+                      {/* Individual Installment Cards */}
+                      <div className="space-y-4">
+                        <h3 className="text-lg font-semibold text-[#324D3E] mb-4 font-poppins">
+                          {t("payments.installments.scheduleTitle", {
+                            count: group.installments.length.toString(),
+                          })}
+                        </h3>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                          {(() => {
+                            // Filter installments first
+                            const filteredInstallments =
+                              group.installments.filter((installment) => {
+                                // Show all paid/submitted/rejected installments
+                                if (
+                                  installment.status === "approved" ||
+                                  installment.status === "completed" ||
+                                  installment.status === "submitted" ||
+                                  installment.status === "rejected"
+                                ) {
+                                  return true;
+                                }
 
-                            // Show current pending installment (first unpaid)
-                            if (
-                              installment.status === "pending" &&
-                              installment.exists !== false
-                            ) {
-                              const pendingInstallments =
-                                group.installments.filter(
-                                  (inst) =>
-                                    inst.status === "pending" &&
-                                    inst.exists !== false
-                                );
-                              return (
-                                installment.installmentNumber ===
-                                Math.min(
-                                  ...pendingInstallments.map(
-                                    (inst) => inst.installmentNumber
-                                  )
-                                )
-                              );
-                            }
+                                // Show current pending installment (first unpaid)
+                                if (
+                                  installment.status === "pending" &&
+                                  installment.exists !== false
+                                ) {
+                                  const pendingInstallments =
+                                    group.installments.filter(
+                                      (inst) =>
+                                        inst.status === "pending" &&
+                                        inst.exists !== false
+                                    );
+                                  return (
+                                    installment.installmentNumber ===
+                                    Math.min(
+                                      ...pendingInstallments.map(
+                                        (inst) => inst.installmentNumber
+                                      )
+                                    )
+                                  );
+                                }
 
-                            // Show next placeholder installment (only one)
-                            if (installment.status === "not_created") {
-                              const notCreatedInstallments =
-                                group.installments.filter(
-                                  (inst) => inst.status === "not_created"
-                                );
-                              return (
-                                installment.installmentNumber ===
-                                Math.min(
-                                  ...notCreatedInstallments.map(
-                                    (inst) => inst.installmentNumber
-                                  )
-                                )
-                              );
-                            }
+                                // Show next placeholder installment (only one)
+                                if (installment.status === "not_created") {
+                                  const notCreatedInstallments =
+                                    group.installments.filter(
+                                      (inst) => inst.status === "not_created"
+                                    );
+                                  return (
+                                    installment.installmentNumber ===
+                                    Math.min(
+                                      ...notCreatedInstallments.map(
+                                        (inst) => inst.installmentNumber
+                                      )
+                                    )
+                                  );
+                                }
 
-                            return false;
-                          });
+                                return false;
+                              });
 
-                          // Sort installments: unpaid first (ascending), then paid ones at the end (descending)
-                          const sortedInstallments = filteredInstallments.sort((a, b) => {
-                            const aIsPaid = a.status === "approved" || a.status === "completed";
-                            const bIsPaid = b.status === "approved" || b.status === "completed";
+                            // Sort installments: unpaid first (ascending), then paid ones at the end (descending)
+                            const sortedInstallments =
+                              filteredInstallments.sort((a, b) => {
+                                const aIsPaid =
+                                  a.status === "approved" ||
+                                  a.status === "completed";
+                                const bIsPaid =
+                                  b.status === "approved" ||
+                                  b.status === "completed";
 
-                            // If payment status is different, unpaid comes first
-                            if (aIsPaid !== bIsPaid) {
-                              return aIsPaid ? 1 : -1;
-                            }
+                                // If payment status is different, unpaid comes first
+                                if (aIsPaid !== bIsPaid) {
+                                  return aIsPaid ? 1 : -1;
+                                }
 
-                            // If same payment status
-                            if (aIsPaid && bIsPaid) {
-                              // For paid installments, sort in descending order (newest first)
-                              return b.installmentNumber - a.installmentNumber;
-                            } else {
-                              // For unpaid installments, sort in ascending order (oldest first)
-                              return a.installmentNumber - b.installmentNumber;
-                            }
-                          });
+                                // If same payment status
+                                if (aIsPaid && bIsPaid) {
+                                  // For paid installments, sort in descending order (newest first)
+                                  return (
+                                    b.installmentNumber - a.installmentNumber
+                                  );
+                                } else {
+                                  // For unpaid installments, sort in ascending order (oldest first)
+                                  return (
+                                    a.installmentNumber - b.installmentNumber
+                                  );
+                                }
+                              });
 
-                          // Determine if we should show limited or all installments
-                          const isExpanded = expandedGroups.has(group.cicilanOrderId);
-                          const maxVisibleCards = 6; // Show max 6 cards initially
-                          const shouldShowLimitedView = sortedInstallments.length > maxVisibleCards && !isExpanded;
-                          const visibleInstallments = shouldShowLimitedView
-                            ? sortedInstallments.slice(0, maxVisibleCards)
-                            : sortedInstallments;
-
-                          return (
-                            <>
-                              {visibleInstallments.map((installment) => {
-                            const overdue = installment.dueDate
-                              ? isOverdue(installment.dueDate)
-                              : false;
-                            // Determine effective status based on proof upload and admin review
-                            let effectiveStatus = installment.status;
-
-                            // If proof is uploaded but not reviewed, show as submitted
-                            if (
-                              installment.proofImageUrl &&
-                              installment.adminStatus === "pending"
-                            ) {
-                              effectiveStatus = "submitted";
-                            }
-                            // If overdue and no proof uploaded, show as overdue
-                            else if (
-                              overdue &&
-                              installment.status === "pending" &&
-                              !installment.proofImageUrl
-                            ) {
-                              effectiveStatus = "overdue";
-                            }
+                            // Determine if we should show limited or all installments
+                            const isExpanded = expandedGroups.has(
+                              group.cicilanOrderId
+                            );
+                            const maxVisibleCards = 6; // Show max 6 cards initially
+                            const shouldShowLimitedView =
+                              sortedInstallments.length > maxVisibleCards &&
+                              !isExpanded;
+                            const visibleInstallments = shouldShowLimitedView
+                              ? sortedInstallments.slice(0, maxVisibleCards)
+                              : sortedInstallments;
 
                             return (
-                              <div
-                                key={`${group.cicilanOrderId}-${installment.installmentNumber}`}
-                                className={`border-2 rounded-2xl p-6 transition-shadow duration-200 hover:shadow-lg ${
-                                  effectiveStatus === "approved"
-                                    ? "bg-gradient-to-br from-emerald-50/90 to-green-50/90 border-emerald-200"
-                                    : effectiveStatus === "submitted"
-                                    ? "bg-gradient-to-br from-yellow-50/90 to-amber-50/90 border-amber-200"
-                                    : effectiveStatus === "overdue"
-                                    ? "bg-gradient-to-br from-red-50/90 to-rose-50/90 border-red-200"
-                                    : effectiveStatus === "rejected"
-                                    ? "bg-gradient-to-br from-red-50/90 to-rose-50/90 border-red-200"
-                                    : "bg-gradient-to-br from-[#FFFCE3]/90 to-white/90 border-[#324D3E]/20"
-                                }`}
-                              >
-                                <div className="flex justify-between items-start mb-3">
-                                  <div>
-                                    <div className="text-lg font-bold text-[#324D3E] font-poppins">
-                                      Angsuran #{installment.installmentNumber}
+                              <>
+                                {visibleInstallments.map((installment) => {
+                                  const overdue = installment.dueDate
+                                    ? isOverdue(installment.dueDate)
+                                    : false;
+                                  // Determine effective status based on proof upload and admin review
+                                  let effectiveStatus = installment.status;
+
+                                  // If proof is uploaded but not reviewed, show as submitted
+                                  if (
+                                    installment.proofImageUrl &&
+                                    installment.adminStatus === "pending"
+                                  ) {
+                                    effectiveStatus = "submitted";
+                                  }
+                                  // If overdue and no proof uploaded, show as overdue
+                                  else if (
+                                    overdue &&
+                                    installment.status === "pending" &&
+                                    !installment.proofImageUrl
+                                  ) {
+                                    effectiveStatus = "overdue";
+                                  }
+
+                                  return (
+                                    <div
+                                      key={`${group.cicilanOrderId}-${installment.installmentNumber}`}
+                                      className={`relative border-2 rounded-2xl p-6 pb-20 transition-shadow duration-200 hover:shadow-lg ${
+                                        effectiveStatus === "approved"
+                                          ? "bg-gradient-to-br from-emerald-50/90 to-green-50/90 border-emerald-200"
+                                          : effectiveStatus === "submitted"
+                                          ? "bg-gradient-to-br from-yellow-50/90 to-amber-50/90 border-amber-200"
+                                          : effectiveStatus === "overdue"
+                                          ? "bg-gradient-to-br from-red-50/90 to-rose-50/90 border-red-200"
+                                          : effectiveStatus === "rejected"
+                                          ? "bg-gradient-to-br from-red-50/90 to-rose-50/90 border-red-200"
+                                          : "bg-gradient-to-br from-[#FFFCE3]/90 to-white/90 border-[#324D3E]/20"
+                                      }`}
+                                    >
+                                      <div className="flex justify-between items-start mb-3">
+                                        <div>
+                                          <div className="text-lg font-bold text-[#324D3E] font-poppins">
+                                            {t(
+                                              "payments.installments.installmentNumber"
+                                            )}
+                                            {installment.installmentNumber}
+                                          </div>
+                                          <div className="text-sm text-gray-600 font-poppins">
+                                            {t("payments.cards.dueDate")}{" "}
+                                            {installment.dueDate
+                                              ? formatDate(installment.dueDate)
+                                              : t("payments.willBeDetermined")}
+                                          </div>
+                                        </div>
+                                        <span
+                                          className={`px-3 py-2 text-xs font-bold rounded-full ${getStatusColor(
+                                            effectiveStatus
+                                          )}`}
+                                        >
+                                          {getStatusText(effectiveStatus)}
+                                        </span>
+                                      </div>
+
+                                      <div className="mb-4">
+                                        <div className="text-2xl font-bold text-[#4C3D19] font-poppins">
+                                          Rp{" "}
+                                          {installment.amount.toLocaleString(
+                                            "id-ID"
+                                          )}
+                                        </div>
+                                      </div>
+
+                                      {/* Status Details */}
+                                      {installment.paidDate && (
+                                        <div className="text-sm text-green-600 mb-2 font-poppins">
+                                          <span className="flex items-center gap-1">
+                                            <CheckCircle size={14} />
+                                            Dibayar:{" "}
+                                            {formatDate(installment.paidDate)}
+                                          </span>
+                                        </div>
+                                      )}
+
+                                      {installment.submissionDate &&
+                                        installment.orderId &&
+                                        installment.orderId.startsWith(
+                                          "CIC-CONTRACT-"
+                                        ) && (
+                                          <div className="text-sm text-gray-600 mb-2 font-poppins">
+                                            📤 Dikirim:{" "}
+                                            {formatDate(
+                                              installment.submissionDate
+                                            )}
+                                          </div>
+                                        )}
+
+                                      {installment.adminNotes &&
+                                        installment.orderId &&
+                                        installment.orderId.startsWith(
+                                          "CIC-CONTRACT-"
+                                        ) && (
+                                          <div className="bg-yellow-50/80 p-2 rounded-lg text-xs text-yellow-800 mb-3 font-poppins">
+                                            <strong>
+                                              {t("payments.ui.adminNote")}
+                                            </strong>{" "}
+                                            {installment.adminNotes}
+                                          </div>
+                                        )}
+
+                                      {/* Action Buttons */}
+                                      <div className="absolute bottom-6 left-6 right-6">
+                                        {canPayInstallment(
+                                          installment,
+                                          group
+                                        ) && (
+                                          <button
+                                            onClick={() =>
+                                              handlePayInstallment(
+                                                installment._id!,
+                                                installment.installmentNumber!
+                                              )
+                                            }
+                                            className="w-full px-3 py-2 bg-gradient-to-r from-[#324D3E] to-[#4C3D19] text-white text-sm rounded-full hover:shadow-lg transition-all duration-300 font-poppins font-medium"
+                                            disabled={
+                                              uploadingProof === installment._id
+                                            }
+                                          >
+                                            <span className="flex items-center justify-center gap-2">
+                                              <CreditCard size={16} />
+                                              {uploadingProof === installment._id
+                                                ? "Membuat Pembayaran..."
+                                                : t("payments.buttons.payNow")}
+                                            </span>
+                                          </button>
+                                        )}
+
+                                        {/* Old upload button for backward compatibility */}
+                                        {canSubmitProof(installment, group) && (
+                                          <button
+                                            onClick={() =>
+                                              setUploadModal({
+                                                isOpen: true,
+                                                installment,
+                                              })
+                                            }
+                                            className="w-full px-3 py-2 bg-gradient-to-r from-[#324D3E] to-[#4C3D19] text-white text-sm rounded-full hover:shadow-lg transition-all duration-300 font-poppins font-medium"
+                                            disabled={
+                                              uploadingProof === installment._id
+                                            }
+                                          >
+                                            <span className="flex items-center justify-center gap-2">
+                                              <Upload size={16} />
+                                              {uploadingProof === installment._id
+                                                ? "Mengunggah..."
+                                                : "Upload Bukti Bayar"}
+                                            </span>
+                                          </button>
+                                        )}
+
+                                        {/* Download Invoice Button for Successful Payments */}
+                                        {(installment.status === "approved" ||
+                                          installment.status === "completed") && (
+                                          <button
+                                            onClick={() =>
+                                              handleDownloadInvoice(
+                                                installment,
+                                                group
+                                              )
+                                            }
+                                            className="w-full px-3 py-2 bg-gradient-to-r from-green-600 to-green-700 text-white text-sm rounded-full hover:shadow-lg transition-all duration-300 font-poppins font-medium"
+                                          >
+                                            <span className="flex items-center justify-center gap-2">
+                                              <Download size={16} />
+                                              Download Invoice
+                                            </span>
+                                          </button>
+                                        )}
+                                      </div>
+
+                                      {/* Proof Image Preview */}
+                                      {installment.proofImageUrl && (
+                                        <div className="mt-3">
+                                          <div className="text-xs text-gray-600 mb-1 font-poppins">
+                                            Bukti Pembayaran:
+                                          </div>
+                                          <Image
+                                            src={installment.proofImageUrl}
+                                            alt="Bukti Pembayaran"
+                                            width={100}
+                                            height={100}
+                                            className="w-full h-20 object-cover rounded-xl border cursor-pointer hover:shadow-lg transition-all duration-300"
+                                            onClick={() =>
+                                              window.open(
+                                                installment.proofImageUrl,
+                                                "_blank"
+                                              )
+                                            }
+                                          />
+                                        </div>
+                                      )}
                                     </div>
-                                    <div className="text-sm text-gray-600 font-poppins">
-                                      Jatuh tempo:{" "}
-                                      {installment.dueDate
-                                        ? formatDate(installment.dueDate)
-                                        : "Akan ditentukan"}
-                                    </div>
-                                  </div>
-                                  <span
-                                    className={`px-3 py-2 text-xs font-bold rounded-full ${getStatusColor(
-                                      effectiveStatus
-                                    )}`}
-                                  >
-                                    {getStatusText(effectiveStatus)}
-                                  </span>
-                                </div>
+                                  );
+                                })}
 
-                                <div className="mb-4">
-                                  <div className="text-2xl font-bold text-[#4C3D19] font-poppins">
-                                    Rp{" "}
-                                    {installment.amount.toLocaleString("id-ID")}
-                                  </div>
-                                </div>
-
-                                {/* Status Details */}
-                                {installment.paidDate && (
-                                  <div className="text-sm text-green-600 mb-2 font-poppins">
-                                    <span className="flex items-center gap-1">
-                                      <CheckCircle size={14} />
-                                      Dibayar:{" "}
-                                      {formatDate(installment.paidDate)}
-                                    </span>
-                                  </div>
-                                )}
-
-                                {installment.submissionDate && installment.orderId && installment.orderId.startsWith("CIC-CONTRACT-") && (
-                                  <div className="text-sm text-gray-600 mb-2 font-poppins">
-                                    📤 Dikirim:{" "}
-                                    {formatDate(installment.submissionDate)}
-                                  </div>
-                                )}
-
-
-                                {installment.adminNotes && installment.orderId && installment.orderId.startsWith("CIC-CONTRACT-") && (
-                                  <div className="bg-yellow-50/80 p-2 rounded-lg text-xs text-yellow-800 mb-3 font-poppins">
-                                    <strong>Catatan Admin:</strong>{" "}
-                                    {installment.adminNotes}
-                                  </div>
-                                )}
-
-                                {/* Action Buttons */}
-                                {canPayInstallment(installment, group) && (
-                                  <button
-                                    onClick={() =>
-                                      handlePayInstallment(installment._id!, installment.installmentNumber!)
-                                    }
-                                    className="w-full px-3 py-2 bg-gradient-to-r from-[#324D3E] to-[#4C3D19] text-white text-sm rounded-full hover:shadow-lg transition-all duration-300 font-poppins font-medium mb-2"
-                                    disabled={
-                                      uploadingProof === installment._id
-                                    }
-                                  >
-                                    <span className="flex items-center justify-center gap-2">
-                                      <CreditCard size={16} />
-                                      {uploadingProof === installment._id
-                                        ? "Membuat Pembayaran..."
-                                        : "Bayar Sekarang"}
-                                    </span>
-                                  </button>
-                                )}
-
-                                {/* Old upload button for backward compatibility */}
-                                {canSubmitProof(installment, group) && (
-                                  <button
-                                    onClick={() =>
-                                      setUploadModal({
-                                        isOpen: true,
-                                        installment,
-                                      })
-                                    }
-                                    className="w-full px-3 py-2 bg-gradient-to-r from-[#324D3E] to-[#4C3D19] text-white text-sm rounded-full hover:shadow-lg transition-all duration-300 font-poppins font-medium mb-2"
-                                    disabled={
-                                      uploadingProof === installment._id
-                                    }
-                                  >
-                                    <span className="flex items-center justify-center gap-2">
-                                      <Upload size={16} />
-                                      {uploadingProof === installment._id
-                                        ? "Mengunggah..."
-                                        : "Upload Bukti Bayar"}
-                                    </span>
-                                  </button>
-                                )}
-
-                                {/* Download Invoice Button for Successful Payments */}
-                                {(installment.status === "approved" || installment.status === "completed") && (
-                                  <button
-                                    onClick={() => handleDownloadInvoice(installment, group)}
-                                    className="w-full px-3 py-2 bg-gradient-to-r from-green-600 to-green-700 text-white text-sm rounded-full hover:shadow-lg transition-all duration-300 font-poppins font-medium"
-                                  >
-                                    <span className="flex items-center justify-center gap-2">
-                                      <Download size={16} />
-                                      Download Invoice
-                                    </span>
-                                  </button>
-                                )}
-
-                                {/* Proof Image Preview */}
-                                {installment.proofImageUrl && (
-                                  <div className="mt-3">
-                                    <div className="text-xs text-gray-600 mb-1 font-poppins">
-                                      Bukti Pembayaran:
-                                    </div>
-                                    <Image
-                                      src={installment.proofImageUrl}
-                                      alt="Bukti Pembayaran"
-                                      width={100}
-                                      height={100}
-                                      className="w-full h-20 object-cover rounded-xl border cursor-pointer hover:shadow-lg transition-all duration-300"
+                                {/* Lihat Semua Button */}
+                                {shouldShowLimitedView && (
+                                  <div className="col-span-full flex justify-center mt-6">
+                                    <button
                                       onClick={() =>
-                                        window.open(
-                                          installment.proofImageUrl,
-                                          "_blank"
+                                        toggleGroupExpansion(
+                                          group.cicilanOrderId
                                         )
                                       }
-                                    />
+                                      className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-[#324D3E] to-[#4C3D19] text-white rounded-full hover:shadow-lg transition-all duration-300 font-poppins font-medium"
+                                    >
+                                      <span>
+                                        {t("payments.ui.viewAll", {
+                                          count: (
+                                            sortedInstallments.length -
+                                            maxVisibleCards
+                                          ).toString(),
+                                        })}
+                                      </span>
+                                      <svg
+                                        className="w-4 h-4 transform transition-transform duration-200"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        viewBox="0 0 24 24"
+                                      >
+                                        <path
+                                          strokeLinecap="round"
+                                          strokeLinejoin="round"
+                                          strokeWidth={2}
+                                          d="M19 9l-7 7-7-7"
+                                        />
+                                      </svg>
+                                    </button>
                                   </div>
                                 )}
-                              </div>
+
+                                {/* Show Less Button */}
+                                {isExpanded &&
+                                  sortedInstallments.length >
+                                    maxVisibleCards && (
+                                    <div className="col-span-full flex justify-center mt-6">
+                                      <button
+                                        onClick={() =>
+                                          toggleGroupExpansion(
+                                            group.cicilanOrderId
+                                          )
+                                        }
+                                        className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-gray-500 to-gray-600 text-white rounded-full hover:shadow-lg transition-all duration-300 font-poppins font-medium"
+                                      >
+                                        <span>{t("payments.ui.viewLess")}</span>
+                                        <svg
+                                          className="w-4 h-4 transform rotate-180 transition-transform duration-200"
+                                          fill="none"
+                                          stroke="currentColor"
+                                          viewBox="0 0 24 24"
+                                        >
+                                          <path
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                            strokeWidth={2}
+                                            d="M19 9l-7 7-7-7"
+                                          />
+                                        </svg>
+                                      </button>
+                                    </div>
+                                  )}
+                              </>
                             );
-                          })}
-
-                              {/* Lihat Semua Button */}
-                              {shouldShowLimitedView && (
-                                <div className="col-span-full flex justify-center mt-6">
-                                  <button
-                                    onClick={() => toggleGroupExpansion(group.cicilanOrderId)}
-                                    className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-[#324D3E] to-[#4C3D19] text-white rounded-full hover:shadow-lg transition-all duration-300 font-poppins font-medium"
-                                  >
-                                    <span>Lihat Semua ({sortedInstallments.length - maxVisibleCards} lainnya)</span>
-                                    <svg
-                                      className="w-4 h-4 transform transition-transform duration-200"
-                                      fill="none"
-                                      stroke="currentColor"
-                                      viewBox="0 0 24 24"
-                                    >
-                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                                    </svg>
-                                  </button>
-                                </div>
-                              )}
-
-                              {/* Show Less Button */}
-                              {isExpanded && sortedInstallments.length > maxVisibleCards && (
-                                <div className="col-span-full flex justify-center mt-6">
-                                  <button
-                                    onClick={() => toggleGroupExpansion(group.cicilanOrderId)}
-                                    className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-gray-500 to-gray-600 text-white rounded-full hover:shadow-lg transition-all duration-300 font-poppins font-medium"
-                                  >
-                                    <span>Lihat Lebih Sedikit</span>
-                                    <svg
-                                      className="w-4 h-4 transform rotate-180 transition-transform duration-200"
-                                      fill="none"
-                                      stroke="currentColor"
-                                      viewBox="0 0 24 24"
-                                    >
-                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                                    </svg>
-                                  </button>
-                                </div>
-                              )}
-                            </>
-                          );
-                        })()}
+                          })()}
+                        </div>
                       </div>
                     </div>
-                  </div>
                   );
                 } else {
                   // Full Payment Contract
@@ -1767,327 +2179,434 @@ export default function PaymentsPage() {
                       key={contract.contractId}
                       className={`bg-gradient-to-br rounded-3xl shadow-lg border-2 p-8 transition-shadow duration-200 ${
                         contract.isPermanentlyRejected
-                          ? 'from-gray-50 to-gray-100 border-gray-300/50 opacity-75'
-                          : 'from-[#FFFCE3] to-white border-[#324D3E]/20 hover:shadow-xl'
+                          ? "from-gray-50 to-gray-100 border-gray-300/50 opacity-75"
+                          : "from-[#FFFCE3] to-white border-[#324D3E]/20 hover:shadow-xl"
                       }`}
                     >
                       {/* Full Payment Header */}
-                    <div className="mb-8">
-                      <div className="flex flex-col lg:flex-row lg:justify-between lg:items-start mb-4 gap-4">
-                        <div className="flex-1">
-                          <h2 className="text-2xl font-bold text-[#324D3E] font-poppins">
-                            {contract.productName}
-                          </h2>
-                          <p className="text-sm text-gray-600 font-poppins">
-                            Contract ID: {contract.contractId}
-                          </p>
-                          <p className="text-lg font-semibold text-[#4C3D19] mt-1 font-poppins">
-                            Total Paket: Rp{" "}
-                            {contract.totalAmount.toLocaleString("id-ID")}
-                            <span className="text-sm text-gray-500 ml-2 font-normal">
-                              • Dibuat: {new Date(contract.createdAt).toLocaleDateString('id-ID')} {new Date(contract.createdAt).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
-                            </span>
-                          </p>
-                          <div className="flex flex-wrap gap-4 mt-2 text-sm text-gray-600 font-poppins">
-                            <span className="flex items-center gap-2">
-                              <Calendar size={16} />
-                              Pembayaran Penuh
-                            </span>
-                            <span className="flex items-center gap-2">
-                              <DollarSign size={16} />
-                              Rp{" "}
+                      <div className="mb-8">
+                        <div className="flex flex-col lg:flex-row lg:justify-between lg:items-start mb-4 gap-4">
+                          <div className="flex-1">
+                            <h2 className="text-2xl font-bold text-[#324D3E] font-poppins">
+                              {contract.productName}
+                            </h2>
+                            <p className="text-sm text-gray-600 font-poppins">
+                              {t("payments.cards.contractId")}{" "}
+                              {contract.contractId}
+                            </p>
+                            <p className="text-lg font-semibold text-[#4C3D19] mt-1 font-poppins">
+                              {t("payments.cards.totalPackage")} Rp{" "}
                               {contract.totalAmount.toLocaleString("id-ID")}
-                            </span>
+                              <span className="text-sm text-gray-500 ml-2 font-normal">
+                                {t("payments.cards.created")}{" "}
+                                {new Date(
+                                  contract.createdAt
+                                ).toLocaleDateString("id-ID")}{" "}
+                                {new Date(
+                                  contract.createdAt
+                                ).toLocaleTimeString("id-ID", {
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                })}
+                              </span>
+                            </p>
+                            <div className="flex flex-wrap gap-4 mt-2 text-sm text-gray-600 font-poppins">
+                              <span className="flex items-center justify-center gap-2">
+                                <Calendar size={16} />
+                                {t("payments.cards.fullPayment")}
+                              </span>
+                              <span className="flex items-center justify-center gap-2">
+                                <DollarSign size={16} />
+                                Rp{" "}
+                                {contract.totalAmount.toLocaleString("id-ID")}
+                              </span>
+                            </div>
                           </div>
-                        </div>
-                        <div className="lg:text-right">
-                          <div className="text-sm text-gray-600 font-poppins">
-                            Status Pembayaran
-                          </div>
-                          <div className="text-2xl font-bold text-[#324D3E] font-poppins">
-                            {contract.paymentCompleted ? "Selesai" : "Belum Bayar"}
-                          </div>
-                          <div className="w-full lg:w-32 bg-gray-200 rounded-full h-2 mt-2">
+                          <div className="lg:text-right">
                             <div
-                              className="bg-gradient-to-r from-[#324D3E] to-[#4C3D19] h-2 rounded-full"
-                              style={{
-                                width: contract.paymentCompleted ? "100%" : "0%",
-                              }}
-                            />
+                              className={`text-sm font-poppins ${
+                                // Check if contract is overdue
+                                !contract.paymentCompleted &&
+                                contract.dueDate &&
+                                isOverdue(contract.dueDate)
+                                  ? "text-red-600" // Red text for overdue
+                                  : "text-gray-600" // Original gray text
+                              }`}
+                            >
+                              {t("payments.cards.paymentStatus")}
+                            </div>
+                            <div
+                              className={`text-2xl font-bold font-poppins ${
+                                // Check if contract is overdue
+                                !contract.paymentCompleted &&
+                                contract.dueDate &&
+                                isOverdue(contract.dueDate)
+                                  ? "text-red-600" // Red text for overdue
+                                  : "text-[#324D3E]" // Original green text
+                              }`}
+                            >
+                              {contract.paymentCompleted
+                                ? "Selesai"
+                                : (() => {
+                                    // Check if contract is overdue using actual dueDate
+                                    const isContractOverdue =
+                                      contract.dueDate &&
+                                      isOverdue(contract.dueDate);
+                                    return isContractOverdue
+                                      ? t("payments.status.overdue")
+                                      : t("payments.status.pending");
+                                  })()}
+                            </div>
+                            <div className="w-full lg:w-32 bg-gray-200 rounded-full h-2 mt-2">
+                              <div
+                                className="bg-gradient-to-r from-[#324D3E] to-[#4C3D19] h-2 rounded-full"
+                                style={{
+                                  width: contract.paymentCompleted
+                                    ? "100%"
+                                    : "0%",
+                                }}
+                              />
+                            </div>
                           </div>
                         </div>
                       </div>
-                    </div>
 
-                    {/* Contract Approval Status */}
-                    {contract.adminApprovalStatus === "pending" && (
-                      <>
-                        {!contract.hasEverSigned ? (
-                          <div className="bg-gradient-to-r from-blue-50 to-sky-50 rounded-2xl p-4 border border-blue-200 mb-6">
-                            <div className="flex items-center gap-3">
-                              <div className="bg-blue-100 rounded-full p-2">
-                                <Clock className="w-5 h-5 text-blue-600" />
-                              </div>
-                              <div className="flex-1">
-                                <h4 className="font-semibold text-blue-800 font-poppins">
-                                  Kontrak Belum Ditandatangani
-                                </h4>
-                                <p className="text-sm text-blue-700 font-poppins">
-                                  Anda perlu menandatangani kontrak terlebih dahulu sebelum melakukan pembayaran.
-                                  <button
-                                    onClick={() => router.push(`/contract/${contract.contractId}`)}
-                                    className="text-blue-800 underline hover:text-blue-900 font-semibold ml-1"
-                                  >
-                                    Tandatangani di sini
-                                  </button>
-                                </p>
-                              </div>
-                            </div>
-                          </div>
-                        ) : (
-                          <div className="bg-gradient-to-r from-yellow-50 to-amber-50 rounded-2xl p-4 border border-amber-200 mb-6">
-                            <div className="flex items-center justify-between gap-3">
+                      {/* Contract Approval Status */}
+                      {contract.adminApprovalStatus === "pending" && (
+                        <>
+                          {!contract.hasEverSigned ? (
+                            <div className="bg-gradient-to-r from-blue-50 to-sky-50 rounded-2xl p-4 border border-blue-200 mb-6">
                               <div className="flex items-center gap-3">
-                                <div className="bg-amber-100 rounded-full p-2">
-                                  <Clock className="w-5 h-5 text-amber-600" />
+                                <div className="bg-blue-100 rounded-full p-2">
+                                  <Clock className="w-5 h-5 text-blue-600" />
                                 </div>
-                                <div>
-                                  <h4 className="font-semibold text-amber-800 font-poppins">
-                                    Kontrak Menunggu Persetujuan Admin
+                                <div className="flex-1">
+                                  <h4 className="font-semibold text-blue-800 font-poppins">
+                                    Kontrak Belum Ditandatangani
                                   </h4>
-                                  <p className="text-sm text-amber-700 font-poppins">
-                                    Anda sudah dapat melakukan pembayaran sekarang
+                                  <p className="text-sm text-blue-700 font-poppins">
+                                    Anda perlu menandatangani kontrak terlebih
+                                    dahulu sebelum melakukan pembayaran.
+                                    <button
+                                      onClick={() =>
+                                        router.push(
+                                          `/contract/${contract.contractId}`
+                                        )
+                                      }
+                                      className="text-blue-800 underline hover:text-blue-900 font-semibold ml-1"
+                                    >
+                                      Tandatangani di sini
+                                    </button>
                                   </p>
                                 </div>
                               </div>
-                              <button
-                                onClick={() => handleDownloadContract(contract.contractId)}
-                                className="px-3 py-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white text-sm rounded-full hover:shadow-lg transition-all duration-300 font-poppins font-medium whitespace-nowrap"
-                              >
-                                <span className="flex items-center gap-2">
-                                  <Download size={16} />
-                                  Download
-                                </span>
-                              </button>
                             </div>
-                          </div>
-                        )}
-                      </>
-                    )}
+                          ) : (
+                            <div className="bg-gradient-to-r from-yellow-50 to-amber-50 rounded-2xl p-4 border border-amber-200 mb-6">
+                              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                                <div className="flex items-center gap-3">
+                                  <div className="bg-amber-100 rounded-full p-2">
+                                    <Clock className="w-5 h-5 text-amber-600" />
+                                  </div>
+                                  <div>
+                                    <h4 className="font-semibold text-amber-800 font-poppins">
+                                      {t(
+                                        "payments.cards.contractPendingApproval"
+                                      )}
+                                    </h4>
+                                    <p className="text-sm text-amber-700 font-poppins">
+                                      {t("payments.cards.canMakePayment")}
+                                    </p>
+                                  </div>
+                                </div>
+                                <button
+                                  onClick={() =>
+                                    handleDownloadContract(contract.contractId)
+                                  }
+                                  className="w-full sm:w-auto px-3 py-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white text-sm rounded-full hover:shadow-lg transition-all duration-300 font-poppins font-medium"
+                                >
+                                  <span className="flex items-center justify-center gap-2">
+                                    <Download size={16} />
+                                    Download
+                                  </span>
+                                </button>
+                              </div>
+                            </div>
+                          )}
+                        </>
+                      )}
 
-                    {contract.adminApprovalStatus === "approved" && (
-                      <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-2xl p-4 border border-green-200 mb-6">
-                        <div className="flex items-center justify-between gap-3">
-                          <div className="flex items-center gap-3">
-                            <div className="bg-green-100 rounded-full p-2">
-                              <CheckCircle className="w-5 h-5 text-green-600" />
+                      {contract.adminApprovalStatus === "approved" && (
+                        <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-2xl p-4 border border-green-200 mb-6">
+                          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                            <div className="flex items-center gap-3">
+                              <div className="bg-green-100 rounded-full p-2">
+                                <CheckCircle className="w-5 h-5 text-green-600" />
+                              </div>
+                              <div>
+                                <h4 className="font-semibold text-green-800 font-poppins">
+                                  {t("payments.approval.contractApproved")}
+                                </h4>
+                                <p className="text-sm text-green-700 font-poppins">
+                                  {t("payments.approval.approvedOn")}{" "}
+                                  {contract.adminApprovedDate
+                                    ? formatDate(contract.adminApprovedDate)
+                                    : "Tidak diketahui"}
+                                </p>
+                              </div>
                             </div>
-                            <div>
-                              <h4 className="font-semibold text-green-800 font-poppins">
-                                Kontrak Telah Disetujui Admin
-                              </h4>
-                              <p className="text-sm text-green-700 font-poppins">
-                                Disetujui pada: {contract.adminApprovedDate ? formatDate(contract.adminApprovedDate) : "Tidak diketahui"}
-                              </p>
-                            </div>
+                            <button
+                              onClick={() =>
+                                handleDownloadContract(contract.contractId)
+                              }
+                              className="w-full sm:w-auto px-3 py-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white text-sm rounded-full hover:shadow-lg transition-all duration-300 font-poppins font-medium"
+                            >
+                              <span className="flex items-center justify-center gap-2">
+                                <Download size={16} />
+                                Download
+                              </span>
+                            </button>
                           </div>
-                          <button
-                            onClick={() => handleDownloadContract(contract.contractId)}
-                            className="px-3 py-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white text-sm rounded-full hover:shadow-lg transition-all duration-300 font-poppins font-medium whitespace-nowrap"
-                          >
-                            <span className="flex items-center gap-2">
-                              <Download size={16} />
-                              Download
-                            </span>
-                          </button>
                         </div>
-                      </div>
-                    )}
+                      )}
 
-                    {contract.adminApprovalStatus === "rejected" && (
-                      <>
-                        {contract.isPermanentlyRejected ? (
-                          <div className="bg-gradient-to-r from-red-50 to-rose-50 rounded-2xl p-4 border border-red-200 mb-6">
-                            <div className="flex items-center gap-3">
-                              <div className="bg-red-100 rounded-full p-2">
-                                <Clock className="w-5 h-5 text-red-600" />
-                              </div>
-                              <div>
-                                <h4 className="font-semibold text-red-800 font-poppins">
-                                  Kontrak Ditolak Permanen
-                                </h4>
-                                <p className="text-sm text-red-700 font-poppins">
-                                  Maksimal percobaan kontrak telah tercapai ({contract.maxAttempts || 3}x).
-                                  Silakan hubungi admin untuk bantuan lebih lanjut.
-                                </p>
-                                <p className="text-xs text-red-600 font-poppins mt-1">
-                                  Percobaan: {contract.currentAttempt || 0}/{contract.maxAttempts || 3}
-                                </p>
-                              </div>
-                            </div>
-                          </div>
-                        ) : contract.isMaxRetryReached ? (
-                          <div className="bg-gradient-to-r from-orange-50 to-amber-50 rounded-2xl p-4 border border-orange-200 mb-6">
-                            <div className="flex items-center gap-3">
-                              <div className="bg-orange-100 rounded-full p-2">
-                                <Clock className="w-5 h-5 text-orange-600" />
-                              </div>
-                              <div>
-                                <h4 className="font-semibold text-orange-800 font-poppins">
-                                  Kontrak Memerlukan Review
-                                </h4>
-                                <p className="text-sm text-orange-700 font-poppins">
-                                  Percobaan kontrak: {contract.currentAttempt || 0}/{contract.maxAttempts || 3}.
-                                  Silakan hubungi admin untuk bantuan.
-                                </p>
-                              </div>
-                            </div>
-                          </div>
-                        ) : (
-                          <div className="bg-gradient-to-r from-red-50 to-rose-50 rounded-2xl p-4 border border-red-200 mb-6">
-                            <div className="flex items-center justify-between gap-3">
+                      {contract.adminApprovalStatus === "rejected" && (
+                        <>
+                          {contract.isPermanentlyRejected ? (
+                            <div className="bg-gradient-to-r from-red-50 to-rose-50 rounded-2xl p-4 border border-red-200 mb-6">
                               <div className="flex items-center gap-3">
                                 <div className="bg-red-100 rounded-full p-2">
                                   <Clock className="w-5 h-5 text-red-600" />
                                 </div>
                                 <div>
                                   <h4 className="font-semibold text-red-800 font-poppins">
-                                    Kontrak Ditolak Admin
+                                    Kontrak Ditolak Permanen
                                   </h4>
                                   <p className="text-sm text-red-700 font-poppins">
-                                    Anda dapat mengajukan ulang kontrak dengan menandatangani ulang.
-                                    Percobaan: {contract.currentAttempt || 0}/{contract.maxAttempts || 3}
+                                    Maksimal percobaan kontrak telah tercapai (
+                                    {contract.maxAttempts || 3}x). Silakan
+                                    hubungi admin untuk bantuan lebih lanjut.
+                                  </p>
+                                  <p className="text-xs text-red-600 font-poppins mt-1">
+                                    Percobaan: {contract.currentAttempt || 0}/
+                                    {contract.maxAttempts || 3}
                                   </p>
                                 </div>
                               </div>
-                              <button
-                                onClick={() => setRetryModal({
-                                  isOpen: true,
-                                  contractId: contract.contractId,
-                                  contractType: 'full-payment',
-                                  productName: contract.productName
-                                })}
-                                className="px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white text-sm rounded-full hover:shadow-lg transition-all duration-300 font-poppins font-medium whitespace-nowrap"
-                              >
-                                <span className="flex items-center gap-2">
-                                  <Edit3 size={16} />
-                                  Ajukan Ulang
-                                </span>
-                              </button>
                             </div>
-                          </div>
-                        )}
-                      </>
-                    )}
+                          ) : contract.isMaxRetryReached ? (
+                            <div className="bg-gradient-to-r from-orange-50 to-amber-50 rounded-2xl p-4 border border-orange-200 mb-6">
+                              <div className="flex items-center gap-3">
+                                <div className="bg-orange-100 rounded-full p-2">
+                                  <Clock className="w-5 h-5 text-orange-600" />
+                                </div>
+                                <div>
+                                  <h4 className="font-semibold text-orange-800 font-poppins">
+                                    Kontrak Memerlukan Review
+                                  </h4>
+                                  <p className="text-sm text-orange-700 font-poppins">
+                                    Percobaan kontrak:{" "}
+                                    {contract.currentAttempt || 0}/
+                                    {contract.maxAttempts || 3}. Silakan hubungi
+                                    admin untuk bantuan.
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="bg-gradient-to-r from-red-50 to-rose-50 rounded-2xl p-4 border border-red-200 mb-6">
+                              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                                <div className="flex items-center gap-3">
+                                  <div className="bg-red-100 rounded-full p-2">
+                                    <Clock className="w-5 h-5 text-red-600" />
+                                  </div>
+                                  <div>
+                                    <h4 className="font-semibold text-red-800 font-poppins">
+                                      Kontrak Ditolak Admin
+                                    </h4>
+                                    <p className="text-sm text-red-700 font-poppins">
+                                      Anda dapat mengajukan ulang kontrak dengan
+                                      menandatangani ulang. Percobaan:{" "}
+                                      {contract.currentAttempt || 0}/
+                                      {contract.maxAttempts || 3}
+                                    </p>
+                                  </div>
+                                </div>
+                                <button
+                                  onClick={() =>
+                                    setRetryModal({
+                                      isOpen: true,
+                                      contractId: contract.contractId,
+                                      contractType: "full-payment",
+                                      productName: contract.productName,
+                                    })
+                                  }
+                                  className="w-full sm:w-auto px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white text-sm rounded-full hover:shadow-lg transition-all duration-300 font-poppins font-medium"
+                                >
+                                  <span className="flex items-center justify-center gap-2">
+                                    <Edit3 size={16} />
+                                    Ajukan Ulang
+                                  </span>
+                                </button>
+                              </div>
+                            </div>
+                          )}
+                        </>
+                      )}
 
-                    {/* Referral Code Section - Display only if it exists */}
-                    {(contract as any).referralCode && (
-                      <div className="max-w-md bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl p-3 border border-green-200 mb-4">
-                        <div className="flex items-center gap-2">
-                          <div className="bg-green-100 rounded-full p-1.5">
-                            <CheckCircle className="w-4 h-4 text-green-600" />
-                          </div>
-                          <div className="flex-1">
-                            <h4 className="font-medium text-green-800 font-poppins text-sm">
-                              Kode Referral Terdaftar
-                            </h4>
-                            <p className="text-xs text-green-700 font-poppins">
-                              <span className="font-mono font-bold">{(contract as any).referralCode}</span> - Digunakan untuk pembayaran ini
-                            </p>
+                      {/* Referral Code Section - Display only if it exists */}
+                      {(contract as any).referralCode && (
+                        <div className="max-w-md bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl p-3 border border-green-200 mb-4">
+                          <div className="flex items-center justify-center gap-2">
+                            <div className="bg-green-100 rounded-full p-1.5">
+                              <CheckCircle className="w-4 h-4 text-green-600" />
+                            </div>
+                            <div className="flex-1">
+                              <h4 className="font-medium text-green-800 font-poppins text-sm">
+                                {t("payments.cards.referralCodeRegistered")}
+                              </h4>
+                              <p className="text-xs text-green-700 font-poppins">
+                                <span className="font-mono font-bold">
+                                  {(contract as any).referralCode}
+                                </span>{" "}
+                                - {t("payments.ui.referralCodeUsed")}
+                              </p>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    )}
+                      )}
 
-                    {/* Payment Section */}
-                    <div className="space-y-4">
-                      <h3 className="text-lg font-semibold text-[#324D3E] mb-4 font-poppins">
-                        Pembayaran Penuh
-                      </h3>
-                      <div className="grid grid-cols-1 gap-4">
-                        <div className={`border-2 rounded-2xl p-6 transition-shadow duration-200 hover:shadow-lg ${
-                          contract.paymentCompleted
-                            ? "bg-gradient-to-br from-emerald-50/90 to-green-50/90 border-emerald-200"
-                            : "bg-gradient-to-br from-[#FFFCE3]/90 to-white/90 border-[#324D3E]/20"
-                        }`}>
-                          <div className="flex justify-between items-start mb-3">
-                            <div>
-                              <div className="text-lg font-bold text-[#324D3E] font-poppins">
-                                Pembayaran Total
-                              </div>
-                              <div className="text-sm text-gray-600 font-poppins">
-                                Dibuat: {formatDate(contract.createdAt)}
-                              </div>
-                            </div>
-                            <span className={`px-3 py-2 text-xs font-bold rounded-full ${
+                      {/* Payment Section */}
+                      <div className="space-y-4">
+                        <h3 className="text-lg font-semibold text-[#324D3E] mb-4 font-poppins">
+                          {t("payments.cards.fullPayment")}
+                        </h3>
+                        <div className="grid grid-cols-1 gap-4">
+                          <div
+                            className={`relative border-2 rounded-2xl p-6 pb-20 transition-shadow duration-200 hover:shadow-lg ${
                               contract.paymentCompleted
-                                ? "bg-gradient-to-r from-emerald-100 to-green-100 text-emerald-800 border border-emerald-200"
-                                : "bg-gradient-to-r from-[#324D3E]/10 to-[#4C3D19]/10 text-[#324D3E] border border-[#324D3E]/20"
-                            }`}>
-                              {contract.paymentCompleted ? "Selesai" : "Belum Bayar"}
-                            </span>
-                          </div>
-
-                          <div className="mb-4">
-                            <div className="text-2xl font-bold text-[#4C3D19] font-poppins">
-                              Rp{" "}
-                              {contract.totalAmount.toLocaleString("id-ID")}
-                            </div>
-                          </div>
-
-                          {/* Payment Status Details */}
-                          {contract.paymentCompleted && (
-                            <div className="text-sm text-green-600 mb-2 font-poppins">
-                              <span className="flex items-center gap-1">
-                                <CheckCircle size={14} />
-                                Pembayaran Selesai
+                                ? "bg-gradient-to-br from-emerald-50/90 to-green-50/90 border-emerald-200"
+                                : (() => {
+                                    // Check if contract is overdue using actual dueDate
+                                    const isContractOverdue =
+                                      contract.dueDate &&
+                                      isOverdue(contract.dueDate);
+                                    return isContractOverdue
+                                      ? "bg-gradient-to-br from-red-50/90 to-rose-50/90 border-red-200"
+                                      : "bg-gradient-to-br from-[#FFFCE3]/90 to-white/90 border-[#324D3E]/20";
+                                  })()
+                            }`}
+                          >
+                            <div className="flex justify-between items-start mb-3">
+                              <div>
+                                <div className="text-lg font-bold text-[#324D3E] font-poppins">
+                                  {t("payments.cards.totalPayment")}
+                                </div>
+                                <div className="text-sm text-gray-600 font-poppins">
+                                  {t("payments.cards.dueDate")}{" "}
+                                  {formatDate(
+                                    contract.dueDate || contract.contractDate
+                                  )}
+                                </div>
+                              </div>
+                              <span
+                                className={`px-3 py-2 text-xs font-bold rounded-full ${
+                                  contract.paymentCompleted
+                                    ? "bg-gradient-to-r from-emerald-100 to-green-100 text-emerald-800 border border-emerald-200"
+                                    : (() => {
+                                        // Check if contract is overdue using actual dueDate
+                                        const isContractOverdue =
+                                          contract.dueDate &&
+                                          isOverdue(contract.dueDate);
+                                        return isContractOverdue
+                                          ? "bg-gradient-to-r from-red-100 to-rose-100 text-red-800 border border-red-200"
+                                          : "bg-gradient-to-r from-[#324D3E]/10 to-[#4C3D19]/10 text-[#324D3E] border border-[#324D3E]/20";
+                                      })()
+                                }`}
+                              >
+                                {contract.paymentCompleted
+                                  ? "Selesai"
+                                  : (() => {
+                                      // Check if contract is overdue using actual dueDate
+                                      const isContractOverdue =
+                                        contract.dueDate &&
+                                        isOverdue(contract.dueDate);
+                                      return isContractOverdue
+                                        ? t("payments.status.overdue")
+                                        : t("payments.status.pending");
+                                    })()}
                               </span>
                             </div>
-                          )}
 
-                          {/* Action Button */}
-                          {!contract.paymentCompleted && !contract.isPermanentlyRejected && contract.hasEverSigned && (
-                            <button
-                              onClick={() => handleFullPayment(contract)}
-                              className="w-full px-3 py-2 bg-gradient-to-r from-[#324D3E] to-[#4C3D19] text-white text-sm rounded-full hover:shadow-lg transition-all duration-300 font-poppins font-medium mb-2"
-                            >
-                              <span className="flex items-center justify-center gap-2">
-                                <CreditCard size={16} />
-                                Bayar Sekarang
-                              </span>
-                            </button>
-                          )}
+                            <div className="mb-4">
+                              <div className="text-2xl font-bold text-[#4C3D19] font-poppins">
+                                Rp{" "}
+                                {contract.totalAmount.toLocaleString("id-ID")}
+                              </div>
+                            </div>
 
-                          {/* Disabled Payment Button for Permanently Rejected Contracts */}
-                          {!contract.paymentCompleted && (contract.isPermanentlyRejected || !contract.hasEverSigned) && (
-                            <button
-                              disabled
-                              className="w-full px-3 py-2 bg-gray-400 text-gray-200 text-sm rounded-full cursor-not-allowed font-poppins font-medium opacity-60 mb-2"
-                            >
-                              <span className="flex items-center justify-center gap-2">
-                                <CreditCard size={16} />
-                                {contract.isPermanentlyRejected ? 'Pembayaran Dinonaktifkan' : 'Kontrak Belum Ditandatangani'}
-                              </span>
-                            </button>
-                          )}
+                            {/* Payment Status Details */}
+                            {contract.paymentCompleted && (
+                              <div className="text-sm text-green-600 mb-2 font-poppins">
+                                <span className="flex items-center gap-1">
+                                  <CheckCircle size={14} />
+                                  {t("payments.cards.paymentCompleted")}
+                                </span>
+                              </div>
+                            )}
 
-                          {/* Download Invoice Button for Completed Payments */}
-                          {contract.paymentCompleted && (
-                            <button
-                              onClick={() => handleDownloadFullPaymentInvoice(contract)}
-                              className="w-full px-3 py-2 bg-gradient-to-r from-green-600 to-green-700 text-white text-sm rounded-full hover:shadow-lg transition-all duration-300 font-poppins font-medium"
-                            >
-                              <span className="flex items-center justify-center gap-2">
-                                <Download size={16} />
-                                Download Invoice
-                              </span>
-                            </button>
-                          )}
+                            {/* Action Button */}
+                            <div className="absolute bottom-6 left-6 right-6">
+                              {!contract.paymentCompleted &&
+                                !contract.isPermanentlyRejected &&
+                                contract.hasEverSigned && (
+                                  <button
+                                    onClick={() => handleFullPayment(contract)}
+                                    className="w-full px-3 py-2 bg-gradient-to-r from-[#324D3E] to-[#4C3D19] text-white text-sm rounded-full hover:shadow-lg transition-all duration-300 font-poppins font-medium"
+                                  >
+                                    <span className="flex items-center justify-center gap-2">
+                                      <CreditCard size={16} />
+                                      {t("payments.buttons.payNow")}
+                                    </span>
+                                  </button>
+                                )}
 
+                              {/* Disabled Payment Button for Permanently Rejected Contracts */}
+                              {!contract.paymentCompleted &&
+                                (contract.isPermanentlyRejected ||
+                                  !contract.hasEverSigned) && (
+                                  <button
+                                    disabled
+                                    className="w-full px-3 py-2 bg-gray-400 text-gray-200 text-sm rounded-full cursor-not-allowed font-poppins font-medium opacity-60"
+                                  >
+                                    <span className="flex items-center justify-center gap-2">
+                                      <CreditCard size={16} />
+                                      {contract.isPermanentlyRejected
+                                        ? "Pembayaran Dinonaktifkan"
+                                        : "Kontrak Belum Ditandatangani"}
+                                    </span>
+                                  </button>
+                                )}
+
+                              {/* Download Invoice Button for Completed Payments */}
+                              {contract.paymentCompleted && (
+                                <button
+                                  onClick={() =>
+                                    handleDownloadFullPaymentInvoice(contract)
+                                  }
+                                  className="w-full px-3 py-2 bg-gradient-to-r from-green-600 to-green-700 text-white text-sm rounded-full hover:shadow-lg transition-all duration-300 font-poppins font-medium"
+                                >
+                                  <span className="flex items-center justify-center gap-2">
+                                    <Download size={16} />
+                                    Download Invoice
+                                  </span>
+                                </button>
+                              )}
+                            </div>
+                          </div>
                         </div>
                       </div>
                     </div>
-                  </div>
                   );
                 }
               })}
@@ -2101,9 +2620,21 @@ export default function PaymentsPage() {
           contractId={retryModal.contractId}
           contractType={retryModal.contractType}
           productName={retryModal.productName}
-          onClose={() => setRetryModal({ isOpen: false, contractId: null, contractType: null, productName: null })}
+          onClose={() =>
+            setRetryModal({
+              isOpen: false,
+              contractId: null,
+              contractType: null,
+              productName: null,
+            })
+          }
           onSuccess={() => {
-            setRetryModal({ isOpen: false, contractId: null, contractType: null, productName: null });
+            setRetryModal({
+              isOpen: false,
+              contractId: null,
+              contractType: null,
+              productName: null,
+            });
             fetchInstallments(); // Refresh data
           }}
         />
@@ -2124,7 +2655,7 @@ export default function PaymentsPage() {
 interface ContractRetrySignatureModalProps {
   isOpen: boolean;
   contractId: string | null;
-  contractType: 'installment' | 'full-payment' | null;
+  contractType: "installment" | "full-payment" | null;
   productName: string | null;
   onClose: () => void;
   onSuccess: () => void;
@@ -2138,6 +2669,7 @@ function ContractRetrySignatureModal({
   onClose,
   onSuccess,
 }: ContractRetrySignatureModalProps) {
+  const { t } = useLanguage();
   const [signing, setSigning] = useState(false);
   const [signatureData, setSignatureData] = useState<string | null>(null);
   const [retryData, setRetryData] = useState<{
@@ -2145,6 +2677,7 @@ function ContractRetrySignatureModal({
     maxAttempts: number;
     canRetry: boolean;
     lastRejectionReason?: string;
+    lastRejectionAdminNotes?: string;
   } | null>(null);
   const { showSuccess, showError } = useAlert();
 
@@ -2152,7 +2685,7 @@ function ContractRetrySignatureModal({
     if (isOpen && contractId) {
       fetchRetryData();
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, contractId]);
 
   const fetchRetryData = async () => {
@@ -2163,7 +2696,7 @@ function ContractRetrySignatureModal({
         setRetryData(data);
       }
     } catch (error) {
-      console.error('Error fetching retry data:', error);
+      console.error("Error fetching retry data:", error);
     }
   };
 
@@ -2180,9 +2713,9 @@ function ContractRetrySignatureModal({
     setSigning(true);
     try {
       const response = await fetch(`/api/contract/${contractId}/retry`, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
           signatureData: signatureData,
@@ -2193,23 +2726,30 @@ function ContractRetrySignatureModal({
       const data = await response.json();
 
       if (data.success) {
-        showSuccess("Berhasil!", "Kontrak berhasil diajukan ulang dan sedang menunggu review admin");
+        showSuccess(
+          t("payments.success.title"),
+          t("payments.success.contractResubmitted")
+        );
         onSuccess();
       } else {
-        showError("Gagal Mengajukan Ulang", data.error || "Terjadi kesalahan saat mengajukan ulang kontrak");
+        showError(
+          t("payments.errors.general"),
+          data.error || t("payments.errors.generalMessage")
+        );
       }
     } catch (error) {
-      console.error('Error submitting retry:', error);
+      console.error("Error submitting retry:", error);
       showError("Kesalahan", "Terjadi kesalahan saat mengajukan ulang kontrak");
     } finally {
       setSigning(false);
     }
   };
 
-
   if (!isOpen) return null;
 
-  const canRetry = retryData?.canRetry !== false && (retryData?.currentAttempt || 0) < (retryData?.maxAttempts || 3);
+  const canRetry =
+    retryData?.canRetry !== false &&
+    (retryData?.currentAttempt || 0) < (retryData?.maxAttempts || 3);
 
   return (
     <div className="fixed inset-0 bg-black/20 backdrop-blur-sm flex items-center justify-center p-4 z-[9999]">
@@ -2229,22 +2769,38 @@ function ContractRetrySignatureModal({
 
           {/* Contract Info */}
           <div className="bg-gradient-to-r from-[#324D3E]/10 to-[#4C3D19]/10 p-4 rounded-2xl mb-6">
-            <h4 className="font-semibold text-[#324D3E] font-poppins mb-2">Informasi Kontrak</h4>
-            <p className="text-gray-700 font-poppins"><strong>Produk:</strong> {productName}</p>
-            <p className="text-gray-700 font-poppins"><strong>ID Kontrak:</strong> {contractId}</p>
-            <p className="text-gray-700 font-poppins"><strong>Jenis:</strong> {contractType === 'installment' ? 'Cicilan' : 'Pembayaran Penuh'}</p>
+            <h4 className="font-semibold text-[#324D3E] font-poppins mb-2">
+              {t("payments.form.contractInfo")}
+            </h4>
+            <p className="text-gray-700 font-poppins">
+              <strong>{t("payments.form.product")}</strong> {productName}
+            </p>
+            <p className="text-gray-700 font-poppins">
+              <strong>{t("payments.form.contractId")}</strong> {contractId}
+            </p>
+            <p className="text-gray-700 font-poppins">
+              <strong>{t("payments.form.type")}</strong>{" "}
+              {contractType === "installment"
+                ? t("payments.form.typeInstallment")
+                : t("payments.form.typeFullPayment")}
+            </p>
           </div>
 
           {/* Retry Status */}
           {retryData && (
             <div className="bg-blue-50 p-4 rounded-2xl mb-6 border border-blue-200">
-              <h4 className="font-semibold text-blue-800 font-poppins mb-2">Status Pengajuan Ulang</h4>
+              <h4 className="font-semibold text-blue-800 font-poppins mb-2">
+                Status Pengajuan Ulang
+              </h4>
               <p className="text-blue-700 font-poppins text-sm">
-                <strong>Percobaan:</strong> {retryData.currentAttempt || 0} dari {retryData.maxAttempts || 3}
+                <strong>Percobaan:</strong> {retryData.currentAttempt || 0} dari{" "}
+                {retryData.maxAttempts || 3}
               </p>
               {retryData.lastRejectionReason && (
                 <p className="text-red-700 font-poppins text-sm mt-2">
-                  <strong>Alasan penolakan terakhir:</strong> {retryData.lastRejectionReason}
+                  <strong>Alasan penolakan terakhir:</strong>{" "}
+                  {retryData.lastRejectionReason}:{" "}
+                  {retryData.lastRejectionAdminNotes}
                 </p>
               )}
             </div>
@@ -2268,9 +2824,16 @@ function ContractRetrySignatureModal({
                 </h4>
                 <ul className="list-disc list-inside text-gray-700 font-poppins text-sm space-y-1">
                   <li>Buat tanda tangan Anda di area yang disediakan</li>
-                  <li>Pastikan tanda tangan jelas dan sesuai dengan identitas Anda</li>
-                  <li>Tanda tangan yang sama dengan pengajuan sebelumnya lebih direkomendasikan</li>
-                  <li>Kontrak akan direview ulang oleh admin setelah pengajuan</li>
+                  <li>
+                    Pastikan tanda tangan jelas dan sesuai dengan identitas Anda
+                  </li>
+                  <li>
+                    Tanda tangan yang sama dengan pengajuan sebelumnya lebih
+                    direkomendasikan
+                  </li>
+                  <li>
+                    Kontrak akan direview ulang oleh admin setelah pengajuan
+                  </li>
                 </ul>
               </div>
 
@@ -2331,6 +2894,7 @@ function InstallmentProofUploadModal({
   onUpload,
   isUploading,
 }: InstallmentProofUploadModalProps) {
+  const { t } = useLanguage();
   const [file, setFile] = useState<File | null>(null);
   const [description, setDescription] = useState("");
 
@@ -2376,16 +2940,17 @@ function InstallmentProofUploadModal({
 
           <div className="bg-gradient-to-r from-[#324D3E]/10 to-[#4C3D19]/10 p-3 rounded-2xl mb-4">
             <div className="text-sm text-gray-600 font-poppins">
-              Angsuran #{installment.installmentNumber}
+              {t("payments.installments.installmentNumber")}
+              {installment.installmentNumber}
             </div>
             <div className="text-lg font-semibold text-[#324D3E] font-poppins">
               Rp {installment.amount.toLocaleString("id-ID")}
             </div>
             <div className="text-sm text-gray-600 font-poppins">
-              Jatuh tempo:{" "}
+              {t("payments.cards.dueDate")}{" "}
               {installment.dueDate
                 ? formatDate(installment.dueDate)
-                : "Akan ditentukan"}
+                : t("payments.willBeDetermined")}
             </div>
           </div>
 
@@ -2402,7 +2967,6 @@ function InstallmentProofUploadModal({
                 required
               />
             </div>
-
 
             <div className="mb-6">
               <label className="block text-sm font-medium text-[#324D3E] mb-2 font-poppins">
@@ -2450,7 +3014,6 @@ function InstallmentProofUploadModal({
   }
 }
 
-
 // Portfolio Overview Component
 interface PortfolioOverviewProps {
   stats: {
@@ -2463,13 +3026,14 @@ interface PortfolioOverviewProps {
 }
 
 function PortfolioOverview({ stats }: PortfolioOverviewProps) {
+  const { t } = useLanguage();
   const completionPercentage =
     stats.totalAmount > 0 ? (stats.totalPaid / stats.totalAmount) * 100 : 0;
 
   return (
     <div className="bg-white rounded-3xl shadow-lg border border-gray-200 p-6">
       <h2 className="text-2xl font-bold text-[#324D3E] font-poppins mb-6">
-        Portfolio Overview
+        {t("payments.portfolio.title")}
       </h2>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -2482,7 +3046,7 @@ function PortfolioOverview({ stats }: PortfolioOverviewProps) {
             {stats.totalInvestments}
           </div>
           <div className="text-sm text-gray-600 font-poppins">
-            Total Paket
+            {t("payments.stats.totalPackages")}
           </div>
         </div>
 
@@ -2495,7 +3059,7 @@ function PortfolioOverview({ stats }: PortfolioOverviewProps) {
             Rp {stats.totalAmount.toLocaleString("id-ID")}
           </div>
           <div className="text-sm text-gray-600 font-poppins">
-            Nilai Pembayaran
+            {t("payments.stats.paymentValue")}
           </div>
         </div>
 
@@ -2508,7 +3072,7 @@ function PortfolioOverview({ stats }: PortfolioOverviewProps) {
             Rp {stats.totalPaid.toLocaleString("id-ID")}
           </div>
           <div className="text-sm text-gray-600 font-poppins">
-            Sudah Dibayar
+            {t("payments.stats.paid")}
           </div>
           <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
             <div
@@ -2529,7 +3093,7 @@ function PortfolioOverview({ stats }: PortfolioOverviewProps) {
                 {stats.overdueCount}
               </div>
               <div className="text-xs text-gray-600 font-poppins">
-                Terlambat
+                {t("payments.stats.overdue")}
               </div>
             </div>
             <div>
@@ -2537,7 +3101,7 @@ function PortfolioOverview({ stats }: PortfolioOverviewProps) {
                 {stats.upcomingCount}
               </div>
               <div className="text-xs text-gray-600 font-poppins">
-                Mendatang
+                {t("payments.stats.upcoming")}
               </div>
             </div>
           </div>
@@ -2551,8 +3115,22 @@ function PortfolioOverview({ stats }: PortfolioOverviewProps) {
 interface SearchAndFilterProps {
   searchTerm: string;
   setSearchTerm: (term: string) => void;
-  filter: "all" | "active" | "completed" | "overdue" | "full-payment" | "installment";
-  setFilter: (filter: "all" | "active" | "completed" | "overdue" | "full-payment" | "installment") => void;
+  filter:
+    | "all"
+    | "active"
+    | "completed"
+    | "overdue"
+    | "full-payment"
+    | "installment";
+  setFilter: (
+    filter:
+      | "all"
+      | "active"
+      | "completed"
+      | "overdue"
+      | "full-payment"
+      | "installment"
+  ) => void;
   stats: {
     totalInvestments: number;
     totalAmount: number;
@@ -2573,37 +3151,52 @@ function SearchAndFilter({
   groupedInstallments,
   fullPaymentContracts,
 }: SearchAndFilterProps) {
+  const { t } = useLanguage();
   const filters = [
-    { key: "all", label: "Semua", count: stats.totalInvestments },
+    {
+      key: "all",
+      label: t("payments.filters.all"),
+      count: stats.totalInvestments,
+    },
     {
       key: "active",
-      label: "Aktif",
-      count: groupedInstallments.filter(group => {
-        const approvedCount = group.installments.filter(inst => inst.status === "approved" || inst.status === "completed").length;
-        return approvedCount < group.installments.length;
-      }).length + fullPaymentContracts.filter(contract => !contract.paymentCompleted).length,
+      label: t("payments.filters.active"),
+      count:
+        groupedInstallments.filter((group) => {
+          const approvedCount = group.installments.filter(
+            (inst) => inst.status === "approved" || inst.status === "completed"
+          ).length;
+          return approvedCount < group.installments.length;
+        }).length +
+        fullPaymentContracts.filter((contract) => !contract.paymentCompleted)
+          .length,
     },
     {
       key: "overdue",
-      label: "Terlambat",
+      label: t("payments.filters.overdue"),
       count: stats.overdueCount > 0 ? 1 : 0,
     },
     {
       key: "completed",
-      label: "Selesai",
-      count: groupedInstallments.filter(group => {
-        const approvedCount = group.installments.filter(inst => inst.status === "approved" || inst.status === "completed").length;
-        return approvedCount === group.installments.length;
-      }).length + fullPaymentContracts.filter(contract => contract.paymentCompleted).length,
+      label: t("payments.filters.completed"),
+      count:
+        groupedInstallments.filter((group) => {
+          const approvedCount = group.installments.filter(
+            (inst) => inst.status === "approved" || inst.status === "completed"
+          ).length;
+          return approvedCount === group.installments.length;
+        }).length +
+        fullPaymentContracts.filter((contract) => contract.paymentCompleted)
+          .length,
     },
     {
       key: "installment",
-      label: "Cicilan",
+      label: t("payments.filters.installment"),
       count: groupedInstallments.length,
     },
     {
       key: "full-payment",
-      label: "Bayar Penuh",
+      label: t("payments.filters.fullPayment"),
       count: fullPaymentContracts.length,
     },
   ];

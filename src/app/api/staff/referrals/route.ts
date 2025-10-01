@@ -1,10 +1,10 @@
 import dbConnect from "@/lib/mongodb";
-import Payment from "@/models/Payment";
+import CommissionHistory from "@/models/CommissionHistory";
 import User from "@/models/User";
 import { getServerSession } from "next-auth/next";
 import { NextRequest, NextResponse } from "next/server";
 
-export async function GET(_req: NextRequest) {
+export async function GET(req: NextRequest) {
   try {
     await dbConnect();
 
@@ -39,79 +39,140 @@ export async function GET(_req: NextRequest) {
           referrals: [],
           totalCommission: 0,
           totalReferrals: 0,
+          totalPages: 0,
+          currentPage: 1,
         },
       });
     }
 
-    // Find all payments using this referral code
-    const referralPayments = await Payment.find({
-      referralCode: user.referralCode,
-      $or: [
-        { transactionStatus: "settlement" }, // Paid via Midtrans
-        { adminStatus: "approved" }, // Approved manually (for cicilan)
-      ],
-    })
-      .populate("userId", "fullName email phoneNumber")
-      .sort({ createdAt: -1 });
+    // Get pagination, search, and sort params
+    const { searchParams } = new URL(req.url);
+    const page = parseInt(searchParams.get("page") || "1");
+    const limit = parseInt(searchParams.get("limit") || "10");
+    const search = searchParams.get("search") || "";
+    const sortBy = searchParams.get("sortBy") || "earnedAt";
+    const sortOrder = searchParams.get("sortOrder") || "desc";
 
-    // Calculate commissions
-    let totalCommission = 0;
-    const referrals = referralPayments.map((payment) => {
-      let commission = 0;
-      let shouldIncludeCommission = false;
+    // Build filter for commission records
+    const filter: any = { marketingStaffId: user._id };
 
-      if (payment.paymentType === "full-investment") {
-        // Full payment: 2% of total amount
-        commission = Math.round(payment.amount * 0.02);
-        shouldIncludeCommission = true;
-      } else if (payment.paymentType === "cicilan-installment") {
-        // Cicilan payment: Only calculate commission on first installment
-        if (
-          payment.installmentNumber === 1 &&
-          payment.installmentAmount &&
-          payment.totalInstallments
-        ) {
-          // Calculate 2% of total contract amount (installmentAmount * totalInstallments)
-          const totalContractAmount =
-            payment.installmentAmount * payment.totalInstallments;
-          commission = Math.round(totalContractAmount * 0.02);
-          shouldIncludeCommission = true;
-        } else {
-          // Not the first installment, no commission
-          commission = 0;
-          shouldIncludeCommission = false;
-        }
-      } else if (payment.paymentType === "registration") {
-        // Registration payments: No commission
-        commission = 0;
-        shouldIncludeCommission = false;
+    // If search query exists, we need to find matching customers first
+    let customerIds: any[] = [];
+    if (search.trim()) {
+      const searchRegex = new RegExp(search.trim(), "i");
+      const matchingCustomers = await User.find({
+        $or: [
+          { fullName: searchRegex },
+          { email: searchRegex },
+          { phoneNumber: searchRegex },
+        ],
+      }).select("_id");
+
+      customerIds = matchingCustomers.map((c) => c._id);
+
+      // Add customer filter to commission query
+      if (customerIds.length > 0) {
+        filter.customerId = { $in: customerIds };
+      } else {
+        // No matching customers, return empty result
+        return NextResponse.json({
+          success: true,
+          data: {
+            referralCode: user.referralCode,
+            staffName: user.fullName,
+            staffEmail: user.email,
+            referrals: [],
+            totalCommission: 0,
+            totalReferrals: 0,
+            summary: {
+              fullPayments: 0,
+              fullPaymentsCommission: 0,
+              cicilanPayments: 0,
+              cicilanPaymentsCommission: 0,
+            },
+            totalPages: 0,
+            currentPage: page,
+          },
+        });
       }
+    }
 
-      if (shouldIncludeCommission) {
-        totalCommission += commission;
-      }
+    // Get total count for pagination
+    const totalCount = await CommissionHistory.countDocuments(filter);
+    const totalPages = Math.ceil(totalCount / limit);
+    const skip = (page - 1) * limit;
+
+    // Build sort object
+    const sortObj: any = {};
+    if (sortBy === "customerName") {
+      // Will need to sort after populating
+      sortObj.customerName = sortOrder === "asc" ? 1 : -1;
+    } else if (sortBy === "amount") {
+      sortObj.contractValue = sortOrder === "asc" ? 1 : -1;
+    } else if (sortBy === "commission") {
+      sortObj.commissionAmount = sortOrder === "asc" ? 1 : -1;
+    } else if (sortBy === "status") {
+      // Will need to sort after populating
+      sortObj.status = sortOrder === "asc" ? 1 : -1;
+    } else {
+      // Default sort by earnedAt
+      sortObj.earnedAt = sortOrder === "asc" ? 1 : -1;
+    }
+
+    // Find commission records for this staff member with pagination
+    const commissionRecords = await CommissionHistory.find(filter)
+      .populate("paymentId", "orderId transactionStatus adminStatus settlementTime adminReviewDate createdAt")
+      .populate("customerId", "fullName email phoneNumber")
+      .sort(sortObj)
+      .skip(skip)
+      .limit(limit);
+
+    // Calculate total commission from ALL records (not just current page)
+    const allCommissionRecords = await CommissionHistory.find({
+      marketingStaffId: user._id,
+    });
+    const totalCommission = allCommissionRecords.reduce(
+      (sum, record) => sum + record.commissionAmount,
+      0
+    );
+
+    // Map commission records to referral format
+    const referrals = commissionRecords.map((record) => {
+      const payment = record.paymentId as any;
+      const customer = record.customerId as any;
 
       return {
-        paymentId: payment._id,
-        orderId: payment.orderId,
-        customerName: payment.userId?.fullName || "Unknown",
-        customerEmail: payment.userId?.email || "Unknown",
-        customerPhone: payment.userId?.phoneNumber || "Unknown",
-        productName: payment.productName,
-        paymentType: payment.paymentType,
-        amount: payment.amount,
-        commission: commission,
-        isCommissionEligible: shouldIncludeCommission,
-        installmentNumber: payment.installmentNumber || null,
-        totalInstallments: payment.totalInstallments || null,
-        status: payment.transactionStatus || payment.adminStatus,
-        paymentDate:
-          payment.transactionStatus === "settlement"
-            ? payment.settlementTime || payment.createdAt
-            : payment.adminReviewDate || payment.createdAt,
-        createdAt: payment.createdAt,
+        commissionId: record._id,
+        paymentId: payment?._id,
+        orderId: payment?.orderId || record.contractId || "N/A",
+        customerName: customer?.fullName || record.customerName,
+        customerEmail: customer?.email || record.customerEmail,
+        customerPhone: customer?.phoneNumber || "Unknown",
+        productName: record.productName,
+        paymentType: record.paymentType,
+        contractValue: record.contractValue,
+        amount: record.contractValue, // For compatibility with frontend
+        commission: record.commissionAmount,
+        commissionRate: record.commissionRate,
+        isCommissionEligible: true, // All records in CommissionHistory are eligible
+        installmentNumber: record.installmentDetails?.installmentNumber || null,
+        totalInstallments: record.installmentDetails?.totalInstallments || null,
+        installmentAmount: record.installmentDetails?.installmentAmount || null,
+        status: payment?.transactionStatus || payment?.adminStatus || "approved",
+        paymentDate: record.earnedAt,
+        earnedAt: record.earnedAt,
+        calculatedAt: record.calculatedAt,
+        createdAt: record.createdAt,
       };
     });
+
+    // Calculate summary statistics from ALL records
+    const allFullPayments = allCommissionRecords.filter(
+      (r) => r.paymentType === "full-investment"
+    );
+    const allCicilanPayments = allCommissionRecords.filter(
+      (r) => r.paymentType === "cicilan-installment"
+    );
 
     return NextResponse.json({
       success: true,
@@ -121,18 +182,21 @@ export async function GET(_req: NextRequest) {
         staffEmail: user.email,
         referrals,
         totalCommission,
-        totalReferrals: referrals.length,
+        totalReferrals: totalCount,
         summary: {
-          fullPayments: referrals.filter(
-            (r) => r.paymentType === "full-investment"
-          ).length,
-          cicilanPayments: referrals.filter(
-            (r) => r.paymentType === "cicilan-installment"
-          ).length,
-          registrations: referrals.filter(
-            (r) => r.paymentType === "registration"
-          ).length,
+          fullPayments: allFullPayments.length,
+          fullPaymentsCommission: allFullPayments.reduce(
+            (sum, r) => sum + r.commissionAmount,
+            0
+          ),
+          cicilanPayments: allCicilanPayments.length,
+          cicilanPaymentsCommission: allCicilanPayments.reduce(
+            (sum, r) => sum + r.commissionAmount,
+            0
+          ),
         },
+        totalPages,
+        currentPage: page,
       },
     });
   } catch (error) {

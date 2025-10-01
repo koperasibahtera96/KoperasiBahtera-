@@ -280,7 +280,8 @@ export default function LaporanPage() {
             : "Rp 0", // Sisa Dibayar
           payment?.transactionStatus === "settlement"
             ? "Selesai"
-            : payment?.transactionStatus === "pending"
+            : payment?.transactionStatus === "pending" ||
+              payment?.transactionStatus === undefined
             ? "Pending"
             : payment?.adminStatus || payment?.status || "-", // Status Akhir
         ];

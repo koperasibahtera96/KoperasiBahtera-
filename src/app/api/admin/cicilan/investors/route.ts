@@ -23,63 +23,34 @@ export async function GET(request: NextRequest) {
 
     // Helper function to calculate late payments per investment
     const calculateLatePayments = (investor: any, userPayments: any[]) => {
-      if (!investor) {
-        // For users without investor records, check if payments are overdue
-        const now = new Date();
-        const latePaymentGroups = new Set();
-
-        userPayments.forEach((payment: any) => {
-          if (new Date(payment.dueDate) < now && payment.transactionStatus === "pending") {
-            latePaymentGroups.add(payment.cicilanOrderId || payment.orderId);
-          }
-        });
-
-        return latePaymentGroups.size;
-      }
-
       const now = new Date();
-      let lateInvestmentsCount = 0;
+      const lateInvestments = new Set();
 
-      investor.investments.forEach((investment: any) => {
-        let isInvestmentLate = false;
+      // Check all payments and group by investment
+      userPayments.forEach((payment: any) => {
+        const dueDate = new Date(payment.dueDate);
+        const isOverdue = dueDate < now &&
+                         dueDate.toDateString() !== now.toDateString() &&
+                         payment.transactionStatus !== "settlement";
 
-        if (investment.paymentType === "cicilan") {
-          // Check if any installment is overdue and unpaid
-          if (investment.installments && investment.installments.length > 0) {
-            isInvestmentLate = investment.installments.some((inst: any) =>
-              new Date(inst.dueDate) < now && !inst.isPaid
-            );
-          }
-        } else if (investment.paymentType === "full") {
-          // For full payments, check if payment is overdue
-          const relatedPayment = userPayments.find((p: any) =>
-            p.productName === investment.productName &&
-            p.amount === investment.totalAmount &&
-            p.paymentType === "full-investment"
-          );
-
-          if (relatedPayment) {
-            isInvestmentLate = new Date(relatedPayment.dueDate || relatedPayment.createdAt) < now &&
-                              relatedPayment.transactionStatus === "pending";
-          }
-        }
-
-        if (isInvestmentLate) {
-          lateInvestmentsCount++;
+        if (isOverdue) {
+          // Use cicilanOrderId for cicilan payments, orderId for full payments
+          const investmentId = payment.cicilanOrderId || payment.orderId;
+          lateInvestments.add(investmentId);
         }
       });
 
-      return lateInvestmentsCount;
+      return lateInvestments.size;
     };
 
-    // First, get all users who have cicilan payments (including pending ones)
-    const cicilanPayments = await Payment.find({
-      paymentType: "cicilan-installment",
+    // Get all users who have cicilan or full payments (including pending ones)
+    const allPayments = await Payment.find({
+      paymentType: { $in: ["cicilan-installment", "full-investment"] },
     });
 
-    // Get unique user IDs from cicilan payments
-    const cicilanUserIds = [
-      ...new Set(cicilanPayments.map((p) => p.userId.toString())),
+    // Get unique user IDs from all payments
+    const allPaymentUserIds = [
+      ...new Set(allPayments.map((p) => p.userId.toString())),
     ];
 
     // Build query for existing investors
@@ -94,13 +65,13 @@ export async function GET(request: NextRequest) {
       inv.userId.toString()
     );
 
-    // Combine user IDs: existing investors + users with pending cicilan payments
-    const allCicilanUserIds = [
-      ...new Set([...existingInvestorUserIds, ...cicilanUserIds]),
+    // Combine user IDs: existing investors + users with pending payments (cicilan + full)
+    const allUserIds = [
+      ...new Set([...existingInvestorUserIds, ...allPaymentUserIds]),
     ];
 
     // Apply search filter to users
-    const userQuery: any = { _id: { $in: allCicilanUserIds } };
+    const userQuery: any = { _id: { $in: allUserIds } };
     if (search) {
       userQuery.$or = [
         { fullName: { $regex: search, $options: "i" } },
@@ -123,10 +94,10 @@ export async function GET(request: NextRequest) {
       investors.map((inv) => [inv.userId.toString(), inv])
     );
 
-    // Get payments for pending reviews count
+    // Get all payments (cicilan and full) for late payment calculations
     const payments = await Payment.find({
       userId: { $in: userIds },
-      paymentType: "cicilan-installment",
+      paymentType: { $in: ["cicilan-installment", "full-investment"] },
     });
 
     const paymentsMap = new Map();

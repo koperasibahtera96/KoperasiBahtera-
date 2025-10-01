@@ -274,23 +274,25 @@ export async function POST(request: NextRequest) {
 
         const getPlantType = (
           productName: string
-        ): "gaharu" | "alpukat" | "jengkol" | "aren" => {
+        ): "gaharu" | "alpukat" | "jengkol" | "aren" | "kelapa" => {
           const name = productName.toLowerCase();
           if (name.includes("gaharu")) return "gaharu";
           if (name.includes("alpukat")) return "alpukat";
           if (name.includes("jengkol")) return "jengkol";
           if (name.includes("aren")) return "aren";
+          if (name.includes("kelapa")) return "kelapa";
           return "gaharu";
         };
 
         const getBaseROI = (
-          plantType: "gaharu" | "alpukat" | "jengkol" | "aren"
+          plantType: "gaharu" | "alpukat" | "jengkol" | "aren" | "kelapa"
         ) => {
           const roiMap = {
             gaharu: 0.15,
             alpukat: 0.12,
             jengkol: 0.1,
             aren: 0.18,
+            kelapa: 0.12,
           };
           return roiMap[plantType] || 0.12;
         };
@@ -315,10 +317,13 @@ export async function POST(request: NextRequest) {
             -8
           )}`;
           const productName = payment.productName || "gaharu";
+          console.log(productName, "produk nama");
           const plantType = getPlantType(productName);
+          console.log(plantType, "jenis plant");
           const instanceName = `${
             plantType.charAt(0).toUpperCase() + plantType.slice(1)
           } - ${user.fullName}`;
+          console.log(instanceName, "nama instance");
           const adminName = await getFirstAdminName();
 
           const deterministicHistoryId = `HISTORY-${orderId}-NEW`;
@@ -511,23 +516,25 @@ export async function POST(request: NextRequest) {
         // Helper functions (same as admin approval logic)
         const getPlantType = (
           productName: string
-        ): "gaharu" | "alpukat" | "jengkol" | "aren" => {
+        ): "gaharu" | "alpukat" | "jengkol" | "aren" | "kelapa" => {
           const name = productName.toLowerCase();
           if (name.includes("gaharu")) return "gaharu";
           if (name.includes("alpukat")) return "alpukat";
           if (name.includes("jengkol")) return "jengkol";
           if (name.includes("aren")) return "aren";
+          if (name.includes("kelapa")) return "kelapa";
           return "gaharu";
         };
 
         const getBaseROI = (
-          plantType: "gaharu" | "alpukat" | "jengkol" | "aren"
+          plantType: "gaharu" | "alpukat" | "jengkol" | "aren" | "kelapa"
         ) => {
           const roiMap = {
             gaharu: 0.15,
             alpukat: 0.12,
             jengkol: 0.1,
             aren: 0.18,
+            kelapa: 0.12,
           };
           return roiMap[plantType] || 0.12;
         };
@@ -546,6 +553,11 @@ export async function POST(request: NextRequest) {
             `📄 [${txnId}] First installment paid for cicilan ${cicilanOrderId} - creating PlantInstance and investor record`
           );
 
+          // Get contract for approval status and totalAmount
+          const contract = await Contract.findOne({
+            contractId: cicilanOrderId,
+          }).session(mongoSession);
+
           // Check if PlantInstance already exists
           const existingPlantInstance = await PlantInstance.findOne({
             contractNumber: cicilanOrderId,
@@ -554,10 +566,6 @@ export async function POST(request: NextRequest) {
           let savedPlantInstance = existingPlantInstance;
 
           if (!savedPlantInstance) {
-            // Get contract to check approval status
-            const contract = await Contract.findOne({
-              contractId: cicilanOrderId,
-            }).session(mongoSession);
             const isContractApproved =
               contract?.adminApprovalStatus === "approved" &&
               contract?.status === "approved";
@@ -565,10 +573,13 @@ export async function POST(request: NextRequest) {
             // Create new PlantInstance
             const plantInstanceId = `PLANT-${cicilanOrderId}-${Date.now()}`;
             const productName = installmentPayment.productName || "gaharu";
+            console.log(productName, "produk nama");
             const plantType = getPlantType(productName);
+            console.log(plantType, "jenis plant");
             const instanceName = `${
               plantType.charAt(0).toUpperCase() + plantType.slice(1)
             } - ${user.fullName}`;
+            console.log(instanceName, "nama instance");
             const adminName = await getFirstAdminName();
 
             const deterministicHistoryId = `HISTORY-${cicilanOrderId}-NEW`;
@@ -651,8 +662,9 @@ export async function POST(request: NextRequest) {
               if (existingInvestment.amountPaid === 0) {
                 // Add FULL contract amount to totals (business logic requirement)
                 const fullContractAmount =
+                  contract?.totalAmount ||
                   installmentPayment.installmentAmount *
-                  installmentPayment.totalInstallments;
+                    installmentPayment.totalInstallments;
 
                 existingInvestment.totalAmount = fullContractAmount;
                 existingInvestment.amountPaid = installmentPayment.amount; // Only actual payment
@@ -692,8 +704,9 @@ export async function POST(request: NextRequest) {
             } else {
               // Create new investment record
               const fullContractAmount =
+                contract?.totalAmount ||
                 installmentPayment.installmentAmount *
-                installmentPayment.totalInstallments;
+                  installmentPayment.totalInstallments;
 
               const investmentRecord = {
                 investmentId: cicilanOrderId,
@@ -727,8 +740,9 @@ export async function POST(request: NextRequest) {
           } else {
             // Create new investor record
             const fullContractAmount =
+              contract?.totalAmount ||
               installmentPayment.installmentAmount *
-              installmentPayment.totalInstallments;
+                installmentPayment.totalInstallments;
 
             const investmentRecord = {
               investmentId: cicilanOrderId,
@@ -874,6 +888,7 @@ export async function POST(request: NextRequest) {
               productName: installmentPayment.productName,
               productId: installmentPayment.productId,
               adminStatus: "pending",
+              transactionStatus: "pending",
               status: "pending",
               isProcessed: false,
               customerData: installmentPayment.customerData,

@@ -11,12 +11,14 @@ import ReviewSection from "@/components/landing/ReviewSection";
 import WhatsAppIcon from "@/components/landing/WhatsAppIcon";
 import WhyInvestAndRulesSection from "@/components/landing/WhyInvestAndRulesSection";
 import { useAlert } from "@/components/ui/Alert";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect } from "react";
 
 function LandingPageContent() {
   const searchParams = useSearchParams();
   const { showSuccess, showError, AlertComponent } = useAlert();
+  const { t } = useLanguage();
 
   useEffect(() => {
     const status = searchParams.get("status");
@@ -24,8 +26,8 @@ function LandingPageContent() {
 
     if (status === "success" && orderId) {
       showSuccess(
-        "Pembayaran Berhasil!",
-        `Terima kasih! Pembayaran investasi Anda telah berhasil diproses. Order ID: ${orderId}. Tim kami akan segera memproses investasi Anda.`
+        t("payment.success.title"),
+        t("payment.success.message", { orderId })
       );
 
       // Clean up URL parameters
@@ -34,26 +36,24 @@ function LandingPageContent() {
       url.searchParams.delete("orderId");
       window.history.replaceState({}, "", url.toString());
     } else if (status === "error") {
-      showError(
-        "Pembayaran Gagal",
-        "Maaf, terjadi kesalahan dalam proses pembayaran. Silakan coba lagi atau hubungi customer service kami."
-      );
+      showError(t("payment.error.title"), t("payment.error.message"));
 
       // Clean up URL parameters
       const url = new URL(window.location.href);
       url.searchParams.delete("status");
       window.history.replaceState({}, "", url.toString());
     }
-  }, [searchParams, showSuccess, showError]);
+  }, [searchParams, showSuccess, showError, t]);
 
   return (
-    <div className="min-h-screen bg-white font-[family-name:var(--font-poppins)]">
+    <>
+      {/*  <div className="min-h-screen bg-white font-[family-name:var(--font-poppins)]"> } */}
       <AlertComponent />
       <LandingHeader />
-      <section id="beranda" className="relative">
+      <section id="beranda">
         <LandingHero />
       </section>
-      <section id="program" className="relative -mt-px">
+      <section id="program">
         <WhyInvestAndRulesSection />
       </section>
       <CTASection />
@@ -77,7 +77,8 @@ function LandingPageContent() {
       </section>
       <LandingFooter />
       <WhatsAppIcon />
-    </div>
+      {/* </div> */}
+    </>
   );
 }
 

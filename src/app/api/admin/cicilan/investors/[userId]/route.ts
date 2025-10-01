@@ -39,9 +39,12 @@ export async function GET(
 
       // Check cicilan investments
       cicilanGroups.forEach((group: any) => {
-        const hasLateInstallment = group.installments.some(
-          (inst: any) => new Date(inst.dueDate) < now && !inst.isPaid
-        );
+        const hasLateInstallment = group.installments.some((inst: any) => {
+          const dueDate = new Date(inst.dueDate);
+          return dueDate < now &&
+                 dueDate.toDateString() !== now.toDateString() &&
+                 !inst.isPaid;
+        });
         if (hasLateInstallment) {
           lateInvestmentsCount++;
         }
@@ -51,8 +54,10 @@ export async function GET(
       fullPaymentGroups.forEach((group: any) => {
         if (group.installments && group.installments.length > 0) {
           const installment = group.installments[0];
+          const dueDate = new Date(installment.dueDate);
           const isLate =
-            new Date(installment.dueDate) < now &&
+            dueDate < now &&
+            dueDate.toDateString() !== now.toDateString() &&
             installment.status === "pending";
           if (isLate) {
             lateInvestmentsCount++;
@@ -214,13 +219,13 @@ export async function GET(
     // Combine cicilan and full payment groups
     const allGroups = [...cicilanGroups, ...fullPaymentGroups];
 
-    // Calculate statistics from payment data (for summary cards only)
+    // Calculate statistics - use investor data when available for consistency
     const totalInvestments = cicilanGroups.length + fullPaymentGroups.length;
-    const totalAmount = [...cicilanGroups, ...fullPaymentGroups].reduce(
+    const totalAmount = investor?.totalInvestasi || [...cicilanGroups, ...fullPaymentGroups].reduce(
       (sum, group) => sum + group.totalAmount,
       0
     );
-    const totalPaid = [...cicilanPayments, ...fullPayments]
+    const totalPaid = investor?.totalPaid || [...cicilanPayments, ...fullPayments]
       .filter((p) => p.transactionStatus === "settlement")
       .reduce((sum, p) => sum + p.amount, 0);
 
@@ -282,10 +287,13 @@ function getInvestmentStatus(
   if (approvedCount === totalCount) return "completed";
 
   const now = new Date();
-  const hasOverdue = installments.some(
-    (i) =>
-      new Date(i.dueDate) < now && i.status === "pending" && !i.proofImageUrl
-  );
+  const hasOverdue = installments.some((i) => {
+    const dueDate = new Date(i.dueDate);
+    return dueDate < now &&
+           dueDate.toDateString() !== now.toDateString() &&
+           i.status === "pending" &&
+           !i.proofImageUrl;
+  });
 
   return hasOverdue ? "overdue" : "active";
 }

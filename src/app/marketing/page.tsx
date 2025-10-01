@@ -14,6 +14,7 @@ import {
   Eye,
   AlertTriangle,
   X,
+  Download,
 } from "lucide-react";
 
 interface MarketingStaff {
@@ -67,6 +68,8 @@ export default function MarketingHeadPage() {
   );
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [isExporting, setIsExporting] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
     setMounted(true);
@@ -295,6 +298,55 @@ export default function MarketingHeadPage() {
     });
   };
 
+  const handleExport = async () => {
+    try {
+      setIsExporting(true);
+      setError("");
+
+      const response = await fetch("/api/admin/marketing/export");
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to export data");
+      }
+
+      // Create blob and download
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `laporan-marketing-${
+        new Date().toISOString().split("T")[0]
+      }.xlsx`;
+      document.body.appendChild(link);
+      link.click();
+
+      // Cleanup
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error("Export error:", error);
+      setError(
+        error instanceof Error ? error.message : "Failed to export data"
+      );
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  // Filter marketing staff based on search query
+  const filteredStaff = marketingStaff.filter((staff) => {
+    if (!searchQuery.trim()) return true;
+
+    const query = searchQuery.toLowerCase();
+    return (
+      staff.fullName.toLowerCase().includes(query) ||
+      staff.email.toLowerCase().includes(query) ||
+      staff.phoneNumber.toLowerCase().includes(query) ||
+      (staff.referralCode && staff.referralCode.toLowerCase().includes(query))
+    );
+  });
+
   if (loading) {
     return (
       <StaffLayout>
@@ -363,6 +415,32 @@ export default function MarketingHeadPage() {
               >
                 Pantau dan kelola performa staff marketing serta komisi mereka
               </p>
+            </div>
+
+            {/* Export Button */}
+            <div className="flex items-center gap-3">
+              <motion.button
+                onClick={handleExport}
+                disabled={isExporting}
+                className={getThemeClasses(
+                  "inline-flex items-center gap-2 px-4 py-2 bg-[#324D3E] hover:bg-[#2a4235] text-white rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-lg",
+                  "!bg-[#4c1d1d] hover:!bg-[#3d1717]"
+                )}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+              >
+                {isExporting ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                    <span className="text-sm font-medium">Mengekspor...</span>
+                  </>
+                ) : (
+                  <>
+                    <Download className="w-4 h-4" />
+                    <span className="text-sm font-medium">Export Excel</span>
+                  </>
+                )}
+              </motion.button>
             </div>
           </div>
         </motion.div>
@@ -554,14 +632,68 @@ export default function MarketingHeadPage() {
               ""
             )}
           >
-            <h2
-              className={getThemeClasses(
-                "text-xl font-semibold text-gray-900 dark:text-white",
-                ""
-              )}
-            >
-              Staf Marketing
-            </h2>
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <h2
+                className={getThemeClasses(
+                  "text-xl font-semibold text-gray-900 dark:text-white",
+                  ""
+                )}
+              >
+                Staf Marketing
+              </h2>
+
+              {/* Search Bar */}
+              <div className="relative w-full md:w-96">
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Cari staff berdasarkan nama, email, telepon, atau kode..."
+                  className={getThemeClasses(
+                    "w-full px-4 py-2 pl-10 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#324D3E] dark:focus:ring-gray-500 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 text-sm",
+                    "!bg-white !border-[#FFC1CC]/30 focus:!ring-[#FFC1CC]/50 !text-[#4c1d1d] placeholder-[#6b7280]"
+                  )}
+                />
+                <svg
+                  className={getThemeClasses(
+                    "absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 dark:text-gray-400",
+                    "!text-[#6b7280]"
+                  )}
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                  />
+                </svg>
+                {searchQuery && (
+                  <button
+                    onClick={() => setSearchQuery("")}
+                    className={getThemeClasses(
+                      "absolute right-3 top-1/2 -translate-y-1/2 p-1 hover:bg-gray-100 dark:hover:bg-gray-600 rounded-full transition-colors",
+                      "hover:!bg-[#FFC1CC]/20"
+                    )}
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {searchQuery && (
+              <div
+                className={getThemeClasses(
+                  "text-sm text-gray-600 dark:text-gray-400 font-medium",
+                  "!text-[#6b7280]"
+                )}
+              >
+                Menampilkan {filteredStaff.length} dari {marketingStaff.length} staff marketing
+              </div>
+            )}
           </div>
 
           <div className="overflow-x-auto">
@@ -630,7 +762,31 @@ export default function MarketingHeadPage() {
                   ""
                 )}
               >
-                {marketingStaff.map((staff) => (
+                {filteredStaff.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="px-6 py-12 text-center">
+                      <div className="flex flex-col items-center gap-3">
+                        <Users
+                          className={getThemeClasses(
+                            "w-12 h-12 text-gray-400 dark:text-gray-500",
+                            "!text-[#6b7280]"
+                          )}
+                        />
+                        <p
+                          className={getThemeClasses(
+                            "text-gray-600 dark:text-gray-400 font-medium",
+                            "!text-[#6b7280]"
+                          )}
+                        >
+                          {searchQuery
+                            ? "Tidak ada staff yang cocok dengan pencarian"
+                            : "Belum ada staff marketing"}
+                        </p>
+                      </div>
+                    </td>
+                  </tr>
+                ) : (
+                  filteredStaff.map((staff) => (
                   <tr
                     key={staff._id}
                     className={getThemeClasses(
@@ -780,7 +936,8 @@ export default function MarketingHeadPage() {
                       </div>
                     </td>
                   </tr>
-                ))}
+                  ))
+                )}
               </tbody>
             </table>
           </div>
@@ -975,8 +1132,7 @@ export default function MarketingHeadPage() {
                               {formatCurrency(commission.commissionAmount)}
                             </p>
                             <p className="text-sm text-gray-600">
-                              {commission.commissionRate * 100}% dari{" "}
-                              {formatCurrency(commission.contractValue)}
+                              {commission.commissionRate * 100}% dari total
                             </p>
                           </div>
 

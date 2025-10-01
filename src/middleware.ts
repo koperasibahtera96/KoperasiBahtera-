@@ -15,10 +15,10 @@ export default async function middleware(req: NextRequest) {
   if (!token) {
     // For mobile QR scans, preserve the URL path for redirect after login
     const callbackUrl = encodeURIComponent(pathname + req.nextUrl.search);
-    return NextResponse.redirect(new URL(`/login?callbackUrl=${callbackUrl}`, req.url));
+    return NextResponse.redirect(
+      new URL(`/login?callbackUrl=${callbackUrl}`, req.url)
+    );
   }
-
-
 
   const userRole = token.role as string;
 
@@ -34,22 +34,26 @@ export default async function middleware(req: NextRequest) {
   if (userRole === "ketua") {
     const allowedKetuaPaths = [
       "/admin/investors",
-      "/admin/trees", 
-      "/admin/laporan"
+      "/admin/trees",
+      "/admin/laporan",
     ];
-    
-    const isAllowedPath = allowedKetuaPaths.some(path => pathname.startsWith(path));
-    
+
+    const isAllowedPath = allowedKetuaPaths.some((path) =>
+      pathname.startsWith(path)
+    );
+
     if (isAllowedPath) {
       console.log(`✅ Ketua access granted to ${pathname} (read-only)`);
       return NextResponse.next();
     } else {
-      console.log(`❌ Ketua role denied access to ${pathname} - only allowed ${allowedKetuaPaths.join(', ')}`);
+      console.log(
+        `❌ Ketua role denied access to ${pathname} - only allowed ${allowedKetuaPaths.join(
+          ", "
+        )}`
+      );
       return NextResponse.redirect(new URL("/admin/investors", req.url));
     }
   }
-
-
 
   // === FINANCE ACCESS ===
   if (
@@ -81,7 +85,9 @@ export default async function middleware(req: NextRequest) {
       console.log(`❌ User role '${userRole}' denied access to ${pathname}`);
       // For mobile QR scans, provide better UX by redirecting to login with callback
       const callbackUrl = encodeURIComponent(pathname + req.nextUrl.search);
-      return NextResponse.redirect(new URL(`/login?callbackUrl=${callbackUrl}`, req.url));
+      return NextResponse.redirect(
+        new URL(`/login?callbackUrl=${callbackUrl}`, req.url)
+      );
     }
   }
 
@@ -93,7 +99,7 @@ export default async function middleware(req: NextRequest) {
       return NextResponse.next();
     } else {
       console.log(`❌ User role '${userRole}' denied access to ${pathname}`);
-      return NextResponse.redirect(new URL("/", req.url));
+      return NextResponse.redirect(new URL("/login", req.url));
     }
   }
 
@@ -105,7 +111,7 @@ export default async function middleware(req: NextRequest) {
       return NextResponse.next();
     } else {
       console.log(`❌ User role '${userRole}' denied access to ${pathname}`);
-      return NextResponse.redirect(new URL("/", req.url));
+      return NextResponse.redirect(new URL("/login", req.url));
     }
   }
 
@@ -115,19 +121,18 @@ export default async function middleware(req: NextRequest) {
     const alwaysAllowedPaths = [
       "/profile",
       "/verification-pending",
-      "/kartu-anggota"
+      "/kartu-anggota",
     ];
 
     // Routes users can access only when verified
-    const verifiedOnlyPaths = [
-      "/plants",
-      "/payments",
-      "/cicilan",
-      "/contract"
-    ];
+    const verifiedOnlyPaths = ["/plants", "/payments", "/cicilan", "/contract"];
 
-    const isAlwaysAllowed = alwaysAllowedPaths.some(path => pathname.startsWith(path));
-    const isVerifiedOnly = verifiedOnlyPaths.some(path => pathname.startsWith(path));
+    const isAlwaysAllowed = alwaysAllowedPaths.some((path) =>
+      pathname.startsWith(path)
+    );
+    const isVerifiedOnly = verifiedOnlyPaths.some((path) =>
+      pathname.startsWith(path)
+    );
 
     if (isAlwaysAllowed) {
       console.log(`✅ User access granted to ${pathname} (always allowed)`);
@@ -137,23 +142,23 @@ export default async function middleware(req: NextRequest) {
         console.log(`✅ User access granted to ${pathname} (verified)`);
         return NextResponse.next();
       } else {
-        console.log(`❌ User access denied to ${pathname} - not verified or cannot purchase`);
+        console.log(
+          `❌ User access denied to ${pathname} - not verified or cannot purchase`
+        );
         return NextResponse.redirect(new URL("/verification-pending", req.url));
       }
     } else {
-      console.log(`❌ User role denied access to ${pathname} - not in allowed paths`);
+      console.log(
+        `❌ User role denied access to ${pathname} - not in allowed paths`
+      );
       return NextResponse.redirect(new URL("/login", req.url));
     }
   }
 
-  // === PUBLIC ACCESS ===
-  if (pathname.startsWith("/public")) {
-    console.log(`✅ Public access granted to ${pathname}`);
-    return NextResponse.next();
-  }
-
   // === FALLBACK - DENY ACCESS ===
-  console.log(`❌ Unhandled route ${pathname} for role ${userRole} - access denied`);
+  console.log(
+    `❌ Unhandled route ${pathname} for role ${userRole} - access denied`
+  );
   return NextResponse.redirect(new URL("/", req.url));
 }
 
@@ -166,11 +171,10 @@ export const config = {
     "/staff/:path*",
     "/plants/:path*",
     "/payments/:path*",
-    "/public/:path*",
     "/profile/:path*",
     "/verification-pending/:path*",
     "/kartu-anggota/:path*",
     "/cicilan/:path*",
-    "/contract/:path*"
+    "/contract/:path*",
   ],
 };

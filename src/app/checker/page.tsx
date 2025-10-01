@@ -30,7 +30,8 @@ const statusColors: Record<string, string> = {
   "Penyiangan Gulma": "bg-lime-50 text-lime-700 border border-lime-200",
   "Penyemprotan Hama": "bg-red-50 text-red-600 border border-red-200",
   "Pemangkasan cabang": "bg-purple-50 text-purple-600 border border-purple-200",
-  "Pemangkasan daun": "bg-emerald-50 text-emerald-600 border border-emerald-200",
+  "Pemangkasan daun":
+    "bg-emerald-50 text-emerald-600 border border-emerald-200",
   "Perawatan pelepah": "bg-teal-50 text-teal-600 border border-teal-200",
   "Cek kesehatan": "bg-indigo-50 text-indigo-600 border border-indigo-200",
   Panen: "bg-pink-50 text-pink-600 border border-pink-200",
@@ -83,7 +84,6 @@ const isPlantNew = (p: PlantInstance): boolean => {
   return !!(pending && pending.date && isWithinDays(pending.date, 14));
 };
 
-
 // cek status "bermasalah" (riwayat terakhir adalah Sakit)
 const isPlantProblem = (p: PlantInstance): boolean => {
   const last = getLatestHistoryByDate(p.history || []);
@@ -97,6 +97,7 @@ const getPlantTypeImage = (plantType?: string): string | null => {
   if (pt === "aren") return "/aren.jpg";
   if (pt === "jengkol") return "/jengkol.jpg";
   if (pt === "gaharu") return "/gaharu.jpg";
+  if (pt === "kelapa") return "/kelapa.jpg";
   return null;
 };
 /* =================================================== */
@@ -165,7 +166,7 @@ export default function StaffDashboard() {
 
   // Kumpulan plantType yang ada (dibatasi ke 4 kategori)
   const getPlantTypes = (): string[] => {
-    const ALLOWED = ["Aren", "Alpukat", "Jengkol", "Gaharu"];
+    const ALLOWED = ["Aren", "Alpukat", "Jengkol", "Gaharu", "Kelapa"];
     const found = new Set<string>();
     for (const p of plants) {
       const t = (p.plantType || "").toLowerCase();
@@ -173,6 +174,7 @@ export default function StaffDashboard() {
       if (t === "alpukat") found.add("Alpukat");
       if (t === "jengkol") found.add("Jengkol");
       if (t === "gaharu") found.add("Gaharu");
+      if (t === "kelapa") found.add("Kelapa");
     }
     return ALLOWED.filter((x) => found.has(x));
   };
@@ -224,7 +226,10 @@ export default function StaffDashboard() {
   const totalPaket = plants.length;
   const paketAktif = plants.length;
 
-  const paketBaru = plants.reduce((acc, p) => (isPlantNew(p) ? acc + 1 : acc), 0);
+  const paketBaru = plants.reduce(
+    (acc, p) => (isPlantNew(p) ? acc + 1 : acc),
+    0
+  );
   const paketBermasalah = plants.reduce(
     (acc, p) => (isPlantProblem(p) ? acc + 1 : acc),
     0
@@ -587,7 +592,8 @@ export default function StaffDashboard() {
                             </span>
                           </div>
                           <div className="text-xs text-[#889063]">
-                            Contract ID: {String(plant.contractNumber || "").slice(-9)}
+                            Contract ID:{" "}
+                            {String(plant.contractNumber || "").slice(-9)}
                           </div>
                         </div>
 

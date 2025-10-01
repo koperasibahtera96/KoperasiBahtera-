@@ -7,7 +7,7 @@ import { InvestorGroup, Pagination } from "@/types/cicilan";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useTheme } from "next-themes";
-import { Users, Clock, DollarSign, AlertTriangle } from "lucide-react";
+import { Users, DollarSign, AlertTriangle, Download } from "lucide-react";
 
 export default function AdminCicilanPage() {
   const { theme } = useTheme();
@@ -31,8 +31,9 @@ export default function AdminCicilanPage() {
     search: "",
     page: 1,
   });
-  const { AlertComponent } = useAlert();
+  const { AlertComponent, showSuccess, showError } = useAlert();
   const router = useRouter();
+  const [isExporting, setIsExporting] = useState(false);
 
   const fetchInvestorGroups = async () => {
     try {
@@ -68,6 +69,43 @@ export default function AdminCicilanPage() {
   const handleViewDetails = (userId: string) => {
     console.log(userId, "userid");
     router.push(`/admin/cicilan/${userId.toString()}`);
+  };
+
+  const handleExportExcel = async () => {
+    try {
+      setIsExporting(true);
+      const response = await fetch("/api/admin/cicilan/export");
+
+      if (!response.ok) {
+        throw new Error("Failed to export data");
+      }
+
+      // Get the blob from the response
+      const blob = await response.blob();
+
+      // Create download link
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `laporan-cicilan-${
+        new Date().toISOString().split("T")[0]
+      }.xlsx`;
+
+      // Trigger download
+      document.body.appendChild(link);
+      link.click();
+
+      // Cleanup
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+
+      showSuccess("Berhasil!", "Laporan cicilan berhasil diekspor");
+    } catch (error) {
+      console.error("Export error:", error);
+      showError("Gagal mengekspor", "Terjadi kesalahan saat mengekspor data");
+    } finally {
+      setIsExporting(false);
+    }
   };
 
   const getInvestmentStatusColor = (status: string) => {
@@ -114,6 +152,21 @@ export default function AdminCicilanPage() {
             <p className="text-[#889063] dark:text-gray-300 mt-2 transition-colors duration-300">
               Kelola pembayaran cicilan investasi dari pengguna
             </p>
+          </div>
+
+          {/* Export Button */}
+          <div className="flex-shrink-0">
+            <button
+              onClick={handleExportExcel}
+              disabled={isExporting || loading}
+              className={getThemeClasses(
+                "flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-[#324D3E] to-[#4C3D19] text-white rounded-xl hover:shadow-lg hover:scale-105 transition-all duration-300 font-semibold font-[family-name:var(--font-poppins)] disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none",
+                "!bg-gradient-to-r !from-[#FFC1CC] !to-[#FFDEE9] !text-[#4c1d1d]"
+              )}
+            >
+              <Download className="w-4 h-4" />
+              {isExporting ? "Mengekspor..." : "Export XLSX"}
+            </button>
           </div>
         </div>
 
@@ -206,17 +259,17 @@ export default function AdminCicilanPage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-[#889063] dark:text-gray-300 font-[family-name:var(--font-poppins)] transition-colors duration-300">
-                  Pembayaran Terlambat
+                  Total Terbayar
                 </p>
                 <p className="text-2xl font-bold text-[#889063] dark:text-gray-300 transition-colors duration-300">
-                  {investorGroups.reduce(
-                    (sum, group) => sum + (group.latePayments || 0),
-                    0
-                  )}
+                  Rp{" "}
+                  {investorGroups
+                    .reduce((sum, group) => sum + group.totalPaid, 0)
+                    .toLocaleString("id-ID")}
                 </p>
               </div>
               <div className="w-12 h-12 bg-[#889063]/10 rounded-xl flex items-center justify-center">
-                <Clock className="text-[#889063] w-6 h-6" />
+                <DollarSign className="text-[#889063] w-6 h-6" />
               </div>
             </div>
           </div>
@@ -232,10 +285,10 @@ export default function AdminCicilanPage() {
                   Total Investasi
                 </p>
                 <p className="text-2xl font-bold text-[#4C3D19] dark:text-emerald-300 transition-colors duration-300">
-                  {investorGroups.reduce(
-                    (sum, group) => sum + group.totalInvestments,
-                    0
-                  )}
+                  Rp{" "}
+                  {investorGroups
+                    .reduce((sum, group) => sum + (group.totalAmount || 0), 0)
+                    .toLocaleString("id-ID")}
                 </p>
               </div>
               <div className="w-12 h-12 bg-[#4C3D19]/10 rounded-xl flex items-center justify-center">
@@ -251,7 +304,7 @@ export default function AdminCicilanPage() {
                 </p>
                 <p className="text-2xl font-bold text-red-600 dark:text-red-300 transition-colors duration-300">
                   {investorGroups.reduce(
-                    (sum, group) => sum + group.overdueCount,
+                    (sum, group) => sum + (group.latePayments || 0),
                     0
                   )}
                 </p>
@@ -391,13 +444,8 @@ export default function AdminCicilanPage() {
                       <div className="flex flex-col gap-2 lg:min-w-0 lg:w-auto">
                         <div className="flex flex-wrap gap-2">
                           {(investor.latePayments || 0) > 0 && (
-                            <div className="bg-gradient-to-r from-orange-100 to-orange-200 text-orange-800 px-2 sm:px-3 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-medium border border-orange-300 text-center whitespace-nowrap">
-                              {investor.latePayments} Terlambat
-                            </div>
-                          )}
-                          {investor.overdueCount > 0 && (
                             <div className="bg-gradient-to-r from-red-100 to-red-200 text-red-800 px-2 sm:px-3 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-medium border border-red-300 text-center whitespace-nowrap">
-                              {investor.overdueCount} Cicilan Terlambat
+                              {investor.latePayments} Terlambat
                             </div>
                           )}
                         </div>

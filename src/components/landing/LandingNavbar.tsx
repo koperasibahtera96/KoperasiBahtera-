@@ -7,6 +7,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, useRef, useCallback } from "react";
 import { CameraSelfie, CameraSelfieRef } from "@/components/forms/CameraSelfie";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 const navVariants: any = {
   hidden: {
@@ -92,9 +93,7 @@ export default function LandingNavbar({
   const handleCameraCapture = (imageDataUrl: string) => {
     const file = dataURLtoFile(imageDataUrl, `selfie_${Date.now()}.jpg`);
     setFaceFile(file);
-    setResubmitMessage(
-      "Foto selfie diambil. Anda dapat mengirim atau ambil ulang."
-    );
+    setResubmitMessage(t("resubmit.selfieTaken"));
   };
   const [uploading, setUploading] = useState(false);
   const [resubmitMessage, setResubmitMessage] = useState<string | null>(null);
@@ -102,6 +101,7 @@ export default function LandingNavbar({
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const { data: session, status, update } = useSession();
+  const { language, setLanguage, t } = useLanguage();
 
   const router = useRouter();
 
@@ -255,10 +255,11 @@ export default function LandingNavbar({
                 width={64}
                 height={64}
                 className="rounded-full transition-all duration-300 w-12 h-12 lg:w-16 lg:h-16"
+                onClick={() => router.push("/")}
               />
               {/* Header text shown on md+ including xl (desktop). Make font smaller on xl and truncate to avoid overflow when full navigation is visible */}
               <h1
-                className="hidden sm:block text-gray-800 font-extrabold text-[14px] sm:text-[14.5px] md:text-[11px] lg:text-[16px] whitespace-nowrap"
+                className="hidden sm:block text-gray-800 font-extrabold text-[14px] sm:text-[14.5px] md:text-[14px] lg:text-[16px] whitespace-nowrap"
                 title="Koperasi BAHTERA"
               >
                 Koperasi BAHTERA
@@ -268,20 +269,20 @@ export default function LandingNavbar({
             {/* Navigation - Only visible on very large screens when hideNavigation is false */}
             {!hideNavigation && (
               <motion.div
-                className="hidden xl:flex items-center space-x-6 transition-all duration-300 flex-1 justify-center"
+                className="hidden xl:flex items-center space-x-6 transition-all duration-300 justify-center"
                 variants={navVariants}
               >
                 {[
-                  "Beranda",
-                  "Program",
-                  "Produk",
-                  "Review",
-                  "Tentang Kami",
-                  "FAQ",
+                  { key: "nav.beranda", id: "beranda" },
+                  { key: "nav.program", id: "program" },
+                  { key: "nav.produk", id: "produk" },
+                  { key: "nav.review", id: "review" },
+                  { key: "nav.tentangKami", id: "tentang-kami" },
+                  { key: "nav.faq", id: "faq" },
                 ].map((item) => (
                   <motion.button
-                    key={item}
-                    onClick={() => handleNavigationClick(item)}
+                    key={item.key}
+                    onClick={() => handleNavigationClick(item.id)}
                     className="text-gray-700 transition-colors font-medium px-2 md:px-2 lg:px-3 py-1 rounded-full hover:bg-[#324D3E] hover:text-white cursor-pointer text-sm md:text-sm lg:text-base whitespace-nowrap"
                     variants={itemVariants}
                     whileHover={{
@@ -292,7 +293,7 @@ export default function LandingNavbar({
                     }}
                     whileTap={{ scale: 0.95 }}
                   >
-                    {item}
+                    {t(item.key)}
                   </motion.button>
                 ))}
               </motion.div>
@@ -300,7 +301,7 @@ export default function LandingNavbar({
 
             {/* Auth Buttons / User Menu */}
             <motion.div
-              className="hidden sm:flex items-center space-x-1 md:space-x-1 lg:space-x-2 xl:space-x-4 min-w-[160px] md:min-w-[220px] lg:min-w-[260px] justify-end"
+              className="hidden sm:flex items-center space-x-1 md:space-x-1 lg:space-x-2 xl:space-x-4 justify-end"
               variants={navVariants}
             >
               {status === "loading" ? (
@@ -325,28 +326,22 @@ export default function LandingNavbar({
                   {!hideNavigation && derivedCanPurchase ? (
                     <>
                       {/* Tanaman Saya Button */}
-                      <motion.div
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                      >
+                      <motion.div>
                         <Link
                           href="/plants"
-                          className="px-3 md:px-4 lg:px-4 xl:px-5 py-1.5 text-gray-700 transition-all duration-300 font-semibold rounded-full border border-[#324D3E] hover:border-[#4C3D19] hover:bg-[#4C3D19] hover:text-white whitespace-nowrap text-sm md:text-sm lg:text-sm xl:text-base"
+                          className="px-4 py-1.5 text-gray-700 transition-all duration-300 font-semibold rounded-full border border-[#324D3E] hover:border-[#4C3D19] hover:bg-[#4C3D19] hover:text-white whitespace-nowrap text-sm"
                         >
-                          Tanaman Saya
+                          {t("nav.tanamanSaya")}
                         </Link>
                       </motion.div>
 
                       {/* Pembayaran Saya Button */}
-                      <motion.div
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                      >
+                      <motion.div>
                         <Link
                           href="/payments"
-                          className="px-3 md:px-4 lg:px-4 xl:px-5 py-1.5 text-gray-700 transition-all duration-300 font-semibold rounded-full border border-[#324D3E] hover:border-[#4C3D19] hover:bg-[#4C3D19] hover:text-white whitespace-nowrap text-sm md:text-sm lg:text-sm xl:text-base"
+                          className="px-4 py-1.5 text-gray-700 transition-all duration-300 font-semibold rounded-full border border-[#324D3E] hover:border-[#4C3D19] hover:bg-[#4C3D19] hover:text-white whitespace-nowrap text-sm"
                         >
-                          Pembayaran
+                          {t("nav.pembayaran")}
                         </Link>
                       </motion.div>
                     </>
@@ -358,10 +353,10 @@ export default function LandingNavbar({
                     >
                       <span>
                         {derivedVerificationStatus === "pending"
-                          ? "⏳ Menunggu Verifikasi"
+                          ? t("status.pending")
                           : derivedVerificationStatus === "rejected"
-                          ? "❌ Verifikasi Ditolak"
-                          : "⏳ Belum Diverifikasi"}
+                          ? t("status.rejected")
+                          : t("status.notVerified")}
                       </span>
                       <motion.button
                         onClick={handleRefreshStatus}
@@ -369,7 +364,7 @@ export default function LandingNavbar({
                         className="ml-2 w-9 h-9 flex items-center justify-center bg-yellow-400 hover:bg-yellow-500 rounded-full shadow-md transition-colors disabled:opacity-60"
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}
-                        title="Periksa Status Terbaru"
+                        title={t("status.refreshTitle")}
                       >
                         {isRefreshing ? (
                           <div className="w-4 h-4 border-2 border-yellow-700 border-t-transparent rounded-full animate-spin"></div>
@@ -403,8 +398,8 @@ export default function LandingNavbar({
                           }}
                           className="ml-1 p-1 hover:bg-red-100 rounded-full transition-colors"
                           whileHover={{ scale: 1.05 }}
-                          title="Ajukan Ulang Verifikasi"
-                          aria-label="Ajukan Ulang Verifikasi"
+                          title={t("status.resubmitTitle")}
+                          aria-label={t("status.resubmitTitle")}
                         >
                           {/* simple upload icon */}
                           <svg
@@ -430,12 +425,10 @@ export default function LandingNavbar({
                     <motion.button
                       onClick={() => setShowUserMenu(!showUserMenu)}
                       className="flex items-center space-x-2 px-2 py-1 rounded-full hover:bg-gray-100 transition-colors overflow-hidden"
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
                     >
                       {(session.user as any).profileImageUrl ? (
                         <motion.div
-                          className="w-8 h-8 lg:w-10 lg:h-10 rounded-full overflow-hidden border-2 border-[#324D3E]"
+                          className="w-10 h-10 rounded-full overflow-hidden border-2 border-[#324D3E]"
                           whileHover={{
                             borderColor: "#4C3D19",
                             rotate: 5,
@@ -452,7 +445,7 @@ export default function LandingNavbar({
                         </motion.div>
                       ) : (
                         <motion.div
-                          className="w-8 h-8 lg:w-10 lg:h-10 bg-[#324D3E] rounded-full flex items-center justify-center text-white font-bold text-sm lg:text-base"
+                          className="w-10 h-10 bg-[#324D3E] rounded-full flex items-center justify-center text-white font-bold text-base"
                           whileHover={{
                             backgroundColor: "#4C3D19",
                             rotate: 360,
@@ -466,8 +459,8 @@ export default function LandingNavbar({
                             "U"}
                         </motion.div>
                       )}
-                      <span className="text-gray-700 font-medium text-xs md:text-sm lg:text-base hidden md:inline max-w-[8rem] md:max-w-[10rem] truncate">
-                        Hello,{" "}
+                      <span className="text-gray-700 font-medium text-sm hidden md:inline max-w-[10rem] truncate">
+                        {t("nav.hello")},{" "}
                         {session.user.name.length >= 5
                           ? `${session.user.name.slice(0, 5)}...`
                           : session.user.name}
@@ -513,6 +506,62 @@ export default function LandingNavbar({
                           }}
                           transition={{ duration: 0.2 }}
                         >
+                          {/* Language Switcher */}
+                          <motion.div
+                            className="w-full px-4 py-2 text-left text-gray-700 font-medium cursor-pointer"
+                            whileHover={{
+                              backgroundColor: "rgba(249, 250, 251, 1)", // highlight
+                            }}
+                            whileTap={{ scale: 0.98 }}
+                          >
+                            <motion.div
+                              className="flex items-center justify-between"
+                              whileHover={{ x: 5 }} // nudge effect
+                            >
+                              <div className="flex items-center space-x-2">
+                                <svg
+                                  className="w-4 h-4"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  viewBox="0 0 24 24"
+                                >
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={2}
+                                    d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129"
+                                  />
+                                </svg>
+                              </div>
+                              <div className="flex bg-gray-100 rounded-lg p-1">
+                                <motion.button
+                                  onClick={() => setLanguage("id")}
+                                  className={`px-2 py-1 text-xs font-medium rounded transition-all ${
+                                    language === "id"
+                                      ? "bg-white text-[#324D3E] shadow-sm"
+                                      : "text-gray-600 hover:text-gray-800"
+                                  }`}
+                                  whileHover={{ scale: 1.05 }}
+                                  whileTap={{ scale: 0.95 }}
+                                >
+                                  ID
+                                </motion.button>
+                                <motion.button
+                                  onClick={() => setLanguage("en")}
+                                  className={`px-2 py-1 text-xs font-medium rounded transition-all ${
+                                    language === "en"
+                                      ? "bg-white text-[#324D3E] shadow-sm"
+                                      : "text-gray-600 hover:text-gray-800"
+                                  }`}
+                                  whileHover={{ scale: 1.05 }}
+                                  whileTap={{ scale: 0.95 }}
+                                >
+                                  EN
+                                </motion.button>
+                              </div>
+                            </motion.div>
+                          </motion.div>
+
                           {/* Profile */}
                           <Link href="/profile">
                             <motion.div
@@ -540,7 +589,7 @@ export default function LandingNavbar({
                                     d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
                                   />
                                 </svg>
-                                <span>Profile</span>
+                                <span>{t("nav.profile")}</span>
                               </motion.div>
                             </motion.div>
                           </Link>
@@ -571,7 +620,7 @@ export default function LandingNavbar({
                                   d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
                                 />
                               </svg>
-                              <span>Logout</span>
+                              <span>{t("nav.logout")}</span>
                             </motion.div>
                           </motion.button>
                         </motion.div>
@@ -592,7 +641,7 @@ export default function LandingNavbar({
                       href="/login"
                       className="px-3 py-1 text-gray-700 transition-all duration-300 font-medium rounded-full border border-[#324D3E] hover:border-[#4C3D19] hover:bg-[#4C3D19] hover:text-white whitespace-nowrap"
                     >
-                      Masuk
+                      {t("nav.masuk")}
                     </Link>
                   </motion.div>
                   <motion.div
@@ -606,7 +655,7 @@ export default function LandingNavbar({
                       href="/register"
                       className="px-3 py-1 bg-[#324D3E] text-white font-medium rounded-full transition-colors hover:bg-[#4C3D19] whitespace-nowrap"
                     >
-                      Daftar Sekarang
+                      {t("nav.daftar")}
                     </Link>
                   </motion.div>
                 </motion.div>
@@ -621,16 +670,16 @@ export default function LandingNavbar({
                   <div className="flex items-center gap-1 px-2 py-1 bg-yellow-50 border border-yellow-200 rounded-full text-xs text-yellow-700">
                     <span>
                       {derivedVerificationStatus === "pending"
-                        ? "⏳ Menunggu"
+                        ? t("status.pendingShort")
                         : derivedVerificationStatus === "rejected"
-                        ? "❌ Ditolak"
-                        : "⏳ Belum"}
+                        ? t("status.rejectedShort")
+                        : t("status.notVerifiedShort")}
                     </span>
                     <button
                       onClick={handleRefreshStatus}
                       disabled={isRefreshing}
                       className="ml-1 w-7 h-7 flex items-center justify-center bg-yellow-400 hover:bg-yellow-500 rounded-full shadow-md transition-colors disabled:opacity-60"
-                      title="Periksa Status Terbaru"
+                      title={t("status.refreshTitle")}
                     >
                       {isRefreshing ? (
                         <div className="w-3 h-3 border-2 border-yellow-700 border-t-transparent rounded-full animate-spin"></div>
@@ -662,8 +711,8 @@ export default function LandingNavbar({
                           setResubmitMessage(null);
                         }}
                         className="ml-1 p-1 hover:bg-red-100 rounded-full transition-colors"
-                        title="Ajukan Ulang Verifikasi"
-                        aria-label="Ajukan Ulang Verifikasi"
+                        title={t("status.resubmitTitle")}
+                        aria-label={t("status.resubmitTitle")}
                       >
                         <svg
                           className="w-4 h-4 text-red-600"
@@ -760,7 +809,7 @@ export default function LandingNavbar({
                           )}
                           <div>
                             <p className="text-gray-900 font-medium text-sm">
-                              Hello,{" "}
+                              {t("nav.hello")},{" "}
                               {session.user.name?.split(" ")[0] || "User"}
                             </p>
                             <p className="text-gray-500 text-xs">
@@ -772,6 +821,60 @@ export default function LandingNavbar({
 
                       {/* Menu Items */}
                       <div className="py-2">
+                        {/* Language Switcher */}
+                        <motion.div
+                          className="w-full px-4 py-3 text-left text-gray-700 hover:bg-gray-50 transition-colors font-medium cursor-pointer border-b border-gray-100"
+                          whileHover={{
+                            backgroundColor: "rgba(249, 250, 251, 1)",
+                            x: 5,
+                          }}
+                          whileTap={{ scale: 0.98 }}
+                        >
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center space-x-3">
+                              <svg
+                                className="w-5 h-5"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129"
+                                />
+                              </svg>
+                            </div>
+                            <div className="flex bg-gray-100 rounded-lg p-1">
+                              <motion.button
+                                onClick={() => setLanguage("id")}
+                                className={`px-3 py-1.5 text-xs font-medium rounded transition-all ${
+                                  language === "id"
+                                    ? "bg-white text-[#324D3E] shadow-sm"
+                                    : "text-gray-600 hover:text-gray-800"
+                                }`}
+                                whileHover={{ scale: 1.05 }}
+                                whileTap={{ scale: 0.95 }}
+                              >
+                                ID
+                              </motion.button>
+                              <motion.button
+                                onClick={() => setLanguage("en")}
+                                className={`px-3 py-1.5 text-xs font-medium rounded transition-all ${
+                                  language === "en"
+                                    ? "bg-white text-[#324D3E] shadow-sm"
+                                    : "text-gray-600 hover:text-gray-800"
+                                }`}
+                                whileHover={{ scale: 1.05 }}
+                                whileTap={{ scale: 0.95 }}
+                              >
+                                EN
+                              </motion.button>
+                            </div>
+                          </div>
+                        </motion.div>
+
                         {/* Profile Link */}
                         <Link href="/profile">
                           <motion.div
@@ -797,7 +900,7 @@ export default function LandingNavbar({
                                   d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
                                 />
                               </svg>
-                              <span>Profile</span>
+                              <span>{t("nav.profile")}</span>
                             </div>
                           </motion.div>
                         </Link>
@@ -829,7 +932,7 @@ export default function LandingNavbar({
                                       d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"
                                     />
                                   </svg>
-                                  <span>Tanaman Saya</span>
+                                  <span>{t("nav.tanamanSaya")}</span>
                                 </div>
                               </motion.div>
                             </Link>
@@ -858,7 +961,7 @@ export default function LandingNavbar({
                                       d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"
                                     />
                                   </svg>
-                                  <span>Pembayaran Saya</span>
+                                  <span>{t("nav.pembayaran")}</span>
                                 </div>
                               </motion.div>
                             </Link>
@@ -892,7 +995,7 @@ export default function LandingNavbar({
                                   d="M12 3v12m0 0l-4-4m4 4 4-4M21 12v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-6"
                                 />
                               </svg>
-                              <span>Ajukan Ulang Verifikasi</span>
+                              <span>{t("status.resubmitTitle")}</span>
                             </div>
                           </motion.div>
                         )}
@@ -922,7 +1025,7 @@ export default function LandingNavbar({
                                 d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
                               />
                             </svg>
-                            <span>Logout</span>
+                            <span>{t("nav.logout")}</span>
                           </div>
                         </motion.button>
                       </div>
@@ -943,7 +1046,7 @@ export default function LandingNavbar({
                     href="/login"
                     className="px-2 md:px-3 py-1 text-gray-700 transition-all duration-300 font-medium rounded-full border border-[#324D3E] hover:border-[#4C3D19] hover:bg-[#4C3D19] hover:text-white text-xs md:text-sm"
                   >
-                    Masuk
+                    {t("nav.masuk")}
                   </Link>
                 </motion.div>
                 <motion.div
@@ -957,7 +1060,7 @@ export default function LandingNavbar({
                     href="/register"
                     className="px-2 md:px-3 py-1 bg-[#324D3E] text-white font-medium rounded-full transition-colors hover:bg-[#4C3D19] text-xs md:text-sm"
                   >
-                    Daftar
+                    {t("nav.daftar")}
                   </Link>
                 </motion.div>
               </div>
@@ -986,7 +1089,7 @@ export default function LandingNavbar({
               <div className="max-h-[70vh] overflow-auto">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                    Ajukan Ulang Verifikasi
+                    {t("resubmit.title")}
                   </h3>
                   <button
                     onClick={() => {
@@ -994,7 +1097,7 @@ export default function LandingNavbar({
                       setShowResubmitModal(false);
                     }}
                     className="text-gray-500 hover:text-gray-700"
-                    aria-label="Tutup"
+                    aria-label={t("close")}
                   >
                     ✕
                   </button>
@@ -1002,15 +1105,14 @@ export default function LandingNavbar({
 
                 <div className="space-y-4">
                   <p className="text-sm text-gray-600 dark:text-gray-300">
-                    Silakan unggah ulang foto KTP dan foto selfie Anda. Tim
-                    admin akan meninjau ulang data Anda.
+                    {t("resubmit.description")}
                   </p>
 
                   {/* Show original admin rejection notes from user record, then resubmission-specific notes (if different) */}
                   {derivedVerificationNotes &&
                     derivedVerificationStatus === "rejected" && (
                       <div className="p-3 bg-red-50 border border-red-100 rounded-md text-sm text-red-700">
-                        <strong>Catatan penolakan:</strong>
+                        <strong>{t("resubmit.rejectionNote")}</strong>
                         <p className="mt-1">{derivedVerificationNotes}</p>
                       </div>
                     )}
@@ -1020,7 +1122,7 @@ export default function LandingNavbar({
                     currentResubmission.adminNotes !==
                       derivedVerificationNotes && (
                       <div className="p-3 bg-red-50 border border-red-100 rounded-md text-sm text-red-700">
-                        <strong>Catatan penolakan):</strong>
+                        <strong>{t("resubmit.rejectionNoteSecond")}</strong>
                         <p className="mt-1">
                           {currentResubmission.adminNotes ||
                             derivedVerificationNotes}
@@ -1030,7 +1132,7 @@ export default function LandingNavbar({
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700">
-                      Foto KTP
+                      {t("resubmit.ktpLabel")}
                     </label>
                     <input
                       type="file"
@@ -1042,7 +1144,7 @@ export default function LandingNavbar({
 
                   <div>
                     <label className="block text-sm font-medium text-gray-700">
-                      Foto Selfie (Ambil dari kamera)
+                      {t("resubmit.selfieLabel")}
                     </label>
                     <div className="mt-2">
                       <CameraSelfie
@@ -1068,14 +1170,12 @@ export default function LandingNavbar({
                       }}
                       className="px-3 py-2 rounded-md border"
                     >
-                      Batal
+                      {t("resubmit.cancel")}
                     </button>
                     <button
                       onClick={async () => {
                         if (!ktpFile || !faceFile) {
-                          setResubmitMessage(
-                            "Silakan unggah kedua file terlebih dahulu"
-                          );
+                          setResubmitMessage(t("resubmit.uploadBothFiles"));
                           return;
                         }
                         setUploading(true);
@@ -1123,9 +1223,7 @@ export default function LandingNavbar({
                           );
                           setResubUserData(body.data?.user || null);
 
-                          setResubmitMessage(
-                            "Permintaan pengajuan ulang berhasil dikirim. Mohon tunggu peninjauan admin."
-                          );
+                          setResubmitMessage(t("resubmit.success"));
                           // Stop camera, close modal, and prevent further resubmissions in UI until refresh
                           cameraSelfieRef.current?.stopCamera();
                           setShowResubmitModal(false);
@@ -1153,8 +1251,7 @@ export default function LandingNavbar({
                         } catch (err: any) {
                           console.error(err);
                           setResubmitMessage(
-                            err?.message ||
-                              "Terjadi kesalahan saat mengajukan ulang"
+                            err?.message || t("resubmit.error")
                           );
                         } finally {
                           setUploading(false);
@@ -1163,7 +1260,9 @@ export default function LandingNavbar({
                       disabled={uploading}
                       className="px-4 py-2 rounded-md bg-[#324D3E] text-white disabled:opacity-60"
                     >
-                      {uploading ? "Mengunggah..." : "Kirim Pengajuan Ulang"}
+                      {uploading
+                        ? t("resubmit.uploading")
+                        : t("resubmit.submit")}
                     </button>
                   </div>
                 </div>

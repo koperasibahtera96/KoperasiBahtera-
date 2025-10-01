@@ -6,10 +6,11 @@ import { NextRequest, NextResponse } from "next/server";
 
 function getProductCode(productName: string): string | null {
   const productMap: { [key: string]: string } = {
-    'Alpukat': 'ALP',
-    'Gaharu': 'GHR',
-    'Jengkol': 'JGL',
-    'Aren': 'ARN'
+    Alpukat: "ALP",
+    Gaharu: "GHR",
+    Jengkol: "JGL",
+    Aren: "ARN",
+    Kelapa: "KLP",
   };
 
   for (const [name, code] of Object.entries(productMap)) {
@@ -46,26 +47,29 @@ export async function POST(req: NextRequest) {
 
     // Get user creation order (member number)
     const userIndex = await User.countDocuments({
-      createdAt: { $lte: user.createdAt }
+      createdAt: { $lte: user.createdAt },
     });
-    const memberNumber = userIndex.toString().padStart(4, '0');
+    const memberNumber = userIndex.toString().padStart(4, "0");
 
     // Get global contract sequence
     const contractCount = await Contract.countDocuments({});
-    const sequenceNumber = (contractCount + 1).toString().padStart(4, '0');
+    const sequenceNumber = (contractCount + 1).toString().padStart(4, "0");
 
     // Map product name to code
     const productCode = getProductCode(productName);
     if (!productCode) {
       return NextResponse.json(
-        { error: "Invalid product name. Must contain: Alpukat, Gaharu, Jengkol, or Aren" },
+        {
+          error:
+            "Invalid product name. Must contain: Alpukat, Gaharu, Jengkol, or Aren",
+        },
         { status: 400 }
       );
     }
 
     // Generate date components
     const now = new Date();
-    const month = (now.getMonth() + 1).toString().padStart(2, '0');
+    const month = (now.getMonth() + 1).toString().padStart(2, "0");
     const year = now.getFullYear();
 
     // Format: PKS/BMS-MRU/PRODUCT/LGL/MM/YYYY/MEMBER-SEQUENCE
@@ -84,10 +88,9 @@ export async function POST(req: NextRequest) {
         contractId,
         memberNumber,
         sequenceNumber,
-        productCode
-      }
+        productCode,
+      },
     });
-
   } catch (error) {
     console.error("Error generating contract number:", error);
     return NextResponse.json(

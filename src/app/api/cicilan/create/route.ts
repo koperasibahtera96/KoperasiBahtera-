@@ -65,20 +65,23 @@ export async function POST(req: NextRequest) {
       // Check if contract exists and is approved
       const contract = await Contract.findOne({
         contractId,
-        userId: user._id
+        userId: user._id,
       }).session(mongoSession);
 
       if (!contract) {
         throw new Error("Contract not found");
       }
 
-      if (contract.adminApprovalStatus !== 'approved' || contract.status !== 'approved') {
+      if (
+        contract.adminApprovalStatus !== "approved" ||
+        contract.status !== "approved"
+      ) {
         throw new Error(
-          contract.adminApprovalStatus === 'pending'
+          contract.adminApprovalStatus === "pending"
             ? "Your contract is still under review. Please wait for admin approval."
-            : contract.adminApprovalStatus === 'rejected'
+            : contract.adminApprovalStatus === "rejected"
             ? "Your contract was rejected. Please re-sign the contract."
-            : contract.status !== 'approved'
+            : contract.status !== "approved"
             ? "Contract must be signed and approved before creating cicilan."
             : "Contract approval required before creating cicilan."
         );
@@ -88,12 +91,15 @@ export async function POST(req: NextRequest) {
         throw new Error("Payment not allowed for this contract");
       }
 
-      if (contract.paymentType !== 'cicilan') {
+      if (contract.paymentType !== "cicilan") {
         throw new Error("Contract is not configured for cicilan payment");
       }
 
       // Validate contract details match cicilan request
-      if (contract.totalAmount !== totalAmount || contract.productName !== productName) {
+      if (
+        contract.totalAmount !== totalAmount ||
+        contract.productName !== productName
+      ) {
         throw new Error("Contract details do not match cicilan request");
       }
 
@@ -121,7 +127,7 @@ export async function POST(req: NextRequest) {
       const firstInstallmentOrderId = await generateInvoiceNumber({
         productName,
         installmentNumber: 1,
-        paymentType: 'cicilan-installment'
+        paymentType: "cicilan-installment",
       });
       const firstDueDate = new Date();
       firstDueDate.setHours(firstDueDate.getHours() + 24); // Due 24 hours from now
@@ -143,10 +149,11 @@ export async function POST(req: NextRequest) {
         contractId: contractId, // Link to contract
         adminStatus: "pending",
         status: "pending",
+        transactionStatus: "pending",
         isProcessed: false,
         // Copy referral code from contract if it exists
         ...(contract.referralCode && {
-          referralCode: contract.referralCode
+          referralCode: contract.referralCode,
         }),
       });
 

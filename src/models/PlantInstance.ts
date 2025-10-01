@@ -1,48 +1,48 @@
-import mongoose, { Schema, type Document } from "mongoose"
+import mongoose, { Schema, type Document } from "mongoose";
 
 export interface IOperationalCost {
-  id: string
-  date: string
-  description: string
-  amount: number
-  addedBy: string
-  addedAt: string
+  id: string;
+  date: string;
+  description: string;
+  amount: number;
+  addedBy: string;
+  addedAt: string;
 }
 
 export interface IIncomeRecord {
-  id: string
-  date: string
-  description: string
-  amount: number
-  addedBy: string
-  addedAt: string
+  id: string;
+  date: string;
+  description: string;
+  amount: number;
+  addedBy: string;
+  addedAt: string;
 }
 
 export interface IPlantInstance extends Document {
-  id: string
-  plantType: "gaharu" | "alpukat" | "jengkol" | "aren"
-  instanceName: string
-  baseAnnualROI: number
-  operationalCosts: IOperationalCost[]
-  incomeRecords: IIncomeRecord[]
-  qrCode?: string
-  owner?: string
-  fotoGambar?: string
-  memberId?: string
-  contractNumber?: string
-  contractId?: string
-  userId?: mongoose.Types.ObjectId
-  location?: string
-  kavling?: string
-  blok?: string
-  status?: string
-  approvalStatus: "pending" | "approved" | "rejected"
-  lastUpdate?: string
-  history?: any[]
-  isActive?: boolean
-  createdDate?: Date
-  createdAt: Date
-  updatedAt: Date
+  id: string;
+  plantType: "gaharu" | "alpukat" | "jengkol" | "aren" | "kelapa";
+  instanceName: string;
+  baseAnnualROI: number;
+  operationalCosts: IOperationalCost[];
+  incomeRecords: IIncomeRecord[];
+  qrCode?: string;
+  owner?: string;
+  fotoGambar?: string;
+  memberId?: string;
+  contractNumber?: string;
+  contractId?: string;
+  userId?: mongoose.Types.ObjectId;
+  location?: string;
+  kavling?: string;
+  blok?: string;
+  status?: string;
+  approvalStatus: "pending" | "approved" | "rejected";
+  lastUpdate?: string;
+  history?: any[];
+  isActive?: boolean;
+  createdDate?: Date;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 const OperationalCostSchema = new Schema({
@@ -52,7 +52,7 @@ const OperationalCostSchema = new Schema({
   amount: { type: Number, required: true },
   addedBy: { type: String, required: true },
   addedAt: { type: String, required: true },
-})
+});
 
 const IncomeRecordSchema = new Schema({
   id: { type: String, required: true },
@@ -61,7 +61,7 @@ const IncomeRecordSchema = new Schema({
   amount: { type: Number, required: true },
   addedBy: { type: String, required: true },
   addedAt: { type: String, required: true },
-})
+});
 
 const PlantInstanceSchema = new Schema(
   {
@@ -69,32 +69,33 @@ const PlantInstanceSchema = new Schema(
     plantType: {
       type: String,
       required: true,
-      enum: ["gaharu", "alpukat", "jengkol", "aren"],
+      enum: ["gaharu", "alpukat", "jengkol", "aren", "kelapa"],
     },
     instanceName: { type: String, required: true },
     baseAnnualROI: { type: Number, required: true },
     operationalCosts: { type: [OperationalCostSchema], default: [] },
     incomeRecords: { type: [IncomeRecordSchema], default: [] },
-        qrCode: { type: String },
+    qrCode: { type: String },
     owner: { type: String },
     fotoGambar: { type: String },
     memberId: { type: String },
     contractNumber: { type: String, unique: true, sparse: true },
     location: { type: String },
-    kavling: {type: String},
-    blok: {type: String},
+    kavling: { type: String },
+    blok: { type: String },
     status: { type: String },
     approvalStatus: {
       type: String,
       enum: ["pending", "approved", "rejected"],
-      default: "pending"
+      default: "pending",
     },
     lastUpdate: { type: String },
     history: { type: [Schema.Types.Mixed], default: [] },
   },
   {
     timestamps: true,
-  },
-)
+  }
+);
 
-export default mongoose.models.PlantInstance || mongoose.model<IPlantInstance>("PlantInstance", PlantInstanceSchema)
+export default mongoose.models.PlantInstance ||
+  mongoose.model<IPlantInstance>("PlantInstance", PlantInstanceSchema);

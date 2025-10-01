@@ -3,12 +3,13 @@
 
 // import InvoiceCard from "@/components/invoice/InvoiceCard";
 import InvoiceControls from "@/components/invoice/InvoiceControls";
-import { InvoiceLayout } from "@/components/invoice/InvoiceLayout";
 import { downloadInvoiceImage } from "@/lib/invoiceImage";
 import { Loader2 } from "lucide-react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import React, { Suspense, useEffect, useMemo, useState } from "react";
 import { useTheme } from "next-themes";
+import { AdminLayout } from "@/components/admin/AdminLayout";
+
 interface PaymentData {
   ref: string;
   _id: string;
@@ -268,25 +269,25 @@ function InvoicePageContent() {
   // --- UI states ---
   if (loading) {
     return (
-      <InvoiceLayout>
+      <AdminLayout>
         <div className="p-4 sm:p-6">
           <Loader2 className="animate-spin" />
         </div>
-      </InvoiceLayout>
+      </AdminLayout>
     );
   }
   if (error) {
     return (
-      <InvoiceLayout>
+      <AdminLayout>
         <div className="p-6 text-red-500">Error: {error}</div>
-      </InvoiceLayout>
+      </AdminLayout>
     );
   }
   if (!data) {
     return (
-      <InvoiceLayout>
+      <AdminLayout>
         <div className="p-6">Tidak ada data</div>
-      </InvoiceLayout>
+      </AdminLayout>
     );
   }
 
@@ -294,7 +295,7 @@ function InvoicePageContent() {
   let rowNo = (page - 1) * PER_PAGE + 1;
 
   return (
-    <InvoiceLayout>
+    <AdminLayout>
       <div className="p-4 sm:p-6 space-y-6 sm:space-y-8 font-[family-name:var(--font-poppins)]">
         <header>
           <div className="mb-6 sm:mb-8 flex items-start justify-between gap-4">
@@ -582,7 +583,7 @@ function InvoicePageContent() {
           </div>
         </header>
       </div>
-    </InvoiceLayout>
+    </AdminLayout>
   );
 }
 
@@ -590,12 +591,12 @@ export default function InvoicePage() {
   return (
     <Suspense
       fallback={
-        <InvoiceLayout>
+        <AdminLayout>
           <div className="p-4 sm:p-6">
             <Loader2 className="w-8 h-8 animate-spin" />
             <span className="ml-2">Memuat halaman invoice...</span>
           </div>
-        </InvoiceLayout>
+        </AdminLayout>
       }
     >
       <InvoicePageContent />

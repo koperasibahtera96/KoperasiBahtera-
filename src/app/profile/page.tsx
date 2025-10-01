@@ -10,6 +10,7 @@ import Image from "next/image";
 import { redirect } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { toPng } from "html-to-image";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 const containerVariants: any = {
   hidden: { opacity: 0 },
@@ -38,6 +39,7 @@ const itemVariants: any = {
 export default function ProfilePage() {
   const { data: session, status, update } = useSession();
   const { showSuccess, showError, AlertComponent } = useAlert();
+  const { t } = useLanguage();
   const [isLoading, setIsLoading] = useState(false);
   const [_, setIsEditingImage] = useState(false);
   const [isEditingPassword, setIsEditingPassword] = useState(false);
@@ -113,7 +115,7 @@ export default function ProfilePage() {
           animate={{ opacity: 1 }}
         >
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#324D3E] mx-auto mb-4"></div>
-          <p className="text-[#324D3E] font-medium">Loading profile...</p>
+          <p className="text-[#324D3E] font-medium">{t("profile.loading")}</p>
         </motion.div>
       </div>
     );
@@ -146,13 +148,13 @@ export default function ProfilePage() {
 
     // Check file size (max 5MB)
     if (file.size > 5 * 1024 * 1024) {
-      showError("Error", "File size must be less than 5MB");
+      showError("Error", t("profile.errorFileTooLarge"));
       return;
     }
 
     // Check file type
     if (!file.type.startsWith("image/")) {
-      showError("Error", "Please select a valid image file");
+      showError("Error", t("profile.errorInvalidImage"));
       return;
     }
 
@@ -757,7 +759,7 @@ export default function ProfilePage() {
           >
             <div className="mb-6">
               <h2 className="text-2xl font-bold text-gray-900">
-                Profile Information
+                {t("profile.title")}
               </h2>
             </div>
             <div className="relative">
@@ -796,7 +798,7 @@ export default function ProfilePage() {
             {/* User ID Section - Moved above Change Profile Photo */}
             <div className="mt-4 bg-gray-50 p-3 rounded-lg max-w-max">
               <p className="text-xs font-medium text-gray-500 mb-1">
-                User ID
+                {t("profile.userId")}
               </p>
               <p className="text-sm font-mono font-bold text-[#324D3E] bg-white/80 px-3 py-1 rounded-md border border-gray-200 max-w-max">
                 {user.userCode || "N/A"}
@@ -813,10 +815,10 @@ export default function ProfilePage() {
                   {isLoading ? (
                     <span className="flex items-center gap-2">
                       <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                      Uploading...
+                      {t("profile.uploading")}
                     </span>
                   ) : (
-                    "Change Profile Photo"
+                    t("profile.changeProfilePhoto")
                   )}
                 </button>
                 <div className="flex flex-col">
@@ -826,10 +828,10 @@ export default function ProfilePage() {
                     className={`flex items-center gap-2 px-6 py-2 rounded-xl font-semibold transition-all duration-200 hover:scale-[1.02] shadow-lg ${canGenerateKartu ? 'bg-[#324D3E] text-white hover:bg-[#4C3D19] shadow-[#324D3E]/25' : 'bg-gray-200 text-gray-500 cursor-not-allowed shadow-none'} ${isLoading ? 'disabled:opacity-50' : ''}`}
                   >
                     <FileText size={16} />
-                    {canGenerateKartu ? 'Generate Kartu Anggota' : 'Kartu tidak tersedia'}
+                    {canGenerateKartu ? t("profile.generateKartuAnggota") : t("profile.kartuNotAvailable")}
                   </button>
                   {!canGenerateKartu && (
-                    <p className="mt-2 text-xs text-gray-600">Akun Anda harus diverifikasi oleh admin sebelum dapat menghasilkan kartu anggota.</p>
+                    <p className="mt-2 text-xs text-gray-600">{t("profile.accountMustBeVerified")}</p>
                   )}
                 </div>
               </div>
@@ -849,19 +851,20 @@ export default function ProfilePage() {
             className="bg-white rounded-2xl shadow-lg p-8"
           >
             <h2 className="text-2xl font-bold text-gray-900 mb-6">
-              Personal Information
+              {t("profile.personalInfo")}
             </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* First Row: Full Name and Email */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Full Name
+                  {t("profile.fullName")}
                 </label>
                 {hasPendingRequest("fullName") ? (
                   <div className="p-3 bg-yellow-100 border border-yellow-300 rounded-lg">
                     <p className="text-gray-700">
                       {user.fullName}{" "}
                       <span className="text-yellow-700 text-sm">
-                        • Request Sent
+                        {t("profile.requestSent")}
                       </span>
                     </p>
                   </div>
@@ -876,7 +879,7 @@ export default function ProfilePage() {
                         value={fullName}
                         onChange={(e) => setFullName(e.target.value)}
                         className="w-full px-3 py-3 pr-20 bg-gray-50 border-2 border-transparent rounded-lg transition-all duration-200 focus:bg-white focus:border-[#324D3E] focus:ring-0 focus:outline-none"
-                        placeholder="Enter full name"
+                        placeholder={t("profile.enterFullName")}
                         required
                         autoFocus
                       />
@@ -909,7 +912,7 @@ export default function ProfilePage() {
                       value={nameReason}
                       onChange={(e) => setNameReason(e.target.value)}
                       className="w-full px-3 py-2 bg-gray-50 border-2 border-transparent rounded-lg transition-all duration-200 focus:bg-white focus:border-[#324D3E] focus:ring-0 focus:outline-none resize-none"
-                      placeholder="Reason for name change (optional)"
+                      placeholder={t("profile.reasonForChange")}
                       rows={2}
                     />
                   </form>
@@ -932,14 +935,14 @@ export default function ProfilePage() {
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Email
+                  {t("profile.email")}
                 </label>
                 {hasPendingRequest("email") ? (
                   <div className="p-3 bg-yellow-100 border border-yellow-300 rounded-lg">
                     <p className="text-gray-700">
                       {user.email}{" "}
                       <span className="text-yellow-700 text-sm">
-                        • Request Sent
+                        {t("profile.requestSent")}
                       </span>
                     </p>
                   </div>
@@ -954,7 +957,7 @@ export default function ProfilePage() {
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         className="w-full px-3 py-3 pr-20 bg-gray-50 border-2 border-transparent rounded-lg transition-all duration-200 focus:bg-white focus:border-[#324D3E] focus:ring-0 focus:outline-none"
-                        placeholder="Enter email address"
+                        placeholder={t("profile.enterEmail")}
                         required
                         autoFocus
                       />
@@ -987,7 +990,7 @@ export default function ProfilePage() {
                       value={emailReason}
                       onChange={(e) => setEmailReason(e.target.value)}
                       className="w-full px-3 py-2 bg-gray-50 border-2 border-transparent rounded-lg transition-all duration-200 focus:bg-white focus:border-[#324D3E] focus:ring-0 focus:outline-none resize-none"
-                      placeholder="Reason for email change (optional)"
+                      placeholder={t("profile.reasonForEmailChange")}
                       rows={2}
                     />
                   </form>
@@ -1008,9 +1011,13 @@ export default function ProfilePage() {
                   </div>
                 )}
               </div>
+            </div>
+
+            {/* Second Row: Phone Number and Date of Birth */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Phone Number
+                  {t("profile.phoneNumber")}
                 </label>
                 {isEditingPhone ? (
                   <form onSubmit={handlePhoneUpdate}>
@@ -1020,7 +1027,7 @@ export default function ProfilePage() {
                         value={phoneNumber}
                         onChange={(e) => setPhoneNumber(e.target.value)}
                         className="w-full px-3 py-3 pr-20 bg-gray-50 border-2 border-transparent rounded-lg transition-all duration-200 focus:bg-white focus:border-[#324D3E] focus:ring-0 focus:outline-none"
-                        placeholder="Enter phone number"
+                        placeholder={t("profile.enterPhoneNumber")}
                         required
                         autoFocus
                       />
@@ -1068,34 +1075,28 @@ export default function ProfilePage() {
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Date of Birth
+                  {t("profile.dateOfBirth")}
                 </label>
                 <div className="p-3 bg-gray-50 rounded-lg">
                   <p className="text-gray-900">
                     {user.dateOfBirth
                       ? new Date(user.dateOfBirth).toLocaleDateString()
-                      : "Not provided"}
+                      : t("profile.notProvided")}
                   </p>
                 </div>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  NIK
-                </label>
-                <div className="p-3 bg-gray-50 rounded-lg">
-                  <p className="text-gray-900">{user.nik}</p>
-                </div>
-              </div>
+            </div>
 
+            <div className="grid grid-cols-1 gap-6">
               {/* KTP Address Section */}
               <div className="md:col-span-3">
                 <h4 className="text-md font-semibold text-gray-800 mb-3 border-b border-gray-200 pb-2">
-                  Alamat KTP
+                  {t("profile.ktpAddress")}
                 </h4>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="md:col-span-3">
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Alamat Lengkap
+                      {t("profile.fullAddress")}
                     </label>
                     <div className="p-3 bg-gray-50 rounded-lg">
                       <p className="text-gray-900">{user.ktpAddress}</p>
@@ -1103,7 +1104,7 @@ export default function ProfilePage() {
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Desa/Kelurahan
+                      {t("profile.village")}
                     </label>
                     <div className="p-3 bg-gray-50 rounded-lg">
                       <p className="text-gray-900">{user.ktpVillage}</p>
@@ -1111,7 +1112,7 @@ export default function ProfilePage() {
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Kota/Kabupaten
+                      {t("profile.city")}
                     </label>
                     <div className="p-3 bg-gray-50 rounded-lg">
                       <p className="text-gray-900">{user.ktpCity}</p>
@@ -1119,7 +1120,7 @@ export default function ProfilePage() {
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Provinsi
+                      {t("profile.province")}
                     </label>
                     <div className="p-3 bg-gray-50 rounded-lg">
                       <p className="text-gray-900">
@@ -1129,7 +1130,7 @@ export default function ProfilePage() {
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Kode Pos
+                      {t("profile.postalCode")}
                     </label>
                     <div className="p-3 bg-gray-50 rounded-lg">
                       <p className="text-gray-900">{user.ktpPostalCode}</p>
@@ -1141,12 +1142,12 @@ export default function ProfilePage() {
               {/* Domisili Address Section */}
               <div className="md:col-span-3">
                 <h4 className="text-md font-semibold text-gray-800 mb-3 border-b border-gray-200 pb-2">
-                  Alamat Domisili
+                  {t("profile.domisiliAddress")}
                 </h4>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="md:col-span-3">
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Alamat Lengkap
+                      {t("profile.fullAddress")}
                     </label>
                     <div className="p-3 bg-gray-50 rounded-lg">
                       <p className="text-gray-900">{user.domisiliAddress}</p>
@@ -1154,7 +1155,7 @@ export default function ProfilePage() {
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Desa/Kelurahan
+                      {t("profile.village")}
                     </label>
                     <div className="p-3 bg-gray-50 rounded-lg">
                       <p className="text-gray-900">{user.domisiliVillage}</p>
@@ -1162,7 +1163,7 @@ export default function ProfilePage() {
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Kota/Kabupaten
+                      {t("profile.city")}
                     </label>
                     <div className="p-3 bg-gray-50 rounded-lg">
                       <p className="text-gray-900">{user.domisiliCity}</p>
@@ -1170,7 +1171,7 @@ export default function ProfilePage() {
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Provinsi
+                      {t("profile.province")}
                     </label>
                     <div className="p-3 bg-gray-50 rounded-lg">
                       <p className="text-gray-900">
@@ -1180,7 +1181,7 @@ export default function ProfilePage() {
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Kode Pos
+                      {t("profile.postalCode")}
                     </label>
                     <div className="p-3 bg-gray-50 rounded-lg">
                       <p className="text-gray-900">{user.domisiliPostalCode}</p>
@@ -1188,34 +1189,38 @@ export default function ProfilePage() {
                   </div>
                 </div>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Occupation
-                </label>
-                <div className="p-3 bg-gray-50 rounded-lg">
-                  <p className="text-gray-900">{user.occupation}</p>
+
+              {/* Third Row: Occupation and Verification Status */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    {t("profile.occupation")}
+                  </label>
+                  <div className="p-3 bg-gray-50 rounded-lg">
+                    <p className="text-gray-900">{user.occupation}</p>
+                  </div>
                 </div>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Verification Status
-                </label>
-                <div className="p-3 bg-gray-50 rounded-lg">
-                  <p
-                    className={`font-semibold ${
-                      user.verificationStatus === "approved"
-                        ? "text-green-600"
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    {t("profile.verificationStatus")}
+                  </label>
+                  <div className="p-3 bg-gray-50 rounded-lg">
+                    <p
+                      className={`font-semibold ${
+                        user.verificationStatus === "approved"
+                          ? "text-green-600"
+                          : user.verificationStatus === "pending"
+                          ? "text-amber-600"
+                          : "text-red-600"
+                      }`}
+                    >
+                      {user.verificationStatus === "approved"
+                        ? t("profile.verified")
                         : user.verificationStatus === "pending"
-                        ? "text-amber-600"
-                        : "text-red-600"
-                    }`}
-                  >
-                    {user.verificationStatus === "approved"
-                      ? "Verified"
-                      : user.verificationStatus === "pending"
-                      ? "Pending Review"
-                      : "Not Verified"}
-                  </p>
+                        ? t("profile.pendingReview")
+                        : t("profile.notVerified")}
+                    </p>
+                  </div>
                 </div>
               </div>
             </div>
@@ -1227,12 +1232,12 @@ export default function ProfilePage() {
             className="bg-white rounded-2xl shadow-lg p-8"
           >
             <div className="flex justify-between items-center mb-6">
-              <h2 className="text-2xl font-bold text-gray-900">Security</h2>
+              <h2 className="text-2xl font-bold text-gray-900">{t("profile.security")}</h2>
               <button
                 onClick={() => setIsEditingPassword(!isEditingPassword)}
                 className="px-6 py-2 text-[#324D3E] border-2 border-[#324D3E] rounded-xl font-semibold hover:bg-[#324D3E] hover:text-white transition-all duration-200 hover:scale-[1.02]"
               >
-                {isEditingPassword ? "Cancel" : "Change Password"}
+                {isEditingPassword ? t("profile.cancel") : t("profile.changePassword")}
               </button>
             </div>
 
@@ -1240,7 +1245,7 @@ export default function ProfilePage() {
               <form onSubmit={handlePasswordUpdate} className="space-y-6">
                 <div className="space-y-2">
                   <label className="block text-sm font-semibold text-gray-700">
-                    Current Password
+                    {t("profile.currentPassword")}
                   </label>
                   <div className="relative">
                     <input
@@ -1253,14 +1258,14 @@ export default function ProfilePage() {
                         }))
                       }
                       className="w-full px-4 py-3 bg-gray-50 border-2 border-transparent rounded-xl transition-all duration-200 focus:bg-white focus:border-[#324D3E] focus:ring-0 focus:outline-none placeholder-gray-400"
-                      placeholder="Enter your current password"
+                      placeholder={t("profile.enterCurrentPassword")}
                       required
                     />
                   </div>
                 </div>
                 <div className="space-y-2">
                   <label className="block text-sm font-semibold text-gray-700">
-                    New Password
+                    {t("profile.newPassword")}
                   </label>
                   <div className="relative">
                     <input
@@ -1273,25 +1278,25 @@ export default function ProfilePage() {
                         }))
                       }
                       className="w-full px-4 py-3 bg-gray-50 border-2 border-transparent rounded-xl transition-all duration-200 focus:bg-white focus:border-[#324D3E] focus:ring-0 focus:outline-none placeholder-gray-400"
-                      placeholder="Enter your new password"
+                      placeholder={t("profile.enterNewPassword")}
                       minLength={8}
                       required
                     />
                     <div className="text-xs text-gray-500 mt-1 space-y-1">
-                      <p>Password harus mengandung:</p>
+                      <p>{t("profile.passwordRequirements")}</p>
                       <ul className="list-disc list-inside space-y-0.5 ml-2">
-                        <li>Minimal 8 karakter</li>
-                        <li>Huruf kecil (a-z)</li>
-                        <li>Huruf besar (A-Z)</li>
-                        <li>Angka (0-9)</li>
-                        <li>Karakter khusus (@$!%*?&)</li>
+                        <li>{t("profile.minCharacters")}</li>
+                        <li>{t("profile.lowercase")}</li>
+                        <li>{t("profile.uppercase")}</li>
+                        <li>{t("profile.numbers")}</li>
+                        <li>{t("profile.specialCharacters")}</li>
                       </ul>
                     </div>
                   </div>
                 </div>
                 <div className="space-y-2">
                   <label className="block text-sm font-semibold text-gray-700">
-                    Confirm New Password
+                    {t("profile.confirmNewPassword")}
                   </label>
                   <div className="relative">
                     <input
@@ -1304,7 +1309,7 @@ export default function ProfilePage() {
                         }))
                       }
                       className="w-full px-4 py-3 bg-gray-50 border-2 border-transparent rounded-xl transition-all duration-200 focus:bg-white focus:border-[#324D3E] focus:ring-0 focus:outline-none placeholder-gray-400"
-                      placeholder="Confirm your new password"
+                      placeholder={t("profile.confirmPasswordPlaceholder")}
                       required
                     />
                   </div>
@@ -1318,10 +1323,10 @@ export default function ProfilePage() {
                     {isLoading ? (
                       <span className="flex items-center justify-center gap-2">
                         <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                        Updating...
+                        {t("profile.updating")}
                       </span>
                     ) : (
-                      "Update Password"
+                      t("profile.updatePassword")
                     )}
                   </button>
                   <button
@@ -1336,14 +1341,14 @@ export default function ProfilePage() {
                     }}
                     className="px-6 py-3 bg-gray-100 text-gray-700 rounded-xl font-semibold hover:bg-gray-200 transition-all duration-200 hover:scale-[1.02]"
                   >
-                    Cancel
+                    {t("profile.cancel")}
                   </button>
                 </div>
               </form>
             ) : (
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
-                  Password
+                  {t("profile.password")}
                 </label>
                 <div className="p-4 bg-gray-50 rounded-xl">
                   <div className="flex items-center justify-between">
@@ -1351,7 +1356,7 @@ export default function ProfilePage() {
                       ••••••••••••
                     </span>
                     <span className="text-xs text-gray-500 bg-gray-200 px-2 py-1 rounded-full">
-                      Hidden for security
+                      {t("profile.hiddenForSecurity")}
                     </span>
                   </div>
                 </div>

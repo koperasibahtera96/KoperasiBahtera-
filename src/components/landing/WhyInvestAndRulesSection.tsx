@@ -2,65 +2,56 @@
 
 import { motion } from "framer-motion";
 import Image from "next/image";
+import { useLanguage } from "@/contexts/LanguageContext";
 
-const benefits = [
+const benefitsData = [
   {
-    title: "Keuntungan Finansial",
-    description:
-      "Tanaman produktif yang memberikan hasil bernilai tinggi setelah masa permanen",
+    titleKey: "benefits.financial.title",
+    descriptionKey: "benefits.financial.description",
     icon: "/landing/Keuntungan Finansial.png",
   },
   {
-    title: "Aset Jangka Panjang",
-    description:
-      "Nilai Tanaman bertambah seiring usia, cocok untuk tabungan masa depan",
+    titleKey: "benefits.longterm.title",
+    descriptionKey: "benefits.longterm.description",
     icon: "/landing/Asset Jangka Panjang.png",
   },
   {
-    title: "Kontribusi Lingkungan",
-    description:
-      "Menjaga keseimbangan alam, mengurangi polusi, dan mendukung penghijauan",
+    titleKey: "benefits.environmental.title",
+    descriptionKey: "benefits.environmental.description",
     icon: "/landing/Kontribusi Lingkungan.png",
   },
   {
-    title: "Dampak Sosial",
-    description:
-      "Membantu ekonomi petani dan masyarakat sekitar lokasi pertanian",
+    titleKey: "benefits.social.title",
+    descriptionKey: "benefits.social.description",
     icon: "/landing/Dampak Sosial.png",
   },
   {
-    title: "Warisan Masa Depan",
-    description:
-      "Tanaman yang bisa menjadi aset dan dapat diwariskan untuk generasi berikutnya",
+    titleKey: "benefits.legacy.title",
+    descriptionKey: "benefits.legacy.description",
     icon: "/landing/Warisan Masa Depan.png",
   },
 ];
 
-const rules = [
+const rulesData = [
   {
-    title: "Pembiayaan Paket",
-    description:
-      "Setiap Anggota dapat mengikuti program ini dengan minimal membeli 1 paket (10 Pohon) Tanaman.",
+    titleKey: "rules.package.title",
+    descriptionKey: "rules.package.description",
   },
   {
-    title: "Jangka Waktu",
-    description:
-      "Program ini bersifat jangka menengah/panjang (5-7 tahun, tergantung jenis tanaman)",
+    titleKey: "rules.duration.title",
+    descriptionKey: "rules.duration.description",
   },
   {
-    title: "Bagi Hasil",
-    description:
-      "Hasil panen akan diberikan setelah dikurangi biaya-biaya lainnya",
+    titleKey: "rules.profit.title",
+    descriptionKey: "rules.profit.description",
   },
   {
-    title: "Transparansi",
-    description:
-      "Anggota mendapat laporan berkala mengenai pertumbuhan tanaman, perawatan tanaman, kondisi lahan, dan proyeksi keuntungan",
+    titleKey: "rules.transparency.title",
+    descriptionKey: "rules.transparency.description",
   },
   {
-    title: "Risiko",
-    description:
-      "Anggota menyadari bahwa program ini bergantung pada faktor alam, perawatan, serta pasar",
+    titleKey: "rules.risk.title",
+    descriptionKey: "rules.risk.description",
   },
 ];
 
@@ -132,11 +123,12 @@ const iconVariants: any = {
 };
 
 export default function WhyInvestAndRulesSection() {
+  const { t } = useLanguage();
   return (
     <motion.section
       className="py-8 sm:py-12 lg:py-16 px-4 sm:px-6 bg-cover bg-center bg-no-repeat -mt-1"
       style={{
-        backgroundImage: "url(/landing/kenapa-perlu-investasi-bg.webp)",
+        backgroundImage: "url(/landing/kenapa-perlu-investasi-bg_2.webp)",
         backgroundSize: "cover",
         backgroundPosition: "center top",
         backgroundRepeat: "no-repeat",
@@ -162,7 +154,7 @@ export default function WhyInvestAndRulesSection() {
               transition: { duration: 0.3 },
             }}
           >
-            Dampak dan Manfaat
+            {t("benefits.title")}
           </motion.h2>
 
           {/* Benefits Grid - First Row (3 cards) */}
@@ -170,7 +162,7 @@ export default function WhyInvestAndRulesSection() {
             className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-4 sm:gap-6 md:gap-7 mb-6 sm:mb-8 md:mb-10"
             variants={containerVariants}
           >
-            {benefits.slice(0, 3).map((benefit, index) => (
+            {benefitsData.slice(0, 3).map((benefit, index) => (
               <motion.div
                 key={index}
                 className="bg-[#FFFCE3] rounded-2xl p-4 sm:p-6 md:p-7 lg:p-8 shadow-sm"
@@ -193,8 +185,8 @@ export default function WhyInvestAndRulesSection() {
                       }}
                     >
                       <Image
-                        src={benefit.icon.replace('.png', '.webp')}
-                        alt={benefit.title}
+                        src={benefit.icon.replace(".png", ".webp")}
+                        alt={t(benefit.titleKey)}
                         width={100}
                         height={100}
                         className="object-contain sm:w-[120px] sm:h-[120px]"
@@ -208,7 +200,7 @@ export default function WhyInvestAndRulesSection() {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.3, duration: 0.5 }}
                   >
-                    {benefit.title}
+                    {t(benefit.titleKey)}
                   </motion.h3>
                   <motion.p
                     className="text-gray-600 text-xs sm:text-sm md:text-base leading-relaxed"
@@ -216,7 +208,7 @@ export default function WhyInvestAndRulesSection() {
                     animate={{ opacity: 1 }}
                     transition={{ delay: 0.5, duration: 0.5 }}
                   >
-                    {benefit.description}
+                    {t(benefit.descriptionKey)}
                   </motion.p>
                 </div>
               </motion.div>
@@ -229,7 +221,7 @@ export default function WhyInvestAndRulesSection() {
             variants={containerVariants}
           >
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 gap-4 sm:gap-6 md:gap-8 max-w-5xl">
-              {benefits.slice(3, 5).map((benefit, index) => (
+              {benefitsData.slice(3, 5).map((benefit, index) => (
                 <motion.div
                   key={index + 3}
                   className="bg-[#FFFCE3] rounded-2xl p-4 sm:p-6 md:p-8 shadow-sm"
@@ -255,8 +247,8 @@ export default function WhyInvestAndRulesSection() {
                         }}
                       >
                         <Image
-                          src={benefit.icon.replace('.png', '.webp')}
-                          alt={benefit.title}
+                          src={benefit.icon.replace(".png", ".webp")}
+                          alt={t(benefit.titleKey)}
                           width={100}
                           height={100}
                           className="object-contain sm:w-[120px] sm:h-[120px]"
@@ -270,7 +262,7 @@ export default function WhyInvestAndRulesSection() {
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: 0.3, duration: 0.5 }}
                     >
-                      {benefit.title}
+                      {t(benefit.titleKey)}
                     </motion.h3>
                     <motion.p
                       className="text-gray-600 text-xs sm:text-sm md:text-base leading-relaxed"
@@ -278,7 +270,7 @@ export default function WhyInvestAndRulesSection() {
                       animate={{ opacity: 1 }}
                       transition={{ delay: 0.5, duration: 0.5 }}
                     >
-                      {benefit.description}
+                      {t(benefit.descriptionKey)}
                     </motion.p>
                   </div>
                 </motion.div>
@@ -299,7 +291,7 @@ export default function WhyInvestAndRulesSection() {
               transition: { duration: 0.3 },
             }}
           >
-            Panduan Berpartisipasi!
+            {t("rules.title")}
           </motion.h2>
 
           {/* Rules Container */}
@@ -316,7 +308,7 @@ export default function WhyInvestAndRulesSection() {
               className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 sm:gap-6 md:gap-7 lg:gap-8"
               variants={containerVariants}
             >
-              {rules.map((rule, index) => (
+              {rulesData.map((rule, index) => (
                 <motion.div
                   key={index}
                   className="text-center relative"
@@ -334,7 +326,7 @@ export default function WhyInvestAndRulesSection() {
                       transition: { duration: 0.2 },
                     }}
                   >
-                    {rule.title}
+                    {t(rule.titleKey)}
                   </motion.h3>
                   <motion.p
                     className="text-gray-600 text-xs sm:text-sm md:text-base lg:text-sm leading-relaxed"
@@ -342,10 +334,10 @@ export default function WhyInvestAndRulesSection() {
                     animate={{ opacity: 1 }}
                     transition={{ delay: 0.2 * index, duration: 0.5 }}
                   >
-                    {rule.description}
+                    {t(rule.descriptionKey)}
                   </motion.p>
                   {/* Add vertical divider for all except last item */}
-                  {index < rules.length - 1 && (
+                  {index < rulesData.length - 1 && (
                     <motion.div
                       className="hidden lg:block absolute -right-4 top-0 bottom-0 w-px bg-gray-300"
                       initial={{ scaleY: 0 }}

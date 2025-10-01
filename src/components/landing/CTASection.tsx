@@ -3,6 +3,7 @@
 import Image from 'next/image';
 import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 
 const containerVariants = {
@@ -64,7 +65,8 @@ interface CTASectionProps {
 }
 
 export default function CTASection({ className = '' }: CTASectionProps) {
-  const router = useRouter()
+  const router = useRouter();
+  const { t } = useLanguage();
   return (
     <motion.section 
       className={`py-8 sm:py-10 lg:py-12 px-4 sm:px-6 bg-[#E5D7C4] ${className}`}
@@ -116,7 +118,7 @@ export default function CTASection({ className = '' }: CTASectionProps) {
                   transition: { duration: 0.3 }
                 }}
               >
-                Tanam Hari ini, Hijaukan Bumi Sejahterakan Hati
+                {t("cta.title")}
               </motion.h3>
               <motion.p 
                 className="text-gray-600 text-sm sm:text-base md:text-lg lg:text-xl"
@@ -124,7 +126,7 @@ export default function CTASection({ className = '' }: CTASectionProps) {
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.7, duration: 0.6 }}
               >
-                Bersama membangun masa depan hijau dan berkontribusi pada kelestarian lingkungan
+                {t("cta.description")}
               </motion.p>
             </motion.div>
           </motion.div>
@@ -158,7 +160,7 @@ export default function CTASection({ className = '' }: CTASectionProps) {
                 }
               }}
             >
-              Gabung Sekarang
+              {t("cta.button")}
             </motion.button>
           </motion.div>
         </motion.div>

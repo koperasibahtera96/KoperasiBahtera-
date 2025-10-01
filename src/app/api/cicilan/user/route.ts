@@ -25,6 +25,8 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const status = searchParams.get("status");
     const adminStatus = searchParams.get("adminStatus");
+    const search = searchParams.get("search") || null;
+    const filterParam = searchParams.get("filter") || null;
 
     // Build query for cicilan installment payments
     const query: any = {
@@ -44,37 +46,50 @@ export async function GET(req: NextRequest) {
     const unsignedCicilanContracts = await Contract.find({
       userId: user._id,
       paymentType: "cicilan",
-      status: "draft" // Only draft contracts (not yet signed)
+      status: "draft", // Only draft contracts (not yet signed)
     }).sort({ createdAt: -1 });
 
     // Get full payment contracts
     const fullPaymentContracts = await Contract.find({
       userId: user._id,
       paymentType: "full",
-      status: { $in: ['draft', 'signed', 'approved', 'rejected', 'permanently_rejected'] } // Include rejected contracts so users can retry
+      status: {
+        $in: [
+          "draft",
+          "signed",
+          "approved",
+          "rejected",
+          "permanently_rejected",
+        ],
+      }, // Include rejected contracts so users can retry
     }).sort({ createdAt: -1 });
 
     // Get referral codes from full payment records
-    const fullPaymentIds = fullPaymentContracts.map(contract => contract.contractId);
+    const fullPaymentIds = fullPaymentContracts.map(
+      (contract) => contract.contractId
+    );
     const fullPayments = await Payment.find({
       orderId: { $in: fullPaymentIds },
-      paymentType: "full-investment"
-    }).select('orderId referralCode');
-
+      paymentType: "full-investment",
+    }).select("orderId referralCode dueDate");
 
     // Get investor data for contract information
     const investor = await Investor.findOne({ userId: user._id });
     const investorInvestments = investor?.investments || [];
 
     // Get contract data for admin approval status
-    const contractIds = Object.keys(installments.reduce((acc, payment) => {
-      acc[payment.cicilanOrderId] = true;
-      return acc;
-    }, {} as any));
-    
+    const contractIds = Object.keys(
+      installments.reduce((acc, payment) => {
+        acc[payment.cicilanOrderId] = true;
+        return acc;
+      }, {} as any)
+    );
+
     const contracts = await Contract.find({
-      contractId: { $in: contractIds }
-    }).select('contractId adminApprovalStatus status adminApprovedDate paymentAllowed signatureAttempts currentAttempt maxAttempts totalAmount');
+      contractId: { $in: contractIds },
+    }).select(
+      "contractId adminApprovalStatus status adminApprovedDate paymentAllowed signatureAttempts currentAttempt maxAttempts totalAmount"
+    );
 
     // Group by cicilanOrderId
     const groupedPayments = installments.reduce((acc, payment) => {
@@ -153,18 +168,26 @@ export async function GET(req: NextRequest) {
       const approvedCount = completeInstallments.filter(
         (inst: any) => inst.status === "approved"
       ).length;
-      const status = 
-        approvedCount === totalInstallments ? "completed" :
-        completeInstallments.some((inst: any) => 
-          inst.exists && new Date(inst.dueDate) < new Date() && 
-          inst.status !== "approved"
-        ) ? "overdue" : "active";
+      const status =
+        approvedCount === totalInstallments
+          ? "completed"
+          : completeInstallments.some(
+              (inst: any) =>
+                inst.exists &&
+                new Date(inst.dueDate) < new Date() &&
+                inst.status !== "approved"
+            )
+          ? "overdue"
+          : "active";
 
       return {
         cicilanOrderId: group.cicilanOrderId,
         productName: group.productName,
         productId: group.productId,
-        totalAmount: contract?.totalAmount || investorInvestment?.totalAmount || (group.installmentAmount * group.totalInstallments),
+        totalAmount:
+          contract?.totalAmount ||
+          investorInvestment?.totalAmount ||
+          group.installmentAmount * group.totalInstallments,
         totalInstallments: group.totalInstallments,
         installmentAmount: group.installmentAmount,
         paymentTerm: group.paymentTerm,
@@ -176,8 +199,8 @@ export async function GET(req: NextRequest) {
         contractDownloaded: investorInvestment?.contractDownloaded || false,
         contractDownloadedDate: investorInvestment?.contractDownloadedDate,
         // Add contract admin approval status
-        contractApprovalStatus: contract?.adminApprovalStatus || 'pending',
-        contractStatus: contract?.status || 'signed',
+        contractApprovalStatus: contract?.adminApprovalStatus || "pending",
+        contractStatus: contract?.status || "signed",
         contractApprovedDate: contract?.adminApprovedDate,
         paymentAllowed: contract?.paymentAllowed || false,
         // Add retry attempt information
@@ -186,28 +209,34 @@ export async function GET(req: NextRequest) {
         maxAttempts: contract?.maxAttempts || 3,
         signatureAttemptsCount: contract?.signatureAttempts?.length || 0,
         hasEverSigned: (contract?.signatureAttempts?.length || 0) > 0,
-        isMaxRetryReached: (contract?.currentAttempt || 0) >= (contract?.maxAttempts || 3),
-        isPermanentlyRejected: contract?.adminApprovalStatus === 'permanently_rejected',
+        isMaxRetryReached:
+          (contract?.currentAttempt || 0) >= (contract?.maxAttempts || 3),
+        isPermanentlyRejected:
+          contract?.adminApprovalStatus === "permanently_rejected",
         // Get referral code from any payment in this group
-        referralCode: group.installments.find((inst: any) => inst.referralCode)?.referralCode || null,
+        referralCode:
+          group.installments.find((inst: any) => inst.referralCode)
+            ?.referralCode || null,
       };
     });
 
     // Add unsigned cicilan contracts (draft status) to the groups
-    const unsignedCicilanGroups = unsignedCicilanContracts.map(contract => ({
+    const unsignedCicilanGroups = unsignedCicilanContracts.map((contract) => ({
       cicilanOrderId: contract.contractId,
       productName: contract.productName,
       productId: contract.productId,
       totalInstallments: contract.totalInstallments || 12,
-      installmentAmount: contract.installmentAmount || Math.ceil(contract.totalAmount / (contract.totalInstallments || 12)),
-      paymentTerm: contract.paymentTerm || 'monthly',
+      installmentAmount:
+        contract.installmentAmount ||
+        Math.ceil(contract.totalAmount / (contract.totalInstallments || 12)),
+      paymentTerm: contract.paymentTerm || "monthly",
       totalAmount: contract.totalAmount,
       installments: [], // No installments created yet since contract isn't signed
       createdAt: contract.createdAt,
 
       // Contract admin approval status
-      contractApprovalStatus: contract.adminApprovalStatus || 'pending',
-      contractStatus: contract.status || 'draft',
+      contractApprovalStatus: contract.adminApprovalStatus || "pending",
+      contractStatus: contract.status || "draft",
       contractApprovedDate: contract.adminApprovedDate,
       paymentAllowed: contract.paymentAllowed || false,
 
@@ -217,21 +246,35 @@ export async function GET(req: NextRequest) {
       maxAttempts: contract.maxAttempts || 3,
       signatureAttemptsCount: contract.signatureAttempts?.length || 0,
       hasEverSigned: (contract.signatureAttempts?.length || 0) > 0,
-      isMaxRetryReached: (contract.currentAttempt || 0) >= (contract.maxAttempts || 3),
-      isPermanentlyRejected: contract.adminApprovalStatus === 'permanently_rejected',
+      isMaxRetryReached:
+        (contract.currentAttempt || 0) >= (contract.maxAttempts || 3),
+      isPermanentlyRejected:
+        contract.adminApprovalStatus === "permanently_rejected",
       referralCode: null, // No referral code yet since no payments made
     }));
 
     // Combine signed cicilan groups with unsigned cicilan groups
     const allCicilanGroups = [...cicilanGroups, ...unsignedCicilanGroups];
 
-    return NextResponse.json({
-      success: true,
-      cicilanGroups: allCicilanGroups,
-      fullPaymentContracts: fullPaymentContracts.map(contract => ({
+    // Helper to check overdue
+    const isOverdueLocal = (d: any) => {
+      if (!d) return false;
+      try {
+        return new Date(d).getTime() < Date.now();
+      } catch {
+        return false;
+      }
+    };
+
+    // Map fullPaymentContracts into the frontend shape
+    const mappedFullPayments = fullPaymentContracts.map((contract) => {
+      const associatedPayment = fullPayments.find(
+        (p) => p.orderId === contract.contractId
+      );
+      return {
         contractId: contract.contractId,
         // attach matching payment _id (if any) so frontend can reference the actual payment record
-        paymentId: fullPayments.find(p => p.orderId === contract.contractId)?._id || null,
+        paymentId: associatedPayment?._id || null,
         productName: contract.productName,
         productId: contract.productId,
         totalAmount: contract.totalAmount,
@@ -242,6 +285,8 @@ export async function GET(req: NextRequest) {
         status: contract.status,
         contractNumber: contract.contractNumber,
         contractDate: contract.contractDate,
+        // Use payment dueDate
+        dueDate: associatedPayment?.dueDate,
         paymentAllowed: contract.paymentAllowed,
         paymentCompleted: contract.paymentCompleted,
         createdAt: contract.createdAt,
@@ -251,10 +296,89 @@ export async function GET(req: NextRequest) {
         maxAttempts: contract.maxAttempts || 3,
         signatureAttemptsCount: contract.signatureAttempts?.length || 0,
         hasEverSigned: (contract.signatureAttempts?.length || 0) > 0,
-        isMaxRetryReached: (contract.currentAttempt || 0) >= (contract.maxAttempts || 3),
-        isPermanentlyRejected: contract.adminApprovalStatus === 'permanently_rejected',
-        referralCode: fullPayments.find(p => p.orderId === contract.contractId)?.referralCode || null,
-      }))
+        isMaxRetryReached:
+          (contract.currentAttempt || 0) >= (contract.maxAttempts || 3),
+        isPermanentlyRejected:
+          contract.adminApprovalStatus === "permanently_rejected",
+        referralCode: associatedPayment?.referralCode || null,
+      };
+    });
+
+    // Apply server-side search and filter
+    let filteredCicilan = allCicilanGroups;
+    let filteredFullPayments = mappedFullPayments;
+
+    if (search) {
+      const q = search.toLowerCase().trim();
+      filteredCicilan = filteredCicilan.filter((g: any) => {
+        const nameMatch = (g.productName || "").toLowerCase().includes(q);
+        const idMatch = (
+          (g.contractId as string) ||
+          (g.cicilanOrderId as string) ||
+          ""
+        )
+          .toLowerCase()
+          .includes(q);
+        return nameMatch || idMatch;
+      });
+
+      filteredFullPayments = filteredFullPayments.filter((c: any) => {
+        const nameMatch = (c.productName || "").toLowerCase().includes(q);
+        const idMatch = (
+          (c.contractId as string) ||
+          (c.paymentId as string) ||
+          ""
+        )
+          .toLowerCase()
+          .includes(q);
+        return nameMatch || idMatch;
+      });
+    }
+
+    if (filterParam && filterParam !== "all") {
+      switch (filterParam) {
+        case "completed":
+          filteredCicilan = filteredCicilan.filter(
+            (g: any) => g.status === "completed"
+          );
+          filteredFullPayments = filteredFullPayments.filter(
+            (c: any) => c.paymentCompleted === true
+          );
+          break;
+        case "overdue":
+          filteredCicilan = filteredCicilan.filter(
+            (g: any) => g.status === "overdue"
+          );
+          filteredFullPayments = filteredFullPayments.filter(
+            (c: any) =>
+              !c.paymentCompleted && c.dueDate && isOverdueLocal(c.dueDate)
+          );
+          break;
+        case "active":
+          filteredCicilan = filteredCicilan.filter(
+            (g: any) => g.status === "active"
+          );
+          filteredFullPayments = filteredFullPayments.filter(
+            (c: any) => !c.paymentCompleted
+          );
+          break;
+        case "installment":
+          // hide full payments
+          filteredFullPayments = [];
+          break;
+        case "full-payment":
+          // hide installments
+          filteredCicilan = [];
+          break;
+        default:
+          break;
+      }
+    }
+
+    return NextResponse.json({
+      success: true,
+      cicilanGroups: filteredCicilan,
+      fullPaymentContracts: filteredFullPayments,
     });
   } catch (error) {
     console.error("Error getting user cicilan payments:", error);

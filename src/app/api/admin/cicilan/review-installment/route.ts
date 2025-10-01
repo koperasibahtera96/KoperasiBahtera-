@@ -122,23 +122,25 @@ export async function POST(request: NextRequest) {
               // Map product name to plant type
               const getPlantType = (
                 productName: string
-              ): "gaharu" | "alpukat" | "jengkol" | "aren" => {
+              ): "gaharu" | "alpukat" | "jengkol" | "aren" | "kelapa" => {
                 const name = productName.toLowerCase();
                 if (name.includes("gaharu")) return "gaharu";
                 if (name.includes("alpukat")) return "alpukat";
                 if (name.includes("jengkol")) return "jengkol";
                 if (name.includes("aren")) return "aren";
+                if (name.includes("kelapa")) return "kelapa";
                 return "gaharu"; // default
               };
 
               const getBaseROI = (
-                plantType: "gaharu" | "alpukat" | "jengkol" | "aren"
+                plantType: "gaharu" | "alpukat" | "jengkol" | "aren" | "kelapa"
               ): number => {
                 const roiMap = {
                   gaharu: 0.15,
                   alpukat: 0.12,
                   jengkol: 0.1,
                   aren: 0.18,
+                  kelapa: 0.12,
                 };
                 return roiMap[plantType] || 0.12;
               };
@@ -309,9 +311,9 @@ export async function POST(request: NextRequest) {
 
               // Create next installment payment record
               const nextInstallmentOrderId = await generateInvoiceNumber({
-                productName: payment.productName || 'Investment',
+                productName: payment.productName || "Investment",
                 installmentNumber: nextInstallmentNumber,
-                paymentType: 'cicilan-installment'
+                paymentType: "cicilan-installment",
               });
               const nextInstallment = new Payment({
                 orderId: nextInstallmentOrderId,
@@ -380,16 +382,29 @@ export async function POST(request: NextRequest) {
           }
 
           // Create commission record if payment is approved, it's the first installment, and has referral code
-          if (action === "approve" && payment.installmentNumber === 1 && payment.referralCode) {
+          if (
+            action === "approve" &&
+            payment.installmentNumber === 1 &&
+            payment.referralCode
+          ) {
             try {
-              const commissionResult = await createCommissionRecord(payment._id.toString());
+              const commissionResult = await createCommissionRecord(
+                payment._id.toString()
+              );
               if (commissionResult.success) {
-                console.log(`Commission created for cicilan payment ${paymentId}: ${commissionResult.message}`);
+                console.log(
+                  `Commission created for cicilan payment ${paymentId}: ${commissionResult.message}`
+                );
               } else {
-                console.log(`Commission creation skipped for cicilan payment ${paymentId}: ${commissionResult.message}`);
+                console.log(
+                  `Commission creation skipped for cicilan payment ${paymentId}: ${commissionResult.message}`
+                );
               }
             } catch (commissionError) {
-              console.error(`Error creating commission for cicilan payment ${paymentId}:`, commissionError);
+              console.error(
+                `Error creating commission for cicilan payment ${paymentId}:`,
+                commissionError
+              );
               // Don't fail the approval for commission errors
             }
           }

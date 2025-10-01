@@ -13,6 +13,7 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { CicilanModal } from "./CicilanModal";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 // Animation variants
 const containerVariants: any = {
@@ -76,6 +77,7 @@ const floatingAnimation: any = {
 export default function PlantShowcaseSection() {
   const { data: session } = useSession();
   const router = useRouter();
+  const { t } = useLanguage();
   const [isLoading, setIsLoading] = useState<string | null>(null);
   const [plants, setPlantsData] = useState<any>([]);
   const [plantsLoading, setPlantsLoading] = useState(true);
@@ -173,7 +175,7 @@ export default function PlantShowcaseSection() {
       >
         <div className="text-center text-white">
           <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-white mx-auto mb-4"></div>
-          <p className="text-lg font-medium">Memuat data tanaman...</p>
+          <p className="text-lg font-medium">{t("plants.loading")}</p>
         </div>
       </motion.section>
     );
@@ -284,7 +286,7 @@ export default function PlantShowcaseSection() {
       setShowOrderConfirmation(true);
     } catch (error) {
       console.error("Error generating contract details:", error);
-      showError("Kesalahan", "Terjadi kesalahan saat menyiapkan kontrak.");
+      showError(t("plants.contractError"), t("plants.contractErrorMessage"));
     } finally {
       setIsLoading(null);
     }
@@ -296,8 +298,8 @@ export default function PlantShowcaseSection() {
     // Validate referral code if provided
     if (referralCode && !validateReferralCode(referralCode)) {
       showError(
-        "Kode Referral Tidak Valid",
-        "Kode referral harus 6 karakter huruf kapital dan angka"
+        t("plants.invalidReferralCode"),
+        t("plants.invalidReferralCodeMessage")
       );
       return;
     }
@@ -334,7 +336,7 @@ export default function PlantShowcaseSection() {
 
       if (!contractResponse.ok) {
         showError(
-          "Gagal Membuat Kontrak",
+          t("plants.contractCreationError"),
           contractResult?.error ||
             `Server error (${contractResponse.status}). Silakan coba lagi.`
         );
@@ -343,8 +345,8 @@ export default function PlantShowcaseSection() {
 
       if (!contractResult.success || !contractResult.data?.contractId) {
         showError(
-          "Gagal Membuat Kontrak",
-          "Gagal membuat kontrak. Silakan coba lagi."
+          t("plants.contractCreationError"),
+          t("plants.contractCreationErrorMessage")
         );
         return;
       }
@@ -353,8 +355,10 @@ export default function PlantShowcaseSection() {
       const actualContractId = contractResult.data.contractId;
 
       showSuccess(
-        "Kontrak Berhasil Dibuat!",
-        `Kontrak ${contractDetails.contractNumber} telah dibuat. Anda akan diarahkan untuk menandatangani kontrak.`
+        t("plants.contractCreated"),
+        t("plants.contractCreatedMessage", {
+          contractNumber: contractDetails.contractNumber,
+        })
       );
       setShowOrderConfirmation(false);
       setContractDetails(null);
@@ -363,7 +367,7 @@ export default function PlantShowcaseSection() {
       window.location.href = `/contract/${actualContractId}`;
     } catch (error) {
       console.error("Error creating contract:", error);
-      showError("Kesalahan Kontrak", "Terjadi kesalahan saat membuat kontrak.");
+      showError(t("plants.contractError"), t("plants.contractErrorMessage"));
     } finally {
       setIsLoading(null);
     }
@@ -397,11 +401,10 @@ export default function PlantShowcaseSection() {
           transition={{ duration: 0.5 }}
         >
           <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-white font-[family-name:var(--font-poppins)]">
-            Langkah Hijau Anda Dimulai di Sini
+            {t("plants.title")}
           </h2>
           <p className="text-sm sm:text-base md:text-lg lg:text-xl text-white/80 mt-2 sm:mt-4 md:mt-5 max-w-4xl mx-auto px-4">
-            Kenali tanaman terbaik untuk Anda, baik untuk langkah awal maupun
-            kontribusi berkelanjutan.
+            {t("plants.subtitle")}
           </p>
           {/* Mobile/Tablet Navigation - Above content */}
           <div className="flex justify-center items-center gap-4 mt-6 xl:hidden">
@@ -569,7 +572,7 @@ export default function PlantShowcaseSection() {
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: 0.5, duration: 0.6 }}
                           >
-                            Tanaman {plant.name}
+                            {t("plants.plantName", { name: plant.name })}
                           </motion.h3>
                         </motion.div>
                         <motion.div
@@ -618,7 +621,9 @@ export default function PlantShowcaseSection() {
                             className="text-base md:text-lg lg:text-xl font-bold text-[#4A5C57] mb-3 font-[family-name:var(--font-poppins)]"
                             whileHover={{ scale: 1.05 }}
                           >
-                            Produk Olahan dari {plant.name}:
+                            {t("plants.processingProducts", {
+                              name: plant.name,
+                            })}
                           </motion.h4>
                           <motion.ul
                             className="space-y-2 text-xs md:text-sm lg:text-base"
@@ -694,7 +699,7 @@ export default function PlantShowcaseSection() {
                               animate={{ opacity: 1, y: 0 }}
                               transition={{ delay: 0.6, duration: 0.5 }}
                             >
-                              Simulasi Cicilan Per 10 Pohon
+                              {t("plants.simulationTitle")}
                             </motion.h4>
                             <motion.p
                               className="text-xs sm:text-sm md:text-base mb-2"
@@ -702,7 +707,7 @@ export default function PlantShowcaseSection() {
                               animate={{ opacity: 1 }}
                               transition={{ delay: 0.8, duration: 0.5 }}
                             >
-                              Mulai Dari
+                              {t("plants.startingFrom")}
                             </motion.p>
                             <motion.div
                               className="text-xl sm:text-2xl md:text-3xl font-bold mb-3 sm:mb-4"
@@ -716,7 +721,7 @@ export default function PlantShowcaseSection() {
                             >
                               Rp {formatIDRCurrency(plant.pricing.monthly)}{" "}
                               <span className="text-xs sm:text-sm font-normal">
-                                /bulan
+                                {t("plants.perMonth")}
                               </span>
                             </motion.div>
                             <motion.button
@@ -733,8 +738,8 @@ export default function PlantShowcaseSection() {
                               transition={{ delay: 1.2, duration: 0.5 }}
                             >
                               {isLoading === plant.name
-                                ? "Processing..."
-                                : "Bayar Langsung"}
+                                ? t("plants.processing")
+                                : t("plants.payDirectly")}
                             </motion.button>
                           </motion.div>
                           <motion.div
@@ -755,7 +760,7 @@ export default function PlantShowcaseSection() {
                                 className="text-lg font-bold text-[#4A5C57] mb-3 font-[family-name:var(--font-poppins)]"
                                 whileHover={{ scale: 1.05 }}
                               >
-                                Lainnya
+                                {t("plants.others")}
                               </motion.h5>
                               <motion.div
                                 className="space-y-2 text-sm"
@@ -770,7 +775,7 @@ export default function PlantShowcaseSection() {
                                   }}
                                 >
                                   <span className="text-gray-700">
-                                    Per Tahun
+                                    {t("plants.perYear")}
                                   </span>
                                   <span className="font-bold text-gray-900">
                                     Rp {formatIDRCurrency(plant.pricing.yearly)}
@@ -785,7 +790,7 @@ export default function PlantShowcaseSection() {
                                   }}
                                 >
                                   <span className="text-gray-700">
-                                    Per 5 Tahun
+                                    {t("plants.perFiveYears")}
                                   </span>
                                   <span className="font-bold text-gray-900">
                                     Rp{" "}
@@ -801,7 +806,7 @@ export default function PlantShowcaseSection() {
                                   }}
                                 >
                                   <span className="text-gray-700">
-                                    Harga Jual Pohon
+                                    {t("plants.sellPrice")}
                                   </span>
                                   <span className="font-bold text-gray-900">
                                     Rp{" "}
@@ -820,7 +825,7 @@ export default function PlantShowcaseSection() {
                                 whileTap={{ scale: 0.95 }}
                                 variants={fadeInUp}
                               >
-                                💳 Beli dengan Cicilan
+                                {t("plants.buyWithInstallment")}
                               </motion.button>
                             </motion.div>
                           </motion.div>
@@ -842,7 +847,7 @@ export default function PlantShowcaseSection() {
                               className="text-lg font-bold text-[#4A5C57] mb-2 font-[family-name:var(--font-poppins)]"
                               whileHover={{ scale: 1.05 }}
                             >
-                              Pendapatan / Keuntungan Bersih
+                              {t("plants.profitTitle")}
                             </motion.h5>
                             <motion.div
                               className="text-2xl font-bold text-[#4A5C57] mb-3"
@@ -857,7 +862,7 @@ export default function PlantShowcaseSection() {
                               Rp{" "}
                               {formatIDRCurrency(plant.pricing.profit.yearly)}{" "}
                               <span className="text-sm font-normal">
-                                /tahun
+                                {t("plants.profitPerYear")}
                               </span>
                             </motion.div>
                             <motion.div
@@ -872,7 +877,9 @@ export default function PlantShowcaseSection() {
                                   transition: { duration: 0.2 },
                                 }}
                               >
-                                <span className="text-gray-600">Bulanan</span>
+                                <span className="text-gray-600">
+                                  {t("plants.monthly")}
+                                </span>
                                 <span className="font-semibold">
                                   Rp{" "}
                                   {formatIDRCurrency(
@@ -888,7 +895,9 @@ export default function PlantShowcaseSection() {
                                   transition: { duration: 0.2 },
                                 }}
                               >
-                                <span className="text-gray-600">Mingguan</span>
+                                <span className="text-gray-600">
+                                  {t("plants.weekly")}
+                                </span>
                                 <span className="font-semibold">
                                   Rp{" "}
                                   {formatIDRCurrency(
@@ -904,7 +913,9 @@ export default function PlantShowcaseSection() {
                                   transition: { duration: 0.2 },
                                 }}
                               >
-                                <span className="text-gray-600">Harian</span>
+                                <span className="text-gray-600">
+                                  {t("plants.daily")}
+                                </span>
                                 <span className="font-semibold">
                                   Rp{" "}
                                   {formatIDRCurrency(
@@ -919,8 +930,7 @@ export default function PlantShowcaseSection() {
                               animate={{ opacity: 1 }}
                               transition={{ delay: 1.8, duration: 0.5 }}
                             >
-                              *Simulasi Perhitungan Keuntungan investasi setelah
-                              dikurangi biaya - biaya lainnya
+                              {t("plants.profitDisclaimer")}
                             </motion.p>
                           </motion.div>
                         </motion.div>
@@ -966,7 +976,7 @@ export default function PlantShowcaseSection() {
                 <div className="p-6">
                   <div className="flex justify-between items-center mb-6">
                     <h3 className="text-2xl font-bold text-[#324D3E] font-[family-name:var(--font-poppins)]">
-                      Pilih Investasi
+                      {t("plants.chooseInvestment")}
                     </h3>
                     <button
                       onClick={() =>
@@ -995,7 +1005,7 @@ export default function PlantShowcaseSection() {
                   </div>
                   <div className="mb-6">
                     <h4 className="font-bold mb-4 text-[#324D3E] font-[family-name:var(--font-poppins)]">
-                      Pilih Paket Investasi
+                      {t("plants.choosePackage")}
                     </h4>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                       {(treeSelectionModal.plant?.treePackages || [])
@@ -1034,7 +1044,7 @@ export default function PlantShowcaseSection() {
                       ).length === 0) && (
                       <div className="text-center py-6">
                         <p className="text-[#324D3E]/60">
-                          Belum ada paket investasi yang tersedia
+                          {t("plants.noPackagesAvailable")}
                         </p>
                       </div>
                     )}
@@ -1042,12 +1052,12 @@ export default function PlantShowcaseSection() {
                   <div className="mb-6">
                     <div className="bg-gradient-to-r from-[#324D3E]/10 to-[#4C3D19]/10 p-6 rounded-2xl border border-[#324D3E]/20">
                       <h4 className="font-bold mb-4 text-[#324D3E] font-[family-name:var(--font-poppins)]">
-                        Detail Investasi
+                        {t("plants.investmentDetails")}
                       </h4>
                       <div className="space-y-3 text-sm">
                         <div className="flex justify-between items-center">
                           <span className="text-[#324D3E]/80 font-medium">
-                            Jenis Tanaman:
+                            {t("plants.plantType")}
                           </span>
                           <span className="font-bold text-[#324D3E]">
                             {treeSelectionModal.plant.investmentPlan.plantType}
@@ -1055,7 +1065,7 @@ export default function PlantShowcaseSection() {
                         </div>
                         <div className="flex justify-between items-center">
                           <span className="text-[#324D3E]/80 font-medium">
-                            Durasi:
+                            {t("plants.duration")}
                           </span>
                           <span className="font-bold text-[#324D3E]">
                             {treeSelectionModal.plant.investmentPlan.duration}
@@ -1063,17 +1073,17 @@ export default function PlantShowcaseSection() {
                         </div>
                         <div className="flex justify-between items-center">
                           <span className="text-[#324D3E]/80 font-medium">
-                            Jumlah Pohon:
+                            {t("plants.treeCount")}
                           </span>
                           <span className="font-bold text-[#324D3E]">
                             {treeSelectionModal.selectedPackage?.treeCount ||
                               "-"}{" "}
-                            Pohon
+                            {t("plants.trees")}
                           </span>
                         </div>
                         <div className="flex justify-between items-center">
                           <span className="text-[#324D3E]/80 font-medium">
-                            Total Harga:
+                            {t("plants.totalPrice")}
                           </span>
                           <span className="font-bold text-[#324D3E]">
                             Rp{" "}
@@ -1084,7 +1094,7 @@ export default function PlantShowcaseSection() {
                         </div>
                         <div className="flex justify-between items-center">
                           <span className="text-[#324D3E]/80 font-medium">
-                            Estimasi Return:
+                            {t("plants.estimatedReturn")}
                           </span>
                           <span className="font-bold text-emerald-600">
                             Rp{" "}
@@ -1096,7 +1106,7 @@ export default function PlantShowcaseSection() {
                         </div>
                         <div className="flex justify-between items-center">
                           <span className="text-[#324D3E]/80 font-medium">
-                            Risk Level:
+                            {t("plants.riskLevel")}
                           </span>
                           <span className="font-bold text-orange-600">
                             {treeSelectionModal.plant.investmentPlan.riskLevel}
@@ -1131,7 +1141,9 @@ export default function PlantShowcaseSection() {
                         !treeSelectionModal.selectedPackage || !!isLoading
                       }
                     >
-                      {isLoading ? "Memproses..." : "Lanjutkan Pembayaran"}
+                      {isLoading
+                        ? t("plants.processing2")
+                        : t("plants.continuePayment")}
                     </motion.button>
                     <motion.button
                       className="w-full px-4 py-3 text-[#324D3E]/60 hover:text-[#324D3E] transition-colors border border-[#324D3E]/20 rounded-2xl hover:bg-[#324D3E]/5 font-medium"
@@ -1145,7 +1157,7 @@ export default function PlantShowcaseSection() {
                         })
                       }
                     >
-                      Batal
+                      {t("plants.cancel")}
                     </motion.button>
                   </div>
                 </div>
@@ -1179,7 +1191,7 @@ export default function PlantShowcaseSection() {
                 <div className="flex-shrink-0 p-6 pb-0">
                   <div className="flex justify-between items-center mb-6">
                     <h3 className="text-2xl font-bold text-[#324D3E] font-[family-name:var(--font-poppins)]">
-                      Rincian Pesanan
+                      {t("plants.orderDetails")}
                     </h3>
                     <button
                       onClick={() => {
@@ -1212,12 +1224,12 @@ export default function PlantShowcaseSection() {
                     {/* Order Details */}
                     <div className="bg-gradient-to-r from-[#324D3E]/10 to-[#4C3D19]/10 p-6 rounded-2xl border border-[#324D3E]/20 mb-6">
                       <h4 className="font-bold mb-4 text-[#324D3E] font-[family-name:var(--font-poppins)]">
-                        Detail Kontrak
+                        {t("plants.contractDetails")}
                       </h4>
                       <div className="space-y-3 text-sm">
                         <div className="flex flex-col gap-2">
                           <span className="text-[#324D3E]/80 font-medium">
-                            No. Kontrak:
+                            {t("plants.contractNumber")}
                           </span>
                           <span className="font-bold text-[#324D3E] text-base font-mono break-all">
                             {contractDetails.contractNumber}
@@ -1225,7 +1237,7 @@ export default function PlantShowcaseSection() {
                         </div>
                         <div className="flex flex-col gap-2">
                           <span className="text-[#324D3E]/80 font-medium">
-                            Jenis Paket:
+                            {t("plants.packageType")}
                           </span>
                           <span className="font-bold text-[#324D3E] text-base font-mono break-all">
                             {contractDetails.productName}
@@ -1233,7 +1245,7 @@ export default function PlantShowcaseSection() {
                         </div>
                         <div className="flex flex-col gap-2">
                           <span className="text-[#324D3E]/80 font-medium">
-                            Harga Paket:
+                            {t("plants.packagePrice")}
                           </span>
                           <span className="font-bold text-[#324D3E] text-base font-mono break-all">
                             Rp{" "}
@@ -1244,21 +1256,22 @@ export default function PlantShowcaseSection() {
                         </div>
                         <div className="flex flex-col gap-2">
                           <span className="text-[#324D3E]/80 font-medium">
-                            Tipe Pembayaran:
+                            {t("plants.paymentType")}
                           </span>
                           <span className="font-bold text-[#324D3E] text-base font-mono break-all capitalize">
                             {contractDetails.paymentType === "full"
-                              ? "Lunas"
+                              ? t("plants.paymentTypeFull")
                               : contractDetails.paymentType}
                           </span>
                         </div>
                         {contractDetails.selectedPackage && (
                           <div className="flex flex-col gap-2">
                             <span className="text-[#324D3E]/80 font-medium">
-                              Jumlah Pohon:
+                              {t("plants.treeCount")}
                             </span>
                             <span className="font-bold text-emerald-600 text-base font-mono break-all">
-                              {contractDetails.selectedPackage.treeCount} Pohon
+                              {contractDetails.selectedPackage.treeCount}{" "}
+                              {t("plants.trees")}
                             </span>
                           </div>
                         )}
@@ -1268,12 +1281,12 @@ export default function PlantShowcaseSection() {
                     {/* Referral Code Input */}
                     <div className="bg-gradient-to-r from-[#324D3E]/10 to-[#4C3D19]/10 p-6 rounded-2xl border border-[#324D3E]/20 mb-6">
                       <h4 className="font-bold mb-4 text-[#324D3E] font-[family-name:var(--font-poppins)]">
-                        Kode Referral (Opsional)
+                        {t("plants.referralCode")}
                       </h4>
                       <div className="space-y-3 text-sm">
                         <div className="flex flex-col gap-2">
                           <span className="text-[#324D3E]/80 font-medium">
-                            Masukkan Kode Referral:
+                            {t("plants.enterReferralCode")}
                           </span>
                           <input
                             type="text"
@@ -1287,7 +1300,7 @@ export default function PlantShowcaseSection() {
                             pattern="[A-Z0-9]{6}"
                           />
                           <p className="text-xs text-[#324D3E]/70 font-[family-name:var(--font-poppins)]">
-                            Kode referral 6 karakter huruf kapital dan angka
+                            {t("plants.referralCodeFormat")}
                           </p>
                         </div>
                       </div>
@@ -1311,12 +1324,10 @@ export default function PlantShowcaseSection() {
                         </div>
                         <div className="text-sm">
                           <p className="font-medium text-blue-800 mb-1">
-                            Konfirmasi Pesanan
+                            {t("plants.confirmationTitle")}
                           </p>
                           <p className="text-blue-700">
-                            Dengan menekan &ldquo;Lanjutkan&rdquo;, kontrak akan
-                            dibuat dan Anda akan diarahkan ke halaman
-                            penandatanganan kontrak.
+                            {t("plants.confirmationMessage")}
                           </p>
                         </div>
                       </div>
@@ -1334,14 +1345,16 @@ export default function PlantShowcaseSection() {
                         }}
                         className="flex-1 px-6 py-3 border-2 border-[#324D3E]/30 text-[#324D3E] rounded-full font-bold hover:bg-[#324D3E]/10 transition-all duration-300 font-[family-name:var(--font-poppins)]"
                       >
-                        Kembali
+                        {t("plants.back")}
                       </button>
                       <button
                         onClick={handleConfirmOrder}
                         disabled={!!isLoading}
                         className="flex-1 px-6 py-3 bg-gradient-to-r from-[#324D3E] to-[#4C3D19] text-white rounded-full font-bold hover:shadow-lg transition-all duration-300 font-[family-name:var(--font-poppins)] disabled:opacity-50"
                       >
-                        {isLoading ? "Membuat Kontrak..." : "Lanjutkan"}
+                        {isLoading
+                          ? t("plants.creatingContract")
+                          : t("plants.continue")}
                       </button>
                     </div>
                   </div>

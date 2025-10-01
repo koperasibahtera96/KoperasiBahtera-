@@ -152,7 +152,7 @@ export default function MarketingKelolaStaff() {
             id: editingStaff?._id,
             role: "marketing",
           })
-        : JSON.stringify({ ...formData, role: "marketing" });
+        : JSON.stringify({ ...formData, role: "Marketing" });
 
       const res = await fetch(url, {
         method,

@@ -294,6 +294,18 @@ export async function GET(request: NextRequest) {
     const page = parseInt(searchParams.get("page") || "1");
     const limit = parseInt(searchParams.get("limit") || "10");
     const search = searchParams.get("search") || "";
+    const roleParam = searchParams.get("role"); // <-- new
+    const roles = roleParam
+      ? roleParam.split(",")
+      : [
+          "staff",
+          "spv_staff",
+          "admin",
+          "finance",
+          "staff_finance",
+          "marketing",
+          "marketing_head",
+        ];
 
     const skip = (page - 1) * limit;
 
@@ -301,17 +313,7 @@ export async function GET(request: NextRequest) {
     const searchQuery = search
       ? {
           $and: [
-            {
-              $or: [
-                { role: "staff" },
-                { role: "spv_staff" },
-                { role: "admin" },
-                { role: "finance" },
-                { role: "staff_finance" },
-                { role: "marketing" },
-                { role: "marketing_head" },
-              ],
-            },
+            { role: { $in: roles } }, // <-- use parsed roles
             {
               $or: [
                 { fullName: { $regex: search, $options: "i" } },
@@ -322,18 +324,7 @@ export async function GET(request: NextRequest) {
             },
           ],
         }
-      : {
-          $or: [
-            { role: "staff" },
-            { role: "spv_staff" },
-            { role: "admin" },
-            { role: "finance" },
-            { role: "staff_finance" },
-            { role: "ketua" },
-            { role: "marketing" },
-            { role: "marketing_head" },
-          ],
-        };
+      : { role: { $in: roles } }; // <-- use parsed roles
 
     // Get total count
     const total = await User.countDocuments(searchQuery);
@@ -358,32 +349,20 @@ export async function GET(request: NextRequest) {
   } catch (error: unknown) {
     console.error("Error fetching staff users:", error);
 
-    // Check if it's a Mongoose error
     if (isMongooseError(error)) {
       const mongooseResponse = handleMongooseError(error);
-
-      if (mongooseResponse) {
-        return mongooseResponse;
-      }
+      if (mongooseResponse) return mongooseResponse;
     }
 
-    // Handle non-Mongoose errors
     if (error && typeof error === "object" && "message" in error) {
       return NextResponse.json(
-        {
-          success: false,
-          error: (error as { message: string }).message,
-        },
+        { success: false, error: (error as { message: string }).message },
         { status: 500 }
       );
     }
 
-    // Generic fallback error
     return NextResponse.json(
-      {
-        success: false,
-        error: "Terjadi kesalahan internal server",
-      },
+      { success: false, error: "Terjadi kesalahan internal server" },
       { status: 500 }
     );
   }

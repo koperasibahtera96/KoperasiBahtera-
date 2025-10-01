@@ -1,9 +1,9 @@
-import { authOptions } from '@/lib/auth';
-import { ensureConnection } from '@/lib/utils/database';
-import Contract from '@/models/Contract';
-import User from '@/models/User';
-import { getServerSession } from 'next-auth';
-import { NextRequest, NextResponse } from 'next/server';
+import { authOptions } from "@/lib/auth";
+import { ensureConnection } from "@/lib/utils/database";
+import Contract from "@/models/Contract";
+import User from "@/models/User";
+import { getServerSession } from "next-auth";
+import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(
   request: NextRequest,
@@ -12,10 +12,7 @@ export async function GET(
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.email) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     await ensureConnection();
@@ -24,10 +21,7 @@ export async function GET(
     // Get user by email to find userId
     const user = await User.findOne({ email: session.user.email });
     if (!user) {
-      return NextResponse.json(
-        { error: 'User not found' },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
     }
 
     // Find the contract
@@ -35,7 +29,7 @@ export async function GET(
 
     if (!contract) {
       return NextResponse.json(
-        { error: 'Contract not found' },
+        { error: "Contract not found" },
         { status: 404 }
       );
     }
@@ -43,7 +37,7 @@ export async function GET(
     // Check if user owns this contract
     if (contract.userId.toString() !== user._id.toString()) {
       return NextResponse.json(
-        { error: 'Unauthorized - Not your contract' },
+        { error: "Unauthorized - Not your contract" },
         { status: 403 }
       );
     }
@@ -52,12 +46,20 @@ export async function GET(
     const signatureAttempts = contract.signatureAttempts || [];
     const currentAttempt = contract.currentAttempt || 0;
     const maxAttempts = contract.maxAttempts || 3;
-    const canRetry = currentAttempt < maxAttempts && contract.adminApprovalStatus === 'rejected';
+    const canRetry =
+      currentAttempt < maxAttempts &&
+      contract.adminApprovalStatus === "rejected";
 
     // Get last rejection reason from the most recent attempt
-    const lastRejectionReason = signatureAttempts.length > 0
-      ? signatureAttempts[signatureAttempts.length - 1].rejectionReason
-      : null;
+    const lastRejectionReason =
+      signatureAttempts.length > 0
+        ? signatureAttempts[signatureAttempts.length - 1].rejectionReason
+        : null;
+
+    const lastRejectionAdminNotes =
+      signatureAttempts.length > 0
+        ? signatureAttempts[signatureAttempts.length - 1].adminNotes
+        : null;
 
     return NextResponse.json({
       success: true,
@@ -65,20 +67,20 @@ export async function GET(
       maxAttempts,
       canRetry,
       lastRejectionReason,
+      lastRejectionAdminNotes,
       contractStatus: contract.adminApprovalStatus,
       retryHistory: signatureAttempts.map((attempt: any) => ({
         attemptNumber: attempt.attemptNumber,
         submittedAt: attempt.submittedAt,
         reviewStatus: attempt.reviewStatus,
         rejectionReason: attempt.rejectionReason,
-        adminNotes: attempt.adminNotes
-      }))
+        adminNotes: attempt.adminNotes,
+      })),
     });
-
   } catch (error) {
-    console.error('Error fetching retry status:', error);
+    console.error("Error fetching retry status:", error);
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: "Internal server error" },
       { status: 500 }
     );
   }

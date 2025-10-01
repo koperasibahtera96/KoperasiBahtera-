@@ -12,11 +12,14 @@ import {
   Palmtree,
   Sprout,
   Trees,
+  Icon,
 } from "lucide-react";
+import { coconut } from "@lucide/lab";
 import { useSession } from "next-auth/react";
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface PlantInstance {
   id: string;
@@ -141,11 +144,33 @@ export default function InvestasiPage() {
   const [selectedInvestment, setSelectedInvestment] =
     useState<Investment | null>(null);
   const { status } = useSession();
+  const { t } = useLanguage();
   // const router = useRouter();
 
   useEffect(() => {
     fetchInvestments();
   }, []);
+
+  // Prevent background page scrolling (including horizontal) while modal is open.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    if (selectedInvestment) {
+      // Add Tailwind class to disable scrolling on the root element
+      document.documentElement.classList.add("overflow-hidden");
+      // Also disable touch scrolling on body for mobile devices
+      document.body.style.touchAction = "none";
+    } else {
+      document.documentElement.classList.remove("overflow-hidden");
+      document.body.style.touchAction = "";
+    }
+
+    // Cleanup when component unmounts
+    return () => {
+      document.documentElement.classList.remove("overflow-hidden");
+      document.body.style.touchAction = "";
+    };
+  }, [selectedInvestment]);
 
   const fetchInvestments = async () => {
     try {
@@ -186,17 +211,17 @@ export default function InvestasiPage() {
   const getStatusText = (status: string) => {
     switch (status) {
       case "active":
-        return "Aktif";
+        return t("plants.status.active") || "Aktif";
       case "completed":
-        return "Selesai";
+        return t("plants.status.completed") || "Selesai";
       case "pending":
-        return "Menunggu";
+        return t("plants.status.pending") || "Menunggu";
       case "cancelled":
-        return "Dibatalkan";
+        return t("plants.status.cancelled") || "Dibatalkan";
       case "approved":
-        return "Aktif";
+        return t("plants.status.approved") || "Aktif";
       default:
-        return status;
+        return t(`plants.status.${status}`) || status;
     }
   };
 
@@ -210,6 +235,8 @@ export default function InvestasiPage() {
         return <Sprout className="w-full h-full" />;
       case "aren":
         return <Palmtree className="w-full h-full" />;
+      case "kelapa":
+        return <Icon iconNode={coconut} className="w-full h-full" />;
       default:
         return <Trees className="w-full h-full" />;
     }
@@ -225,6 +252,8 @@ export default function InvestasiPage() {
         return "Jengkol";
       case "aren":
         return "Aren";
+      case "kelapa":
+        return "Kelapa";
       default:
         return plantType;
     }
@@ -306,14 +335,18 @@ export default function InvestasiPage() {
 
       // ===== Sort: "Kontrak Baru" selalu paling atas, sisanya tanggal paling awal
       const sortedHistory = [...(plantData.history || [])].sort((a, b) => {
-        const aIsKontrak = (a.type || a.action || "").toLowerCase() === "kontrak baru";
-        const bIsKontrak = (b.type || b.action || "").toLowerCase() === "kontrak baru";
+        const aIsKontrak =
+          (a.type || a.action || "").toLowerCase() === "kontrak baru";
+        const bIsKontrak =
+          (b.type || b.action || "").toLowerCase() === "kontrak baru";
 
         if (aIsKontrak && !bIsKontrak) return -1;
         if (!aIsKontrak && bIsKontrak) return 1;
 
         // Jika keduanya "Kontrak Baru" atau keduanya bukan, sort by date
-        return parseDateString(a.date).getTime() - parseDateString(b.date).getTime();
+        return (
+          parseDateString(a.date).getTime() - parseDateString(b.date).getTime()
+        );
       });
 
       // Layout config
@@ -383,12 +416,12 @@ export default function InvestasiPage() {
               });
             } catch {
               pdf.setFontSize(9);
-              pdf.text("Gambar tidak dapat dimuat", left + 3, cursor + 10);
+              pdf.text(t("media.imageLoadError"), left + 3, cursor + 10);
             }
           }
         } else {
           pdf.setFontSize(9);
-          pdf.text("Tidak ada media", left + 3, cursor + 10);
+          pdf.text(t("media.noMedia"), left + 3, cursor + 10);
         }
 
         // Catatan di samping media
@@ -416,7 +449,9 @@ export default function InvestasiPage() {
         y = cardBottom + verticalGap;
       }
 
-      pdf.save(`Riwayat-${plantData.instanceName || ""}-${plantData.qrCode}.pdf`);
+      pdf.save(
+        `Riwayat-${plantData.instanceName || ""}-${plantData.qrCode}.pdf`
+      );
     } catch {
       console.error("Error generating PDF");
       // showError("Gagal membuat PDF", "Gagal membuat PDF. Silakan coba lagi.");
@@ -438,7 +473,7 @@ export default function InvestasiPage() {
             transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
           />
           <p className="text-[#324D3E] text-lg font-medium">
-            Memuat tanaman Anda...
+            {t("plants.loading")}
           </p>
         </motion.div>
       </div>
@@ -472,10 +507,10 @@ export default function InvestasiPage() {
                   />
                   <div>
                     <h1 className="text-lg sm:text-xl font-bold text-[#324D3E]">
-                      Tanaman Saya
+                      {t("plants.myPlantsTitle")}
                     </h1>
                     <p className="text-sm text-gray-600">
-                      Kelola dan pantau tanaman Anda
+                      {t("plants.manageSubtitle")}
                     </p>
                   </div>
                 </motion.div>
@@ -488,7 +523,7 @@ export default function InvestasiPage() {
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                 >
-                  Pembayaran Saya
+                  {t("nav.pembayaran")}
                 </motion.button>
               </Link>
               <Link href="/">
@@ -497,7 +532,7 @@ export default function InvestasiPage() {
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                 >
-                  Kembali
+                  {t("plants.back")}
                 </motion.button>
               </Link>
             </div>
@@ -519,30 +554,30 @@ export default function InvestasiPage() {
           >
             {[
               {
-                title: "Total Paket",
+                title: t("payments.stats.totalPackages"),
                 value: data?.totalInvestments || 0,
-                suffix: " Paket",
+                suffix: ` ${t("plants.trees")}`,
                 icon: <BarChart3 className="w-6 h-6" />,
                 bgColor: "from-blue-500 to-blue-600",
               },
               {
-                title: "Nilai Paket",
+                title: t("payments.stats.paymentValue"),
                 value: formatCurrency(data?.totalAmount || 0),
                 suffix: "",
                 icon: <Coins className="w-6 h-6" />,
                 bgColor: "from-green-500 to-green-600",
               },
               {
-                title: "Sudah Dibayar",
+                title: t("payments.stats.paid"),
                 value: formatCurrency(data?.totalPaid || 0),
                 suffix: "",
                 icon: <CheckCircle className="w-6 h-6" />,
                 bgColor: "from-emerald-500 to-emerald-600",
               },
               {
-                title: "Jumlah Pohon",
+                title: t("plants.treeCount"),
                 value: data?.jumlahPohon || 0,
-                suffix: " Pohon",
+                suffix: ` ${t("plants.trees")}`,
                 icon: <Trees className="w-6 h-6" />,
                 bgColor: "from-teal-500 to-teal-600",
               },
@@ -612,7 +647,7 @@ export default function InvestasiPage() {
                               ? getPlantTypeName(
                                   investment.plantInstance.plantType
                                 )
-                              : "Tanaman"}
+                              : t("plants.plant")}
                           </p>
                         </div>
                       </div>
@@ -628,7 +663,7 @@ export default function InvestasiPage() {
                     {/* Progress Bar */}
                     <div className="mb-4">
                       <div className="flex justify-between text-sm text-gray-600 mb-1">
-                        <span>Progress</span>
+                        <span>{t("payments.progress.title")}</span>
                         <span>{investment.progress}%</span>
                       </div>
                       <div className="w-full bg-gray-200 rounded-full h-2">
@@ -644,13 +679,17 @@ export default function InvestasiPage() {
                     {/* Investment Details */}
                     <div className="grid grid-cols-2 gap-4 text-sm">
                       <div>
-                        <span className="text-gray-600">Total Paket</span>
+                        <span className="text-gray-600">
+                          {t("payments.cards.totalPackage")}
+                        </span>
                         <p className="font-semibold text-gray-900">
                           {formatCurrency(investment.totalAmount)}
                         </p>
                       </div>
                       <div>
-                        <span className="text-gray-600">Sudah Dibayar</span>
+                        <span className="text-gray-600">
+                          {t("payments.stats.paid")}
+                        </span>
                         <p className="font-semibold text-green-600">
                           {formatCurrency(investment.amountPaid)}
                         </p>
@@ -660,21 +699,25 @@ export default function InvestasiPage() {
 
                   {/* Plant Instance Info */}
                   {investment.plantInstance && (
-                    <div className={`p-6 ${
-                      investment.contractInfo?.isPermanentlyRejected
-                        ? 'opacity-60 bg-gray-50'
-                        : ''
-                    }`}>
+                    <div
+                      className={`p-6 ${
+                        investment.contractInfo?.isPermanentlyRejected
+                          ? "opacity-60 bg-gray-50"
+                          : ""
+                      }`}
+                    >
                       <div className="flex items-center justify-between mb-3">
-                        <h4 className={`font-medium ${
-                          investment.contractInfo?.isPermanentlyRejected
-                            ? 'text-gray-500'
-                            : 'text-gray-900'
-                        }`}>
-                          Informasi Tanaman
+                        <h4
+                          className={`font-medium ${
+                            investment.contractInfo?.isPermanentlyRejected
+                              ? "text-gray-500"
+                              : "text-gray-900"
+                          }`}
+                        >
+                          {t("plants.plantInfo")}
                           {investment.contractInfo?.isPermanentlyRejected && (
                             <span className="text-xs text-red-600 ml-2 font-normal">
-                              (DINONAKTIFKAN)
+                              ({t("plants.disabled")})
                             </span>
                           )}
                         </h4>
@@ -688,27 +731,27 @@ export default function InvestasiPage() {
                           }`}
                         >
                           {investment.contractInfo?.isPermanentlyRejected
-                            ? "TERKUNCI"
-                            : investment.plantInstance.status
-                          }
+                            ? t("plants.locked")
+                            : investment.plantInstance.status}
                         </span>
                       </div>
 
                       <div className="space-y-2 text-sm">
                         <div className="flex justify-between">
-                          <span className="text-gray-600">Lokasi:</span>
+                          <span className="text-gray-600">{t("plants.location")}</span>
                           <span className="text-gray-900">
                             {investment.plantInstance.location}
                           </span>
                         </div>
                         <div className="flex justify-between">
-                          <span className="text-gray-600">Blok / Kav:</span>
+                          <span className="text-gray-600">{t("plants.blockKav")}</span>
                           <span className="text-gray-900">
-                            {investment.plantInstance.blok || "-"} / {investment.plantInstance.kavling || "-"}
+                            {investment.plantInstance.blok || "-"} /{" "}
+                            {investment.plantInstance.kavling || "-"}
                           </span>
                         </div>
                         <div className="flex justify-between">
-                          <span className="text-gray-600">Pendapatan:</span>
+                          <span className="text-gray-600">{t("plants.income")}</span>
                           <span className="text-green-600 font-medium">
                             {formatCurrency(
                               investment.plantInstance.totalIncome
@@ -717,7 +760,7 @@ export default function InvestasiPage() {
                         </div>
                         <div className="flex justify-between">
                           <span className="text-gray-600">
-                            Biaya Operasional:
+                            {t("plants.operationalCosts")}
                           </span>
                           <span className="text-red-600 font-medium">
                             {formatCurrency(
@@ -732,7 +775,7 @@ export default function InvestasiPage() {
                         investment.plantInstance.history.length > 0 && (
                           <div className="mt-4">
                             <h5 className="text-sm font-medium text-gray-700 mb-2">
-                              Riwayat Terbaru
+                              {t("plants.recentHistory")}
                             </h5>
                             <div className="space-y-2 max-h-24 overflow-hidden">
                               {investment.plantInstance.history
@@ -748,9 +791,9 @@ export default function InvestasiPage() {
                                       </span>
                                       <span className="text-gray-500 ml-2">
                                         {formatDate(historyItem.date, {
-                                        day: '2-digit',
-                                        month: 'short'
-                                      })}
+                                          day: "2-digit",
+                                          month: "short",
+                                        })}
                                       </span>
                                     </div>
                                     {historyItem.description && (
@@ -760,15 +803,21 @@ export default function InvestasiPage() {
                                     )}
                                     {historyItem.addedBy && (
                                       <p className="text-gray-500 mt-1">
-                                        oleh: {historyItem.addedBy}
+                                        {t("media.addedBy")}{" "}
+                                        {historyItem.addedBy}
                                       </p>
                                     )}
                                   </div>
                                 ))}
                               {investment.plantInstance.history.length > 2 && (
                                 <p className="text-xs text-blue-600 font-medium">
-                                  +{investment.plantInstance.history.length - 2}{" "}
-                                  riwayat lainnya
+                                  {t("plants.moreHistory").replace(
+                                    "{count}",
+                                    String(
+                                      investment.plantInstance.history.length -
+                                        2
+                                    )
+                                  )}
                                 </p>
                               )}
                             </div>
@@ -779,22 +828,19 @@ export default function InvestasiPage() {
                         <div className="mt-4 p-3 bg-amber-50 rounded-lg border border-amber-200">
                           <p className="text-sm text-amber-800">
                             <span className="font-medium">
-                              Pembayaran Berikutnya:
+                              {t("plants.nextPayment")}
                             </span>
                             <br />
-                            Cicilan ke-
+                            {t("plants.installmentNumber")}
                             {
                               investment.nextPaymentInfo.installmentNumber
                             } •{" "}
                             {formatCurrency(investment.nextPaymentInfo.amount)}
                             <br />
-                            Jatuh tempo:{" "}
-                            {formatDate(investment.nextPaymentInfo.dueDate)}
+                            {t("plants.dueDate")}: {formatDate(investment.nextPaymentInfo.dueDate)}
                           </p>
                         </div>
                       )}
-
-                
 
                       {/* Contract Status Warnings */}
                       {investment.contractInfo && (
@@ -802,54 +848,61 @@ export default function InvestasiPage() {
                           {investment.contractInfo.isPermanentlyRejected && (
                             <div className="mt-4 p-3 bg-red-50 rounded-lg border border-red-200">
                               <div className="flex items-center">
-                                <div className="w-4 h-4 text-red-500 mr-2">⚠️</div>
+                                <div className="w-4 h-4 text-red-500 mr-2">
+                                  ⚠️
+                                </div>
                                 <div>
                                   <p className="text-sm font-semibold text-red-800">
-                                    Kontrak Ditolak Permanen
+                                    {t("plants.contractRejectedPermanent")}
                                   </p>
                                   <p className="text-xs text-red-700">
-                                    Maksimal percobaan kontrak telah tercapai ({investment.contractInfo.maxAttempts}x).
-                                    Pembayaran dan akses tanaman dinonaktifkan.
+                                    {t("plants.maxAttemptsReached").replace("{maxAttempts}", String(investment.contractInfo.maxAttempts))}{" "}
+                                    {t("plants.paymentDisabled")}.
                                   </p>
                                 </div>
                               </div>
                             </div>
                           )}
 
-                          {investment.contractInfo.isMaxRetryReached && !investment.contractInfo.isPermanentlyRejected && (
-                            <div className="mt-4 p-3 bg-orange-50 rounded-lg border border-orange-200">
-                              <div className="flex items-center">
-                                <div className="w-4 h-4 text-orange-500 mr-2">⚠️</div>
-                                <div>
-                                  <p className="text-sm font-semibold text-orange-800">
-                                    Kontrak Memerlukan Review
-                                  </p>
-                                  <p className="text-xs text-orange-700">
-                                    Percobaan kontrak: {investment.contractInfo.currentAttempt}/{investment.contractInfo.maxAttempts}.
-                                    Silakan hubungi admin untuk bantuan.
-                                  </p>
+                          {investment.contractInfo.isMaxRetryReached &&
+                            !investment.contractInfo.isPermanentlyRejected && (
+                              <div className="mt-4 p-3 bg-orange-50 rounded-lg border border-orange-200">
+                                <div className="flex items-center">
+                                  <div className="w-4 h-4 text-orange-500 mr-2">
+                                    ⚠️
+                                  </div>
+                                  <div>
+                                    <p className="text-sm font-semibold text-orange-800">
+                                      {t("plants.contractNeedsReview")}
+                                    </p>
+                                    <p className="text-xs text-orange-700">
+                                      {t("plants.contractAttempts")}: {investment.contractInfo.currentAttempt}/{investment.contractInfo.maxAttempts}.
+                                      {t("plants.contactAdmin")}.
+                                    </p>
+                                  </div>
                                 </div>
                               </div>
-                            </div>
-                          )}
+                            )}
 
-                          {investment.contractInfo.adminApprovalStatus === 'rejected' &&
-                           !investment.contractInfo.isMaxRetryReached && (
-                            <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
-                              <div className="flex items-center">
-                                <div className="w-4 h-4 text-blue-500 mr-2">ℹ️</div>
-                                <div>
-                                  <p className="text-sm font-semibold text-blue-800">
-                                    Kontrak Perlu Diajukan Ulang
-                                  </p>
-                                  <p className="text-xs text-blue-700">
-                                    Kunjungi halaman pembayaran untuk mengajukan ulang kontrak.
-                                    Percobaan: {investment.contractInfo.currentAttempt}/{investment.contractInfo.maxAttempts}
-                                  </p>
+                          {investment.contractInfo.adminApprovalStatus ===
+                            "rejected" &&
+                            !investment.contractInfo.isMaxRetryReached && (
+                              <div className="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                                <div className="flex items-center">
+                                  <div className="w-4 h-4 text-blue-500 mr-2">
+                                    ℹ️
+                                  </div>
+                                  <div>
+                                    <p className="text-sm font-semibold text-blue-800">
+                                      {t("plants.contractNeedsResubmission")}
+                                    </p>
+                                    <p className="text-xs text-blue-700">
+                                      {t("plants.visitPaymentPage")}. {t("plants.contractAttempts")}: {investment.contractInfo.currentAttempt}/{investment.contractInfo.maxAttempts}
+                                    </p>
+                                  </div>
                                 </div>
                               </div>
-                            </div>
-                          )}
+                            )}
                         </>
                       )}
                     </div>
@@ -858,22 +911,25 @@ export default function InvestasiPage() {
                   {!investment.plantInstance && (
                     <div className="p-6">
                       <div className="text-center py-4">
-                        <div className={`w-12 h-12 mx-auto mb-2 ${
-                          investment.contractInfo?.isPermanentlyRejected
-                            ? 'text-red-400'
-                            : 'text-gray-400'
-                        }`}>
+                        <div
+                          className={`w-12 h-12 mx-auto mb-2 ${
+                            investment.contractInfo?.isPermanentlyRejected
+                              ? "text-red-400"
+                              : "text-gray-400"
+                          }`}
+                        >
                           <Sprout className="w-full h-full" />
                         </div>
-                        <p className={`text-sm ${
-                          investment.contractInfo?.isPermanentlyRejected
-                            ? 'text-red-600 font-medium'
-                            : 'text-gray-600'
-                        }`}>
+                        <p
+                          className={`text-sm ${
+                            investment.contractInfo?.isPermanentlyRejected
+                              ? "text-red-600 font-medium"
+                              : "text-gray-600"
+                          }`}
+                        >
                           {investment.contractInfo?.isPermanentlyRejected
-                            ? 'Alokasi tanaman dinonaktifkan - Kontrak ditolak permanen'
-                            : 'Tanaman akan dialokasikan setelah pembayaran dikonfirmasi'
-                          }
+                            ? t("plants.plantAllocationDisabled")
+                            : t("plants.plantWillBeAllocated")}
                         </p>
                       </div>
                     </div>
@@ -898,11 +954,10 @@ export default function InvestasiPage() {
                 <Sprout className="w-full h-full" />
               </motion.div>
               <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                Belum Ada Tanaman
+                {t("plants.empty.title")}
               </h3>
               <p className="text-gray-600 mb-6 max-w-md mx-auto">
-                Mulai pembelian paket Anda hari ini dan berkontribusi untuk masa
-                depan yang lebih berkelanjutan.
+                {t("plants.empty.description")}
               </p>
               <Link href="/#produk">
                 <motion.button
@@ -910,7 +965,7 @@ export default function InvestasiPage() {
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                 >
-                  Mulai Bergabung
+                  {t("plants.empty.cta")}
                 </motion.button>
               </Link>
             </motion.div>
@@ -929,17 +984,17 @@ export default function InvestasiPage() {
             onClick={() => setSelectedInvestment(null)}
           >
             <motion.div
-              className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] flex flex-col"
+              className="relative bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
               initial={{ scale: 0.9, opacity: 0, y: 20 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.9, opacity: 0, y: 20 }}
               onClick={(e) => e.stopPropagation()}
             >
               {/* Modal Header */}
-              <div className="p-6 border-b border-gray-100">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-3">
-                    <div className="w-8 h-8 text-green-600">
+              <div className="pt-14 pb-6 px-6 border-b border-gray-100">
+                <div className="flex flex-col md:flex-row md:items-center justify-between">
+                  <div className="flex items-start md:items-center space-x-3 w-full md:w-auto mt-4 md:mt-0">
+                    <div className="w-10 h-10 md:w-8 md:h-8 text-green-600 flex-shrink-0">
                       {selectedInvestment.plantInstance ? (
                         getPlantTypeIcon(
                           selectedInvestment.plantInstance.plantType
@@ -948,8 +1003,8 @@ export default function InvestasiPage() {
                         <Sprout className="w-full h-full" />
                       )}
                     </div>
-                    <div>
-                      <h2 className="text-xl font-bold text-gray-900">
+                    <div className="flex-1 min-w-0">
+                      <h2 className="text-lg sm:text-xl font-bold text-gray-900 break-words">
                         {selectedInvestment.productName}
                       </h2>
                       <p className="text-sm text-gray-600">
@@ -957,73 +1012,85 @@ export default function InvestasiPage() {
                       </p>
                     </div>
                   </div>
-                  <div className="flex items-center space-x-2">
+                  <div className="flex items-center space-x-2 mt-3 md:mt-0 flex-shrink-0">
                     {selectedInvestment.plantInstance && (
                       <button
-                        onClick={() => handleDownloadHistoryPDF(selectedInvestment)}
+                        onClick={() =>
+                          handleDownloadHistoryPDF(selectedInvestment)
+                        }
+                        aria-label="Download riwayat PDF"
                         className="flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 text-white rounded-lg transition-all duration-300 shadow-md hover:shadow-lg"
                       >
                         <Download className="w-4 h-4" />
-                        <span className="text-sm font-medium">Download PDF</span>
+                        <span className="hidden sm:inline text-sm font-medium">
+                          {t("plants.downloadPdf")}
+                        </span>
                       </button>
                     )}
-                    <button
-                      onClick={() => setSelectedInvestment(null)}
-                      className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-                    >
-                      <svg
-                        className="w-6 h-6"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M6 18L18 6M6 6l12 12"
-                        />
-                      </svg>
-                    </button>
                   </div>
+
+                  {/* Close button: absolutely positioned top-right so it stays visible on all breakpoints */}
+                  <button
+                    onClick={() => setSelectedInvestment(null)}
+                    aria-label="Tutup detail"
+                    className="absolute top-3 right-3 p-2 bg-white/90 hover:bg-gray-100 rounded-full transition-colors shadow-sm z-10"
+                  >
+                    <svg
+                      className="w-6 h-6"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M6 18L18 6M6 6l12 12"
+                      />
+                    </svg>
+                  </button>
                 </div>
               </div>
 
               {/* Modal Content */}
-              <div className="flex-1 overflow-hidden flex flex-col">
-                <div className="p-6 space-y-6 flex-1 overflow-y-auto">
+              <div className="">
+                <div className="p-6 space-y-6">
                   {/* Investment Summary */}
                   <div>
                     <h3 className="text-lg font-semibold mb-4">
-                      Ringkasan Tanaman
+                      {t("plants.summary")}
                     </h3>
                     <div className="grid grid-cols-2 gap-4">
                       <div className="p-4 bg-gray-50 rounded-lg">
                         <span className="text-sm text-gray-600">
-                          Jenis Pembayaran
+                          {t("plants.paymentType")}
                         </span>
                         <p className="font-semibold">
                           {selectedInvestment.paymentType === "full"
-                            ? "Lunas"
-                            : "Cicilan"}
+                            ? t("plants.paymentTypeFull")
+                            : t("payments.form.typeInstallment")}
                         </p>
                       </div>
                       <div className="p-4 bg-gray-50 rounded-lg">
-                        <span className="text-sm text-gray-600">Status</span>
+                        <span className="text-sm text-gray-600">
+                          {t("payments.form.contractInfo")}
+                        </span>
                         <p className="font-semibold">
                           {getStatusText(selectedInvestment.status)}
                         </p>
                       </div>
                       <div className="p-4 bg-gray-50 rounded-lg">
                         <span className="text-sm text-gray-600">
-                          Tanggal Pembelian
+                          {t("plants.purchaseDate")}
                         </span>
                         <p className="font-semibold">
                           {formatDate(selectedInvestment.investmentDate)}
                         </p>
                       </div>
                       <div className="p-4 bg-gray-50 rounded-lg">
-                        <span className="text-sm text-gray-600">Progress</span>
+                        <span className="text-sm text-gray-600">
+                          {t("payments.progress.title")}
+                        </span>
                         <p className="font-semibold text-green-600">
                           {selectedInvestment.progress}%
                         </p>
@@ -1035,7 +1102,7 @@ export default function InvestasiPage() {
                   {selectedInvestment.plantInstance && (
                     <div>
                       <h3 className="text-lg font-semibold mb-4">
-                        Detail Tanaman
+                        {t("plants.plantDetails")}
                       </h3>
                       <div className="space-y-4">
                         <div className="p-4 bg-green-50 rounded-lg">
@@ -1044,7 +1111,9 @@ export default function InvestasiPage() {
                           </h4>
                           <div className="grid grid-cols-2 gap-4 text-sm">
                             <div>
-                              <span className="text-gray-600">Tipe:</span>
+                              <span className="text-gray-600">
+                                {t("plants.plantType")}
+                              </span>
                               <p>
                                 {getPlantTypeName(
                                   selectedInvestment.plantInstance.plantType
@@ -1052,18 +1121,28 @@ export default function InvestasiPage() {
                               </p>
                             </div>
                             <div>
-                              <span className="text-gray-600">Status:</span>
+                              <span className="text-gray-600">
+                                {t("payments.form.type")}
+                              </span>
                               <p className="capitalize">
                                 {selectedInvestment.plantInstance.status}
                               </p>
                             </div>
                             <div>
-                              <span className="text-gray-600">Lokasi:</span>
+                              <span className="text-gray-600">
+                                {t("plants.location")}
+                              </span>
                               <p>{selectedInvestment.plantInstance.location}</p>
                             </div>
                             <div>
-                              <span className="text-gray-600">Blok / Kav:</span>
-                              <p>{selectedInvestment.plantInstance.blok || "-"} / {selectedInvestment.plantInstance.kavling || "-"}</p>
+                              <span className="text-gray-600">
+                                {t("plants.blockKav")}
+                              </span>
+                              <p>
+                                {selectedInvestment.plantInstance.blok || "-"} /{" "}
+                                {selectedInvestment.plantInstance.kavling ||
+                                  "-"}
+                              </p>
                             </div>
                           </div>
                         </div>
@@ -1072,7 +1151,7 @@ export default function InvestasiPage() {
                         <div className="grid grid-cols-2 gap-4">
                           <div className="p-4 bg-green-50 rounded-lg">
                             <span className="text-sm text-gray-600">
-                              Total Pendapatan
+                              {t("plants.income")}
                             </span>
                             <p className="text-lg font-bold text-green-600">
                               {formatCurrency(
@@ -1082,7 +1161,7 @@ export default function InvestasiPage() {
                           </div>
                           <div className="p-4 bg-red-50 rounded-lg">
                             <span className="text-sm text-gray-600">
-                              Biaya Operasional
+                              {t("plants.operationalCosts")}
                             </span>
                             <p className="text-lg font-bold text-red-600">
                               {formatCurrency(
@@ -1099,7 +1178,7 @@ export default function InvestasiPage() {
                             0 && (
                             <div className="flex-1 min-h-0">
                               <h4 className="font-medium mb-3">
-                                Riwayat Lengkap
+                                {t("plants.completeHistory")}
                               </h4>
                               <div className="h-80 overflow-y-auto border rounded-lg p-3 bg-gray-50 space-y-3">
                                 {selectedInvestment.plantInstance.history
@@ -1135,9 +1214,15 @@ export default function InvestasiPage() {
                                               preload="metadata"
                                               aria-label={`Video untuk ${historyItem.action}`}
                                             >
-                                              <source src={historyItem.imageUrl} type="video/mp4" />
-                                              <source src={historyItem.imageUrl} type="video/webm" />
-                                              Browser Anda tidak mendukung video HTML5.
+                                              <source
+                                                src={historyItem.imageUrl}
+                                                type="video/mp4"
+                                              />
+                                              <source
+                                                src={historyItem.imageUrl}
+                                                type="video/webm"
+                                              />
+                                              {t("media.videoNotSupported")}
                                             </video>
                                           ) : (
                                             <Image
@@ -1158,7 +1243,7 @@ export default function InvestasiPage() {
                                       )}
                                       {historyItem.addedBy && (
                                         <p className="text-xs text-gray-500">
-                                          Ditambahkan oleh:{" "}
+                                          {t("media.addedBy")}{" "}
                                           {historyItem.addedBy}
                                         </p>
                                       )}
@@ -1177,7 +1262,7 @@ export default function InvestasiPage() {
                               .length > 0)) && (
                           <div>
                             <h4 className="font-medium mb-3">
-                              Aktivitas Keuangan Terbaru
+                              {t("plants.recentFinancialActivity")}
                             </h4>
                             <div className="space-y-2 max-h-40 overflow-y-auto">
                               {[

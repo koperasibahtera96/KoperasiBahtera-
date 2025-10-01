@@ -18,7 +18,9 @@ import {
   ChevronLeft,
   ChevronRight,
   Edit2,
+  X,
 } from "lucide-react";
+import Image from "next/image";
 
 interface ReferralData {
   referralCode: string | null;
@@ -45,6 +47,8 @@ interface ReferralData {
     cicilanPayments: number;
     registrations: number;
   };
+  totalPages: number;
+  currentPage: number;
   message?: string;
 }
 
@@ -63,6 +67,9 @@ export default function StaffPage() {
   const [copiedCode, setCopiedCode] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
+  const [searchQuery, setSearchQuery] = useState("");
+  const [sortBy, setSortBy] = useState<string>("earnedAt");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
 
   useEffect(() => {
     setMounted(true);
@@ -81,7 +88,16 @@ export default function StaffPage() {
       setLoading(true);
       setError(null);
 
-      const response = await fetch("/api/staff/referrals");
+      // Build URL with pagination, search, and sort params
+      const params = new URLSearchParams({
+        page: currentPage.toString(),
+        limit: itemsPerPage.toString(),
+        search: searchQuery,
+        sortBy: sortBy,
+        sortOrder: sortOrder,
+      });
+
+      const response = await fetch(`/api/staff/referrals?${params}`);
       const result = await response.json();
 
       if (!response.ok) {
@@ -101,7 +117,8 @@ export default function StaffPage() {
     if (status === "authenticated") {
       fetchReferralData();
     }
-  }, [status]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [status, currentPage, searchQuery, sortBy, sortOrder]);
 
   useEffect(() => {
     if (status === "authenticated") {
@@ -146,12 +163,14 @@ export default function StaffPage() {
         method: "POST",
         body: form,
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Upload failed");
+      const uploadData = await res.json();
+      if (!res.ok) throw new Error(uploadData.error || "Upload failed");
+
       setUserProfile((prev: any) => ({
         ...(prev || {}),
-        profileImageUrl: data.profileImageUrl,
+        profileImageUrl: uploadData.profileImageUrl,
       }));
+
       // update next-auth session so other components (StaffLayout) reflect the change
       try {
         if (update && session) {
@@ -159,7 +178,7 @@ export default function StaffPage() {
             ...session,
             user: {
               ...session.user,
-              profileImageUrl: data.profileImageUrl,
+              profileImageUrl: uploadData.profileImageUrl,
             },
           } as any);
         }
@@ -261,13 +280,78 @@ export default function StaffPage() {
     );
   };
 
-  // Pagination
-  const totalPages = Math.ceil((data?.referrals.length || 0) / itemsPerPage);
-  const paginatedReferrals =
-    data?.referrals.slice(
-      (currentPage - 1) * itemsPerPage,
-      currentPage * itemsPerPage
-    ) || [];
+  // Server-side pagination - data is already paginated
+  const totalPages = data?.totalPages || 0;
+  const paginatedReferrals = data?.referrals || [];
+  const totalReferrals = data?.totalReferrals || 0;
+
+  // Reset to page 1 when search or sort changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, sortBy, sortOrder]);
+
+  // Handle column header click for sorting
+  const handleSort = (column: string) => {
+    if (sortBy === column) {
+      // Toggle sort order if same column
+      setSortOrder(sortOrder === "asc" ? "desc" : "asc");
+    } else {
+      // Set new column and default to desc
+      setSortBy(column);
+      setSortOrder("desc");
+    }
+  };
+
+  // Get sort icon for column
+  const getSortIcon = (column: string) => {
+    if (sortBy !== column) {
+      return (
+        <svg
+          className="w-4 h-4 opacity-30"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"
+          />
+        </svg>
+      );
+    }
+
+    return sortOrder === "asc" ? (
+      <svg
+        className="w-4 h-4"
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={2}
+          d="M5 15l7-7 7 7"
+        />
+      </svg>
+    ) : (
+      <svg
+        className="w-4 h-4"
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={2}
+          d="M19 9l-7 7-7-7"
+        />
+      </svg>
+    );
+  };
 
   if (status === "loading" || loading) {
     return (
@@ -388,11 +472,12 @@ export default function StaffPage() {
                     Memuat...
                   </div>
                 ) : userProfile?.profileImageUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
+                  <Image
                     src={userProfile.profileImageUrl}
                     alt="Profile"
                     className="w-full h-full object-cover"
+                    width={20}
+                    height={20}
                   />
                 ) : (
                   <div className="w-full h-full bg-[#324D3E] flex items-center justify-center text-white text-2xl font-bold">
@@ -754,23 +839,77 @@ export default function StaffPage() {
           transition={{ delay: 0.4, duration: 0.6 }}
         >
           <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <h2
-                className={getThemeClasses(
-                  "text-lg sm:text-xl font-bold text-[#324D3E] dark:text-white",
-                  "!text-[#4c1d1d]"
+            <div className="flex flex-col gap-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <h2
+                  className={getThemeClasses(
+                    "text-lg sm:text-xl font-bold text-[#324D3E] dark:text-white",
+                    "!text-[#4c1d1d]"
+                  )}
+                >
+                  Riwayat Rujukan
+                </h2>
+                {totalPages > 1 && (
+                  <div
+                    className={getThemeClasses(
+                      "text-sm text-[#889063] dark:text-gray-400 font-medium",
+                      "!text-[#6b7280]"
+                    )}
+                  >
+                    Halaman {currentPage} dari {totalPages}
+                  </div>
                 )}
-              >
-                Riwayat Rujukan
-              </h2>
-              {totalPages > 1 && (
+              </div>
+
+              {/* Search Bar */}
+              <div className="relative">
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Cari berdasarkan nama, email, atau no. telepon..."
+                  className={getThemeClasses(
+                    "w-full px-4 py-3 pl-10 bg-white dark:bg-gray-700 border border-[#324D3E]/20 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#324D3E] dark:focus:ring-gray-500 text-[#324D3E] dark:text-white placeholder-[#889063] dark:placeholder-gray-400",
+                    "!bg-white !border-[#FFC1CC]/30 focus:!ring-[#FFC1CC]/50 !text-[#4c1d1d] placeholder-[#6b7280]"
+                  )}
+                />
+                <svg
+                  className={getThemeClasses(
+                    "absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-[#889063] dark:text-gray-400",
+                    "!text-[#6b7280]"
+                  )}
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                  />
+                </svg>
+                {searchQuery && (
+                  <button
+                    onClick={() => setSearchQuery("")}
+                    className={getThemeClasses(
+                      "absolute right-3 top-1/2 -translate-y-1/2 p-1 hover:bg-gray-100 dark:hover:bg-gray-600 rounded-full transition-colors",
+                      "hover:!bg-[#FFC1CC]/20"
+                    )}
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
+
+              {searchQuery && (
                 <div
                   className={getThemeClasses(
                     "text-sm text-[#889063] dark:text-gray-400 font-medium",
                     "!text-[#6b7280]"
                   )}
                 >
-                  Halaman {currentPage} dari {totalPages}
+                  Menampilkan {totalReferrals} rujukan yang cocok
                 </div>
               )}
             </div>
@@ -787,12 +926,16 @@ export default function StaffPage() {
                         )}
                       >
                         <th
+                          onClick={() => handleSort("customerName")}
                           className={getThemeClasses(
-                            "text-left py-3 px-4 font-semibold text-[#324D3E] dark:text-white",
-                            "!text-[#4c1d1d]"
+                            "text-left py-3 px-4 font-semibold text-[#324D3E] dark:text-white cursor-pointer hover:bg-[#324D3E]/5 transition-colors",
+                            "!text-[#4c1d1d] hover:!bg-[#FFC1CC]/10"
                           )}
                         >
-                          Pelanggan
+                          <div className="flex items-center gap-2">
+                            <span>Pelanggan</span>
+                            {getSortIcon("customerName")}
+                          </div>
                         </th>
                         <th
                           className={getThemeClasses(
@@ -811,36 +954,40 @@ export default function StaffPage() {
                           Tipe
                         </th>
                         <th
+                          onClick={() => handleSort("amount")}
                           className={getThemeClasses(
-                            "text-left py-3 px-4 font-semibold text-[#324D3E] dark:text-white",
-                            "!text-[#4c1d1d]"
+                            "text-left py-3 px-4 font-semibold text-[#324D3E] dark:text-white cursor-pointer hover:bg-[#324D3E]/5 transition-colors",
+                            "!text-[#4c1d1d] hover:!bg-[#FFC1CC]/10"
                           )}
                         >
-                          Jumlah
+                          <div className="flex items-center gap-2">
+                            <span>Jumlah</span>
+                            {getSortIcon("amount")}
+                          </div>
                         </th>
                         <th
+                          onClick={() => handleSort("commission")}
                           className={getThemeClasses(
-                            "text-left py-3 px-4 font-semibold text-[#324D3E] dark:text-white",
-                            "!text-[#4c1d1d]"
+                            "text-left py-3 px-4 font-semibold text-[#324D3E] dark:text-white cursor-pointer hover:bg-[#324D3E]/5 transition-colors",
+                            "!text-[#4c1d1d] hover:!bg-[#FFC1CC]/10"
                           )}
                         >
-                          Komisi
+                          <div className="flex items-center gap-2">
+                            <span>Komisi</span>
+                            {getSortIcon("commission")}
+                          </div>
                         </th>
                         <th
+                          onClick={() => handleSort("status")}
                           className={getThemeClasses(
-                            "text-left py-3 px-4 font-semibold text-[#324D3E] dark:text-white hidden lg:table-cell",
-                            "!text-[#4c1d1d]"
+                            "text-left py-3 px-4 font-semibold text-[#324D3E] dark:text-white hidden lg:table-cell cursor-pointer hover:bg-[#324D3E]/5 transition-colors",
+                            "!text-[#4c1d1d] hover:!bg-[#FFC1CC]/10"
                           )}
                         >
-                          Status
-                        </th>
-                        <th
-                          className={getThemeClasses(
-                            "text-left py-3 px-4 font-semibold text-[#324D3E] dark:text-white hidden xl:table-cell",
-                            "!text-[#4c1d1d]"
-                          )}
-                        >
-                          Tanggal
+                          <div className="flex items-center gap-2">
+                            <span>Status</span>
+                            {getSortIcon("status")}
+                          </div>
                         </th>
                       </tr>
                     </thead>
@@ -903,14 +1050,6 @@ export default function StaffPage() {
                           <td className="py-3 sm:py-4 px-3 sm:px-4 hidden lg:table-cell">
                             {getStatusBadge(referral.status)}
                           </td>
-                          <td
-                            className={getThemeClasses(
-                              "py-3 sm:py-4 px-3 sm:px-4 text-[#889063] dark:text-gray-300 hidden xl:table-cell font-medium text-sm",
-                              "!text-[#6b7280]"
-                            )}
-                          >
-                            {formatDate(referral.paymentDate)}
-                          </td>
                         </tr>
                       ))}
                     </tbody>
@@ -926,12 +1065,13 @@ export default function StaffPage() {
                         "!text-[#6b7280]"
                       )}
                     >
-                      Menampilkan {(currentPage - 1) * itemsPerPage + 1} sampai{" "}
-                      {Math.min(
-                        currentPage * itemsPerPage,
-                        data.referrals.length
-                      )}{" "}
-                      dari {data.referrals.length} rujukan
+                      Menampilkan{" "}
+                      {totalReferrals > 0
+                        ? (currentPage - 1) * itemsPerPage + 1
+                        : 0}{" "}
+                      sampai{" "}
+                      {Math.min(currentPage * itemsPerPage, totalReferrals)}{" "}
+                      dari {totalReferrals} rujukan
                     </div>
                     <div className="flex gap-2">
                       <motion.button

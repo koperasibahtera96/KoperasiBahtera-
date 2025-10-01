@@ -2,6 +2,7 @@
 
 import Image from 'next/image';
 import { motion } from 'framer-motion';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -49,6 +50,22 @@ const socialIconVariants = {
 };
 
 export default function LandingFooter() {
+  const { t } = useLanguage();
+
+  const navigationLinks = [
+    { key: 'footer.navigation.home', href: '#beranda' },
+    { key: 'footer.navigation.program', href: '#program' },
+    { key: 'footer.navigation.aboutUs', href: '#tentang-kami' },
+    { key: 'footer.navigation.products', href: '#produk' },
+    { key: 'footer.navigation.faq', href: '#faq' }
+  ];
+
+  const footerLinks = [
+    { key: 'footer.links.privacy', href: '#' },
+    { key: 'footer.links.terms', href: '#' },
+    { key: 'footer.links.conditions', href: '#' }
+  ];
+
   return (
     <motion.footer 
       className="bg-[#2D3B30] text-white py-12 sm:py-16 md:py-18 px-4 sm:px-6"
@@ -88,9 +105,9 @@ export default function LandingFooter() {
                   className="text-lg md:text-xl lg:text-2xl font-bold font-[family-name:var(--font-poppins)]"
                   whileHover={{ color: "#E5D7C4" }}
                 >
-                  Koperasi Bintang Merah Sejahtera
+                  {t('footer.company.name')}
                 </motion.h3>
-                <p className="text-sm md:text-base text-gray-300">(BAHTERA)</p>
+                <p className="text-sm md:text-base text-gray-300">{t('footer.company.abbreviation')}</p>
               </div>
             </motion.div>
             <motion.p 
@@ -99,8 +116,7 @@ export default function LandingFooter() {
               animate={{ opacity: 1 }}
               transition={{ delay: 0.3, duration: 0.6 }}
             >
-              Solusi tepat bagi Anda yang ingin meraih keuntungan sekaligus memberikan dampak positif 
-              bagi lingkungan dan masyarakat melalui pertanian berkelanjutan.
+              {t('footer.company.description')}
             </motion.p>
             
             {/* Social Media */}
@@ -140,27 +156,27 @@ export default function LandingFooter() {
               className="text-lg font-bold mb-4 font-[family-name:var(--font-poppins)]"
               whileHover={{ color: "#E5D7C4" }}
             >
-              Navigasi
+              {t('footer.navigation.title')}
             </motion.h4>
             <motion.ul 
               className="space-y-2 text-gray-300"
               variants={containerVariants}
             >
-              {['Beranda', 'Program', 'Tentang Kami', 'Produk', 'FAQ'].map((link, index) => (
-                <motion.li 
+              {navigationLinks.map((link, index) => (
+                <motion.li
                   key={index}
                   variants={itemVariants}
                 >
-                  <motion.a 
-                    href={`#${link.toLowerCase().replace(' ', '-')}`} 
+                  <motion.a
+                    href={link.href}
                     className="hover:text-white transition-colors"
-                    whileHover={{ 
+                    whileHover={{
                       x: 5,
                       color: "#E5D7C4",
                       transition: { duration: 0.2 }
                     }}
                   >
-                    {link}
+                    {t(link.key)}
                   </motion.a>
                 </motion.li>
               ))}
@@ -175,7 +191,7 @@ export default function LandingFooter() {
               className="text-lg font-bold mb-4 font-[family-name:var(--font-poppins)]"
               whileHover={{ color: "#E5D7C4" }}
             >
-              Hubungi Kami
+              {t('footer.contact.title')}
             </motion.h4>
             <motion.div 
               className="space-y-3 text-gray-300"
@@ -191,7 +207,7 @@ export default function LandingFooter() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
                 </svg>
                 <p className="text-sm">
-                  Bintaro Business Center Jl RC Veteran Raya No 1i, Bintaro - Kec Pesanggrahan Kota Jakarta Selatan DKI Jakarta 12330
+                  {t('footer.contact.address')}
                 </p>
               </motion.div>
               
@@ -203,7 +219,7 @@ export default function LandingFooter() {
                 <svg className="w-5 h-5 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/>
                 </svg>
-                <p className="text-sm">+62 81118893679</p>
+                <p className="text-sm">{t('footer.contact.phone')}</p>
               </motion.div>
               
               <motion.div 
@@ -214,7 +230,7 @@ export default function LandingFooter() {
                 <svg className="w-5 h-5 mr-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
                 </svg>
-                <p className="text-sm">bintangmerahsejahtera@gmail.com</p>
+                <p className="text-sm">{t('footer.contact.email')}</p>
               </motion.div>
             </motion.div>
           </motion.div>
@@ -231,21 +247,21 @@ export default function LandingFooter() {
             className="text-gray-400 text-sm mb-4 sm:mb-0"
             variants={itemVariants}
           >
-            © 2024 Koperasi Bintang Merah Sejahtera (BAHTERA). All rights reserved.
+            {t('footer.copyright')}
           </motion.p>
           <motion.div 
             className="flex space-x-6 text-sm text-gray-400"
             variants={containerVariants}
           >
-            {['Privacy Policy', 'Terms of Service', 'Syarat & Ketentuan'].map((link, index) => (
-              <motion.a 
+            {footerLinks.map((link, index) => (
+              <motion.a
                 key={index}
-                href="#" 
+                href={link.href}
                 className="hover:text-white transition-colors"
                 variants={itemVariants}
                 whileHover={{ color: "#E5D7C4" }}
               >
-                {link}
+                {t(link.key)}
               </motion.a>
             ))}
           </motion.div>

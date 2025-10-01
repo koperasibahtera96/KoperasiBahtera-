@@ -3,6 +3,7 @@
 import { motion } from "framer-motion";
 import Image from "next/image";
 import { useState } from "react";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 const containerVariants: any = {
   hidden: { opacity: 0 },
@@ -65,6 +66,7 @@ const scaleIn: any = {
 
 export default function LandingHero() {
   const [_imageLoaded, setImageLoaded] = useState(false);
+  const { t } = useLanguage();
 
   return (
     <motion.section
@@ -97,7 +99,7 @@ export default function LandingHero() {
             className="text-base sm:text-lg md:text-xl lg:text-2xl mb-3 sm:mb-4 md:mb-5 italic font-medium text-[#4C3D19] block"
             variants={slideInFromLeft}
           >
-            Untuk Masa Depan
+            {t("hero.subtitle")}
           </motion.p>
 
           {/* Main Title */}
@@ -114,7 +116,7 @@ export default function LandingHero() {
                 transition: { duration: 0.3 },
               }}
             >
-              Pembiayaan Pengembangan Usaha Pertanian 
+              {t("hero.title.line1")}
             </motion.span>
             <motion.span
               className="block text-[#4C3D19]"
@@ -125,7 +127,7 @@ export default function LandingHero() {
                 transition: { duration: 0.3 },
               }}
             >
-              Berkelanjutan yang Mudah
+              {t("hero.title.line2")}
             </motion.span>
           </motion.h1>
 
@@ -134,10 +136,7 @@ export default function LandingHero() {
             className="text-sm sm:text-base md:text-lg lg:text-xl xl:text-2xl leading-relaxed mb-6 sm:mb-8 md:mb-10 max-w-[50rem] text-[#4C3D19]"
             variants={fadeInUp}
           >
-            Solusi tepat bagi Anda yang ingin meraih keuntungan sekaligus
-            memberikan dampak positif bagi lingkungan dan masyarakat. Melalui
-            sistem investasi yang sederhana dan transparan, Anda dapat ikut
-            mendukung petani lokal untuk meningkatkan hasil panen.
+            {t("hero.description")}
           </motion.p>
 
           {/* CTA Button */}
@@ -156,7 +155,7 @@ export default function LandingHero() {
             }}
             whileTap={{ scale: 0.98 }}
           >
-            Mulai Sekarang
+            {t("hero.cta")}
           </motion.button>
         </div>
       </motion.div>
@@ -198,7 +197,9 @@ export default function LandingHero() {
               d="M19 14l-7 7m0 0l-7-7m7 7V3"
             />
           </svg>
-          <span className="text-sm text-[#324D3E] font-bold">Selengkapnya</span>
+          <span className="text-sm text-[#324D3E] font-bold">
+            {t("hero.scrollMore")}
+          </span>
         </motion.div>
       </motion.div>
     </motion.section>

@@ -16,7 +16,7 @@ export async function GET(
     const { contractId } = await params;
 
     // Find contract by contractId
-    const contract = await Contract.findOne({ contractId }).populate('userId');
+    const contract = await Contract.findOne({ contractId }).populate("userId");
 
     if (!contract) {
       return NextResponse.json(
@@ -35,9 +35,13 @@ export async function GET(
     }
 
     // Check if contract is already signed or no longer available for signing
-    if (contract.status !== 'draft') {
+    if (contract.status !== "draft") {
       return NextResponse.json(
-        { success: false, error: "Contract is no longer available for signing", contractStatus: contract.status },
+        {
+          success: false,
+          error: "Contract is no longer available for signing",
+          contractStatus: contract.status,
+        },
         { status: 400 }
       );
     }
@@ -45,7 +49,7 @@ export async function GET(
     // Format contract data to match the interface expected by the frontend
     const contractData = {
       investor: {
-        name: user.fullName || user.name || user.email.split('@')[0],
+        name: user.fullName || user.name || user.email.split("@")[0],
         email: user.email,
         phoneNumber: user.phoneNumber || undefined,
         nik: user.nik || undefined,
@@ -64,7 +68,8 @@ export async function GET(
         amountPaid: 0, // Contract hasn't been paid yet in new flow
         paymentType: contract.paymentType,
         plantInstanceId: contract.plantInstanceId?.toString() || "",
-        investmentDate: contract.createdAt?.toISOString() || new Date().toISOString(),
+        investmentDate:
+          contract.createdAt?.toISOString() || new Date().toISOString(),
       },
       plantInstance: {
         instanceName: "Instansi Pohon",
@@ -82,7 +87,8 @@ export async function GET(
         location: "Akan ditentukan",
       },
       contractNumber: contract.contractNumber,
-      contractDate: contract.createdAt?.toISOString() || new Date().toISOString(),
+      contractDate:
+        contract.createdAt?.toISOString() || new Date().toISOString(),
     };
 
     return NextResponse.json({
@@ -107,10 +113,7 @@ export async function POST(
 
     const session = await getServerSession();
     if (!session?.user?.email) {
-      return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const { contractId } = await params;
@@ -118,7 +121,7 @@ export async function POST(
     const { signatureData } = body;
 
     // Find the contract
-    const contract = await Contract.findOne({ contractId }).populate('userId');
+    const contract = await Contract.findOne({ contractId }).populate("userId");
 
     if (!contract) {
       return NextResponse.json(
@@ -136,7 +139,7 @@ export async function POST(
     }
 
     // Check if contract is still in draft status
-    if (contract.status !== 'draft') {
+    if (contract.status !== "draft") {
       return NextResponse.json(
         { error: "Contract is no longer in draft status" },
         { status: 400 }
@@ -156,64 +159,67 @@ export async function POST(
       attemptNumber: contract.currentAttempt + 1,
       signatureData: signatureData || null,
       submittedAt: new Date(),
-      adminReview: 'pending',
+      adminReview: "pending",
       reviewedAt: null,
-      reviewNotes: null
+      reviewNotes: null,
     };
 
     // Get user data for payment creation
     const user = contract.userId;
 
     // For cicilan payments, create individual installment Payment records
-    if (contract.paymentType === 'cicilan') {
+    if (contract.paymentType === "cicilan") {
       const totalInstallments = contract.totalInstallments || 12;
-      const installmentAmount = contract.installmentAmount || Math.ceil(contract.totalAmount / totalInstallments);
+      const installmentAmount =
+        contract.installmentAmount ||
+        Math.ceil(contract.totalAmount / totalInstallments);
       const cicilanOrderId = contract.contractId; // Use contractId as cicilanOrderId
 
       // Check if first installment payment already exists
-      const existingFirstInstallment = await Payment.findOne({ 
+      const existingFirstInstallment = await Payment.findOne({
         cicilanOrderId: cicilanOrderId,
         installmentNumber: 1,
-        paymentType: 'cicilan-installment'
+        paymentType: "cicilan-installment",
       });
 
       if (!existingFirstInstallment) {
         // Create only the first installment Payment record
         const firstInstallmentDueDate = new Date();
-        firstInstallmentDueDate.setMonth(firstInstallmentDueDate.getMonth() + 1);
+        // Set due date to one day after today (previously was one month ahead)
+        firstInstallmentDueDate.setDate(firstInstallmentDueDate.getDate() + 1);
 
         const firstInstallmentOrderId = await generateInvoiceNumber({
           productName: contract.productName,
           installmentNumber: 1,
-          paymentType: 'cicilan-installment'
+          paymentType: "cicilan-installment",
         });
 
         const firstInstallmentPayment = new Payment({
           orderId: firstInstallmentOrderId,
           userId: user._id,
           amount: installmentAmount,
-          currency: 'IDR',
-          paymentType: 'cicilan-installment',
+          currency: "IDR",
+          paymentType: "cicilan-installment",
           cicilanOrderId: cicilanOrderId,
           installmentNumber: 1,
           totalInstallments: totalInstallments,
           installmentAmount: installmentAmount,
-          paymentTerm: contract.paymentTerm || 'monthly',
+          paymentTerm: contract.paymentTerm || "monthly",
           dueDate: firstInstallmentDueDate,
-          adminStatus: 'pending',
+          adminStatus: "pending",
           productName: contract.productName,
-          productId: contract.productId || '',
+          productId: contract.productId || "",
           isProcessed: false,
-          status: 'pending',
-          transactionStatus: 'pending',
+          status: "pending",
+          transactionStatus: "pending",
           customerData: {
-            fullName: user.name || user.email.split('@')[0],
+            fullName: user.name || user.email.split("@")[0],
             email: user.email,
-            phoneNumber: user.phoneNumber || '',
+            phoneNumber: user.phoneNumber || "",
           },
           // Copy referral code from contract if it exists
           ...(contract.referralCode && {
-            referralCode: contract.referralCode
+            referralCode: contract.referralCode,
           }),
         });
 
@@ -224,7 +230,7 @@ export async function POST(
           cicilanOrderId: cicilanOrderId,
           installmentNumber: 1,
           amount: installmentAmount,
-          dueDate: firstInstallmentDueDate
+          dueDate: firstInstallmentDueDate,
         });
       }
     } else {
@@ -236,7 +242,7 @@ export async function POST(
       const existingPayment = await Payment.findOne({
         orderId: orderId,
         userId: user._id,
-        paymentType: 'full-investment'
+        paymentType: "full-investment",
       });
       if (!existingPayment) {
         // set due date for full payment to 1 day after now
@@ -248,19 +254,19 @@ export async function POST(
           userId: user._id,
           amount: contract.totalAmount,
           productName: contract.productName,
-          paymentType: 'full-investment',
-          status: 'pending',
-          transactionStatus: 'pending',
+          paymentType: "full-investment",
+          status: "pending",
+          transactionStatus: "pending",
           dueDate,
           customerData: {
             email: user.email,
-            fullName: user.name || user.email.split('@')[0],
-            phoneNumber: user.phoneNumber || '',
+            fullName: user.name || user.email.split("@")[0],
+            phoneNumber: user.phoneNumber || "",
           },
           isProcessed: false,
           // Copy referral code from contract if it exists
           ...(contract.referralCode && {
-            referralCode: contract.referralCode
+            referralCode: contract.referralCode,
           }),
         });
 
@@ -270,8 +276,8 @@ export async function POST(
           orderId: orderId,
           contractId: contract.contractId,
           amount: contract.totalAmount,
-          paymentType: 'full-investment',
-          dueDate: dueDate.toISOString()
+          paymentType: "full-investment",
+          dueDate: dueDate.toISOString(),
         });
       }
     }
@@ -283,13 +289,13 @@ export async function POST(
       // Create new investor record
       investor = new Investor({
         userId: user._id,
-        name: user.name || user.email.split('@')[0],
+        name: user.name || user.email.split("@")[0],
         email: user.email,
-        phoneNumber: user.phoneNumber || '',
+        phoneNumber: user.phoneNumber || "",
         totalInvestasi: contract.totalAmount,
         jumlahPohon: 0, // Will be updated when PlantInstance is created after payment
-        status: 'active',
-        investments: []
+        status: "active",
+        investments: [],
       });
     }
 
@@ -302,45 +308,47 @@ export async function POST(
       paymentType: contract.paymentType,
       plantInstanceId: null, // Will be set when PlantInstance is created after payment
       investmentDate: new Date(),
-      status: 'pending', // Pending payment
+      status: "pending", // Pending payment
       contractSigned: true,
       contractNumber: contract.contractNumber,
-      contractSignedDate: new Date()
+      contractSignedDate: new Date(),
     };
 
     // Create only the first installment if payment type is cicilan (next ones created after approval)
-    if (contract.paymentType === 'cicilan') {
+    if (contract.paymentType === "cicilan") {
       const totalInstallments = contract.totalInstallments || 12; // Use contract data or fallback
-      const installmentAmount = contract.installmentAmount || Math.ceil(contract.totalAmount / totalInstallments);
+      const installmentAmount =
+        contract.installmentAmount ||
+        Math.ceil(contract.totalAmount / totalInstallments);
 
       // Only create the first installment
       const firstInstallmentDueDate = new Date();
-      firstInstallmentDueDate.setMonth(firstInstallmentDueDate.getMonth() + 1);
+      // Set due date to one day after today (previously was one month ahead)
+      firstInstallmentDueDate.setDate(firstInstallmentDueDate.getDate() + 1);
 
       const firstInstallment = {
         installmentNumber: 1,
         amount: installmentAmount,
         dueDate: firstInstallmentDueDate,
-        status: 'pending',
+        status: "pending",
         isPaid: false,
         paidDate: null,
         proofImageUrl: null,
-        adminStatus: 'pending',
+        adminStatus: "pending",
         adminReviewDate: null,
         adminNotes: null,
-        submissionDate: null
+        submissionDate: null,
       };
 
       investment.installments = [firstInstallment]; // Only first installment
     }
-
 
     await investor.save();
 
     // Update contract
     contract.signatureAttempts.push(signatureAttempt);
     contract.currentAttempt += 1;
-    contract.status = 'signed';
+    contract.status = "signed";
 
     await contract.save();
 
@@ -351,8 +359,8 @@ export async function POST(
         contractId: contract.contractId,
         status: contract.status,
         currentAttempt: contract.currentAttempt,
-        maxAttempts: contract.maxAttempts
-      }
+        maxAttempts: contract.maxAttempts,
+      },
     });
   } catch (error) {
     console.error("POST /api/contract/[contractId] error:", error);

@@ -2,28 +2,30 @@
 
 import Image from 'next/image';
 import { useState } from 'react';
-
-const faqData = [
-  {
-    question: "Bagaimana Cara Kerjanya?",
-    answer: "Sistem kami bekerja melalui platform digital yang mudah diakses. Anda dapat memilih jenis tanaman, menentukan jumlah paket, dan memantau perkembangan tanaman Anda secara real-time melalui dashboard yang disediakan."
-  },
-  {
-    question: "Seberapa Amankah Dana Saya Setelah Pengajuan?",
-    answer: "Dana Anda akan dikelola secara transparan dan aman melalui sistem kami yang telah terintegrasi dengan standar keamanan tingkat tinggi. Setiap dana akan dialokasikan ke proyek-proyek yang telah melalui proses seleksi ketat, dan Anda akan mendapat laporan berkala mengenai penggunaan dana dan perkembangan proyek. Selain itu, kami menggunakan sistem perbankan digital yang aman dan terpercaya. Kami berkomitmen untuk menjaga kepercayaan Anda dengan memastikan setiap operasi mengikuti prosedur audit yang ketat sesuai tujuan pembelian paket tanaman Anda."
-  },
-  {
-    question: "Apakah Pertanian Ini Dijamin untuk Jangka Panjang?",
-    answer: "Ya, paket pertanian kami dirancang untuk jangka panjang dengan jaminan keberlanjutan. Kami bekerja sama dengan petani berpengalaman dan menggunakan teknologi modern untuk memastikan produktivitas yang optimal sepanjang periode pembelian paket."
-  },
-  {
-    question: "Bagaimana Proses Pembelian Paket Pertanian Berkelanjutan?",
-    answer: "Proses pembelian paket dimulai dengan pendaftaran akun, pemilihan paket tanaman, pembayaran, dan kemudian monitoring berkala. Kami menyediakan laporan transparan mengenai perkembangan tanaman, estimasi hasil panen, dan proyeksi keuntungan yang akan Anda terima."
-  }
-];
+import { useLanguage } from '@/contexts/LanguageContext';
 
 export default function FAQSection() {
+  const { t } = useLanguage();
   const [openIndex, setOpenIndex] = useState<number | null>(null);
+
+  const faqData = [
+    {
+      question: t("faq.questions.howItWorks.question"),
+      answer: t("faq.questions.howItWorks.answer")
+    },
+    {
+      question: t("faq.questions.fundSafety.question"),
+      answer: t("faq.questions.fundSafety.answer")
+    },
+    {
+      question: t("faq.questions.longTermGuarantee.question"),
+      answer: t("faq.questions.longTermGuarantee.answer")
+    },
+    {
+      question: t("faq.questions.purchaseProcess.question"),
+      answer: t("faq.questions.purchaseProcess.answer")
+    }
+  ];
 
   const toggleFAQ = (index: number) => {
     setOpenIndex(openIndex === index ? null : index);
@@ -39,7 +41,7 @@ export default function FAQSection() {
       <div className="max-w-7xl mx-auto">
         {/* Title at top center */}
         <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-[#4C3D19] mb-8 sm:mb-10 md:mb-12 text-center font-[family-name:var(--font-poppins)]">
-          Frequently Asked Question
+          {t('faq.title')}
         </h2>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-2 md:gap-3 lg:gap-8 xl:gap-12 items-start">
