@@ -150,8 +150,28 @@ export default function MemberDetailPage(props: {
   const [instanceQueryInput, setInstanceQueryInput] = useState("");
   const [instanceQuery, setInstanceQuery] = useState("");
 
+  // 🔐 Tambahan: simpan nama user login dari /api/me
+  const [currentUserName, setCurrentUserName] = useState<string>("");
+
   React.useEffect(() => {
     setMounted(true);
+  }, []);
+
+  // Ambil nama user login dari /api/me (tanpa mengubah logic lain)
+  useEffect(() => {
+    (async () => {
+      try {
+        const r = await fetch("/api/me", { cache: "no-store" });
+        if (r.ok) {
+          const j = await r.json();
+          const nm =
+            j?.name || j?.user?.name || j?.profile?.name || j?.data?.name || "";
+          if (nm) setCurrentUserName(String(nm));
+        }
+      } catch {
+        // ignore error: fallback ke member?.name atau "system" saat submit
+      }
+    })();
   }, []);
 
   // Helper function to get theme-aware classes
@@ -399,7 +419,7 @@ export default function MemberDetailPage(props: {
       styleRange(ws, ketRow, 1, ketRow, 2, {
         font: { ...bold },
         alignment: center,
-        border: borderAll,
+        border: { top: { style: "thin" }, right: { style: "thin" }, bottom: { style: "thin" }, left: { style: "thin" } },
       });
 
     // "RINGKASAN INVESTASI"
@@ -416,7 +436,7 @@ export default function MemberDetailPage(props: {
     styleRange(ws, detailHeader, 1, detailHeader, 11, {
       font: { ...bold },
       alignment: center,
-      border: borderAll,
+      border: { top: { style: "thin" }, right: { style: "thin" }, bottom: { style: "thin" }, left: { style: "thin" } },
     });
 
     // Border simpel untuk semua sel berisi
@@ -424,7 +444,7 @@ export default function MemberDetailPage(props: {
       for (let c = 1; c < 12; c++) {
         const cell = ws[XLSXAny.utils.encode_cell({ r, c })];
         if (!cell) continue;
-        cell.s = { ...(cell.s || {}), border: borderAll };
+        cell.s = { ...(cell.s || {}), border: { top: { style: "thin" }, right: { style: "thin" }, bottom: { style: "thin" }, left: { style: "thin" } } };
       }
     }
 
@@ -508,7 +528,7 @@ export default function MemberDetailPage(props: {
       date: incForm.date || new Date().toISOString().split("T")[0],
       description: incForm.description || "Pemasukan",
       amount: Number(incForm.amount.replace(/\./g, "")) || 0,
-      addedBy: member?.name || "system",
+      addedBy: currentUserName || member?.name || "system", // ⬅️ ambil dari user login
       addedAt: new Date().toISOString(),
     };
     const res = await fetch(`/api/plants/${selectedPlant}/income`, {
@@ -531,7 +551,7 @@ export default function MemberDetailPage(props: {
       date: expForm.date || new Date().toISOString().split("T")[0],
       description: expForm.description || "Pengeluaran",
       amount: Number(expForm.amount.replace(/\./g, "")) || 0,
-      addedBy: member?.name || "system",
+      addedBy: currentUserName || member?.name || "system", // ⬅️ ambil dari user login
       addedAt: new Date().toISOString(),
     };
     const res = await fetch(`/api/plants/${selectedPlant}/costs`, {
@@ -626,7 +646,7 @@ async function submitBulk() {
         date: bulkDate || undefined,
         note: bulkType === "income" ? (bulkNote || "Pemasukan (bulk)") : undefined,
         category: bulkType === "expense" ? (bulkCategory || "Operasional") : undefined,
-        createdBy: member?.name || "system", // ⬅️ penting: sama seperti input manual
+        createdBy: member?.name || "system", // ⬅️ biarkan sesuai logic eksisting
       }),
     });
 
