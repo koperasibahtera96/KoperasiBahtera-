@@ -17,7 +17,7 @@ async function getXLSX() {
 // ============== Types (ikuti /invoice) ==============
 type PaymentData = {
   _id: string;
-  orderId: string;     // REG-...
+  orderId: string; // REG-...
   paymentType: string; // "registration"
   status: string;
   amount: number;
@@ -68,7 +68,8 @@ function formatDateSheet(d?: string) {
 }
 function toPaidLabel(status?: string) {
   if (!status) return "-";
-  if (status === "settlement" || status === "paid" || status === "success") return "Lunas";
+  if (status === "settlement" || status === "paid" || status === "success")
+    return "Lunas";
   if (status === "pending") return "Pending";
   if (status === "expire" || status === "expired") return "Kedaluwarsa";
   if (status === "cancel" || status === "cancelled") return "Dibatalkan";
@@ -106,7 +107,9 @@ function Content() {
       if (!qs.get("page")) qs.set("page", String(page || 1));
       if (!qs.get("perPage")) qs.set("perPage", String(perPage || 10));
       if (!qs.get("sort")) qs.set("sort", sort || "desc");
-      const res = await fetch(`/api/pendaftaran?${qs.toString()}`, { cache: "no-store" });
+      const res = await fetch(`/api/pendaftaran?${qs.toString()}`, {
+        cache: "no-store",
+      });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const json: InvoiceResponse = await res.json();
       setData(json);
@@ -132,9 +135,14 @@ function Content() {
         const qs = new URLSearchParams(searchParams?.toString() || "");
         qs.set("page", String(p));
         // gunakan perPage besar saat agregasi
-        qs.set("perPage", String(Math.max(Number(qs.get("perPage") || 0), 200) || 200));
+        qs.set(
+          "perPage",
+          String(Math.max(Number(qs.get("perPage") || 0), 200) || 200)
+        );
         qs.set("sort", sort || "desc");
-        const r = await fetch(`/api/pendaftaran?${qs.toString()}`, { cache: "no-store" });
+        const r = await fetch(`/api/pendaftaran?${qs.toString()}`, {
+          cache: "no-store",
+        });
         if (!r.ok) throw new Error(`Gagal memuat halaman ${p}`);
         return (await r.json()) as InvoiceResponse;
       }
@@ -249,9 +257,14 @@ function Content() {
     async function fetchPageAll(p: number) {
       const qs = new URLSearchParams(searchParams?.toString() || "");
       qs.set("page", String(p));
-      qs.set("perPage", String(Math.max(Number(qs.get("perPage") || 0), 200) || 200));
+      qs.set(
+        "perPage",
+        String(Math.max(Number(qs.get("perPage") || 0), 200) || 200)
+      );
       qs.set("sort", sort || "desc");
-      const r = await fetch(`/api/pendaftaran?${qs.toString()}`, { cache: "no-store" });
+      const r = await fetch(`/api/pendaftaran?${qs.toString()}`, {
+        cache: "no-store",
+      });
       if (!r.ok) throw new Error(`Gagal memuat halaman ${p}`);
       return (await r.json()) as InvoiceResponse;
     }
@@ -288,7 +301,14 @@ function Content() {
     };
     const bold = { bold: true };
     const center = { horizontal: "center", vertical: "center" };
-    function styleRange(s: any, r1: number, c1: number, r2: number, c2: number, style: any) {
+    function styleRange(
+      s: any,
+      r1: number,
+      c1: number,
+      r2: number,
+      c2: number,
+      style: any
+    ) {
       for (let R = r1; R <= r2; R++) {
         for (let C = c1; C <= c2; C++) {
           const cell = s[XLSXAny.utils.encode_cell({ r: R, c: C })];
@@ -305,8 +325,14 @@ function Content() {
       { s: { r: 5, c: 0 }, e: { r: 5, c: 7 } },
       { s: { r: 7, c: 0 }, e: { r: 7, c: 7 } }
     );
-    styleRange(ws, 0, 0, 0, 7, { font: { ...bold, sz: 14 }, alignment: center });
-    styleRange(ws, 4, 0, 4, 7, { font: { ...bold, sz: 12 }, alignment: center });
+    styleRange(ws, 0, 0, 0, 7, {
+      font: { ...bold, sz: 14 },
+      alignment: center,
+    });
+    styleRange(ws, 4, 0, 4, 7, {
+      font: { ...bold, sz: 12 },
+      alignment: center,
+    });
     styleRange(ws, 7, 0, 7, 7, { font: { ...bold, sz: 12 } });
 
     const headerRow = 9;
@@ -380,14 +406,18 @@ function Content() {
             {/* sort */}
             <div className="inline-flex items-center gap-2 rounded-2xl border border-[#324D3E]/20 bg-white px-3 py-2 text-sm">
               <button
-                className={`rounded-lg px-2 py-1 ${sort === "desc" ? "bg-[#324D3E] text-white" : ""}`}
+                className={`rounded-lg px-2 py-1 ${
+                  sort === "desc" ? "bg-[#324D3E] text-white" : ""
+                }`}
                 onClick={() => setSort("desc")}
                 title="Terbaru"
               >
                 Terbaru
               </button>
               <button
-                className={`rounded-lg px-2 py-1 ${sort === "asc" ? "bg-[#324D3E] text-white" : ""}`}
+                className={`rounded-lg px-2 py-1 ${
+                  sort === "asc" ? "bg-[#324D3E] text-white" : ""
+                }`}
                 onClick={() => setSort("asc")}
                 title="Terlama"
               >
@@ -461,7 +491,9 @@ function Content() {
         ) : err ? (
           <div className="p-8 text-center text-red-600">{err}</div>
         ) : !data || data.payments.length === 0 ? (
-          <div className="p-8 text-center text-sm opacity-70">Tidak ada data.</div>
+          <div className="p-8 text-center text-sm opacity-70">
+            Tidak ada data.
+          </div>
         ) : (
           <>
             <div className="w-full overflow-x-auto">
@@ -480,15 +512,20 @@ function Content() {
                 <tbody>
                   {data.payments.map((p, i) => {
                     const idx = i + 1 + (currentPage - 1) * perPage;
-                    const nominal = p.amount ?? p.totalAmount ?? p.gross_amount ?? 0;
+                    const nominal =
+                      p.amount ?? p.totalAmount ?? p.gross_amount ?? 0;
                     const user = p.userName || p.userEmail || p.userId || "-";
                     return (
                       <tr key={p._id} className="border-b border-gray-100">
                         <td className="px-6 py-3">{idx}</td>
                         <td className="px-6 py-3">Pendaftaran</td>
                         <td className="px-6 py-3">{user}</td>
-                        <td className="px-6 py-3 font-medium">{formatIDR(nominal)}</td>
-                        <td className="px-6 py-3">{formatDateText(p.createdAt)}</td>
+                        <td className="px-6 py-3 font-medium">
+                          {formatIDR(nominal)}
+                        </td>
+                        <td className="px-6 py-3">
+                          {formatDateText(p.createdAt)}
+                        </td>
                         <td className="px-6 py-3">{p.orderId || "-"}</td>
                         <td className="px-6 py-3">
                           <span
@@ -540,7 +577,13 @@ function Content() {
 export default function PendaftaranPage() {
   return (
     <FinanceSidebar>
-      <Suspense fallback={<div className="px-6 lg:px-8 py-6"><div className="text-center p-8">Memuat...</div></div>}>
+      <Suspense
+        fallback={
+          <div className="px-6 lg:px-8 py-6">
+            <div className="text-center p-8">Memuat...</div>
+          </div>
+        }
+      >
         <Content />
       </Suspense>
     </FinanceSidebar>
