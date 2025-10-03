@@ -7,6 +7,7 @@ import {
   LogOut,
   Menu,
   Receipt,
+  ReceiptEuroIcon,
   Settings,
   Users,
   X,
@@ -61,10 +62,10 @@ export function FinanceSidebar({ children }: FinanceSidebarProps) {
   // Helper function to get theme-aware classes
   const getThemeClasses = (baseClasses: string, pinkClasses: string = "") => {
     if (mounted && theme === "pink" && pinkClasses) {
-      return `${baseClasses} ${pinkClasses}`
+      return `${baseClasses} ${pinkClasses}`;
     }
-    return baseClasses
-  }
+    return baseClasses;
+  };
 
   useEffect(() => {
     setMounted(true);
@@ -107,6 +108,13 @@ export function FinanceSidebar({ children }: FinanceSidebarProps) {
       gradient: "from-emerald-500 to-green-600",
     },
     {
+      name: "Referrals",
+      href: "/finance/marketing",
+      icon: ReceiptEuroIcon,
+      description: "Marketing referral",
+      gradient: "from-red-500 to-blue-600",
+    },
+    {
       name: "Daily Income Investor",
       href: "/daily-incoming-investor",
       icon: Receipt,
@@ -131,7 +139,12 @@ export function FinanceSidebar({ children }: FinanceSidebarProps) {
   };
 
   return (
-    <div className={getThemeClasses("min-h-screen bg-gradient-to-br from-green-50 via-white to-emerald-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 flex font-[family-name:var(--font-poppins)] transition-colors duration-300", "!bg-gradient-to-br !from-[#FFDEE9] !via-white !to-[#FFDEE9]")}>
+    <div
+      className={getThemeClasses(
+        "min-h-screen bg-gradient-to-br from-green-50 via-white to-emerald-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 flex font-[family-name:var(--font-poppins)] transition-colors duration-300",
+        "!bg-gradient-to-br !from-[#FFDEE9] !via-white !to-[#FFDEE9]"
+      )}
+    >
       {/* Desktop Sidebar */}
       <motion.div
         className="hidden lg:flex lg:w-80 lg:fixed lg:inset-y-0 lg:z-30"
@@ -139,7 +152,12 @@ export function FinanceSidebar({ children }: FinanceSidebarProps) {
         animate="visible"
         variants={sidebarVariants}
       >
-        <div className={getThemeClasses("flex grow flex-col bg-white/90 dark:bg-gray-900/90 border-r border-[#324D3E]/10 dark:border-gray-700 shadow-xl transition-colors duration-300", "!bg-white/95 !border-[#FFC1CC]/30")}>
+        <div
+          className={getThemeClasses(
+            "flex grow flex-col bg-white/90 dark:bg-gray-900/90 border-r border-[#324D3E]/10 dark:border-gray-700 shadow-xl transition-colors duration-300",
+            "!bg-white/95 !border-[#FFC1CC]/30"
+          )}
+        >
           <div className="flex flex-col h-full p-6">
             {/* Logo */}
             <motion.div
@@ -156,10 +174,20 @@ export function FinanceSidebar({ children }: FinanceSidebarProps) {
                 />
               </div>
               <div>
-                <h1 className={getThemeClasses("text-xl font-bold text-[#324D3E] dark:text-white transition-colors duration-300", "!text-[#4c1d1d]")}>
+                <h1
+                  className={getThemeClasses(
+                    "text-xl font-bold text-[#324D3E] dark:text-white transition-colors duration-300",
+                    "!text-[#4c1d1d]"
+                  )}
+                >
                   Koperasi BAHTERA
                 </h1>
-                <p className={getThemeClasses("text-xs text-[#889063] dark:text-gray-300 transition-colors duration-300", "!text-[#6b7280]")}>
+                <p
+                  className={getThemeClasses(
+                    "text-xs text-[#889063] dark:text-gray-300 transition-colors duration-300",
+                    "!text-[#6b7280]"
+                  )}
+                >
                   Finance Portal
                 </p>
               </div>
@@ -175,8 +203,14 @@ export function FinanceSidebar({ children }: FinanceSidebarProps) {
                       href={item.href}
                       className={`group flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium transition-all duration-300 relative z-10 cursor-pointer ${
                         isActive
-                          ? getThemeClasses("bg-gradient-to-r from-[#324D3E] to-[#4C3D19] text-white shadow-lg scale-105", "!bg-gradient-to-r !from-[#FFC1CC] !to-[#FFDEE9] !text-[#4c1d1d] !shadow-lg")
-                          : getThemeClasses("text-[#324D3E] dark:text-gray-200 hover:bg-[#324D3E]/5 dark:hover:bg-gray-700 hover:scale-105", "!text-[#4c1d1d] hover:!bg-[#FFDEE9]/30")
+                          ? getThemeClasses(
+                              "bg-gradient-to-r from-[#324D3E] to-[#4C3D19] text-white shadow-lg scale-105",
+                              "!bg-gradient-to-r !from-[#FFC1CC] !to-[#FFDEE9] !text-[#4c1d1d] !shadow-lg"
+                            )
+                          : getThemeClasses(
+                              "text-[#324D3E] dark:text-gray-200 hover:bg-[#324D3E]/5 dark:hover:bg-gray-700 hover:scale-105",
+                              "!text-[#4c1d1d] hover:!bg-[#FFDEE9]/30"
+                            )
                       }`}
                     >
                       <div
@@ -193,8 +227,14 @@ export function FinanceSidebar({ children }: FinanceSidebarProps) {
                         <div
                           className={`text-xs ${
                             isActive
-                              ? getThemeClasses("text-white/70", "!text-[#4c1d1d]/70")
-                              : getThemeClasses("text-[#889063] dark:text-gray-400", "!text-[#6b7280]")
+                              ? getThemeClasses(
+                                  "text-white/70",
+                                  "!text-[#4c1d1d]/70"
+                                )
+                              : getThemeClasses(
+                                  "text-[#889063] dark:text-gray-400",
+                                  "!text-[#6b7280]"
+                                )
                           } transition-colors duration-300`}
                         >
                           {item.description}
@@ -208,26 +248,52 @@ export function FinanceSidebar({ children }: FinanceSidebarProps) {
 
             {/* User info at bottom */}
             <motion.div
-              className={getThemeClasses("mt-auto pt-4 border-t border-[#324D3E]/10 dark:border-gray-700 transition-colors duration-300", "!border-[#FFC1CC]/30")}
+              className={getThemeClasses(
+                "mt-auto pt-4 border-t border-[#324D3E]/10 dark:border-gray-700 transition-colors duration-300",
+                "!border-[#FFC1CC]/30"
+              )}
               variants={itemVariants}
             >
-              <motion.div className={getThemeClasses("flex items-center gap-2 sm:gap-3 p-2 sm:p-3 rounded-xl hover:bg-[#324D3E]/5 dark:hover:bg-gray-700 transition-colors mb-1 sm:mb-2", "hover:!bg-[#FFDEE9]/30")}>
+              <motion.div
+                className={getThemeClasses(
+                  "flex items-center gap-2 sm:gap-3 p-2 sm:p-3 rounded-xl hover:bg-[#324D3E]/5 dark:hover:bg-gray-700 transition-colors mb-1 sm:mb-2",
+                  "hover:!bg-[#FFDEE9]/30"
+                )}
+              >
                 <motion.div
-                  className={getThemeClasses("w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-r from-[#324D3E] to-[#4C3D19] rounded-full flex items-center justify-center flex-shrink-0", "!bg-gradient-to-r !from-[#FFC1CC] !to-[#FFDEE9]")}
+                  className={getThemeClasses(
+                    "w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-r from-[#324D3E] to-[#4C3D19] rounded-full flex items-center justify-center flex-shrink-0",
+                    "!bg-gradient-to-r !from-[#FFC1CC] !to-[#FFDEE9]"
+                  )}
                   whileHover={{
                     rotate: 360,
                     transition: { duration: 0.6 },
                   }}
                 >
-                  <span className={getThemeClasses("text-white font-bold text-sm sm:text-base", "!text-[#4c1d1d]")}>
+                  <span
+                    className={getThemeClasses(
+                      "text-white font-bold text-sm sm:text-base",
+                      "!text-[#4c1d1d]"
+                    )}
+                  >
                     {session?.user?.name?.charAt(0).toUpperCase() || "A"}
                   </span>
                 </motion.div>
                 <div className="flex-1 min-w-0">
-                  <p className={getThemeClasses("font-semibold text-[#324D3E] dark:text-white text-sm sm:text-base truncate transition-colors duration-300", "!text-[#4c1d1d]")}>
+                  <p
+                    className={getThemeClasses(
+                      "font-semibold text-[#324D3E] dark:text-white text-sm sm:text-base truncate transition-colors duration-300",
+                      "!text-[#4c1d1d]"
+                    )}
+                  >
                     {session?.user?.name || "Admin"}
                   </p>
-                  <p className={getThemeClasses("text-xs sm:text-sm text-[#889063] dark:text-gray-400 truncate transition-colors duration-300", "!text-[#6b7280]")}>
+                  <p
+                    className={getThemeClasses(
+                      "text-xs sm:text-sm text-[#889063] dark:text-gray-400 truncate transition-colors duration-300",
+                      "!text-[#6b7280]"
+                    )}
+                  >
                     {session?.user?.role}
                   </p>
                 </div>
@@ -277,7 +343,10 @@ export function FinanceSidebar({ children }: FinanceSidebarProps) {
                 onClick={() => setSidebarOpen(false)}
               />
               <motion.div
-                className={getThemeClasses("fixed inset-y-0 right-0 z-50 w-full overflow-y-auto bg-white/95 dark:bg-gray-900/95 px-6 py-6 sm:max-w-sm sm:ring-1 sm:ring-[#324D3E]/10 dark:sm:ring-gray-700 transition-colors duration-300", "!bg-white/98 sm:!ring-[#FFC1CC]/30")}
+                className={getThemeClasses(
+                  "fixed inset-y-0 right-0 z-50 w-full overflow-y-auto bg-white/95 dark:bg-gray-900/95 px-6 py-6 sm:max-w-sm sm:ring-1 sm:ring-[#324D3E]/10 dark:sm:ring-gray-700 transition-colors duration-300",
+                  "!bg-white/98 sm:!ring-[#FFC1CC]/30"
+                )}
                 initial={{ x: "100%" }}
                 animate={{ x: 0 }}
                 exit={{ x: "100%" }}
@@ -292,13 +361,21 @@ export function FinanceSidebar({ children }: FinanceSidebarProps) {
                       height={40}
                       className="rounded-xl"
                     />
-                    <span className={getThemeClasses("text-lg font-bold text-[#324D3E] dark:text-white transition-colors duration-300", "!text-[#4c1d1d]")}>
+                    <span
+                      className={getThemeClasses(
+                        "text-lg font-bold text-[#324D3E] dark:text-white transition-colors duration-300",
+                        "!text-[#4c1d1d]"
+                      )}
+                    >
                       Koperasi BAHTERA
                     </span>
                   </div>
                   <button
                     type="button"
-                    className={getThemeClasses("rounded-xl p-2 text-[#889063] dark:text-gray-400 hover:bg-[#324D3E]/5 dark:hover:bg-gray-700 transition-colors duration-300", "!text-[#6b7280] hover:!bg-[#FFDEE9]/30")}
+                    className={getThemeClasses(
+                      "rounded-xl p-2 text-[#889063] dark:text-gray-400 hover:bg-[#324D3E]/5 dark:hover:bg-gray-700 transition-colors duration-300",
+                      "!text-[#6b7280] hover:!bg-[#FFDEE9]/30"
+                    )}
                     onClick={() => setSidebarOpen(false)}
                   >
                     <X className="h-6 w-6" />
@@ -306,7 +383,12 @@ export function FinanceSidebar({ children }: FinanceSidebarProps) {
                 </div>
 
                 <div className="mt-6 flow-root">
-                  <div className={getThemeClasses("-my-6 divide-y divide-[#324D3E]/10 dark:divide-gray-700 transition-colors duration-300", "!divide-[#FFC1CC]/30")}>
+                  <div
+                    className={getThemeClasses(
+                      "-my-6 divide-y divide-[#324D3E]/10 dark:divide-gray-700 transition-colors duration-300",
+                      "!divide-[#FFC1CC]/30"
+                    )}
+                  >
                     <div className="space-y-2 py-6">
                       {navigation.map((item) => {
                         const isActive = pathname === item.href;
@@ -316,8 +398,14 @@ export function FinanceSidebar({ children }: FinanceSidebarProps) {
                             href={item.href}
                             className={`group flex items-center gap-3 rounded-2xl px-4 py-3 text-sm font-medium relative z-10 cursor-pointer ${
                               isActive
-                                ? getThemeClasses("bg-gradient-to-r from-[#324D3E] to-[#4C3D19] text-white", "!bg-gradient-to-r !from-[#FFC1CC] !to-[#FFDEE9] !text-[#4c1d1d]")
-                                : getThemeClasses("text-[#324D3E] dark:text-gray-200 hover:bg-[#324D3E]/5 dark:hover:bg-gray-700", "!text-[#4c1d1d] hover:!bg-[#FFDEE9]/30")
+                                ? getThemeClasses(
+                                    "bg-gradient-to-r from-[#324D3E] to-[#4C3D19] text-white",
+                                    "!bg-gradient-to-r !from-[#FFC1CC] !to-[#FFDEE9] !text-[#4c1d1d]"
+                                  )
+                                : getThemeClasses(
+                                    "text-[#324D3E] dark:text-gray-200 hover:bg-[#324D3E]/5 dark:hover:bg-gray-700",
+                                    "!text-[#4c1d1d] hover:!bg-[#FFDEE9]/30"
+                                  )
                             } transition-colors duration-300`}
                             onClick={() => setSidebarOpen(false)}
                           >
@@ -368,10 +456,18 @@ export function FinanceSidebar({ children }: FinanceSidebarProps) {
       {/* Main Content */}
       <div className="lg:pl-80 w-full">
         {/* Mobile header */}
-        <div className={getThemeClasses("sticky top-0 z-20 flex h-16 shrink-0 items-center gap-x-4 border-b border-[#324D3E]/10 dark:border-gray-700 bg-white/90 dark:bg-gray-900/90 px-4 shadow-sm sm:gap-x-6 sm:px-6 lg:hidden transition-colors duration-300", "!border-[#FFC1CC]/30 !bg-white/95")}>
+        <div
+          className={getThemeClasses(
+            "sticky top-0 z-20 flex h-16 shrink-0 items-center gap-x-4 border-b border-[#324D3E]/10 dark:border-gray-700 bg-white/90 dark:bg-gray-900/90 px-4 shadow-sm sm:gap-x-6 sm:px-6 lg:hidden transition-colors duration-300",
+            "!border-[#FFC1CC]/30 !bg-white/95"
+          )}
+        >
           <button
             type="button"
-            className={getThemeClasses("rounded-xl p-2 text-[#324D3E] dark:text-gray-200 hover:bg-[#324D3E]/5 dark:hover:bg-gray-700 transition-colors duration-300", "!text-[#4c1d1d] hover:!bg-[#FFDEE9]/30")}
+            className={getThemeClasses(
+              "rounded-xl p-2 text-[#324D3E] dark:text-gray-200 hover:bg-[#324D3E]/5 dark:hover:bg-gray-700 transition-colors duration-300",
+              "!text-[#4c1d1d] hover:!bg-[#FFDEE9]/30"
+            )}
             onClick={() => setSidebarOpen(true)}
           >
             <Menu className="h-6 w-6" />
@@ -386,7 +482,12 @@ export function FinanceSidebar({ children }: FinanceSidebarProps) {
                 height={32}
                 className="rounded-lg"
               />
-              <span className={getThemeClasses("text-lg font-bold text-[#324D3E] dark:text-white transition-colors duration-300", "!text-[#4c1d1d]")}>
+              <span
+                className={getThemeClasses(
+                  "text-lg font-bold text-[#324D3E] dark:text-white transition-colors duration-300",
+                  "!text-[#4c1d1d]"
+                )}
+              >
                 Koperasi BAHTERA
               </span>
             </div>
@@ -394,7 +495,12 @@ export function FinanceSidebar({ children }: FinanceSidebarProps) {
         </div>
 
         {/* Page Content */}
-        <main className={getThemeClasses("min-h-screen bg-gradient-to-br from-green-50 via-white to-emerald-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 transition-colors duration-300", "!bg-gradient-to-br !from-[#FFDEE9] !via-white !to-[#FFDEE9]")}>
+        <main
+          className={getThemeClasses(
+            "min-h-screen bg-gradient-to-br from-green-50 via-white to-emerald-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 transition-colors duration-300",
+            "!bg-gradient-to-br !from-[#FFDEE9] !via-white !to-[#FFDEE9]"
+          )}
+        >
           {children}
         </main>
       </div>

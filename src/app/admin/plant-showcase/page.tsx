@@ -34,6 +34,7 @@ interface Plant {
       monthly: number; // per pohon
       yearly: number; // per pohon
     };
+    sellPrice: number; // per pohon
   };
   estimatedReturn: number; // Total return untuk 10 pohon
   treePackages: TreePackage[];
@@ -82,6 +83,7 @@ export default function PlantShowcasePage() {
           monthly: parseInt(oldPlant.pricing?.profit?.monthly || "0"),
           yearly: parseInt(oldPlant.pricing?.profit?.yearly || "0"),
         },
+        sellPrice: parseInt(oldPlant.pricing?.sellPrice || "0"),
       },
       estimatedReturn: parseInt(
         oldPlant.investmentPlan?.returns?.toString().replace(/\D/g, "") || "0"
@@ -196,6 +198,7 @@ export default function PlantShowcasePage() {
             monthly: 0,
             yearly: 0,
           },
+          sellPrice: 0,
         };
       }
 
@@ -219,6 +222,9 @@ export default function PlantShowcasePage() {
       } else if (field === "estimatedReturn") {
         const cleanValue = parseIDRInput(value as string);
         updated[plantIndex].estimatedReturn = parseInt(cleanValue) || 0;
+      } else if (field === "sellPrice") {
+        const cleanValue = parseIDRInput(value as string);
+        updated[plantIndex].pricing.sellPrice = parseInt(cleanValue) || 0;
       }
 
       return updated;
@@ -237,7 +243,7 @@ export default function PlantShowcasePage() {
         monthly: newPlant.pricing.profit.monthly.toString(),
         yearly: newPlant.pricing.profit.yearly.toString(),
         fiveYears: (newPlant.pricing.profit.yearly * 5).toString(),
-        sellPrice: "1500000", // Default legacy value
+        sellPrice: newPlant.pricing.sellPrice.toString(),
         profit: {
           daily: newPlant.pricing.profit.daily.toString(),
           weekly: newPlant.pricing.profit.weekly.toString(),
@@ -724,6 +730,34 @@ export default function PlantShowcasePage() {
                           className="w-full pl-10 pr-3 py-2 border border-[#324D3E]/20 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#324D3E]/20 focus:border-[#324D3E] text-[#324D3E] dark:text-white bg-white dark:bg-gray-700"
                         />
                       </div>
+                    </div>
+                  </div>
+                  <div className="mt-3">
+                    <label className="block text-sm font-medium text-[#324D3E] dark:text-gray-300 mb-1">
+                      Harga Jual per Pohon
+                    </label>
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#889063] text-sm">
+                        Rp
+                      </span>
+                      <input
+                        type="text"
+                        value={formatIDRCurrency(
+                          plant.pricing?.sellPrice || 0
+                        )}
+                        onChange={(e) => {
+                          const formattedValue = formatIDRInput(
+                            e.target.value
+                          );
+                          e.target.value = formattedValue;
+                          handlePriceUpdate(
+                            index,
+                            "sellPrice",
+                            formattedValue
+                          );
+                        }}
+                        className="w-full pl-10 pr-3 py-2 border border-[#324D3E]/20 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#324D3E]/20 focus:border-[#324D3E] text-[#324D3E] dark:text-white bg-white dark:bg-gray-700"
+                      />
                     </div>
                   </div>
                 </div>
