@@ -17,7 +17,7 @@ if (!process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY) {
 }
 
 // TODO: Change this to true when ready for production
-const shouldBeProd = false;
+const shouldBeProd = true;
 
 // Initialize Midtrans Snap
 const snap = new midtransClient.Snap({
