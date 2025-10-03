@@ -121,6 +121,13 @@ export function FinanceSidebar({ children }: FinanceSidebarProps) {
       description: "Pendapatan dari investasi ",
       gradient: "from-indigo-500 to-purple-600",
     },
+        {
+      name: "Pendaftaran",
+      href: "/pendaftaran",
+      icon: ReceiptEuroIcon,
+      description: "Pendaftaran Register",
+      gradient: "from-white-500 to-purple-600",
+    },
     {
       name: "Pengaturan",
       href: "/finance/settings",
