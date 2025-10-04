@@ -780,8 +780,8 @@ export default function MarketingHeadPage() {
                     <tr
                       key={staff._id}
                       className={getThemeClasses(
-                        "hover:bg-gray-50 transition-colors",
-                        "dark:hover:bg-gray-800/40"
+                        "hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors",
+                        ""
                       )}
                     >
                       <td className="px-6 py-4">

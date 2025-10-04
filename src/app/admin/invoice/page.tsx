@@ -367,7 +367,7 @@ function InvoicePageContent() {
                     value={catDraft}
                     onChange={(e) => setCatDraft(e.target.value)}
                     className={getThemeClasses(
-                      "min-w-[220px] border rounded-xl px-3 py-2 text-sm",
+                      "min-w-[220px] border rounded-xl px-3 py-2 text-sm bg-white dark:bg-gray-700 dark:border-gray-600 dark:text-white border-gray-300",
                       "!bg-white/90 !border-[#FFC1CC]/30 !text-[#4c1d1d]"
                     )}
                   >
