@@ -41,6 +41,8 @@ export default function RegisterPage() {
   const [hasAttemptedSubmit, setHasAttemptedSubmit] = useState(false);
   const [hasReadTerms, setHasReadTerms] = useState(false);
   const [hasReadPrivacy, setHasReadPrivacy] = useState(false);
+  const [registrationFee, setRegistrationFee] = useState<number>(1);
+  const [isFetchingFee, setIsFetchingFee] = useState(true);
   const countdownIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const cameraSelfieRef = useRef<CameraSelfieRef>(null);
 
@@ -79,6 +81,28 @@ export default function RegisterPage() {
       if (previous) setTheme(previous);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Fetch registration fee on component mount
+  useEffect(() => {
+    const fetchRegistrationFee = async () => {
+      try {
+        setIsFetchingFee(true);
+        const response = await fetch("/api/settings/registration-fee");
+        const result = await response.json();
+
+        if (result.success && result.data?.registrationFee) {
+          setRegistrationFee(result.data.registrationFee);
+        }
+      } catch (error) {
+        console.error("Error fetching registration fee:", error);
+        // Keep default value of 1 if fetch fails
+      } finally {
+        setIsFetchingFee(false);
+      }
+    };
+
+    fetchRegistrationFee();
   }, []);
 
   // Options for select fields
@@ -171,7 +195,7 @@ export default function RegisterPage() {
 
       const paymentData = {
         orderId: orderIdGenerated,
-        amount: 1, // 1 Rupiah for registration
+        amount: registrationFee,
         customerDetails: {
           first_name: formData.fullName.trim(),
           email: formData.email.toLowerCase().trim(),
@@ -180,7 +204,7 @@ export default function RegisterPage() {
         itemDetails: [
           {
             id: "registration-fee",
-            price: 1,
+            price: registrationFee,
             quantity: 1,
             name: "Registration Fee",
           },
@@ -1250,9 +1274,19 @@ export default function RegisterPage() {
                         <h4 className="text-lg font-semibold text-gray-800">
                           Total Pembayaran
                         </h4>
-                        <p className="text-3xl font-bold text-green-600">
-                          Rp 1
-                        </p>
+                        {isFetchingFee ? (
+                          <p className="text-3xl font-bold text-green-600">
+                            Memuat...
+                          </p>
+                        ) : (
+                          <p className="text-3xl font-bold text-green-600">
+                            {new Intl.NumberFormat("id-ID", {
+                              style: "currency",
+                              currency: "IDR",
+                              maximumFractionDigits: 0,
+                            }).format(registrationFee)}
+                          </p>
+                        )}
                         <p className="text-sm text-gray-500">
                           Biaya Pendaftaran
                         </p>

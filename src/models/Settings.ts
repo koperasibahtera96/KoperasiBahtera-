@@ -7,14 +7,17 @@ export interface ISettings extends Document {
     email?: string;
     password?: string;
     service?: 'gmail' | 'outlook' | 'yahoo';
-    
+
     // For WhatsApp settings
     whatsappNumber?: string;
     status?: 'connected' | 'disconnected' | 'connecting' | 'qr';
     qrCode?: string;
     qrCodeTimestamp?: Date;
     lastConnected?: Date;
-    
+
+    // For system settings
+    registrationFee?: number;
+
     // For other settings
     [key: string]: any;
   };

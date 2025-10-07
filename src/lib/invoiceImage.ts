@@ -48,7 +48,9 @@ function loadImage(url: string) {
 /** Fallback ambil No.Anggota dari DB hanya jika kosong.
  *  Tidak mengubah logic utama: tetap pakai payment.userCode/memberCode dulu.
  */
-async function resolveMemberCode(payment: Record<string, any>): Promise<string> {
+async function resolveMemberCode(
+  payment: Record<string, any>
+): Promise<string> {
   const fromPayment = payment?.userCode ?? payment?.memberCode;
   if (fromPayment) return String(fromPayment);
 
@@ -70,24 +72,26 @@ async function resolveMemberCode(payment: Record<string, any>): Promise<string> 
 }
 
 /** Ambil data PlantInstance berdasarkan orderId untuk mendapatkan kavling dan blok */
-async function resolvePlantInstanceData(payment: Record<string, any>): Promise<{kavling: string; blok: string}> {
+async function resolvePlantInstanceData(
+  payment: Record<string, any>
+): Promise<{ kavling: string; blok: string }> {
   try {
     const orderId = String(payment?.orderId || "");
-    if (!orderId) return {kavling: "—", blok: "—"};
+    if (!orderId) return { kavling: "—", blok: "—" };
 
-    const plantId = `PLANT-${orderId}-${orderId.slice(-8)}`
+    const plantId = `PLANT-${orderId}-${orderId.slice(-8)}`;
 
     const res = await fetch(`/api/plants/${plantId}`);
 
-    if (!res.ok) return {kavling: "—", blok: "—"};
+    if (!res.ok) return { kavling: "—", blok: "—" };
 
     const data = await res.json();
     return {
       kavling: data?.kavling || "—",
-      blok: data?.blok || "—"
+      blok: data?.blok || "—",
     };
   } catch {
-    return {kavling: "—", blok: "—"};
+    return { kavling: "—", blok: "—" };
   }
 }
 
@@ -106,7 +110,9 @@ export async function downloadInvoiceImage(
   const name = s(payment?.userName, s(payment?.buyerName, "—"));
   // logic asli: userCode ?? memberCode; jika kosong baru fallback fetch
   const memberCode = s(
-    payment?.userCode ?? payment?.memberCode ?? (await resolveMemberCode(payment)),
+    payment?.userCode ??
+      payment?.memberCode ??
+      (await resolveMemberCode(payment)),
     "—"
   );
 
@@ -188,7 +194,6 @@ export async function downloadInvoiceImage(
     } as CSSStyleDeclaration);
     el.appendChild(wm);
 
-
     /* META */
     const meta = document.createElement("div");
     meta.style.display = "grid";
@@ -232,22 +237,61 @@ export async function downloadInvoiceImage(
     tbl.style.width = "100%";
     tbl.style.borderCollapse = "collapse";
     tbl.style.marginBottom = "8px";
-    tbl.innerHTML = `
-      <thead>
-        <tr style="background:transparent; color:#fff; font-weight:700; font-size:14px; transform:translateY(3px);">
-          ${td("No", "width:52px; text-align:center; background:transparent; color:#fff;")}
-          ${td("Pembayaran", "background:transparent; color:#fff;")}
-          ${td("Nominal", "width:170px; text-align:center; background:transparent; color:#fff;")}
-        </tr>
-      </thead>
-      <tbody>
-        <tr style="background:transparent; transform:translateY(-5px);">
-          ${td("1", "text-align:center; background:transparent; color:#000;")}
-          ${td(tableDesc, "background:transparent; color:#000;")}
-          ${td(fmtIDR(Number(amount)), "text-align:right; background:transparent; color:#000;")}
-        </tr>
-      </tbody>
-    `;
+
+    // Different styling for registration vs product invoices
+    if (isRegistration) {
+      tbl.innerHTML = `
+        <thead>
+          <tr style="background:transparent; color:#fff; font-weight:700; font-size:14px; transform:translateY(25px);">
+            ${td(
+              "No",
+              "width:52px; text-align:center; background:transparent; color:#fff;"
+            )}
+            ${td("Pembayaran", "background:transparent; color:#fff;")}
+            ${td(
+              "Nominal",
+              "width:170px; text-align:center; background:transparent; color:#fff;"
+            )}
+          </tr>
+        </thead>
+        <tbody>
+          <tr style="background:transparent; transform:translateY(18px);">
+            ${td("1", "text-align:center; background:transparent; color:#000;")}
+            ${td(tableDesc, "background:transparent; color:#000;")}
+            ${td(
+              fmtIDR(Number(amount)),
+              "text-align:right; background:transparent; color:#000;"
+            )}
+          </tr>
+        </tbody>
+      `;
+    } else {
+      tbl.innerHTML = `
+        <thead>
+          <tr style="background:transparent; color:#fff; font-weight:700; font-size:14px; transform:translateY(3px);">
+            ${td(
+              "No",
+              "width:52px; text-align:center; background:transparent; color:#fff;"
+            )}
+            ${td("Pembayaran", "background:transparent; color:#fff;")}
+            ${td(
+              "Nominal",
+              "width:170px; text-align:center; background:transparent; color:#fff;"
+            )}
+          </tr>
+        </thead>
+        <tbody>
+          <tr style="background:transparent; transform:translateY(-5px);">
+            ${td("1", "text-align:center; background:transparent; color:#000;")}
+            ${td(tableDesc, "background:transparent; color:#000;")}
+            ${td(
+              fmtIDR(Number(amount)),
+              "text-align:right; background:transparent; color:#000;"
+            )}
+          </tr>
+        </tbody>
+      `;
+    }
     el.appendChild(tbl);
 
     /* DETAIL */

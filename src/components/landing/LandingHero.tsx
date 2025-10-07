@@ -70,13 +70,13 @@ export default function LandingHero() {
 
   return (
     <motion.section
-      className="relative h-screen flex items-center justify-start w-full"
+      className="relative h-screen flex items-center justify-start w-full light"
       initial="hidden"
       animate="visible"
       variants={containerVariants}
     >
       {/* Background Image - Optimized with Next.js Image */}
-      <div className="absolute inset-0 opacity-50">
+      <div className="absolute inset-0">
         <Image
           src="/landing/hero-bg.webp"
           alt="Hero background - sustainable agriculture investment"
@@ -86,6 +86,8 @@ export default function LandingHero() {
           className="object-cover object-center"
           onLoad={() => setImageLoaded(true)}
         />
+        {/* White overlay to brighten the image */}
+        <div className="absolute inset-0 bg-white opacity-50"></div>
       </div>
 
       {/* Content */}
