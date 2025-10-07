@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { Suspense } from "react";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import { FinanceSidebar } from "@/components/finance/FinanceSidebar";
 import { Download, Search } from "lucide-react";
@@ -539,7 +540,9 @@ function Content() {
 export default function PendaftaranPage() {
   return (
     <FinanceSidebar>
-      <Content />
+      <Suspense fallback={<div className="px-6 lg:px-8 py-6"><div className="text-center p-8">Memuat...</div></div>}>
+        <Content />
+      </Suspense>
     </FinanceSidebar>
   );
 }
