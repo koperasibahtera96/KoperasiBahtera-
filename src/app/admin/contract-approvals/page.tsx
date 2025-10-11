@@ -371,11 +371,11 @@ export default function ContractApprovalsPage() {
               "!border-[#FFC1CC]/30 !text-[#4c1d1d] !bg-white"
             )}
           >
-            <option value="pending">Pending Approval</option>
-            <option value="approved">Approved</option>
-            <option value="rejected">Rejected</option>
-            <option value="permanently_rejected">Permanently Rejected</option>
-            <option value="all">All Contracts</option>
+            <option value="pending">Menunggu Persetujuan</option>
+            <option value="approved">Disetujui</option>
+            <option value="rejected">Ditolak</option>
+            <option value="permanently_rejected">Ditolak Permanen</option>
+            <option value="all">Semua Kontrak</option>
           </select>
         </div>
 
