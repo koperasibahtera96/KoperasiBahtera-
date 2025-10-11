@@ -2191,9 +2191,11 @@ export default function LaporanPage() {
           ) : (
             // Group payment reports by investor for display
             Object.values(
-              (reports as any[]).reduce(
+              (reports as any[])
+                .filter((report: any) => report?.investor?._id && report?.investor?.name) // Filter out invalid reports
+                .reduce(
                 (groupedReports: Record<string, any>, report: any) => {
-                  const investorId = report?.investor?._id || "unknown";
+                  const investorId = report.investor._id;
 
                   // normalize/parse incoming statistics
                   const incoming = report?.statistics || {
@@ -2312,7 +2314,7 @@ export default function LaporanPage() {
                         )}
                       >
                         <span className="text-white font-bold text-lg">
-                          {groupedReport.investor.name.charAt(0)}
+                          {groupedReport.investor?.name?.charAt(0) || 'U'}
                         </span>
                       </div>
                       <div>

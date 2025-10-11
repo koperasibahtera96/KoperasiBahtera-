@@ -97,7 +97,16 @@ export const CameraSelfie = forwardRef<CameraSelfieRef, CameraSelfieProps>(({ on
     if (context) {
       canvas.width = video.videoWidth;
       canvas.height = video.videoHeight;
+
+      // Flip the image horizontally so it's not mirrored
+      context.translate(canvas.width, 0);
+      context.scale(-1, 1);
+
       context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+      // Reset transform for future drawings
+      context.setTransform(1, 0, 0, 1, 0, 0);
+
       const imageDataUrl = canvas.toDataURL('image/jpeg', 0.8);
       setCapturedImage(imageDataUrl);
       onCapture(imageDataUrl);
@@ -216,6 +225,7 @@ export const CameraSelfie = forwardRef<CameraSelfieRef, CameraSelfieProps>(({ on
           playsInline
           muted
           className="w-full h-64 object-cover"
+          style={{ transform: 'scaleX(-1)' }}
         />
         <canvas ref={canvasRef} className="hidden" />
 

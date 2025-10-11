@@ -27,6 +27,13 @@ export const metadata: Metadata = {
     "Solusi tepat bagi Anda yang ingin meraih keuntungan sekaligus memberikan dampak positif bagi lingkungan dan masyarakat.",
 };
 
+export const viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 5,
+  userScalable: true,
+};
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -35,13 +42,7 @@ export default function RootLayout({
   return (
     <html lang="id" suppressHydrationWarning>
       <head>
-        {/* Preload critical images for better LCP */}
-        <link
-          rel="preload"
-          href="/landing/hero-bg.webp"
-          as="image"
-          type="image/webp"
-        />
+        {/* Note: hero-bg.webp preload removed as it's only used on landing page */}
       </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} ${poppins.variable} antialiased`}

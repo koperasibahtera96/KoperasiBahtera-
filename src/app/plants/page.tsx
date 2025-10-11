@@ -738,20 +738,26 @@ export default function InvestasiPage() {
 
                       <div className="space-y-2 text-sm">
                         <div className="flex justify-between">
-                          <span className="text-gray-600">{t("plants.location")}</span>
+                          <span className="text-gray-600">
+                            {t("plants.location")}
+                          </span>
                           <span className="text-gray-900">
                             {investment.plantInstance.location}
                           </span>
                         </div>
                         <div className="flex justify-between">
-                          <span className="text-gray-600">{t("plants.blockKav")}</span>
+                          <span className="text-gray-600">
+                            {t("plants.blockKav")}
+                          </span>
                           <span className="text-gray-900">
                             {investment.plantInstance.blok || "-"} /{" "}
                             {investment.plantInstance.kavling || "-"}
                           </span>
                         </div>
                         <div className="flex justify-between">
-                          <span className="text-gray-600">{t("plants.income")}</span>
+                          <span className="text-gray-600">
+                            {t("plants.income")}
+                          </span>
                           <span className="text-green-600 font-medium">
                             {formatCurrency(
                               investment.plantInstance.totalIncome
@@ -837,7 +843,8 @@ export default function InvestasiPage() {
                             } •{" "}
                             {formatCurrency(investment.nextPaymentInfo.amount)}
                             <br />
-                            {t("plants.dueDate")}: {formatDate(investment.nextPaymentInfo.dueDate)}
+                            {t("plants.dueDate")}:{" "}
+                            {formatDate(investment.nextPaymentInfo.dueDate)}
                           </p>
                         </div>
                       )}
@@ -856,7 +863,12 @@ export default function InvestasiPage() {
                                     {t("plants.contractRejectedPermanent")}
                                   </p>
                                   <p className="text-xs text-red-700">
-                                    {t("plants.maxAttemptsReached").replace("{maxAttempts}", String(investment.contractInfo.maxAttempts))}{" "}
+                                    {t("plants.maxAttemptsReached").replace(
+                                      "{maxAttempts}",
+                                      String(
+                                        investment.contractInfo.maxAttempts
+                                      )
+                                    )}{" "}
                                     {t("plants.paymentDisabled")}.
                                   </p>
                                 </div>
@@ -876,7 +888,9 @@ export default function InvestasiPage() {
                                       {t("plants.contractNeedsReview")}
                                     </p>
                                     <p className="text-xs text-orange-700">
-                                      {t("plants.contractAttempts")}: {investment.contractInfo.currentAttempt}/{investment.contractInfo.maxAttempts}.
+                                      {t("plants.contractAttempts")}:{" "}
+                                      {investment.contractInfo.currentAttempt}/
+                                      {investment.contractInfo.maxAttempts}.
                                       {t("plants.contactAdmin")}.
                                     </p>
                                   </div>
@@ -897,7 +911,10 @@ export default function InvestasiPage() {
                                       {t("plants.contractNeedsResubmission")}
                                     </p>
                                     <p className="text-xs text-blue-700">
-                                      {t("plants.visitPaymentPage")}. {t("plants.contractAttempts")}: {investment.contractInfo.currentAttempt}/{investment.contractInfo.maxAttempts}
+                                      {t("plants.visitPaymentPage")}.{" "}
+                                      {t("plants.contractAttempts")}:{" "}
+                                      {investment.contractInfo.currentAttempt}/
+                                      {investment.contractInfo.maxAttempts}
                                     </p>
                                   </div>
                                 </div>

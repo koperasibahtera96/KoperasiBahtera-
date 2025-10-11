@@ -48,21 +48,21 @@ const fadeInUp: any = {
   },
 };
 
-const scaleIn: any = {
-  hidden: {
-    opacity: 0,
-    scale: 0.95,
-  },
-  visible: {
-    opacity: 1,
-    scale: 1,
-    transition: {
-      type: "tween",
-      duration: 0.2,
-      ease: "easeOut",
-    },
-  },
-};
+// const scaleIn: any = {
+//   hidden: {
+//     opacity: 0,
+//     scale: 0.95,
+//   },
+//   visible: {
+//     opacity: 1,
+//     scale: 1,
+//     transition: {
+//       type: "tween",
+//       duration: 0.2,
+//       ease: "easeOut",
+//     },
+//   },
+// };
 
 export default function LandingHero() {
   const [_imageLoaded, setImageLoaded] = useState(false);
@@ -142,7 +142,7 @@ export default function LandingHero() {
           </motion.p>
 
           {/* CTA Button */}
-          <motion.button
+          {/* <motion.button
             className="bg-gradient-to-r from-[#364D32] to-[#889063] text-white px-6 sm:px-8 md:px-10 py-3 sm:py-4 md:py-5 rounded-full text-base sm:text-lg md:text-xl font-semibold hover:from-[#889063] hover:to-[#364D32] transition-all duration-300 shadow-lg"
             variants={scaleIn}
             onClick={() => {
@@ -158,12 +158,12 @@ export default function LandingHero() {
             whileTap={{ scale: 0.98 }}
           >
             {t("hero.cta")}
-          </motion.button>
+          </motion.button> */}
         </div>
       </motion.div>
 
       {/* Scroll indicator - Simplified */}
-      <motion.div
+      {/* <motion.div
         className="absolute bottom-8 left-1/2 transform -translate-x-1/2 text-gray-700 cursor-pointer"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -203,7 +203,7 @@ export default function LandingHero() {
             {t("hero.scrollMore")}
           </span>
         </motion.div>
-      </motion.div>
+      </motion.div> */}
     </motion.section>
   );
 }
