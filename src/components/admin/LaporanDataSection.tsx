@@ -1,10 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import {
-  ChevronDown,
-  RefreshCw,
-} from "lucide-react";
+import { ChevronDown, RefreshCw } from "lucide-react";
 import { useTheme } from "next-themes";
 
 interface Tree {
@@ -297,8 +294,7 @@ export function LaporanDataSection({
           Object.values(
             (reports as any[])
               .filter(
-                (report: any) =>
-                  report?.investor?._id && report?.investor?.name
+                (report: any) => report?.investor?._id && report?.investor?.name
               )
               .reduce((groupedReports: Record<string, any>, report: any) => {
                 const investorId = report.investor._id;
@@ -348,10 +344,7 @@ export function LaporanDataSection({
                 } else {
                   groupedReports[investorId].payments.push(report.payment);
 
-                  if (
-                    !groupedReports[investorId].contract &&
-                    report.contract
-                  ) {
+                  if (!groupedReports[investorId].contract && report.contract) {
                     groupedReports[investorId].contract = report.contract;
                   }
 
@@ -583,11 +576,14 @@ export function LaporanDataSection({
                               </thead>
                               <tbody className="divide-y divide-[#324D3E]/10 dark:divide-gray-600 transition-colors duration-300">
                                 {(
-                                  detailedPlantData[groupedReport.investor._id] ||
-                                  groupedReport.trees
+                                  detailedPlantData[
+                                    groupedReport.investor._id
+                                  ] || groupedReport.trees
                                 ).map((tree: any) => {
                                   const isDetailed =
-                                    detailedPlantData[groupedReport.investor._id];
+                                    detailedPlantData[
+                                      groupedReport.investor._id
+                                    ];
                                   return (
                                     <tr
                                       key={tree._id}
