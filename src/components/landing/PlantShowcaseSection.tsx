@@ -727,12 +727,26 @@ export default function PlantShowcaseSection() {
                             <motion.button
                               className="w-full bg-white text-[#4A5C57] py-2 px-4 rounded-full font-bold text-xs sm:text-sm md:text-base hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-gray-300 disabled:text-gray-500"
                               onClick={() => handleInvestment(plant)}
-                              disabled={isLoading === plant.name || Number(plant.pricing.monthly) === 0}
+                              disabled={
+                                isLoading === plant.name ||
+                                Number(plant.pricing.monthly) === 0
+                              }
                               whileHover={{
-                                scale: Number(plant.pricing.monthly) === 0 ? 1 : 1.05,
-                                boxShadow: Number(plant.pricing.monthly) === 0 ? "none" : "0 4px 15px rgba(0, 0, 0, 0.2)",
+                                scale:
+                                  Number(plant.pricing.monthly) === 0
+                                    ? 1
+                                    : 1.05,
+                                boxShadow:
+                                  Number(plant.pricing.monthly) === 0
+                                    ? "none"
+                                    : "0 4px 15px rgba(0, 0, 0, 0.2)",
                               }}
-                              whileTap={{ scale: Number(plant.pricing.monthly) === 0 ? 1 : 0.95 }}
+                              whileTap={{
+                                scale:
+                                  Number(plant.pricing.monthly) === 0
+                                    ? 1
+                                    : 0.95,
+                              }}
                               initial={{ opacity: 0, y: 20 }}
                               animate={{ opacity: 1, y: 0 }}
                               transition={{ delay: 1.2, duration: 0.5 }}
@@ -819,12 +833,26 @@ export default function PlantShowcaseSection() {
                               <motion.button
                                 className="w-full mt-3 bg-[#324D3E] text-white py-2 px-4 rounded-full font-bold text-xs sm:text-sm hover:bg-[#4C3D19] transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-gray-400 disabled:text-gray-600"
                                 onClick={() => handleCicilanSelect(plant)}
-                                disabled={isLoading === plant.name || Number(plant.pricing.monthly) === 0}
+                                disabled={
+                                  isLoading === plant.name ||
+                                  Number(plant.pricing.monthly) === 0
+                                }
                                 whileHover={{
-                                  scale: Number(plant.pricing.monthly) === 0 ? 1 : 1.05,
-                                  boxShadow: Number(plant.pricing.monthly) === 0 ? "none" : "0 4px 15px rgba(50, 77, 62, 0.3)",
+                                  scale:
+                                    Number(plant.pricing.monthly) === 0
+                                      ? 1
+                                      : 1.05,
+                                  boxShadow:
+                                    Number(plant.pricing.monthly) === 0
+                                      ? "none"
+                                      : "0 4px 15px rgba(50, 77, 62, 0.3)",
                                 }}
-                                whileTap={{ scale: Number(plant.pricing.monthly) === 0 ? 1 : 0.95 }}
+                                whileTap={{
+                                  scale:
+                                    Number(plant.pricing.monthly) === 0
+                                      ? 1
+                                      : 0.95,
+                                }}
                                 variants={fadeInUp}
                               >
                                 {Number(plant.pricing.monthly) === 0
