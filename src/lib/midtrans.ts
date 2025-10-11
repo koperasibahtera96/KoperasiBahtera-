@@ -7,17 +7,17 @@ import midtransClient, {
 } from "midtrans-client";
 
 // Check for required environment variables
-if (!process.env.MIDTRANS_SERVER_KEY) {
+if (!process.env.MIDTRANS_SERVER_KEY_SB) {
   console.error("❌ MIDTRANS_SERVER_KEY is not set in environment variables");
 }
-if (!process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY) {
+if (!process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY_SB) {
   console.error(
     "❌ NEXT_PUBLIC_MIDTRANS_CLIENT_KEY is not set in environment variables"
   );
 }
 
 // TODO: Change this to true when ready for production
-const shouldBeProd = true;
+const shouldBeProd = false;
 
 // Initialize Midtrans Snap
 const snap = new midtransClient.Snap({
