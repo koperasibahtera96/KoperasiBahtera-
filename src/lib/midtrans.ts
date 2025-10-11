@@ -22,15 +22,15 @@ const shouldBeProd = false;
 // Initialize Midtrans Snap
 const snap = new midtransClient.Snap({
   isProduction: shouldBeProd,
-  serverKey: process.env.MIDTRANS_SERVER_KEY!,
-  clientKey: process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY!,
+  serverKey: process.env.MIDTRANS_SERVER_KEY_SB!,
+  clientKey: process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY_SB!,
 });
 
 // Initialize Midtrans Core API
 const coreApi = new midtransClient.CoreApi({
   isProduction: shouldBeProd,
-  serverKey: process.env.MIDTRANS_SERVER_KEY!,
-  clientKey: process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY!,
+  serverKey: process.env.MIDTRANS_SERVER_KEY_SB!,
+  clientKey: process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY_SB!,
 });
 
 export interface PaymentRequest {
