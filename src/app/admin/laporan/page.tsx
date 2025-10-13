@@ -153,6 +153,7 @@ export default function LaporanPage() {
         "Tanggal Invoice",
         "Status Invoice",
         "Nama User",
+        "No Anggota",
         "Email",
         "No. HP",
         "Nama Paket",
@@ -239,6 +240,7 @@ export default function LaporanPage() {
             : "-", // Tanggal Invoice
           payment?.transactionStatus || payment?.status || "-", // Status Invoice
           investor?.name || "-", // Nama User
+          (investor as any)?.userCode || "-", // No Anggota
           investor?.email || "-", // Email
           (investor as any)?.phoneNumber || "-", // No. HP (now from User table)
           payment?.productName || "-", // Nama Paket
@@ -310,19 +312,25 @@ export default function LaporanPage() {
       } else if (col === 1 || col === 2) {
         // No. Invoice, ID Transaksi
         colWidths.push({ width: 25 });
-      } else if (col === 5 || col === 6) {
-        // Nama User, Email
-        colWidths.push({ width: 30 });
+      } else if (col === 5) {
+        // Nama User
+        colWidths.push({ width: 25 });
+      } else if (col === 6) {
+        // No Anggota
+        colWidths.push({ width: 15 });
       } else if (col === 7) {
+        // Email
+        colWidths.push({ width: 30 });
+      } else if (col === 8) {
         // No. HP
         colWidths.push({ width: 18 });
-      } else if (col === 8) {
+      } else if (col === 9) {
         // Nama Paket
         colWidths.push({ width: 20 });
-      } else if (col === 10 || col === 20 || col === 21) {
+      } else if (col === 11 || col === 21 || col === 22) {
         // Harga, Total Dibayar, Sisa Dibayar
         colWidths.push({ width: 18 });
-      } else if (col === 17) {
+      } else if (col === 18) {
         // Nomor Kontrak
         colWidths.push({ width: 35 });
       } else {
@@ -1243,6 +1251,7 @@ export default function LaporanPage() {
           : "-", // Tanggal Invoice
         payment?.transactionStatus || payment?.status || "-", // Status Invoice
         investor?.name || "-", // Nama User
+        (investor as any)?.userCode || "-", // No Anggota
         investor?.email || "-", // Email
         (investor as any)?.phoneNumber || "-", // No. HP
         payment?.productName || "-", // Nama Paket
@@ -1288,7 +1297,7 @@ export default function LaporanPage() {
       ];
     });
 
-    // Note: This table is very wide (23 columns), so we'll use smaller font and auto-width
+    // Note: This table is very wide (24 columns), so we'll use smaller font and auto-width
     autoTable(doc, {
       startY: finalY + 8,
       head: [
@@ -1299,6 +1308,7 @@ export default function LaporanPage() {
           "Tanggal Invoice",
           "Status Invoice",
           "Nama User",
+          "No Anggota",
           "Email",
           "No. HP",
           "Nama Paket",
@@ -1324,7 +1334,7 @@ export default function LaporanPage() {
       margin: { left: 5, right: 5 },
       styles: { fontSize: 5, cellPadding: 1 },
       tableWidth: "auto",
-      // Use smaller column widths to fit all 23 columns
+      // Use smaller column widths to fit all 24 columns
       columnStyles: {
         0: { cellWidth: 5 }, // No.
         1: { cellWidth: 12 }, // No. Invoice
@@ -1332,23 +1342,24 @@ export default function LaporanPage() {
         3: { cellWidth: 10 }, // Tanggal Invoice
         4: { cellWidth: 8 }, // Status Invoice
         5: { cellWidth: 12 }, // Nama User
-        6: { cellWidth: 15 }, // Email
-        7: { cellWidth: 10 }, // No. HP
-        8: { cellWidth: 12 }, // Nama Paket
-        9: { cellWidth: 5 }, // Jumlah
-        10: { cellWidth: 12 }, // Harga
-        11: { cellWidth: 8 }, // Kode Referral
-        12: { cellWidth: 10 }, // Tgl Transaksi
-        13: { cellWidth: 10 }, // Tgl Bayar
-        14: { cellWidth: 10 }, // Metode Pembayaran
-        15: { cellWidth: 10 }, // Jatuh Tempo
-        16: { cellWidth: 8 }, // Status Keterlambatan
-        17: { cellWidth: 15 }, // Nomor Kontrak
-        18: { cellWidth: 10 }, // Awal Kontrak
-        19: { cellWidth: 10 }, // Akhir Kontrak
-        20: { cellWidth: 12 }, // Total Dibayar
-        21: { cellWidth: 12 }, // Sisa Dibayar
-        22: { cellWidth: 8 }, // Status Akhir
+        6: { cellWidth: 8 }, // No Anggota
+        7: { cellWidth: 15 }, // Email
+        8: { cellWidth: 10 }, // No. HP
+        9: { cellWidth: 12 }, // Nama Paket
+        10: { cellWidth: 5 }, // Jumlah
+        11: { cellWidth: 12 }, // Harga
+        12: { cellWidth: 8 }, // Kode Referral
+        13: { cellWidth: 10 }, // Tgl Transaksi
+        14: { cellWidth: 10 }, // Tgl Bayar
+        15: { cellWidth: 10 }, // Metode Pembayaran
+        16: { cellWidth: 10 }, // Jatuh Tempo
+        17: { cellWidth: 8 }, // Status Keterlambatan
+        18: { cellWidth: 15 }, // Nomor Kontrak
+        19: { cellWidth: 10 }, // Awal Kontrak
+        20: { cellWidth: 10 }, // Akhir Kontrak
+        21: { cellWidth: 12 }, // Total Dibayar
+        22: { cellWidth: 12 }, // Sisa Dibayar
+        23: { cellWidth: 8 }, // Status Akhir
       },
     });
 

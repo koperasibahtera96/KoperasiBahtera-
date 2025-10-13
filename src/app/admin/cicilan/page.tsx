@@ -366,6 +366,11 @@ export default function AdminCicilanPage() {
                             <p className="text-xs sm:text-sm text-[#889063] dark:text-gray-300 truncate transition-colors duration-300">
                               {investor.userInfo.email}
                             </p>
+                            {investor.userInfo.userCode && (
+                              <p className="text-xs text-[#4C3D19] dark:text-emerald-300 truncate transition-colors duration-300 font-medium">
+                                No Anggota: {investor.userInfo.userCode}
+                              </p>
+                            )}
                             <p className="text-xs text-[#889063]/70 dark:text-gray-400 truncate transition-colors duration-300">
                               {investor.userInfo.phoneNumber}
                             </p>

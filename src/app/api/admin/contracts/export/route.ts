@@ -40,7 +40,7 @@ export async function GET() {
     };
 
     const contractsFromDB = await Contract.find(filter)
-      .populate('userId', 'fullName email phoneNumber ktpImageUrl')
+      .populate('userId', 'fullName email phoneNumber ktpImageUrl userCode')
       .sort({ createdAt: -1 })
       .lean();
 
@@ -61,7 +61,8 @@ export async function GET() {
           fullName: contract.userId.fullName,
           email: contract.userId.email,
           phoneNumber: contract.userId.phoneNumber,
-          ktpImageUrl: contract.userId.ktpImageUrl
+          ktpImageUrl: contract.userId.ktpImageUrl,
+          userCode: contract.userId.userCode
         } : null,
         currentAttempt: contract.currentAttempt,
         maxAttempts: contract.maxAttempts,
@@ -112,6 +113,7 @@ export async function GET() {
       'No',
       'Nomor Kontrak',
       'Nama User',
+      'No Anggota',
       'Jenis Paket',
       'Status Kontrak',
       'Awal Kontrak',
@@ -146,6 +148,7 @@ export async function GET() {
         index + 1,                                                    // No
         contract.contractNumber,                                      // Nomor Kontrak
         contract.user.fullName,                                       // Nama User
+        contract.user.userCode || '-',                                // No Anggota
         contract.productName,                                         // Jenis Paket
         statusKontrak,                                               // Status Kontrak
         awalKontrak.toLocaleDateString('id-ID'),                     // Awal Kontrak
@@ -175,6 +178,9 @@ export async function GET() {
       } else if (col === 2) {
         // Column C (index 2) - make wider for names
         colWidths.push({ width: 30 });
+      } else if (col === 3) {
+        // Column D (index 3) - No Anggota
+        colWidths.push({ width: 15 });
       } else {
         // Ensure minimum width for readability and maximum for reasonable display
         colWidths.push({ width: Math.min(Math.max(maxWidth + 3, 12), 50) });
@@ -231,7 +237,7 @@ export async function GET() {
         // Header row for the contract details table (contains 'No' or table headers) - exact copy from laporan
         try {
           const rowArr = worksheetData[row];
-          if (Array.isArray(rowArr) && (rowArr.includes("No") || rowArr.includes("Nomor Kontrak") || rowArr.includes("Nama User"))) {
+          if (Array.isArray(rowArr) && (rowArr.includes("No") || rowArr.includes("Nomor Kontrak") || rowArr.includes("Nama User") || rowArr.includes("No Anggota"))) {
             worksheet[cellRef].s.font = { bold: true, sz: 11 };
             worksheet[cellRef].s.fill = { fgColor: { rgb: 'E5E7EB' } };
             worksheet[cellRef].s.alignment = { horizontal: 'center' };

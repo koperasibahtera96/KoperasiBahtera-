@@ -166,6 +166,7 @@ export interface InvestorDetail {
     fullName: string;
     email: string;
     phoneNumber: string;
+    userCode?: string;
   };
   totalInvestments: number;
   totalAmount: number;
@@ -183,6 +184,7 @@ export interface InvestorGroup {
     fullName: string;
     email: string;
     phoneNumber: string;
+    userCode?: string;
   };
   totalInvestments: number;
   totalAmount: number;

@@ -23,6 +23,7 @@ interface User {
   email: string;
   phoneNumber?: string;
   ktpImageUrl?: string;
+  userCode?: string;
 }
 
 interface ContractForApproval {
@@ -397,6 +398,9 @@ export default function ContractApprovalsPage() {
                     User Information
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    No Anggota
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     Signature Status
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
@@ -448,6 +452,13 @@ export default function ContractApprovalsPage() {
                             {contract.user.phoneNumber}
                           </div>
                         )}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div>
+                        <div className="text-sm font-medium text-gray-900 dark:text-white">
+                          {contract.user.userCode || "-"}
+                        </div>
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
@@ -655,6 +666,10 @@ export default function ContractApprovalsPage() {
                       <div>
                         <strong>Name:</strong>{" "}
                         {selectedContract.contract.user.fullName}
+                      </div>
+                      <div>
+                        <strong>No Anggota:</strong>{" "}
+                        {selectedContract.contract.user.userCode || "-"}
                       </div>
                       <div>
                         <strong>Email:</strong>{" "}

@@ -15,32 +15,37 @@ export async function GET(request: NextRequest) {
 
     // Check if user is admin
     const adminUser = await User.findOne({ email: session.user.email });
-    if (!adminUser || adminUser.role !== 'admin') {
-      return NextResponse.json({ error: "Admin access required" }, { status: 403 });
+    if (!adminUser || adminUser.role !== "admin") {
+      return NextResponse.json(
+        { error: "Admin access required" },
+        { status: 403 }
+      );
     }
 
     // Get URL parameters for pagination and filtering
     const url = new URL(request.url);
-    const page = parseInt(url.searchParams.get('page') || '1');
-    const limit = parseInt(url.searchParams.get('limit') || '10');
-    const status = url.searchParams.get('status') || 'pending';
+    const page = parseInt(url.searchParams.get("page") || "1");
+    const limit = parseInt(url.searchParams.get("limit") || "10");
+    const status = url.searchParams.get("status") || "pending";
     const skip = (page - 1) * limit;
 
     // Build query filter
     const filter: any = {};
 
-    if (status === 'pending') {
-      filter.adminApprovalStatus = 'pending';
-      filter.status = 'signed';
-    } else if (status === 'all') {
-      filter.adminApprovalStatus = { $in: ['pending', 'approved', 'rejected', 'permanently_rejected'] };
+    if (status === "pending") {
+      filter.adminApprovalStatus = "pending";
+      filter.status = "signed";
+    } else if (status === "all") {
+      filter.adminApprovalStatus = {
+        $in: ["pending", "approved", "rejected", "permanently_rejected"],
+      };
     } else {
       filter.adminApprovalStatus = status;
     }
 
     // Get contracts with user details
     const contracts = await Contract.find(filter)
-      .populate('userId', 'fullName email phoneNumber ktpImageUrl')
+      .populate("userId", "fullName email phoneNumber ktpImageUrl userCode")
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(limit)
@@ -51,8 +56,9 @@ export async function GET(request: NextRequest) {
     const totalPages = Math.ceil(totalCount / limit);
 
     // Format contract data for admin review
-    const formattedContracts = contracts.map(contract => {
-      const lastAttempt = contract.signatureAttempts[contract.signatureAttempts.length - 1];
+    const formattedContracts = contracts.map((contract) => {
+      const lastAttempt =
+        contract.signatureAttempts[contract.signatureAttempts.length - 1];
 
       return {
         contractId: contract.contractId,
@@ -66,30 +72,35 @@ export async function GET(request: NextRequest) {
         paymentType: contract.paymentType,
 
         // User details
-        user: contract.userId ? {
-          id: contract.userId._id,
-          fullName: contract.userId.fullName,
-          email: contract.userId.email,
-          phoneNumber: contract.userId.phoneNumber,
-          ktpImageUrl: contract.userId.ktpImageUrl
-        } : null,
+        user: contract.userId
+          ? {
+              id: contract.userId._id,
+              fullName: contract.userId.fullName,
+              email: contract.userId.email,
+              phoneNumber: contract.userId.phoneNumber,
+              ktpImageUrl: contract.userId.ktpImageUrl,
+              userCode: contract.userId.userCode,
+            }
+          : null,
 
         // Signature details
         currentAttempt: contract.currentAttempt,
         maxAttempts: contract.maxAttempts,
-        lastSignature: lastAttempt ? {
-          attemptNumber: lastAttempt.attemptNumber,
-          signatureData: lastAttempt.signatureData,
-          submittedAt: lastAttempt.submittedAt,
-          reviewStatus: lastAttempt.reviewStatus,
-          rejectionReason: lastAttempt.rejectionReason,
-          adminNotes: lastAttempt.adminNotes
-        } : null,
+        lastSignature: lastAttempt
+          ? {
+              attemptNumber: lastAttempt.attemptNumber,
+              signatureData: lastAttempt.signatureData,
+              submittedAt: lastAttempt.submittedAt,
+              reviewStatus: lastAttempt.reviewStatus,
+              rejectionReason: lastAttempt.rejectionReason,
+              adminNotes: lastAttempt.adminNotes,
+            }
+          : null,
 
         // Timestamps
         contractDate: contract.contractDate,
         createdAt: contract.createdAt,
-        updatedAt: contract.updatedAt
+        updatedAt: contract.updatedAt,
       };
     });
 
@@ -102,11 +113,10 @@ export async function GET(request: NextRequest) {
           totalPages,
           totalCount,
           hasNextPage: page < totalPages,
-          hasPrevPage: page > 1
-        }
-      }
+          hasPrevPage: page > 1,
+        },
+      },
     });
-
   } catch (error) {
     console.error("Error fetching pending contracts:", error);
 

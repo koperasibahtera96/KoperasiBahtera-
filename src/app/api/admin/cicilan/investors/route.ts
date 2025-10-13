@@ -29,9 +29,10 @@ export async function GET(request: NextRequest) {
       // Check all payments and group by investment
       userPayments.forEach((payment: any) => {
         const dueDate = new Date(payment.dueDate);
-        const isOverdue = dueDate < now &&
-                         dueDate.toDateString() !== now.toDateString() &&
-                         payment.transactionStatus !== "settlement";
+        const isOverdue =
+          dueDate < now &&
+          dueDate.toDateString() !== now.toDateString() &&
+          payment.transactionStatus !== "settlement";
 
         if (isOverdue) {
           // Use cicilanOrderId for cicilan payments, orderId for full payments
@@ -82,6 +83,7 @@ export async function GET(request: NextRequest) {
     // Get users with pagination
     const totalCount = await User.countDocuments(userQuery);
     const users = await User.find(userQuery)
+      .select("fullName email phoneNumber userCode")
       .sort({ updatedAt: -1 })
       .skip((page - 1) * limit)
       .limit(limit);
@@ -184,6 +186,7 @@ export async function GET(request: NextRequest) {
             fullName: user.fullName,
             email: user.email,
             phoneNumber: user.phoneNumber,
+            userCode: user.userCode,
           },
           totalInvestments: investor.investments.length,
           totalAmount: investor.totalInvestasi,
@@ -235,6 +238,7 @@ export async function GET(request: NextRequest) {
             fullName: user.fullName,
             email: user.email,
             phoneNumber: user.phoneNumber,
+            userCode: user.userCode,
           },
           totalInvestments: virtualInvestments.length,
           totalAmount: totalAmount,
