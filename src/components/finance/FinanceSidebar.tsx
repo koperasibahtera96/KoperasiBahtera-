@@ -3,7 +3,6 @@
 import { AnimatePresence, motion } from "framer-motion";
 import {
   BarChart3,
-  Calendar,
   LogOut,
   Menu,
   Receipt,

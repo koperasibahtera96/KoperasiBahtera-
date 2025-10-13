@@ -5,7 +5,14 @@ import { KetuaLayout } from "@/components/ketua/KetuaLayout";
 import { useAlert } from "@/components/ui/Alert";
 import { useConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { Select } from "@/components/ui/Select";
-import { RefreshCw, Users, CheckCircle, X as XIcon, DollarSign, Plus } from "lucide-react";
+import {
+  RefreshCw,
+  Users,
+  CheckCircle,
+  X as XIcon,
+  DollarSign,
+  Download,
+} from "lucide-react";
 import { useSession } from "next-auth/react";
 import { useEffect, useState } from "react";
 import { useTheme } from "next-themes";
@@ -44,6 +51,7 @@ export default function InvestorsPage() {
     return baseClasses;
   };
   const [showModal, setShowModal] = useState(false);
+  const [exportLoading, setExportLoading] = useState(false);
   const [editingInvestor, setEditingInvestor] = useState<Investor | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -91,11 +99,11 @@ export default function InvestorsPage() {
   }, []);
 
   useEffect(() => {
-    if (session && session?.user?.role !== 'ketua') {
+    if (session && session?.user?.role !== "ketua") {
       fetchProfileChangeRequests();
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [session])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session]);
 
   // Fetch users for dropdown
   useEffect(() => {
@@ -144,10 +152,10 @@ export default function InvestorsPage() {
   // Fetch profile change requests
   const fetchProfileChangeRequests = async () => {
     // Don't fetch if user is Ketua (read-only role)
-    if (session?.user?.role === 'ketua') {
+    if (session?.user?.role === "ketua") {
       return;
     }
-    
+
     try {
       setLoadingRequests(true);
       const response = await fetch("/api/admin/profile-change-requests");
@@ -401,8 +409,45 @@ export default function InvestorsPage() {
     setShowInvestorRequestsModal(true);
   };
 
+  // Export investor data to Excel
+  const exportToExcel = async () => {
+    try {
+      setExportLoading(true);
+
+      const response = await fetch("/api/admin/investors/export");
+
+      if (response.ok) {
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+
+        // Generate filename with current date
+        const date = new Date().toISOString().split("T")[0];
+        link.download = `data-investor-${date}.xlsx`;
+
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+
+        // Clean up the blob URL
+        window.URL.revokeObjectURL(url);
+
+        showSuccess("Berhasil!", "Data investor berhasil diekspor!");
+      } else {
+        const result = await response.json();
+        showError("Gagal Export", result.error || "Gagal mengekspor data");
+      }
+    } catch (error) {
+      console.error("Export error:", error);
+      showError("Kesalahan", "Terjadi kesalahan saat mengekspor data");
+    } finally {
+      setExportLoading(false);
+    }
+  };
+
   // Determine which layout to use based on user role
-  const isKetua = session?.user?.role === 'ketua';
+  const isKetua = session?.user?.role === "ketua";
   const Layout = isKetua ? KetuaLayout : AdminLayout;
 
   return (
@@ -411,10 +456,20 @@ export default function InvestorsPage() {
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
           <div className="min-w-0 flex-1">
-            <h1 className={getThemeClasses("text-2xl sm:text-3xl font-bold font-[family-name:var(--font-poppins)] truncate transition-colors duration-300", "!text-[#4c1d1d]") }>
+            <h1
+              className={getThemeClasses(
+                "text-2xl sm:text-3xl font-bold font-[family-name:var(--font-poppins)] truncate transition-colors duration-300",
+                "!text-[#4c1d1d]"
+              )}
+            >
               Manajemen Investor
             </h1>
-            <p className={getThemeClasses("mt-1 sm:mt-2 text-sm sm:text-base transition-colors duration-300", "!text-[#6b7280]") }>
+            <p
+              className={getThemeClasses(
+                "mt-1 sm:mt-2 text-sm sm:text-base transition-colors duration-300",
+                "!text-[#6b7280]"
+              )}
+            >
               Kelola data investor dan portfolio mereka
             </p>
           </div>
@@ -422,7 +477,10 @@ export default function InvestorsPage() {
             <button
               onClick={fetchInvestors}
               disabled={loading}
-              className={getThemeClasses("px-3 sm:px-4 py-2 rounded-xl font-medium transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 text-sm sm:text-base whitespace-nowrap", "!text-[#4c1d1d] !bg-white/95 !border-[#FFC1CC]/30")}
+              className={getThemeClasses(
+                "px-3 sm:px-4 py-2 rounded-xl font-medium transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 text-sm sm:text-base whitespace-nowrap",
+                "!text-[#4c1d1d] !bg-white/95 !border-[#FFC1CC]/30"
+              )}
             >
               <RefreshCw
                 className={`w-4 h-4 ${loading ? "animate-spin" : ""}`}
@@ -431,12 +489,20 @@ export default function InvestorsPage() {
             </button>
             {!isKetua && (
               <button
-                onClick={() => setShowModal(true)}
-                className={getThemeClasses("px-4 sm:px-6 py-2 sm:py-3 rounded-xl font-semibold hover:shadow-lg transition-all duration-200 flex items-center justify-center gap-2 text-sm sm:text-base whitespace-nowrap text-white bg-gradient-to-r from-[#324D3E] to-[#4C3D19]", "!bg-gradient-to-r !from-[#FFC1CC] !to-[#FFDEE9] !text-[#4c1d1d] !shadow-md")}
+                onClick={() => exportToExcel()}
+                disabled={exportLoading}
+                className={getThemeClasses(
+                  "px-4 sm:px-6 py-2 sm:py-3 rounded-xl font-semibold hover:shadow-lg transition-all duration-200 flex items-center justify-center gap-2 text-sm sm:text-base whitespace-nowrap text-white bg-gradient-to-r from-[#324D3E] to-[#4C3D19] disabled:opacity-50 disabled:cursor-not-allowed",
+                  "!bg-gradient-to-r !from-[#FFC1CC] !to-[#FFDEE9] !text-[#4c1d1d] !shadow-md"
+                )}
               >
-                <Plus className="w-4 h-4" />
-                <span className="sm:hidden">+ Investor</span>
-                <span className="hidden sm:inline">Tambah Investor</span>
+                <Download className="w-4 h-4" />
+                <span className="sm:hidden">
+                  {exportLoading ? "..." : "Export"}
+                </span>
+                <span className="hidden sm:inline">
+                  {exportLoading ? "Mengekspor..." : "Export Excel"}
+                </span>
               </button>
             )}
           </div>
@@ -444,47 +510,112 @@ export default function InvestorsPage() {
 
         {/* Stats Cards */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6 mb-6">
-          <div className={getThemeClasses("bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg rounded-2xl shadow-lg border border-[#324D3E]/10 dark:border-gray-700 p-4 sm:p-6 hover:shadow-xl hover:scale-105 transition-all duration-300", "!bg-white/95 !border-[#FFC1CC]/30") }>
+          <div
+            className={getThemeClasses(
+              "bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg rounded-2xl shadow-lg border border-[#324D3E]/10 dark:border-gray-700 p-4 sm:p-6 hover:shadow-xl hover:scale-105 transition-all duration-300",
+              "!bg-white/95 !border-[#FFC1CC]/30"
+            )}
+          >
             <div>
-              <p className={getThemeClasses("text-xs sm:text-sm font-medium truncate transition-colors duration-300", "!text-[#6b7280]") }>
+              <p
+                className={getThemeClasses(
+                  "text-xs sm:text-sm font-medium truncate transition-colors duration-300",
+                  "!text-[#6b7280]"
+                )}
+              >
                 <Users className="inline-block w-4 h-4 mr-2" /> Total Investor
               </p>
-              <p className={getThemeClasses("text-lg sm:text-xl lg:text-2xl font-bold transition-colors duration-300", "!text-[#4c1d1d]") }>
+              <p
+                className={getThemeClasses(
+                  "text-lg sm:text-xl lg:text-2xl font-bold transition-colors duration-300",
+                  "!text-[#4c1d1d]"
+                )}
+              >
                 {investors.length}
               </p>
             </div>
           </div>
 
-          <div className={getThemeClasses("bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg rounded-2xl shadow-lg border border-[#324D3E]/10 dark:border-gray-700 p-4 sm:p-6 hover:shadow-xl hover:scale-105 transition-all duration-300", "!bg-white/95 !border-[#B5EAD7]/30") }>
+          <div
+            className={getThemeClasses(
+              "bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg rounded-2xl shadow-lg border border-[#324D3E]/10 dark:border-gray-700 p-4 sm:p-6 hover:shadow-xl hover:scale-105 transition-all duration-300",
+              "!bg-white/95 !border-[#B5EAD7]/30"
+            )}
+          >
             <div>
-              <p className={getThemeClasses("text-xs sm:text-sm font-medium truncate transition-colors duration-300", "!text-[#6b7280]") }>
-                <CheckCircle className="inline-block w-4 h-4 mr-2" /> Investor Aktif
+              <p
+                className={getThemeClasses(
+                  "text-xs sm:text-sm font-medium truncate transition-colors duration-300",
+                  "!text-[#6b7280]"
+                )}
+              >
+                <CheckCircle className="inline-block w-4 h-4 mr-2" /> Investor
+                Aktif
               </p>
-              <p className={getThemeClasses("text-lg sm:text-xl lg:text-2xl font-bold transition-colors duration-300", "!text-[#4c1d1d]") }>
+              <p
+                className={getThemeClasses(
+                  "text-lg sm:text-xl lg:text-2xl font-bold transition-colors duration-300",
+                  "!text-[#4c1d1d]"
+                )}
+              >
                 {investors.filter((i) => i.status === "active").length}
               </p>
             </div>
           </div>
 
-          <div className={getThemeClasses("bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg rounded-2xl shadow-lg border border-[#324D3E]/10 dark:border-gray-700 p-4 sm:p-6 hover:shadow-xl hover:scale-105 transition-all duration-300", "!bg-white/95 !border-[#FFC1CC]/30") }>
+          <div
+            className={getThemeClasses(
+              "bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg rounded-2xl shadow-lg border border-[#324D3E]/10 dark:border-gray-700 p-4 sm:p-6 hover:shadow-xl hover:scale-105 transition-all duration-300",
+              "!bg-white/95 !border-[#FFC1CC]/30"
+            )}
+          >
             <div>
-              <p className={getThemeClasses("text-xs sm:text-sm font-medium truncate transition-colors duration-300", "!text-[#6b7280]") }>
+              <p
+                className={getThemeClasses(
+                  "text-xs sm:text-sm font-medium truncate transition-colors duration-300",
+                  "!text-[#6b7280]"
+                )}
+              >
                 <XIcon className="inline-block w-4 h-4 mr-2" /> Tidak Aktif
               </p>
-              <p className={getThemeClasses("text-lg sm:text-xl lg:text-2xl font-bold transition-colors duration-300", "!text-red-600") }>
+              <p
+                className={getThemeClasses(
+                  "text-lg sm:text-xl lg:text-2xl font-bold transition-colors duration-300",
+                  "!text-red-600"
+                )}
+              >
                 {investors.filter((i) => i.status === "inactive").length}
               </p>
             </div>
           </div>
 
-          <div className={getThemeClasses("bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg rounded-2xl shadow-lg border border-[#324D3E]/10 dark:border-gray-700 p-4 sm:p-6 hover:shadow-xl hover:scale-105 transition-all duration-300", "!bg-white/95 !border-[#C7CEEA]/30") }>
+          <div
+            className={getThemeClasses(
+              "bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg rounded-2xl shadow-lg border border-[#324D3E]/10 dark:border-gray-700 p-4 sm:p-6 hover:shadow-xl hover:scale-105 transition-all duration-300",
+              "!bg-white/95 !border-[#C7CEEA]/30"
+            )}
+          >
             <div className="min-w-0">
-              <p className={getThemeClasses("text-xs sm:text-sm font-medium truncate transition-colors duration-300", "!text-[#6b7280]") }>
-                <DollarSign className="inline-block w-4 h-4 mr-2" /> Total Investasi
+              <p
+                className={getThemeClasses(
+                  "text-xs sm:text-sm font-medium truncate transition-colors duration-300",
+                  "!text-[#6b7280]"
+                )}
+              >
+                <DollarSign className="inline-block w-4 h-4 mr-2" /> Total
+                Investasi
               </p>
               <div className="flex flex-col">
-                <p className={getThemeClasses("text-sm sm:text-base lg:text-lg font-bold leading-tight break-all transition-colors duration-300", "!text-[#4c1d1d]") }>
-                  Rp. {investors.reduce((sum, inv) => sum + inv.totalInvestasi, 0).toLocaleString("id-ID")}
+                <p
+                  className={getThemeClasses(
+                    "text-sm sm:text-base lg:text-lg font-bold leading-tight break-all transition-colors duration-300",
+                    "!text-[#4c1d1d]"
+                  )}
+                >
+                  Rp.{" "}
+                  {investors
+                    .reduce((sum, inv) => sum + inv.totalInvestasi, 0)
+                    .toLocaleString("id-ID")}
                 </p>
               </div>
             </div>
@@ -667,7 +798,9 @@ export default function InvestorsPage() {
                             </button>
                           </div>
                         ) : (
-                          <span className="text-xs text-gray-500 dark:text-gray-400">-</span>
+                          <span className="text-xs text-gray-500 dark:text-gray-400">
+                            -
+                          </span>
                         )}
                       </td>
                     </tr>
@@ -681,10 +814,32 @@ export default function InvestorsPage() {
 
       {/* Modal */}
       {showModal && (
-        <div className={getThemeClasses("fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50", "") }>
-          <div className={getThemeClasses("bg-white/95 dark:bg-gray-800/95 backdrop-blur-lg rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl border border-[#324D3E]/10 dark:border-gray-700 transition-colors duration-300", "!bg-white/95 !border-[#FFC1CC]/30") }>
-            <div className={getThemeClasses("p-6 border-b border-[#324D3E]/10 dark:border-gray-700 transition-colors duration-300", "!border-[#FFC1CC]/30 !bg-white/95") }>
-              <h2 className={getThemeClasses("text-xl font-bold font-[family-name:var(--font-poppins)] transition-colors duration-300", "!text-[#4c1d1d]")}>{editingInvestor ? "Edit Investor" : "Tambah Investor Baru"}</h2>
+        <div
+          className={getThemeClasses(
+            "fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50",
+            ""
+          )}
+        >
+          <div
+            className={getThemeClasses(
+              "bg-white/95 dark:bg-gray-800/95 backdrop-blur-lg rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl border border-[#324D3E]/10 dark:border-gray-700 transition-colors duration-300",
+              "!bg-white/95 !border-[#FFC1CC]/30"
+            )}
+          >
+            <div
+              className={getThemeClasses(
+                "p-6 border-b border-[#324D3E]/10 dark:border-gray-700 transition-colors duration-300",
+                "!border-[#FFC1CC]/30 !bg-white/95"
+              )}
+            >
+              <h2
+                className={getThemeClasses(
+                  "text-xl font-bold font-[family-name:var(--font-poppins)] transition-colors duration-300",
+                  "!text-[#4c1d1d]"
+                )}
+              >
+                {editingInvestor ? "Edit Investor" : "Tambah Investor Baru"}
+              </h2>
             </div>
 
             <form onSubmit={handleSubmit} className="p-6 space-y-6">
@@ -810,7 +965,10 @@ export default function InvestorsPage() {
               <div className="flex items-center gap-4 pt-4">
                 <button
                   type="submit"
-                  className={getThemeClasses("px-6 py-2 rounded-xl font-semibold hover:shadow-lg transition-all duration-200", "!bg-gradient-to-r !from-[#FFC1CC] !to-[#FFDEE9] !text-[#4c1d1d] !shadow-md")}
+                  className={getThemeClasses(
+                    "px-6 py-2 rounded-xl font-semibold hover:shadow-lg transition-all duration-200",
+                    "!bg-gradient-to-r !from-[#FFC1CC] !to-[#FFDEE9] !text-[#4c1d1d] !shadow-md"
+                  )}
                 >
                   {editingInvestor ? "Update Investor" : "Tambah Investor"}
                 </button>
@@ -828,7 +986,10 @@ export default function InvestorsPage() {
                       status: "active",
                     });
                   }}
-                  className={getThemeClasses("px-6 py-2 border dark:border-gray-600 rounded-xl transition-colors duration-300", "!border-[#FFC1CC]/30 !text-[#4c1d1d] hover:!bg-[#FFDEE9]/20")}
+                  className={getThemeClasses(
+                    "px-6 py-2 border dark:border-gray-600 rounded-xl transition-colors duration-300",
+                    "!border-[#FFC1CC]/30 !text-[#4c1d1d] hover:!bg-[#FFDEE9]/20"
+                  )}
                 >
                   Batal
                 </button>

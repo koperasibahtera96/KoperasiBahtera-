@@ -169,7 +169,9 @@ export default function LaporanPengeluaranPage() {
   const allRelevantDates: Date[] = useMemo(() => {
     const arr: Date[] = [];
     const modes: Array<"operationalCosts" | "incomeRecords"> =
-      mode === "all" ? ["operationalCosts", "incomeRecords"] : [mode === "expense" ? "operationalCosts" : "incomeRecords"];
+      mode === "all"
+        ? ["operationalCosts", "incomeRecords"]
+        : [mode === "expense" ? "operationalCosts" : "incomeRecords"];
     plantInstances
       .filter((p) => selectedPlant === "all" || p.plantType === selectedPlant)
       .forEach((plant) => {
@@ -181,6 +183,7 @@ export default function LaporanPengeluaranPage() {
         });
       });
     return arr;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [plantInstances, selectedPlant, mode, startDate, endDate]);
 
   const getPeriodLabel = () => {
@@ -263,6 +266,7 @@ export default function LaporanPengeluaranPage() {
             _kind: "expense" as const,
           }))
       );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [plantInstances, selectedPlant, startDate, endDate]);
 
   const totalExpenses = useMemo(
@@ -287,6 +291,7 @@ export default function LaporanPengeluaranPage() {
           ],
       };
     });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [plantTypes, plantInstances, startDate, endDate]);
 
   // ===================== INCOME (filtered by date range) =====================
@@ -308,6 +313,7 @@ export default function LaporanPengeluaranPage() {
             _kind: "income" as const,
           }))
       );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [plantInstances, selectedPlant, startDate, endDate]);
 
   const totalIncome = useMemo(
@@ -332,6 +338,7 @@ export default function LaporanPengeluaranPage() {
           ],
       };
     });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [plantTypes, plantInstances, startDate, endDate]);
 
   // ===================== MODE "ALL" (gabungan) =====================
@@ -368,6 +375,7 @@ export default function LaporanPengeluaranPage() {
           ],
       };
     });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [plantTypes, plantInstances, startDate, endDate]);
 
   // ===================== Tren Bulanan (mengikuti rentang tanggal) =====================
@@ -375,16 +383,22 @@ export default function LaporanPengeluaranPage() {
     // Tentukan from-to untuk bucket:
     // - Jika user set start/end → gunakan itu
     // - Kalau kosong, ambil min & max dari data sesuai mode/plant
-    const dates = allRelevantDates.slice().sort((a, b) => a.getTime() - b.getTime());
+    const dates = allRelevantDates
+      .slice()
+      .sort((a, b) => a.getTime() - b.getTime());
     let from: Date, to: Date;
 
     if (startDate) from = toStart(startDate);
-    else from = dates[0] ? new Date(dates[0]) : new Date(new Date().getFullYear(), 0, 1);
+    else
+      from = dates[0]
+        ? new Date(dates[0])
+        : new Date(new Date().getFullYear(), 0, 1);
 
     if (endDate) to = toEnd(endDate);
-    else to = dates[dates.length - 1]
-      ? new Date(dates[dates.length - 1])
-      : new Date(new Date().getFullYear(), 11, 31);
+    else
+      to = dates[dates.length - 1]
+        ? new Date(dates[dates.length - 1])
+        : new Date(new Date().getFullYear(), 11, 31);
 
     // Normalisasi ke awal & akhir bulan
     const first = new Date(from.getFullYear(), from.getMonth(), 1);
@@ -432,7 +446,7 @@ export default function LaporanPengeluaranPage() {
         })
         .reduce((sum, e) => sum + (e.amount || 0), 0);
 
-    // gunakan key "expenses" agar chart lama tetap jalan tanpa ubah prop
+      // gunakan key "expenses" agar chart lama tetap jalan tanpa ubah prop
       return { month: b.label, expenses: monthIncome };
     });
   }, [monthBuckets, filteredIncome]);
@@ -480,7 +494,9 @@ export default function LaporanPengeluaranPage() {
           const arr = isExpense
             ? plant.operationalCosts || []
             : plant.incomeRecords || [];
-          const subtotal = arr.filter(inRangeRecord).reduce((s, it) => s + (it.amount || 0), 0);
+          const subtotal = arr
+            .filter(inRangeRecord)
+            .reduce((s, it) => s + (it.amount || 0), 0);
           return sum + subtotal;
         }, 0);
         totalTransactions = relevantPlants.reduce((sum, plant) => {
@@ -494,17 +510,29 @@ export default function LaporanPengeluaranPage() {
         // mode "all"
         const sumExp = relevantPlants.reduce((sum, plant) => {
           const arr = plant.operationalCosts || [];
-          const subtotal = arr.filter(inRangeRecord).reduce((s, it) => s + (it.amount || 0), 0);
+          const subtotal = arr
+            .filter(inRangeRecord)
+            .reduce((s, it) => s + (it.amount || 0), 0);
           return sum + subtotal;
         }, 0);
         const sumInc = relevantPlants.reduce((sum, plant) => {
           const arr = plant.incomeRecords || [];
-          const subtotal = arr.filter(inRangeRecord).reduce((s, it) => s + (it.amount || 0), 0);
+          const subtotal = arr
+            .filter(inRangeRecord)
+            .reduce((s, it) => s + (it.amount || 0), 0);
           return sum + subtotal;
         }, 0);
         total = sumExp + sumInc;
-        const countExp = relevantPlants.reduce((sum, plant) => sum + (plant.operationalCosts || []).filter(inRangeRecord).length, 0);
-        const countInc = relevantPlants.reduce((sum, plant) => sum + (plant.incomeRecords || []).filter(inRangeRecord).length, 0);
+        const countExp = relevantPlants.reduce(
+          (sum, plant) =>
+            sum + (plant.operationalCosts || []).filter(inRangeRecord).length,
+          0
+        );
+        const countInc = relevantPlants.reduce(
+          (sum, plant) =>
+            sum + (plant.incomeRecords || []).filter(inRangeRecord).length,
+          0
+        );
         totalTransactions = countExp + countInc;
       }
 
@@ -518,10 +546,16 @@ export default function LaporanPengeluaranPage() {
         if (mode === "expense" || mode === "income") {
           const isExpense = mode === "expense";
           relevantPlants.forEach((plant) => {
-            const arr = isExpense ? plant.operationalCosts || [] : plant.incomeRecords || [];
+            const arr = isExpense
+              ? plant.operationalCosts || []
+              : plant.incomeRecords || [];
             const filtered = arr.filter((it) => {
               const d = new Date(it.date);
-              return inRange(d) && d.getFullYear() === b.y && d.getMonth() + 1 === b.m;
+              return (
+                inRange(d) &&
+                d.getFullYear() === b.y &&
+                d.getMonth() + 1 === b.m
+              );
             });
             mTotal += filtered.reduce((s, it) => s + (it.amount || 0), 0);
             mCount += filtered.length;
@@ -530,11 +564,19 @@ export default function LaporanPengeluaranPage() {
           relevantPlants.forEach((plant) => {
             const exp = (plant.operationalCosts || []).filter((it) => {
               const d = new Date(it.date);
-              return inRange(d) && d.getFullYear() === b.y && d.getMonth() + 1 === b.m;
+              return (
+                inRange(d) &&
+                d.getFullYear() === b.y &&
+                d.getMonth() + 1 === b.m
+              );
             });
             const inc = (plant.incomeRecords || []).filter((it) => {
               const d = new Date(it.date);
-              return inRange(d) && d.getFullYear() === b.y && d.getMonth() + 1 === b.m;
+              return (
+                inRange(d) &&
+                d.getFullYear() === b.y &&
+                d.getMonth() + 1 === b.m
+              );
             });
             mTotal += exp.reduce((s, it) => s + (it.amount || 0), 0);
             mTotal += inc.reduce((s, it) => s + (it.amount || 0), 0);
@@ -564,7 +606,11 @@ export default function LaporanPengeluaranPage() {
           : "Laporan Semua";
 
       const labelValue =
-        mode === "expense" ? "Pengeluaran" : mode === "income" ? "Pendapatan" : "Nominal";
+        mode === "expense"
+          ? "Pengeluaran"
+          : mode === "income"
+          ? "Pendapatan"
+          : "Nominal";
 
       let html = `
         <html>
@@ -595,13 +641,21 @@ export default function LaporanPengeluaranPage() {
       html += `<table>`;
       html += `<tr><th>Keterangan</th><th>Nilai</th></tr>`;
       if (mode === "all") {
-        html += `<tr><td>Total Pendapatan</td><td>Rp ${totalIncome.toLocaleString("id-ID")}</td></tr>`;
-        html += `<tr><td>Total Pengeluaran</td><td>Rp ${totalExpenses.toLocaleString("id-ID")}</td></tr>`;
+        html += `<tr><td>Total Pendapatan</td><td>Rp ${totalIncome.toLocaleString(
+          "id-ID"
+        )}</td></tr>`;
+        html += `<tr><td>Total Pengeluaran</td><td>Rp ${totalExpenses.toLocaleString(
+          "id-ID"
+        )}</td></tr>`;
       } else {
-        html += `<tr><td>Total ${labelValue}</td><td>Rp ${total.toLocaleString("id-ID")}</td></tr>`;
+        html += `<tr><td>Total ${labelValue}</td><td>Rp ${total.toLocaleString(
+          "id-ID"
+        )}</td></tr>`;
       }
       html += `<tr><td>Jumlah Transaksi</td><td>${totalTransactions}</td></tr>`;
-      html += `<tr><td>Rata-rata per Transaksi</td><td>Rp ${average.toLocaleString("id-ID")}</td></tr>`;
+      html += `<tr><td>Rata-rata per Transaksi</td><td>Rp ${average.toLocaleString(
+        "id-ID"
+      )}</td></tr>`;
       html += `<tr><td>Periode</td><td>${getPeriodLabel()}</td></tr>`;
       html += `</table>`;
 
@@ -689,12 +743,32 @@ export default function LaporanPengeluaranPage() {
   const isIncome = mode === "income";
   const isAll = mode === "all";
 
-  const totalPrimary = isExpense ? totalExpenses : isIncome ? totalIncome : totalAll;
-  const listPrimary = isExpense ? filteredExpenses : isIncome ? filteredIncome : filteredAll;
-  const piePrimary = isExpense ? expensesByPlant : isIncome ? incomeByPlant : pieAllByPlant;
-  const trendPrimary = isExpense ? monthlyTrends : isIncome ? monthlyTrendsIncome : monthlyTrendsAll;
+  const totalPrimary = isExpense
+    ? totalExpenses
+    : isIncome
+    ? totalIncome
+    : totalAll;
+  const listPrimary = isExpense
+    ? filteredExpenses
+    : isIncome
+    ? filteredIncome
+    : filteredAll;
+  const piePrimary = isExpense
+    ? expensesByPlant
+    : isIncome
+    ? incomeByPlant
+    : pieAllByPlant;
+  const trendPrimary = isExpense
+    ? monthlyTrends
+    : isIncome
+    ? monthlyTrendsIncome
+    : monthlyTrendsAll;
 
-  const headerTitle = isExpense ? "Laporan Pengeluaran" : isIncome ? "Laporan Pendapatan" : "Laporan Semua";
+  const headerTitle = isExpense
+    ? "Laporan Pengeluaran"
+    : isIncome
+    ? "Laporan Pendapatan"
+    : "Laporan Semua";
   const headerDesc = isExpense
     ? "Analisis dan manajemen pengeluaran operasional per tanaman"
     : isIncome
@@ -743,29 +817,28 @@ export default function LaporanPengeluaranPage() {
                 {headerDesc}
               </p>
               {/* Secondary nav: Laporan <-> Pendaftaran (rapi di bawah judul) */}
-<div className="mt-3">
-  <div className="inline-flex overflow-hidden rounded-2xl border border-black/10 bg-white/80 backdrop-blur px-1 py-1">
-    {/* Halaman ini (Laporan) jadi aktif/disabled */}
-    <button
-      className="px-3 py-1 text-xs font-bold rounded-xl bg-black/5 cursor-default"
-      disabled
-      title="Halaman Laporan"
-    >
-      Laporan
-    </button>
+              <div className="mt-3">
+                <div className="inline-flex overflow-hidden rounded-2xl border border-black/10 bg-white/80 backdrop-blur px-1 py-1">
+                  {/* Halaman ini (Laporan) jadi aktif/disabled */}
+                  <button
+                    className="px-3 py-1 text-xs font-bold rounded-xl bg-black/5 cursor-default"
+                    disabled
+                    title="Halaman Laporan"
+                  >
+                    Laporan
+                  </button>
 
-    {/* Link ke /pendaftaran */}
-    <Link href="/pendaftaran" className="contents">
-      <button
-        className="px-3 py-1 text-xs font-bold rounded-xl hover:bg-black/5"
-        title="Ke halaman Pendaftaran"
-      >
-        Pendaftaran
-      </button>
-    </Link>
-  </div>
-</div>
-
+                  {/* Link ke /pendaftaran */}
+                  <Link href="/pendaftaran" className="contents">
+                    <button
+                      className="px-3 py-1 text-xs font-bold rounded-xl hover:bg-black/5"
+                      title="Ke halaman Pendaftaran"
+                    >
+                      Pendaftaran
+                    </button>
+                  </Link>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -779,7 +852,9 @@ export default function LaporanPengeluaranPage() {
             >
               <button
                 className={getThemeClasses(
-                  `px-3 py-1 text-xs font-bold ${isAll ? "bg-[#E9FFEF]" : "bg-white"}`,
+                  `px-3 py-1 text-xs font-bold ${
+                    isAll ? "bg-[#E9FFEF]" : "bg-white"
+                  }`,
                   isAll
                     ? "!bg-[#FFDEE9] !text-[#4c1d1d]"
                     : "!bg-white !text-[#4c1d1d]"
@@ -949,16 +1024,42 @@ export default function LaporanPengeluaranPage() {
           {isAll ? (
             <>
               {/* Total Pendapatan */}
-              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.15 }}>
-                <Card className={getThemeClasses("bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl border-[#324D3E]/10 dark:border-gray-700 shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300", "!bg-white/95 !border-[#FFC1CC]/30")}>
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: 0.15 }}
+              >
+                <Card
+                  className={getThemeClasses(
+                    "bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl border-[#324D3E]/10 dark:border-gray-700 shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300",
+                    "!bg-white/95 !border-[#FFC1CC]/30"
+                  )}
+                >
                   <CardContent className="p-6">
                     <div className="flex items-center justify-between mb-4">
-                      <div className={getThemeClasses("text-sm text-[#889063] dark:text-gray-200", "!text-[#6b7280]")}>Total Pendapatan</div>
-                      <div className={getThemeClasses("flex h-10 w-10 items-center justify-center rounded-2xl bg-green-500/10 text-green-600", "!bg-[#B5EAD7]/50 !text-[#059669]")}>
+                      <div
+                        className={getThemeClasses(
+                          "text-sm text-[#889063] dark:text-gray-200",
+                          "!text-[#6b7280]"
+                        )}
+                      >
+                        Total Pendapatan
+                      </div>
+                      <div
+                        className={getThemeClasses(
+                          "flex h-10 w-10 items-center justify-center rounded-2xl bg-green-500/10 text-green-600",
+                          "!bg-[#B5EAD7]/50 !text-[#059669]"
+                        )}
+                      >
                         <TrendingUp className="h-5 w-5" />
                       </div>
                     </div>
-                    <div className={getThemeClasses("text-2xl font-bold text-green-600 dark:text-emerald-400", "!text-[#059669]")}>
+                    <div
+                      className={getThemeClasses(
+                        "text-2xl font-bold text-green-600 dark:text-emerald-400",
+                        "!text-[#059669]"
+                      )}
+                    >
                       {formatCurrency(totalIncome)}
                     </div>
                   </CardContent>
@@ -966,16 +1067,42 @@ export default function LaporanPengeluaranPage() {
               </motion.div>
 
               {/* Total Pengeluaran */}
-              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.2 }}>
-                <Card className={getThemeClasses("bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl border-[#324D3E]/10 dark:border-gray-700 shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300", "!bg-white/95 !border-[#FFC1CC]/30")}>
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: 0.2 }}
+              >
+                <Card
+                  className={getThemeClasses(
+                    "bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl border-[#324D3E]/10 dark:border-gray-700 shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300",
+                    "!bg-white/95 !border-[#FFC1CC]/30"
+                  )}
+                >
                   <CardContent className="p-6">
                     <div className="flex items-center justify-between mb-4">
-                      <div className={getThemeClasses("text-sm text-[#889063] dark:text-gray-200", "!text-[#6b7280]")}>Total Pengeluaran</div>
-                      <div className={getThemeClasses("flex h-10 w-10 items-center justify-center rounded-2xl bg-red-500/10 text-red-600", "!bg-[#FFDEE9]/50 !text-[#dc2626]")}>
+                      <div
+                        className={getThemeClasses(
+                          "text-sm text-[#889063] dark:text-gray-200",
+                          "!text-[#6b7280]"
+                        )}
+                      >
+                        Total Pengeluaran
+                      </div>
+                      <div
+                        className={getThemeClasses(
+                          "flex h-10 w-10 items-center justify-center rounded-2xl bg-red-500/10 text-red-600",
+                          "!bg-[#FFDEE9]/50 !text-[#dc2626]"
+                        )}
+                      >
                         <TrendingDown className="h-5 w-5" />
                       </div>
                     </div>
-                    <div className={getThemeClasses("text-2xl font-bold text-red-600 dark:text-red-400", "!text-[#dc2626]")}>
+                    <div
+                      className={getThemeClasses(
+                        "text-2xl font-bold text-red-600 dark:text-red-400",
+                        "!text-[#dc2626]"
+                      )}
+                    >
                       {formatCurrency(totalExpenses)}
                     </div>
                   </CardContent>
@@ -1225,11 +1352,17 @@ export default function LaporanPengeluaranPage() {
                       <Tooltip
                         formatter={(value: number) => [
                           formatCurrency(value),
-                          isExpense ? "Pengeluaran" : isIncome ? "Pendapatan" : "Nominal",
+                          isExpense
+                            ? "Pengeluaran"
+                            : isIncome
+                            ? "Pendapatan"
+                            : "Nominal",
                         ]}
                         contentStyle={{
                           backgroundColor: isDark ? "#111827" : "#ffffff",
-                          border: isDark ? "3px solid #374151" : "3px solid #000000",
+                          border: isDark
+                            ? "3px solid #374151"
+                            : "3px solid #000000",
                           borderRadius: "8px",
                           color: isDark ? "#ffffff" : "#000000",
                           fontWeight: "bold",
@@ -1291,16 +1424,21 @@ export default function LaporanPengeluaranPage() {
                       <Tooltip
                         formatter={(value: number) => [
                           formatCurrency(value),
-                          isExpense ? "Pengeluaran" : isIncome ? "Pendapatan" : "Nominal",
+                          isExpense
+                            ? "Pengeluaran"
+                            : isIncome
+                            ? "Pendapatan"
+                            : "Nominal",
                         ]}
                         contentStyle={{
                           backgroundColor: isDark ? "#111827" : "#ffffff",
-                          border: isDark ? "3px solid #374151" : "3px solid #000000",
+                          border: isDark
+                            ? "3px solid #374151"
+                            : "3px solid #000000",
                           borderRadius: "8px",
                           color: isDark ? "#ffffff" : "#000000",
                           fontWeight: "bold",
-                          boxShadow:
-                            "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
+                          boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
                         }}
                       />
                       <Line
@@ -1364,7 +1502,11 @@ export default function LaporanPengeluaranPage() {
                   "!text-[#4c1d1d]"
                 )}
               >
-                {isExpense ? "Detail Pengeluaran" : isIncome ? "Detail Pendapatan" : "Detail Semua"}
+                {isExpense
+                  ? "Detail Pengeluaran"
+                  : isIncome
+                  ? "Detail Pendapatan"
+                  : "Detail Semua"}
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -1420,8 +1562,9 @@ export default function LaporanPengeluaranPage() {
                             new Date(a.date).getTime()
                         )
                         .map((row, index) => {
-                          const rowIsExpense =
-                            row._kind ? row._kind === "expense" : isExpense;
+                          const rowIsExpense = row._kind
+                            ? row._kind === "expense"
+                            : isExpense;
                           return (
                             <tr
                               key={index}

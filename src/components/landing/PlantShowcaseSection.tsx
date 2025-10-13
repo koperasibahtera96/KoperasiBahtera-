@@ -683,7 +683,7 @@ export default function PlantShowcaseSection() {
                           variants={slideInFromRight}
                         >
                           <motion.div
-                            className="bg-gradient-to-r from-[#324D3E] via-[#507863] via-[#669D7E] to-[#748390] rounded-2xl p-3 sm:p-4 md:p-5 text-white shadow-md relative z-10"
+                            className="bg-gradient-to-r from-[#324D3E] to-[#748390] rounded-2xl p-3 sm:p-4 md:p-5 text-white shadow-md relative z-10"
                             whileHover={{
                               scale: 1.05,
                               y: -5,
@@ -719,7 +719,7 @@ export default function PlantShowcaseSection() {
                                 type: "spring",
                               }}
                             >
-                              Rp {formatIDRCurrency(plant.pricing.monthly)}{" "}
+                              Rp {Number(plant.pricing.monthly) === 0 ? "XXXX" : formatIDRCurrency(plant.pricing.monthly)}{" "}
                               <span className="text-xs sm:text-sm font-normal">
                                 {t("plants.perMonth")}
                               </span>
@@ -794,7 +794,7 @@ export default function PlantShowcaseSection() {
                                     {t("plants.perYear")}
                                   </span>
                                   <span className="font-bold text-gray-900">
-                                    Rp {formatIDRCurrency(plant.pricing.yearly)}
+                                    Rp {Number(plant.pricing.yearly) === 0 ? "XXXX" : formatIDRCurrency(plant.pricing.yearly)}
                                   </span>
                                 </motion.div>
                                 <motion.div
@@ -810,7 +810,7 @@ export default function PlantShowcaseSection() {
                                   </span>
                                   <span className="font-bold text-gray-900">
                                     Rp{" "}
-                                    {formatIDRCurrency(plant.pricing.fiveYears)}
+                                    {Number(plant.pricing.fiveYears) === 0 ? "XXXX" : formatIDRCurrency(plant.pricing.fiveYears)}
                                   </span>
                                 </motion.div>
                                 <motion.div
@@ -826,7 +826,7 @@ export default function PlantShowcaseSection() {
                                   </span>
                                   <span className="font-bold text-gray-900">
                                     Rp{" "}
-                                    {formatIDRCurrency(plant.pricing.sellPrice)}
+                                    {Number(plant.pricing.sellPrice) === 0 ? "XXXX" : formatIDRCurrency(plant.pricing.sellPrice)}
                                   </span>
                                 </motion.div>
                               </motion.div>
@@ -892,7 +892,7 @@ export default function PlantShowcaseSection() {
                               }}
                             >
                               Rp{" "}
-                              {formatIDRCurrency(plant.pricing.profit.yearly)}{" "}
+                              {Number(plant.pricing.profit?.yearly || 0) === 0 ? "XXXX" : formatIDRCurrency(plant.pricing.profit.yearly)}{" "}
                               <span className="text-sm font-normal">
                                 {t("plants.profitPerYear")}
                               </span>
@@ -914,7 +914,7 @@ export default function PlantShowcaseSection() {
                                 </span>
                                 <span className="font-semibold">
                                   Rp{" "}
-                                  {formatIDRCurrency(
+                                  {Number(plant.pricing.profit?.monthly || 0) === 0 ? "XXXX" : formatIDRCurrency(
                                     plant.pricing.profit.monthly
                                   )}
                                 </span>
@@ -932,7 +932,7 @@ export default function PlantShowcaseSection() {
                                 </span>
                                 <span className="font-semibold">
                                   Rp{" "}
-                                  {formatIDRCurrency(
+                                  {Number(plant.pricing.profit?.weekly || 0) === 0 ? "XXXX" : formatIDRCurrency(
                                     plant.pricing.profit.weekly
                                   )}
                                 </span>
@@ -950,7 +950,7 @@ export default function PlantShowcaseSection() {
                                 </span>
                                 <span className="font-semibold">
                                   Rp{" "}
-                                  {formatIDRCurrency(
+                                  {Number(plant.pricing.profit?.daily || 0) === 0 ? "XXXX" : formatIDRCurrency(
                                     plant.pricing.profit.daily
                                   )}
                                 </span>

@@ -3,13 +3,17 @@
 
 import { FinanceSidebar } from "@/components/finance/FinanceSidebar";
 import { Button } from "@/components/ui-finance/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui-finance/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui-finance/card";
 import { useAlert } from "@/components/ui/Alert";
 import { motion } from "framer-motion";
 import {
   ArrowLeft,
   BarChart3,
-  ChevronDown,
   DollarSign,
   Download,
   Filter,
@@ -68,7 +72,7 @@ export default function DailyIncomingInvestorPage() {
 
   // ==== INPUT (bank-style) ====
   const [startDate, setStartDate] = useState<string>(""); // yyyy-mm-dd
-  const [endDate, setEndDate] = useState<string>("");     // yyyy-mm-dd
+  const [endDate, setEndDate] = useState<string>(""); // yyyy-mm-dd
   const [q, setQ] = useState<string>("");
 
   // ==== APPLIED (yang memicu fetch) ====
@@ -119,7 +123,9 @@ export default function DailyIncomingInvestorPage() {
 
       if (qApplied) params.set("q", qApplied.trim());
 
-      const res = await fetch(`/api/daily-incoming-investor?${params.toString()}`);
+      const res = await fetch(
+        `/api/daily-incoming-investor?${params.toString()}`
+      );
       if (!res.ok) throw new Error("Failed to load daily incoming");
 
       const data = await res.json();
@@ -151,7 +157,14 @@ export default function DailyIncomingInvestorPage() {
   useEffect(() => {
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [appliedStart, appliedEnd, appliedYear, appliedMonth, appliedDay, qApplied]);
+  }, [
+    appliedStart,
+    appliedEnd,
+    appliedYear,
+    appliedMonth,
+    appliedDay,
+    qApplied,
+  ]);
 
   // ====== APPLY (bank-style) ======
   const handleApplyFilters = () => {
@@ -244,10 +257,17 @@ export default function DailyIncomingInvestorPage() {
 
     // fallback ke label lama (year/month/day)
     if (appliedDay && appliedMonth && appliedYear) {
-      return new Date(appliedYear, appliedMonth - 1, appliedDay).toLocaleDateString("id-ID");
+      return new Date(
+        appliedYear,
+        appliedMonth - 1,
+        appliedDay
+      ).toLocaleDateString("id-ID");
     }
     if (appliedMonth) {
-      return `${new Date(appliedYear, appliedMonth - 1, 1).toLocaleDateString("id-ID", { month: "long" })} ${appliedYear}`;
+      return `${new Date(appliedYear, appliedMonth - 1, 1).toLocaleDateString(
+        "id-ID",
+        { month: "long" }
+      )} ${appliedYear}`;
     }
     return "Semua";
   }, [appliedStart, appliedEnd, appliedYear, appliedMonth, appliedDay]);
@@ -335,16 +355,24 @@ export default function DailyIncomingInvestorPage() {
       html += `<div class="header">RINGKASAN</div>`;
       html += `<table class="tight">`;
       html += `<tr><th>Keterangan</th><th>Nilai</th></tr>`;
-      html += `<tr><td>Total pemasukan</td><td>Rp ${summary.totalPemasukan.toLocaleString("id-ID")}</td></tr>`;
-      html += `<tr><td>Total pemasukan sudah dibayar</td><td>Rp ${summary.totalSudahDibayar.toLocaleString("id-ID")}</td></tr>`;
-      html += `<tr><td>Total pemasukan belum dibayar (Sisa cicilan)</td><td>Rp ${summary.totalBelumDibayar.toLocaleString("id-ID")}</td></tr>`;
+      html += `<tr><td>Total pemasukan</td><td>Rp ${summary.totalPemasukan.toLocaleString(
+        "id-ID"
+      )}</td></tr>`;
+      html += `<tr><td>Total pemasukan sudah dibayar</td><td>Rp ${summary.totalSudahDibayar.toLocaleString(
+        "id-ID"
+      )}</td></tr>`;
+      html += `<tr><td>Total pemasukan belum dibayar (Sisa cicilan)</td><td>Rp ${summary.totalBelumDibayar.toLocaleString(
+        "id-ID"
+      )}</td></tr>`;
       html += `</table>`;
 
       html += `<div class="header">PEMASUKAN BULANAN ${appliedYear}</div>`;
       html += `<table class="tight">`;
       html += `<tr><th>Bulan</th><th>Total</th><th>Jumlah Transaksi</th></tr>`;
       monthlyAgg.forEach((d) => {
-        html += `<tr><td>${d.monthName}</td><td>Rp ${d.value.toLocaleString("id-ID")}</td><td>${d.transactions}</td></tr>`;
+        html += `<tr><td>${d.monthName}</td><td>Rp ${d.value.toLocaleString(
+          "id-ID"
+        )}</td><td>${d.transactions}</td></tr>`;
       });
       html += `</table>`;
 
@@ -363,12 +391,20 @@ export default function DailyIncomingInvestorPage() {
       </tr>`;
 
       const sorted = [...rows].sort(
-        (a, b) => new Date(a.date || 0).getTime() - new Date(b.date || 0).getTime()
+        (a, b) =>
+          new Date(a.date || 0).getTime() - new Date(b.date || 0).getTime()
       );
       let no = 1;
       for (const r of sorted) {
-        const tanggal = r.date ? new Date(r.date).toLocaleDateString("id-ID", { day: "2-digit", month: "short" }) : "-";
-        const jumlah = `Rp ${Number(r.totalAmount || 0).toLocaleString("id-ID")}`;
+        const tanggal = r.date
+          ? new Date(r.date).toLocaleDateString("id-ID", {
+              day: "2-digit",
+              month: "short",
+            })
+          : "-";
+        const jumlah = `Rp ${Number(r.totalAmount || 0).toLocaleString(
+          "id-ID"
+        )}`;
         const status = "Lunas";
         html += `<tr class="tight">
           <td>${no++}</td>
@@ -376,7 +412,10 @@ export default function DailyIncomingInvestorPage() {
           <td>${r.investorName || "-"}</td>
           <td>-</td>
           <td>${r.investmentId || "-"}</td>
-          <td>${(r.paymentType || "").charAt(0).toUpperCase() + (r.paymentType || "").slice(1)}</td>
+          <td>${
+            (r.paymentType || "").charAt(0).toUpperCase() +
+            (r.paymentType || "").slice(1)
+          }</td>
           <td>${r.productName || "-"}</td>
           <td>${jumlah}</td>
           <td>${status}</td>
@@ -386,7 +425,9 @@ export default function DailyIncomingInvestorPage() {
 
       html += `</body></html>`;
 
-      const blob = new Blob([html], { type: "application/vnd.ms-excel;charset=utf-8;" });
+      const blob = new Blob([html], {
+        type: "application/vnd.ms-excel;charset=utf-8;",
+      });
       const a = document.createElement("a");
       a.href = URL.createObjectURL(blob);
       a.download = "daily-incoming-investor.xls";
@@ -404,8 +445,18 @@ export default function DailyIncomingInvestorPage() {
       <FinanceSidebar>
         <div className="p-4 sm:p-6 lg:p-8 flex items-center justify-center min-h-[50vh]">
           <div className="text-center">
-            <div className={getThemeClasses("animate-spin rounded-full h-12 w-12 border-b-2 border-[#324D3E] dark:border-white mx-auto mb-4", "!border-[#FFC1CC]")}></div>
-            <p className={getThemeClasses("text-[#889063] dark:text-gray-200 text-lg", "!text-[#6b7280]")}>
+            <div
+              className={getThemeClasses(
+                "animate-spin rounded-full h-12 w-12 border-b-2 border-[#324D3E] dark:border-white mx-auto mb-4",
+                "!border-[#FFC1CC]"
+              )}
+            ></div>
+            <p
+              className={getThemeClasses(
+                "text-[#889063] dark:text-gray-200 text-lg",
+                "!text-[#6b7280]"
+              )}
+            >
               Memuat Daily Incoming Investor...
             </p>
           </div>
@@ -427,7 +478,10 @@ export default function DailyIncomingInvestorPage() {
           <div className="flex items-center gap-4">
             <Link href="/finance">
               <motion.button
-                className={getThemeClasses("group flex items-center gap-2 px-3 sm:px-4 py-2 bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl rounded-xl sm:rounded-2xl shadow-lg border border-[#324D3E]/10 dark:border-gray-700 text-[#324D3E] dark:text-white hover:bg-[#324D3E] hover:text-white transition-all duration-300 self-start", "!bg-white/90 !border-[#FFC1CC]/30 !text-[#4c1d1d] hover:!bg-[#FFC1CC] hover:!text-[#4c1d1d]")}
+                className={getThemeClasses(
+                  "group flex items-center gap-2 px-3 sm:px-4 py-2 bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl rounded-xl sm:rounded-2xl shadow-lg border border-[#324D3E]/10 dark:border-gray-700 text-[#324D3E] dark:text-white hover:bg-[#324D3E] hover:text-white transition-all duration-300 self-start",
+                  "!bg-white/90 !border-[#FFC1CC]/30 !text-[#4c1d1d] hover:!bg-[#FFC1CC] hover:!text-[#4c1d1d]"
+                )}
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
               >
@@ -436,10 +490,20 @@ export default function DailyIncomingInvestorPage() {
               </motion.button>
             </Link>
             <div>
-              <h1 className={getThemeClasses("text-2xl sm:text-3xl lg:text-4xl font-bold text-[#324D3E] dark:text-white transition-colors duration-300", "!text-[#4c1d1d]")}>
+              <h1
+                className={getThemeClasses(
+                  "text-2xl sm:text-3xl lg:text-4xl font-bold text-[#324D3E] dark:text-white transition-colors duration-300",
+                  "!text-[#4c1d1d]"
+                )}
+              >
                 Daily Incoming Investor
               </h1>
-              <p className={getThemeClasses("text-[#889063] dark:text-gray-200 mt-1 text-sm sm:text-base lg:text-lg transition-colors duration-300", "!text-[#6b7280]")}>
+              <p
+                className={getThemeClasses(
+                  "text-[#889063] dark:text-gray-200 mt-1 text-sm sm:text-base lg:text-lg transition-colors duration-300",
+                  "!text-[#6b7280]"
+                )}
+              >
                 Ringkasan pemasukan harian dari investasi baru
               </p>
             </div>
@@ -448,7 +512,10 @@ export default function DailyIncomingInvestorPage() {
           <div className="flex gap-3">
             <motion.button
               onClick={handleExport}
-              className={getThemeClasses("inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-green-500 to-[#324D3E] hover:from-green-600 hover:to-[#4C3D19] px-4 py-2 text-sm font-medium text-white transition-all duration-300 shadow-lg hover:shadow-xl", "!bg-gradient-to-r !from-[#FFC1CC] !to-[#FFDEE9] !text-[#4c1d1d] hover:!from-[#FFDEE9] hover:!to-[#FFF5BA]")}
+              className={getThemeClasses(
+                "inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-green-500 to-[#324D3E] hover:from-green-600 hover:to-[#4C3D19] px-4 py-2 text-sm font-medium text-white transition-all duration-300 shadow-lg hover:shadow-xl",
+                "!bg-gradient-to-r !from-[#FFC1CC] !to-[#FFDEE9] !text-[#4c1d1d] hover:!from-[#FFDEE9] hover:!to-[#FFF5BA]"
+              )}
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
             >
@@ -459,9 +526,19 @@ export default function DailyIncomingInvestorPage() {
         </motion.div>
 
         {/* ===== FILTER: Tanggal Awal / Tanggal Akhir (ala bank) ===== */}
-        <Card className={getThemeClasses("bg-white/90 dark:bg-gray-800/90 mb-6 border border-[#324D3E]/10 dark:border-gray-700 transition-colors duration-300", "!bg-white/80 !border-[#FFC1CC]/30")}>
+        <Card
+          className={getThemeClasses(
+            "bg-white/90 dark:bg-gray-800/90 mb-6 border border-[#324D3E]/10 dark:border-gray-700 transition-colors duration-300",
+            "!bg-white/80 !border-[#FFC1CC]/30"
+          )}
+        >
           <CardHeader>
-            <CardTitle className={getThemeClasses("text-black dark:text-white flex items-center gap-2 transition-colors duration-300", "!text-[#4c1d1d]")}>
+            <CardTitle
+              className={getThemeClasses(
+                "text-black dark:text-white flex items-center gap-2 transition-colors duration-300",
+                "!text-[#4c1d1d]"
+              )}
+            >
               <Filter className="h-5 w-5" />
               Filter Laporan
             </CardTitle>
@@ -470,27 +547,43 @@ export default function DailyIncomingInvestorPage() {
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               {/* Tanggal Awal */}
               <div>
-                <label className={getThemeClasses("block text-sm font-medium text-black dark:text-white mb-2", "!text-[#4c1d1d]")}>
+                <label
+                  className={getThemeClasses(
+                    "block text-sm font-medium text-black dark:text-white mb-2",
+                    "!text-[#4c1d1d]"
+                  )}
+                >
                   Tanggal Awal
                 </label>
                 <input
                   type="date"
                   value={startDate}
                   onChange={(e) => setStartDate(e.target.value)}
-                  className={getThemeClasses("w-full border bg-white/90 dark:bg-gray-700/80 border-gray-200 dark:border-gray-600 text-black dark:text-white px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500", "!bg-white/90 !border-[#FFC1CC]/30 !text-[#4c1d1d] focus:!ring-[#FFC1CC]/20 focus:!border-[#FFC1CC]")}
+                  className={getThemeClasses(
+                    "w-full border bg-white/90 dark:bg-gray-700/80 border-gray-200 dark:border-gray-600 text-black dark:text-white px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500",
+                    "!bg-white/90 !border-[#FFC1CC]/30 !text-[#4c1d1d] focus:!ring-[#FFC1CC]/20 focus:!border-[#FFC1CC]"
+                  )}
                 />
               </div>
 
               {/* Tanggal Akhir */}
               <div>
-                <label className={getThemeClasses("block text-sm font-medium text-black dark:text-white mb-2", "!text-[#4c1d1d]")}>
+                <label
+                  className={getThemeClasses(
+                    "block text-sm font-medium text-black dark:text-white mb-2",
+                    "!text-[#4c1d1d]"
+                  )}
+                >
                   Tanggal Akhir
                 </label>
                 <input
                   type="date"
                   value={endDate}
                   onChange={(e) => setEndDate(e.target.value)}
-                  className={getThemeClasses("w-full border bg-white/90 dark:bg-gray-700/80 border-gray-200 dark:border-gray-600 text-black dark:text-white px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500", "!bg-white/90 !border-[#FFC1CC]/30 !text-[#4c1d1d] focus:!ring-[#FFC1CC]/20 focus:!border-[#FFC1CC]")}
+                  className={getThemeClasses(
+                    "w-full border bg-white/90 dark:bg-gray-700/80 border-gray-200 dark:border-gray-600 text-black dark:text-white px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500",
+                    "!bg-white/90 !border-[#FFC1CC]/30 !text-[#4c1d1d] focus:!ring-[#FFC1CC]/20 focus:!border-[#FFC1CC]"
+                  )}
                 />
               </div>
 
@@ -507,13 +600,22 @@ export default function DailyIncomingInvestorPage() {
 
               {/* Tombol Apply + Reset */}
               <div className="flex items-end gap-2">
-                <Button onClick={handleApplyFilters} className={getThemeClasses("w-full", "!bg-gradient-to-r !from-[#FFC1CC] !to-[#FFDEE9] !text-[#4c1d1d] hover:!from-[#FFDEE9] hover:!to-[#FFF5BA]")}>
+                <Button
+                  onClick={handleApplyFilters}
+                  className={getThemeClasses(
+                    "w-full",
+                    "!bg-gradient-to-r !from-[#FFC1CC] !to-[#FFDEE9] !text-[#4c1d1d] hover:!from-[#FFDEE9] hover:!to-[#FFF5BA]"
+                  )}
+                >
                   Terapkan
                 </Button>
                 <Button
                   variant="outline"
                   onClick={handleReset}
-                  className={getThemeClasses("w-full border bg-white/90 dark:bg-gray-700/80 border-gray-200 dark:border-gray-600 text-black dark:text-white hover:bg-gray-200 dark:hover:bg-gray-700", "!bg-white/90 !border-[#FFC1CC]/30 !text-[#4c1d1d] hover:!bg-[#FFC1CC]/20")}
+                  className={getThemeClasses(
+                    "w-full border bg-white/90 dark:bg-gray-700/80 border-gray-200 dark:border-gray-600 text-black dark:text-white hover:bg-gray-200 dark:hover:bg-gray-700",
+                    "!bg-white/90 !border-[#FFC1CC]/30 !text-[#4c1d1d] hover:!bg-[#FFC1CC]/20"
+                  )}
                 >
                   Reset Filter
                 </Button>
@@ -525,17 +627,44 @@ export default function DailyIncomingInvestorPage() {
         {/* ===== KPI ===== */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-8 items-stretch">
           {/* Total pemasukan */}
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.2 }} className="h-full">
-            <Card className={getThemeClasses("bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl border-[#324D3E]/10 dark:border-gray-700 shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300 h-full", "!bg-white/80 !border-[#FFC1CC]/30")}>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.2 }}
+            className="h-full"
+          >
+            <Card
+              className={getThemeClasses(
+                "bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl border-[#324D3E]/10 dark:border-gray-700 shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300 h-full",
+                "!bg-white/80 !border-[#FFC1CC]/30"
+              )}
+            >
               <CardContent className="p-6 h-full flex flex-col justify-between">
                 <div>
-                  <div className={getThemeClasses("text-sm text-[#889063] dark:text-gray-200 mb-4", "!text-[#6b7280]")}>Total pemasukan</div>
-                  <div className={getThemeClasses("text-2xl font-bold text-green-600 dark:text-emerald-400", "!text-[#4c1d1d]")}>
+                  <div
+                    className={getThemeClasses(
+                      "text-sm text-[#889063] dark:text-gray-200 mb-4",
+                      "!text-[#6b7280]"
+                    )}
+                  >
+                    Total pemasukan
+                  </div>
+                  <div
+                    className={getThemeClasses(
+                      "text-2xl font-bold text-green-600 dark:text-emerald-400",
+                      "!text-[#4c1d1d]"
+                    )}
+                  >
                     {formatCurrency(summary.totalPemasukan)}
                   </div>
                 </div>
                 <div className="flex justify-end mt-4">
-                  <div className={getThemeClasses("flex h-10 w-10 items-center justify-center rounded-2xl bg-green-500/10 text-green-600", "!bg-[#FFC1CC]/20 !text-[#4c1d1d]")}>
+                  <div
+                    className={getThemeClasses(
+                      "flex h-10 w-10 items-center justify-center rounded-2xl bg-green-500/10 text-green-600",
+                      "!bg-[#FFC1CC]/20 !text-[#4c1d1d]"
+                    )}
+                  >
                     <TrendingUp className="h-5 w-5" />
                   </div>
                 </div>
@@ -544,17 +673,44 @@ export default function DailyIncomingInvestorPage() {
           </motion.div>
 
           {/* Jumlah transaksi */}
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.3 }} className="h-full">
-            <Card className={getThemeClasses("bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl border-[#324D3E]/10 dark:border-gray-700 shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300 h-full", "!bg-white/80 !border-[#FFC1CC]/30")}>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.3 }}
+            className="h-full"
+          >
+            <Card
+              className={getThemeClasses(
+                "bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl border-[#324D3E]/10 dark:border-gray-700 shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300 h-full",
+                "!bg-white/80 !border-[#FFC1CC]/30"
+              )}
+            >
               <CardContent className="p-6 h-full flex flex-col justify-between">
                 <div>
-                  <div className={getThemeClasses("text-sm text-[#889063] dark:text-gray-200 mb-4", "!text-[#6b7280]")}>Jumlah Transaksi</div>
-                  <div className={getThemeClasses("text-2xl font-bold text-blue-600 dark:text-blue-400", "!text-[#4c1d1d]")}>
+                  <div
+                    className={getThemeClasses(
+                      "text-sm text-[#889063] dark:text-gray-200 mb-4",
+                      "!text-[#6b7280]"
+                    )}
+                  >
+                    Jumlah Transaksi
+                  </div>
+                  <div
+                    className={getThemeClasses(
+                      "text-2xl font-bold text-blue-600 dark:text-blue-400",
+                      "!text-[#4c1d1d]"
+                    )}
+                  >
                     {rows.length}
                   </div>
                 </div>
                 <div className="flex justify-end mt-4">
-                  <div className={getThemeClasses("flex h-10 w-10 items-center justify-center rounded-2xl bg-blue-500/10 text-blue-600", "!bg-[#FFC1CC]/20 !text-[#4c1d1d]")}>
+                  <div
+                    className={getThemeClasses(
+                      "flex h-10 w-10 items-center justify-center rounded-2xl bg-blue-500/10 text-blue-600",
+                      "!bg-[#FFC1CC]/20 !text-[#4c1d1d]"
+                    )}
+                  >
                     <BarChart3 className="h-5 w-5" />
                   </div>
                 </div>
@@ -563,17 +719,44 @@ export default function DailyIncomingInvestorPage() {
           </motion.div>
 
           {/* Sudah dibayar */}
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.4 }} className="h-full">
-            <Card className={getThemeClasses("bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl border-[#324D3E]/10 dark:border-gray-700 shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300 h-full", "!bg-white/80 !border-[#FFC1CC]/30")}>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.4 }}
+            className="h-full"
+          >
+            <Card
+              className={getThemeClasses(
+                "bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl border-[#324D3E]/10 dark:border-gray-700 shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300 h-full",
+                "!bg-white/80 !border-[#FFC1CC]/30"
+              )}
+            >
               <CardContent className="p-6 h-full flex flex-col justify-between">
                 <div>
-                  <div className={getThemeClasses("text-sm text-[#889063] dark:text-gray-200 mb-4", "!text-[#6b7280]")}>Total pemasukan sudah dibayar</div>
-                  <div className={getThemeClasses("text-2xl font-bold text-green-600 dark:text-emerald-400", "!text-[#4c1d1d]")}>
+                  <div
+                    className={getThemeClasses(
+                      "text-sm text-[#889063] dark:text-gray-200 mb-4",
+                      "!text-[#6b7280]"
+                    )}
+                  >
+                    Total pemasukan sudah dibayar
+                  </div>
+                  <div
+                    className={getThemeClasses(
+                      "text-2xl font-bold text-green-600 dark:text-emerald-400",
+                      "!text-[#4c1d1d]"
+                    )}
+                  >
                     {formatCurrency(summary.totalSudahDibayar)}
                   </div>
                 </div>
                 <div className="flex justify-end mt-4">
-                  <div className={getThemeClasses("flex h-10 w-10 items-center justify-center rounded-2xl bg-green-500/10 text-green-600", "!bg-[#FFC1CC]/20 !text-[#4c1d1d]")}>
+                  <div
+                    className={getThemeClasses(
+                      "flex h-10 w-10 items-center justify-center rounded-2xl bg-green-500/10 text-green-600",
+                      "!bg-[#FFC1CC]/20 !text-[#4c1d1d]"
+                    )}
+                  >
                     <DollarSign className="h-5 w-5" />
                   </div>
                 </div>
@@ -582,17 +765,44 @@ export default function DailyIncomingInvestorPage() {
           </motion.div>
 
           {/* Sisa cicilan */}
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.5 }} className="h-full">
-            <Card className={getThemeClasses("bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl border-[#324D3E]/10 dark:border-gray-700 shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300 h-full", "!bg-white/80 !border-[#FFC1CC]/30")}>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.5 }}
+            className="h-full"
+          >
+            <Card
+              className={getThemeClasses(
+                "bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl border-[#324D3E]/10 dark:border-gray-700 shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300 h-full",
+                "!bg-white/80 !border-[#FFC1CC]/30"
+              )}
+            >
               <CardContent className="p-6 h-full flex flex-col justify-between">
                 <div>
-                  <div className={getThemeClasses("text-sm text-[#889063] dark:text-gray-200 mb-4", "!text-[#6b7280]")}>Total pemasukan belum dibayar (Sisa cicilan)</div>
-                  <div className={getThemeClasses("text-2xl font-bold text-red-600 dark:text-red-400", "!text-[#4c1d1d]")}>
+                  <div
+                    className={getThemeClasses(
+                      "text-sm text-[#889063] dark:text-gray-200 mb-4",
+                      "!text-[#6b7280]"
+                    )}
+                  >
+                    Total pemasukan belum dibayar (Sisa cicilan)
+                  </div>
+                  <div
+                    className={getThemeClasses(
+                      "text-2xl font-bold text-red-600 dark:text-red-400",
+                      "!text-[#4c1d1d]"
+                    )}
+                  >
                     {formatCurrency(summary.totalBelumDibayar)}
                   </div>
                 </div>
                 <div className="flex justify-end mt-4">
-                  <div className={getThemeClasses("flex h-10 w-10 items-center justify-center rounded-2xl bg-red-500/10 text-red-600", "!bg-[#FFC1CC]/20 !text-[#4c1d1d]")}>
+                  <div
+                    className={getThemeClasses(
+                      "flex h-10 w-10 items-center justify-center rounded-2xl bg-red-500/10 text-red-600",
+                      "!bg-[#FFC1CC]/20 !text-[#4c1d1d]"
+                    )}
+                  >
                     <TrendingDown className="h-5 w-5" />
                   </div>
                 </div>
@@ -603,9 +813,21 @@ export default function DailyIncomingInvestorPage() {
 
         {/* ===== Charts ===== */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-          <Card className={getThemeClasses("bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl border-[#324D3E]/10 dark:border-gray-700 shadow-lg transition-colors duration-300", "!bg-white/80 !border-[#FFC1CC]/30")}>
+          <Card
+            className={getThemeClasses(
+              "bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl border-[#324D3E]/10 dark:border-gray-700 shadow-lg transition-colors duration-300",
+              "!bg-white/80 !border-[#FFC1CC]/30"
+            )}
+          >
             <CardHeader>
-              <CardTitle className={getThemeClasses("text-[#324D3E] dark:text-white", "!text-[#4c1d1d]")}>Distribusi Payment Type</CardTitle>
+              <CardTitle
+                className={getThemeClasses(
+                  "text-[#324D3E] dark:text-white",
+                  "!text-[#4c1d1d]"
+                )}
+              >
+                Distribusi Payment Type
+              </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="h-80">
@@ -616,7 +838,9 @@ export default function DailyIncomingInvestorPage() {
                       cx="50%"
                       cy="50%"
                       labelLine={false}
-                      label={({ name, percent }) => `${name}: ${((percent || 0) * 100).toFixed(0)}%`}
+                      label={({ name, percent }) =>
+                        `${name}: ${((percent || 0) * 100).toFixed(0)}%`
+                      }
                       outerRadius={100}
                       dataKey="value"
                       stroke="#000"
@@ -627,10 +851,15 @@ export default function DailyIncomingInvestorPage() {
                       ))}
                     </Pie>
                     <Tooltip
-                      formatter={(value: number) => [new Intl.NumberFormat("id-ID").format(value), "Total"]}
+                      formatter={(value: number) => [
+                        new Intl.NumberFormat("id-ID").format(value),
+                        "Total",
+                      ]}
                       contentStyle={{
                         backgroundColor: isDark ? "#111827" : "#ffffff",
-                        border: isDark ? "3px solid #374151" : "3px solid #000000",
+                        border: isDark
+                          ? "3px solid #374151"
+                          : "3px solid #000000",
                         borderRadius: "8px",
                         color: isDark ? "#ffffff" : "#000000",
                         fontWeight: "bold",
@@ -643,9 +872,19 @@ export default function DailyIncomingInvestorPage() {
             </CardContent>
           </Card>
 
-          <Card className={getThemeClasses("bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl border-[#324D3E]/10 dark:border-gray-700 shadow-lg transition-colors duration-300", "!bg-white/80 !border-[#FFC1CC]/30")}>
+          <Card
+            className={getThemeClasses(
+              "bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl border-[#324D3E]/10 dark:border-gray-700 shadow-lg transition-colors duration-300",
+              "!bg-white/80 !border-[#FFC1CC]/30"
+            )}
+          >
             <CardHeader>
-              <CardTitle className={getThemeClasses("text-[#324D3E] dark:text-white", "!text-[#4c1d1d]")}>
+              <CardTitle
+                className={getThemeClasses(
+                  "text-[#324D3E] dark:text-white",
+                  "!text-[#4c1d1d]"
+                )}
+              >
                 Tren Pemasukan Bulanan {appliedYear}
               </CardTitle>
             </CardHeader>
@@ -653,18 +892,32 @@ export default function DailyIncomingInvestorPage() {
               <div className="h-80">
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={monthlyTrend}>
-                    <CartesianGrid strokeDasharray="3 3" stroke={isDark ? "#4b5563" : "#374151"} />
-                    <XAxis dataKey="month" stroke={isDark ? "#d1d5db" : "#9ca3af"} style={{ fontSize: "12px", fontWeight: "bold" }} />
+                    <CartesianGrid
+                      strokeDasharray="3 3"
+                      stroke={isDark ? "#4b5563" : "#374151"}
+                    />
+                    <XAxis
+                      dataKey="month"
+                      stroke={isDark ? "#d1d5db" : "#9ca3af"}
+                      style={{ fontSize: "12px", fontWeight: "bold" }}
+                    />
                     <YAxis
                       stroke={isDark ? "#d1d5db" : "#9ca3af"}
                       style={{ fontSize: "12px", fontWeight: "bold" }}
-                      tickFormatter={(value) => `${(value / 1_000_000).toFixed(0)}M`}
+                      tickFormatter={(value) =>
+                        `${(value / 1_000_000).toFixed(0)}M`
+                      }
                     />
                     <Tooltip
-                      formatter={(value: number) => [formatCurrency(value), "Pemasukan"]}
+                      formatter={(value: number) => [
+                        formatCurrency(value),
+                        "Pemasukan",
+                      ]}
                       contentStyle={{
                         backgroundColor: isDark ? "#111827" : "#ffffff",
-                        border: isDark ? "3px solid #374151" : "3px solid #000000",
+                        border: isDark
+                          ? "3px solid #374151"
+                          : "3px solid #000000",
                         borderRadius: "8px",
                         color: isDark ? "#ffffff" : "#000000",
                         fontWeight: "bold",
@@ -691,15 +944,38 @@ export default function DailyIncomingInvestorPage() {
         </div>
 
         {/* ===== Detail + Search + Pagination ===== */}
-        <Card className={getThemeClasses("bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl border-[#324D3E]/10 dark:border-gray-700 shadow-lg transition-colors duration-300", "!bg-white/80 !border-[#FFC1CC]/30")}>
+        <Card
+          className={getThemeClasses(
+            "bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl border-[#324D3E]/10 dark:border-gray-700 shadow-lg transition-colors duration-300",
+            "!bg-white/80 !border-[#FFC1CC]/30"
+          )}
+        >
           <CardHeader>
             <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
               <div className="flex flex-col">
-                <CardTitle className={getThemeClasses("text-[#324D3E] dark:text-white", "!text-[#4c1d1d]")}>Detail Pendapatan</CardTitle>
-                <div className={getThemeClasses("text-sm text-[#889063] dark:text-gray-300", "!text-[#6b7280]")}>
+                <CardTitle
+                  className={getThemeClasses(
+                    "text-[#324D3E] dark:text-white",
+                    "!text-[#4c1d1d]"
+                  )}
+                >
+                  Detail Pendapatan
+                </CardTitle>
+                <div
+                  className={getThemeClasses(
+                    "text-sm text-[#889063] dark:text-gray-300",
+                    "!text-[#6b7280]"
+                  )}
+                >
                   Periode: <span className="font-semibold">{periodLabel}</span>
                   {qApplied ? (
-                    <> • Pencarian: <span className="font-semibold">&quot;{qApplied}&quot;</span></>
+                    <>
+                      {" "}
+                      • Pencarian:{" "}
+                      <span className="font-semibold">
+                        &quot;{qApplied}&quot;
+                      </span>
+                    </>
                   ) : null}
                 </div>
               </div>
@@ -709,11 +985,22 @@ export default function DailyIncomingInvestorPage() {
                   type="text"
                   value={q}
                   onChange={(e) => setQ(e.target.value)}
-                  onKeyDown={(e) => { if (e.key === "Enter") handleApplySearch(); }}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") handleApplySearch();
+                  }}
                   placeholder="Cari Investment ID (mis. INV-1234 / CICILAN-...)"
-                  className={getThemeClasses("flex-1 md:w-96 border bg-white/90 dark:bg-gray-700/80 border-gray-200 dark:border-gray-600 text-black dark:text-white px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500", "!bg-white/90 !border-[#FFC1CC]/30 !text-[#4c1d1d] focus:!ring-[#FFC1CC]/20 focus:!border-[#FFC1CC]")}
+                  className={getThemeClasses(
+                    "flex-1 md:w-96 border bg-white/90 dark:bg-gray-700/80 border-gray-200 dark:border-gray-600 text-black dark:text-white px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500",
+                    "!bg-white/90 !border-[#FFC1CC]/30 !text-[#4c1d1d] focus:!ring-[#FFC1CC]/20 focus:!border-[#FFC1CC]"
+                  )}
                 />
-                <Button onClick={handleApplySearch} className={getThemeClasses("inline-flex items-center gap-2 rounded-lg", "!bg-gradient-to-r !from-[#FFC1CC] !to-[#FFDEE9] !text-[#4c1d1d] hover:!from-[#FFDEE9] hover:!to-[#FFF5BA]")}>
+                <Button
+                  onClick={handleApplySearch}
+                  className={getThemeClasses(
+                    "inline-flex items-center gap-2 rounded-lg",
+                    "!bg-gradient-to-r !from-[#FFC1CC] !to-[#FFDEE9] !text-[#4c1d1d] hover:!from-[#FFDEE9] hover:!to-[#FFF5BA]"
+                  )}
+                >
                   <Search className="h-4 w-4" />
                   Cari
                 </Button>
@@ -741,11 +1028,15 @@ export default function DailyIncomingInvestorPage() {
                         <tr
                           key={`${r.investmentId}-${i}`}
                           className={`border-b border-[#324D3E]/5 dark:border-gray-700 ${
-                            i % 2 === 0 ? "bg-white/40 dark:bg-gray-800/40" : "bg-[#324D3E]/5 dark:bg-gray-700/50"
+                            i % 2 === 0
+                              ? "bg-white/40 dark:bg-gray-800/40"
+                              : "bg-[#324D3E]/5 dark:bg-gray-700/50"
                           } hover:bg-[#324D3E]/10 dark:hover:bg-gray-700 transition-colors duration-200`}
                         >
                           <td className="py-3 px-4">
-                            {r.date ? new Date(r.date).toLocaleDateString("id-ID") : "-"}
+                            {r.date
+                              ? new Date(r.date).toLocaleDateString("id-ID")
+                              : "-"}
                           </td>
                           <td className="py-3 px-4">{r.investmentId}</td>
                           <td className="py-3 px-4">{r.investorName || "-"}</td>
@@ -762,23 +1053,54 @@ export default function DailyIncomingInvestorPage() {
 
                 {/* Pagination */}
                 <div className="flex items-center justify-between mt-4">
-                  <div className={getThemeClasses("text-sm text-[#889063] dark:text-gray-300", "!text-[#6b7280]")}>
+                  <div
+                    className={getThemeClasses(
+                      "text-sm text-[#889063] dark:text-gray-300",
+                      "!text-[#6b7280]"
+                    )}
+                  >
                     Halaman <span className="font-semibold">{page}</span> dari{" "}
                     <span className="font-semibold">{totalPages}</span>
                   </div>
                   <div className="flex gap-2">
-                    <Button variant="outline" onClick={goPrev} disabled={page === 1} className={getThemeClasses("", "!bg-white/90 !border-[#FFC1CC]/30 !text-[#4c1d1d] hover:!bg-[#FFC1CC]/20 disabled:!opacity-50")}>
+                    <Button
+                      variant="outline"
+                      onClick={goPrev}
+                      disabled={page === 1}
+                      className={getThemeClasses(
+                        "",
+                        "!bg-white/90 !border-[#FFC1CC]/30 !text-[#4c1d1d] hover:!bg-[#FFC1CC]/20 disabled:!opacity-50"
+                      )}
+                    >
                       Prev
                     </Button>
-                    <Button variant="outline" onClick={goNext} disabled={page === totalPages} className={getThemeClasses("", "!bg-white/90 !border-[#FFC1CC]/30 !text-[#4c1d1d] hover:!bg-[#FFC1CC]/20 disabled:!opacity-50")}>
+                    <Button
+                      variant="outline"
+                      onClick={goNext}
+                      disabled={page === totalPages}
+                      className={getThemeClasses(
+                        "",
+                        "!bg-white/90 !border-[#FFC1CC]/30 !text-[#4c1d1d] hover:!bg-[#FFC1CC]/20 disabled:!opacity-50"
+                      )}
+                    >
                       Next
                     </Button>
                   </div>
                 </div>
               </>
             ) : (
-              <div className={getThemeClasses("text-center py-8 text-[#889063] dark:text-gray-200", "!text-[#6b7280]")}>
-                <TrendingDown className={getThemeClasses("h-12 w-12 mx-auto mb-4 opacity-50 text-[#324D3E] dark:text-white", "!text-[#4c1d1d]")} />
+              <div
+                className={getThemeClasses(
+                  "text-center py-8 text-[#889063] dark:text-gray-200",
+                  "!text-[#6b7280]"
+                )}
+              >
+                <TrendingDown
+                  className={getThemeClasses(
+                    "h-12 w-12 mx-auto mb-4 opacity-50 text-[#324D3E] dark:text-white",
+                    "!text-[#4c1d1d]"
+                  )}
+                />
                 <p>Tidak ada data untuk filter yang dipilih</p>
               </div>
             )}

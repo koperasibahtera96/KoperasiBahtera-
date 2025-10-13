@@ -6,11 +6,10 @@ import { useTheme } from "next-themes";
 
 import { FinanceSidebar } from "@/components/finance/FinanceSidebar";
 import { Button } from "@/components/ui-finance/button";
-import { formatCurrency, formatPercentage } from "@/lib/utils";
+import { formatCurrency } from "@/lib/utils";
 import { motion } from "framer-motion";
 import {
   ArrowLeft,
-  BarChart3,
   Calendar,
   ChevronLeft,
   ChevronRight,
@@ -192,8 +191,9 @@ function BulkFinanceBar() {
     const fm = filterMember.trim().toLowerCase();
     return instances
       .map((it, i) => {
-        const kavblok =
-          `${it.kavling ?? ""} ${it.blok ?? ""} ${it.contractNumber ?? ""} ${it.instanceId}`.toLowerCase();
+        const kavblok = `${it.kavling ?? ""} ${it.blok ?? ""} ${
+          it.contractNumber ?? ""
+        } ${it.instanceId}`.toLowerCase();
         const matchK = !fk || kavblok.includes(fk);
         const matchM = !fm || (it.memberName || "").toLowerCase().includes(fm);
         return matchK && matchM ? i : -1;
@@ -224,9 +224,7 @@ function BulkFinanceBar() {
   ) => {
     // hanya terapkan ke baris TERSELEKSI (checked) — ini konsisten dgn logic lama
     setRows((prev) =>
-      prev.map((r, idx) =>
-        r.checked ? { ...r, [field]: value } : r
-      )
+      prev.map((r) => (r.checked ? { ...r, [field]: value } : r))
     );
   };
 
@@ -503,32 +501,31 @@ function BulkFinanceBar() {
           </div>
         </div>
 
-{/* ===== Tampilkan filter HANYA setelah PlantType dipilih & data sudah ada ===== */}
-{plantType && instances.length > 0 && (
-  <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3">
-    <div>
-      <label className="block text-sm font-semibold text-[#324D3E] dark:text-gray-100 mb-1">
-        Kav/Blok
-      </label>
-      <Input
-        value={filterKav}
-        onChange={(e) => setFilterKav(e.target.value)}
-        placeholder="Cari kavling/blok/INV…"
-      />
-    </div>
-    <div>
-      <label className="block text-sm font-semibold text-[#324D3E] dark:text-gray-100 mb-1">
-        Anggota
-      </label>
-      <Input
-        value={filterMember}
-        onChange={(e) => setFilterMember(e.target.value)}
-        placeholder="Cari nama anggota…"
-      />
-    </div>
-  </div>
-)}
-
+        {/* ===== Tampilkan filter HANYA setelah PlantType dipilih & data sudah ada ===== */}
+        {plantType && instances.length > 0 && (
+          <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="block text-sm font-semibold text-[#324D3E] dark:text-gray-100 mb-1">
+                Kav/Blok
+              </label>
+              <Input
+                value={filterKav}
+                onChange={(e) => setFilterKav(e.target.value)}
+                placeholder="Cari kavling/blok/INV…"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-semibold text-[#324D3E] dark:text-gray-100 mb-1">
+                Anggota
+              </label>
+              <Input
+                value={filterMember}
+                onChange={(e) => setFilterMember(e.target.value)}
+                placeholder="Cari nama anggota…"
+              />
+            </div>
+          </div>
+        )}
 
         {/* Tabel Instance + checkbox header & per baris */}
         <div
@@ -544,7 +541,9 @@ function BulkFinanceBar() {
                     <Checkbox
                       checked={allCheckedVisible}
                       onCheckedChange={toggleAllVisible}
-                      aria-checked={someCheckedVisible ? "mixed" : allCheckedVisible}
+                      aria-checked={
+                        someCheckedVisible ? "mixed" : allCheckedVisible
+                      }
                     />
                     <span className="font-semibold">✔</span>
                   </div>
