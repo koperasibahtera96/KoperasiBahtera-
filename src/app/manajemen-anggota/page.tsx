@@ -1,7 +1,7 @@
 // app/manajemen-anggota/page.tsx
 "use client";
 import type React from "react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useMemo } from "react";
 import { useTheme } from "next-themes";
 
 import { FinanceSidebar } from "@/components/finance/FinanceSidebar";
@@ -151,6 +151,10 @@ function BulkFinanceBar() {
     message: "",
   });
 
+  // === NEW: filter baris berdasarkan Kav/Blok dan Anggota ===
+  const [filterKav, setFilterKav] = useState<string>("");
+  const [filterMember, setFilterMember] = useState<string>("");
+
   const showToast = (t: Omit<Toast, "open">) => {
     setToast({ open: true, ...t });
     setTimeout(() => setToast((s) => ({ ...s, open: false })), 2500);
@@ -182,20 +186,47 @@ function BulkFinanceBar() {
     return baseClasses;
   };
 
-  const allChecked = rows.length > 0 && rows.every((r) => r.checked);
-  const someChecked = rows.some((r) => r.checked) && !allChecked;
+  // ===== VISIBILITY / FILTER =====
+  const visibleIndexes = useMemo(() => {
+    const fk = filterKav.trim().toLowerCase();
+    const fm = filterMember.trim().toLowerCase();
+    return instances
+      .map((it, i) => {
+        const kavblok =
+          `${it.kavling ?? ""} ${it.blok ?? ""} ${it.contractNumber ?? ""} ${it.instanceId}`.toLowerCase();
+        const matchK = !fk || kavblok.includes(fk);
+        const matchM = !fm || (it.memberName || "").toLowerCase().includes(fm);
+        return matchK && matchM ? i : -1;
+      })
+      .filter((i) => i >= 0);
+  }, [instances, filterKav, filterMember]);
 
-  const toggleAll = () => {
-    const next = !allChecked;
-    setRows((prev) => prev.map((r) => ({ ...r, checked: next })));
+  const allCheckedVisible =
+    visibleIndexes.length > 0 &&
+    visibleIndexes.every((i) => rows[i]?.checked === true);
+  const someCheckedVisible =
+    visibleIndexes.some((i) => rows[i]?.checked === true) && !allCheckedVisible;
+
+  const toggleAllVisible = () => {
+    const next = !allCheckedVisible;
+    setRows((prev) => {
+      const copy = [...prev];
+      visibleIndexes.forEach((i) => {
+        if (copy[i]) copy[i].checked = next;
+      });
+      return copy;
+    });
   };
 
   const applyAll = (
     field: "income" | "expense" | "note",
     value: number | string
   ) => {
+    // hanya terapkan ke baris TERSELEKSI (checked) — ini konsisten dgn logic lama
     setRows((prev) =>
-      prev.map((r) => (r.checked ? { ...r, [field]: value } : r))
+      prev.map((r, idx) =>
+        r.checked ? { ...r, [field]: value } : r
+      )
     );
   };
 
@@ -271,6 +302,9 @@ function BulkFinanceBar() {
 
       setBulkIncomeStr("");
       setBulkExpenseStr("");
+      // reset filter saat ganti plant type
+      setFilterKav("");
+      setFilterMember("");
     } catch (e) {
       console.error(e);
       setInstances([]);
@@ -339,9 +373,6 @@ function BulkFinanceBar() {
       });
     }
   };
-
-  // Apakah perlu scroll untuk daftar bulk (>4 baris)?
-  // const needScroll = instances.length > 4;
 
   return (
     <>
@@ -472,6 +503,33 @@ function BulkFinanceBar() {
           </div>
         </div>
 
+{/* ===== Tampilkan filter HANYA setelah PlantType dipilih & data sudah ada ===== */}
+{plantType && instances.length > 0 && (
+  <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3">
+    <div>
+      <label className="block text-sm font-semibold text-[#324D3E] dark:text-gray-100 mb-1">
+        Kav/Blok
+      </label>
+      <Input
+        value={filterKav}
+        onChange={(e) => setFilterKav(e.target.value)}
+        placeholder="Cari kavling/blok/INV…"
+      />
+    </div>
+    <div>
+      <label className="block text-sm font-semibold text-[#324D3E] dark:text-gray-100 mb-1">
+        Anggota
+      </label>
+      <Input
+        value={filterMember}
+        onChange={(e) => setFilterMember(e.target.value)}
+        placeholder="Cari nama anggota…"
+      />
+    </div>
+  </div>
+)}
+
+
         {/* Tabel Instance + checkbox header & per baris */}
         <div
           className={`mt-4 overflow-x-auto rounded-xl border border-[#324D3E]/10 dark:border-gray-700 ${
@@ -484,9 +542,9 @@ function BulkFinanceBar() {
                 <th className="p-3 text-left">
                   <div className="flex items-center gap-2">
                     <Checkbox
-                      checked={allChecked}
-                      onCheckedChange={toggleAll}
-                      aria-checked={someChecked ? "mixed" : allChecked}
+                      checked={allCheckedVisible}
+                      onCheckedChange={toggleAllVisible}
+                      aria-checked={someCheckedVisible ? "mixed" : allCheckedVisible}
                     />
                     <span className="font-semibold">✔</span>
                   </div>
@@ -500,8 +558,9 @@ function BulkFinanceBar() {
               </tr>
             </thead>
             <tbody className="divide-y divide-[#324D3E]/10 dark:divide-gray-700 bg-white/80 dark:bg-gray-800/60">
-              {instances.map((it, i) => {
-                const r = rows[i];
+              {visibleIndexes.map((idx) => {
+                const it = instances[idx];
+                const r = rows[idx];
                 return (
                   <tr key={it.instanceId}>
                     <td className="p-3">
@@ -510,7 +569,7 @@ function BulkFinanceBar() {
                         onCheckedChange={(v: any) =>
                           setRows((prev) => {
                             const copy = [...prev];
-                            copy[i] = { ...copy[i], checked: !!v };
+                            copy[idx] = { ...copy[idx], checked: !!v };
                             return copy;
                           })
                         }
@@ -531,8 +590,8 @@ function BulkFinanceBar() {
                         onChange={(e) =>
                           setRows((prev) => {
                             const copy = [...prev];
-                            copy[i] = {
-                              ...copy[i],
+                            copy[idx] = {
+                              ...copy[idx],
                               income: fromID(e.target.value),
                             };
                             return copy;
@@ -548,8 +607,8 @@ function BulkFinanceBar() {
                         onChange={(e) =>
                           setRows((prev) => {
                             const copy = [...prev];
-                            copy[i] = {
-                              ...copy[i],
+                            copy[idx] = {
+                              ...copy[idx],
                               expense: fromID(e.target.value),
                             };
                             return copy;
@@ -564,7 +623,7 @@ function BulkFinanceBar() {
                         onChange={(e) =>
                           setRows((prev) => {
                             const copy = [...prev];
-                            copy[i] = { ...copy[i], note: e.target.value };
+                            copy[idx] = { ...copy[idx], note: e.target.value };
                             return copy;
                           })
                         }
@@ -578,6 +637,11 @@ function BulkFinanceBar() {
           {rows.length === 0 && (
             <div className="p-4 text-sm text-[#889063] dark:text-gray-300">
               Pilih PlantType terlebih dahulu untuk menampilkan daftar instance.
+            </div>
+          )}
+          {rows.length > 0 && visibleIndexes.length === 0 && (
+            <div className="p-4 text-sm text-[#889063] dark:text-gray-300">
+              Tidak ada baris yang cocok dengan filter Kav/Blok/Anggota.
             </div>
           )}
         </div>
@@ -855,12 +919,12 @@ export default function ManajemenAnggotaPage() {
                 icon={<TrendingUp className="h-5 w-5" />}
                 colorClass="text-chart-3"
               />
-              <SummaryCard
+              {/* <SummaryCard
                 title="Rata-rata ROI"
                 value={kpi.loading ? "…" : formatPercentage(kpi.avgROI)}
                 icon={<BarChart3 className="h-5 w-5" />}
                 colorClass="text-chart-4"
-              />
+              /> */}
             </div>
           )}
         </motion.header>
@@ -1227,10 +1291,10 @@ function MemberCard({ member }: { member: Member }) {
               {formatCurrency(member.totalProfit)}
             </p>
           </div>
-          <div>
+          {/* <div>
             <p
               className={getThemeClasses(
-                "text-sm font-medium text-[#889063] dark:text-gray-200 mb-1 transition-colors duration-300",
+                "text-sm font-medium text-[#889063] dark:text-gray-200 mb-1 transition-colors durataion-300",
                 "!text-[#6b7280]"
               )}
             >
@@ -1244,7 +1308,7 @@ function MemberCard({ member }: { member: Member }) {
             >
               {formatPercentage(member.overallROI)}
             </p>
-          </div>
+          </div> */}
         </div>
       </div>
 
@@ -1287,7 +1351,7 @@ function MemberCard({ member }: { member: Member }) {
                     "!text-[#7c3aed]"
                   )}
                 >
-                  {formatPercentage(investment.roi)}
+                  {/* {formatPercentage(investment.roi)} */}
                 </span>
               </div>
               <div

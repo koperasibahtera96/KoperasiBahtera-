@@ -3,6 +3,7 @@
 import * as React from "react";
 import { Suspense } from "react";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
+import Link from "next/link"; // <-- tambah untuk toggle navigasi
 import { FinanceSidebar } from "@/components/finance/FinanceSidebar";
 import { Download, Search } from "lucide-react";
 
@@ -467,7 +468,7 @@ function Content() {
       </div>
 
       {/* Bar: Total Pendaftaran (kiri) — Export XLS (kanan) */}
-      <div className="mb-3 flex items-center justify-between">
+      <div className="mb-1 flex items-center justify-between">
         <div className="inline-flex items-center gap-2 rounded-2xl border border-[#324D3E]/20 bg-white px-4 py-2 text-sm">
           <span className="opacity-70">Total Pendaftaran</span>
           <span className="rounded-lg bg-[#324D3E] px-2 py-1 text-white">
@@ -482,6 +483,27 @@ function Content() {
           <Download className="h-4 w-4" />
           Export XLS
         </button>
+      </div>
+
+      {/* === Toggle Navigasi (Laporan <-> Pendaftaran) di bawah Export === */}
+      <div className="mb-4 flex justify-end">
+        <div className="inline-flex overflow-hidden rounded-2xl border border-[#324D3E]/20 bg-white">
+          <Link href="/laporan-pengeluaran" className="contents">
+            <button
+              className="px-3 py-1 text-xs font-bold hover:bg-black/5"
+              title="Ke halaman Laporan"
+            >
+              Laporan
+            </button>
+          </Link>
+          <button
+            className="px-3 py-1 text-xs font-bold bg-[#E9FFEF] cursor-default"
+            title="Halaman Pendaftaran"
+            disabled
+          >
+            Pendaftaran
+          </button>
+        </div>
       </div>
 
       {/* Tabel daftar */}
@@ -577,6 +599,7 @@ function Content() {
 export default function PendaftaranPage() {
   return (
     <FinanceSidebar>
+      {/* HANYA SEKALI: bungkus Content dengan Suspense (tidak double render) */}
       <Suspense
         fallback={
           <div className="px-6 lg:px-8 py-6">

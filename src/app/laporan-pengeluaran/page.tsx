@@ -15,15 +15,14 @@ import {
   ArrowLeft,
   BarChart3,
   Calendar,
-  ChevronDown,
   DollarSign,
   Download,
   Filter,
   TrendingDown,
-  TrendingUp, // <-- tambahan icon untuk mode pendapatan
+  TrendingUp,
 } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   CartesianGrid,
   Cell,
@@ -56,14 +55,26 @@ interface PlantType {
   displayName: string;
 }
 
+type AnyRecord = {
+  amount: number;
+  date: string | Date;
+  description?: string;
+  addedBy?: string;
+  // untuk mode "Semua" agar bisa warnai baris per jenis
+  _kind?: "expense" | "income";
+  [k: string]: any;
+};
+
 export default function LaporanPengeluaranPage() {
   const [plantInstances, setPlantInstances] = useState<PlantInstance[]>([]);
   const [plantTypes, setPlantTypes] = useState<PlantType[]>([]);
-  const [selectedYear, setSelectedYear] = useState(2025);
-  const [selectedMonth, setSelectedMonth] = useState<number | null>(null);
   const [selectedPlant, setSelectedPlant] = useState<string>("all");
+
+  // --- NEW: Rentang tanggal ala mutasi bank ---
+  const [startDate, setStartDate] = useState<string>(""); // ISO yyyy-mm-dd atau ""
+  const [endDate, setEndDate] = useState<string>(""); // ISO yyyy-mm-dd atau ""
+
   const [loading, setLoading] = useState(true);
-  const _filename = "laporan-pengeluaran.xls"; // Declare the filename variable
   const { showError, AlertComponent } = useAlert();
   const { theme, systemTheme } = useTheme();
   const isDark = (theme === "system" ? systemTheme : theme) === "dark";
@@ -73,7 +84,7 @@ export default function LaporanPengeluaranPage() {
     setMounted(true);
   }, []);
 
-  // Helper function to get theme-aware classes
+  // Helper theme-aware classes
   const getThemeClasses = (baseClasses: string, pinkClasses: string = "") => {
     if (mounted && theme === "pink" && pinkClasses) {
       return `${baseClasses} ${pinkClasses}`;
@@ -81,8 +92,8 @@ export default function LaporanPengeluaranPage() {
     return baseClasses;
   };
 
-  // === Toggle Laporan ===
-  const [mode, setMode] = useState<"expense" | "income">("expense");
+  // === Toggle Laporan ===  (TAMBAHAN: "all" jadi default)
+  const [mode, setMode] = useState<"all" | "expense" | "income">("all");
 
   useEffect(() => {
     loadData();
@@ -98,14 +109,13 @@ export default function LaporanPengeluaranPage() {
       const instances = await plantsResponse.json();
       setPlantInstances(instances);
 
-      // Fetch plant types for filter dropdown
+      // Fetch plant types
       try {
         const typesResponse = await fetch("/api/plant-types");
         if (typesResponse.ok) {
           const types = await typesResponse.json();
           setPlantTypes(types);
         } else {
-          // Fallback: extract unique plant types from instances
           const uniqueTypes = Array.from(
             new Set(instances.map((plant: PlantInstance) => plant.plantType))
           ).map((type: any) => ({
@@ -115,9 +125,7 @@ export default function LaporanPengeluaranPage() {
           }));
           setPlantTypes(uniqueTypes);
         }
-      } catch (error) {
-        console.error("Failed to fetch plant types, using fallback:", error);
-        // Fallback: extract unique plant types from instances
+      } catch {
         const uniqueTypes = Array.from(
           new Set(instances.map((plant: PlantInstance) => plant.plantType))
         ).map((type: any) => ({
@@ -147,134 +155,307 @@ export default function LaporanPengeluaranPage() {
       .replace("IDR", "Rp");
   };
 
-  // ===================== EXPENSE (existing) =====================
-  const filteredExpenses = plantInstances
-    .filter(
-      (plant) => selectedPlant === "all" || plant.plantType === selectedPlant
-    )
-    .flatMap((plant) =>
-      (plant.operationalCosts || [])
-        .filter((cost) => {
-          const costDate = new Date(cost.date);
-          const yearMatch = costDate.getFullYear() === selectedYear;
-          const monthMatch =
-            selectedMonth === null || costDate.getMonth() + 1 === selectedMonth;
-          return yearMatch && monthMatch;
-        })
-        .map((cost) => ({
-          ...cost,
-          plantName: plant.instanceName,
-          plantType: plant.plantType,
-        }))
-    );
+  // --- Helpers tanggal/range ---
+  const toStart = (iso: string) => new Date(`${iso}T00:00:00`);
+  const toEnd = (iso: string) => new Date(`${iso}T23:59:59`);
 
-  const totalExpenses = filteredExpenses.reduce(
-    (sum, expense) => sum + expense.amount,
-    0
-  );
+  const inRange = (d: Date) => {
+    if (startDate && d < toStart(startDate)) return false;
+    if (endDate && d > toEnd(endDate)) return false;
+    return true;
+  };
 
-  const expensesByPlant = plantTypes.map((plantType) => {
-    const typeExpenses = plantInstances
-      .filter((plant) => plant.plantType === plantType.name)
-      .flatMap((plant) => plant.operationalCosts || [])
-      .filter((cost) => {
-        const costDate = new Date(cost.date);
-        return costDate.getFullYear() === selectedYear;
-      })
-      .reduce((sum, cost) => sum + cost.amount, 0);
+  // Ambil semua tanggal dari data terfilter plant & mode saat ini (untuk label Periode & tren bulanan)
+  const allRelevantDates: Date[] = useMemo(() => {
+    const arr: Date[] = [];
+    const modes: Array<"operationalCosts" | "incomeRecords"> =
+      mode === "all" ? ["operationalCosts", "incomeRecords"] : [mode === "expense" ? "operationalCosts" : "incomeRecords"];
+    plantInstances
+      .filter((p) => selectedPlant === "all" || p.plantType === selectedPlant)
+      .forEach((plant) => {
+        modes.forEach((pick) => {
+          (plant[pick] || []).forEach((rec: AnyRecord) => {
+            const d = new Date(rec.date);
+            if (inRange(d)) arr.push(d);
+          });
+        });
+      });
+    return arr;
+  }, [plantInstances, selectedPlant, mode, startDate, endDate]);
 
-    return {
-      name: plantType.displayName,
-      value: typeExpenses,
-      color:
-        BRUTALIST_COLORS[
-          plantTypes.indexOf(plantType) % BRUTALIST_COLORS.length
-        ],
-    };
-  });
+  const getPeriodLabel = () => {
+    if (!startDate && !endDate) return "Semua";
+    if (allRelevantDates.length === 0 && startDate && endDate) {
+      // tetap tampilkan range meski kosong
+      const s = new Date(startDate);
+      const e = new Date(endDate);
+      const sameYear = s.getFullYear() === e.getFullYear();
+      return sameYear
+        ? `${s.toLocaleDateString("id-ID", {
+            day: "2-digit",
+            month: "short",
+            year: "numeric",
+          })} – ${e.toLocaleDateString("id-ID", {
+            day: "2-digit",
+            month: "short",
+            year: "numeric",
+          })}`
+        : `${s.getFullYear()} & ${e.getFullYear()}`;
+    }
 
-  const monthlyTrends = Array.from({ length: 12 }, (_, i) => {
-    const month = i + 1;
-    const monthExpenses = filteredExpenses
-      .filter((expense) => {
-        const expenseDate = new Date(expense.date);
-        return expenseDate.getMonth() + 1 === month;
-      })
-      .reduce((sum, expense) => sum + expense.amount, 0);
+    const years = Array.from(
+      new Set(allRelevantDates.map((d) => d.getFullYear()))
+    ).sort();
 
-    return {
-      month: new Date(selectedYear, i, 1).toLocaleDateString("id-ID", {
+    if (years.length > 1) {
+      // Tampilkan "2024 & 2025" dst
+      return years.join(" & ");
+    }
+
+    // Satu tahun saja -> tampilkan range tanggal jika keduanya ada
+    const s = startDate ? new Date(startDate) : null;
+    const e = endDate ? new Date(endDate) : null;
+    if (s && e) {
+      return `${s.toLocaleDateString("id-ID", {
+        day: "2-digit",
         month: "short",
-      }),
-      expenses: monthExpenses,
-    };
-  });
+        year: "numeric",
+      })} – ${e.toLocaleDateString("id-ID", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      })}`;
+    }
+    // Jika hanya salah satu, tampilkan yang ada
+    if (s && !e) {
+      return `≥ ${s.toLocaleDateString("id-ID", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      })}`;
+    }
+    if (!s && e) {
+      return `≤ ${e.toLocaleDateString("id-ID", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      })}`;
+    }
+    return "Semua";
+  };
 
-  // ===================== INCOME (baru, mirror) =====================
-  const filteredIncome = plantInstances
-    .filter(
-      (plant) => selectedPlant === "all" || plant.plantType === selectedPlant
-    )
-    .flatMap((plant) =>
-      (plant.incomeRecords || [])
-        .filter((inc) => {
-          const d = new Date(inc.date);
-          const yearMatch = d.getFullYear() === selectedYear;
-          const monthMatch =
-            selectedMonth === null || d.getMonth() + 1 === selectedMonth;
-          return yearMatch && monthMatch;
-        })
-        .map((inc) => ({
-          ...inc,
-          plantName: plant.instanceName,
-          plantType: plant.plantType,
-        }))
-    );
+  // ===================== EXPENSE (filtered by date range) =====================
+  const filteredExpenses = useMemo(() => {
+    return plantInstances
+      .filter(
+        (plant) => selectedPlant === "all" || plant.plantType === selectedPlant
+      )
+      .flatMap((plant) =>
+        (plant.operationalCosts || [])
+          .filter((cost: AnyRecord) => {
+            const costDate = new Date(cost.date);
+            return inRange(costDate);
+          })
+          .map((cost: AnyRecord) => ({
+            ...cost,
+            plantName: plant.instanceName,
+            plantType: plant.plantType,
+            _kind: "expense" as const,
+          }))
+      );
+  }, [plantInstances, selectedPlant, startDate, endDate]);
 
-  const totalIncome = filteredIncome.reduce(
-    (sum, income) => sum + income.amount,
-    0
+  const totalExpenses = useMemo(
+    () => filteredExpenses.reduce((sum, e) => sum + (e.amount || 0), 0),
+    [filteredExpenses]
   );
 
-  const incomeByPlant = plantTypes.map((plantType) => {
-    const typeIncome = plantInstances
-      .filter((plant) => plant.plantType === plantType.name)
-      .flatMap((plant) => plant.incomeRecords || [])
-      .filter((inc) => {
-        const d = new Date(inc.date);
-        return d.getFullYear() === selectedYear;
-      })
-      .reduce((sum, inc) => sum + inc.amount, 0);
+  const expensesByPlant = useMemo(() => {
+    return plantTypes.map((plantType) => {
+      const typeExpenses = plantInstances
+        .filter((plant) => plant.plantType === plantType.name)
+        .flatMap((plant) => plant.operationalCosts || [])
+        .filter((cost: AnyRecord) => inRange(new Date(cost.date)))
+        .reduce((sum, cost: AnyRecord) => sum + (cost.amount || 0), 0);
 
-    return {
-      name: plantType.displayName,
-      value: typeIncome,
-      color:
-        BRUTALIST_COLORS[
-          plantTypes.indexOf(plantType) % BRUTALIST_COLORS.length
-        ],
-    };
-  });
+      return {
+        name: plantType.displayName,
+        value: typeExpenses,
+        color:
+          BRUTALIST_COLORS[
+            plantTypes.indexOf(plantType) % BRUTALIST_COLORS.length
+          ],
+      };
+    });
+  }, [plantTypes, plantInstances, startDate, endDate]);
 
-  const monthlyTrendsIncome = Array.from({ length: 12 }, (_, i) => {
-    const month = i + 1;
-    const monthIncome = filteredIncome
-      .filter((inc) => {
-        const d = new Date(inc.date);
-        return d.getMonth() + 1 === month;
-      })
-      .reduce((sum, inc) => sum + inc.amount, 0);
+  // ===================== INCOME (filtered by date range) =====================
+  const filteredIncome = useMemo(() => {
+    return plantInstances
+      .filter(
+        (plant) => selectedPlant === "all" || plant.plantType === selectedPlant
+      )
+      .flatMap((plant) =>
+        (plant.incomeRecords || [])
+          .filter((inc: AnyRecord) => {
+            const d = new Date(inc.date);
+            return inRange(d);
+          })
+          .map((inc: AnyRecord) => ({
+            ...inc,
+            plantName: plant.instanceName,
+            plantType: plant.plantType,
+            _kind: "income" as const,
+          }))
+      );
+  }, [plantInstances, selectedPlant, startDate, endDate]);
+
+  const totalIncome = useMemo(
+    () => filteredIncome.reduce((sum, e) => sum + (e.amount || 0), 0),
+    [filteredIncome]
+  );
+
+  const incomeByPlant = useMemo(() => {
+    return plantTypes.map((plantType) => {
+      const typeIncome = plantInstances
+        .filter((plant) => plant.plantType === plantType.name)
+        .flatMap((plant) => plant.incomeRecords || [])
+        .filter((inc: AnyRecord) => inRange(new Date(inc.date)))
+        .reduce((sum, inc: AnyRecord) => sum + (inc.amount || 0), 0);
+
+      return {
+        name: plantType.displayName,
+        value: typeIncome,
+        color:
+          BRUTALIST_COLORS[
+            plantTypes.indexOf(plantType) % BRUTALIST_COLORS.length
+          ],
+      };
+    });
+  }, [plantTypes, plantInstances, startDate, endDate]);
+
+  // ===================== MODE "ALL" (gabungan) =====================
+  const filteredAll = useMemo(
+    () =>
+      [...filteredIncome, ...filteredExpenses].sort(
+        (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+      ),
+    [filteredIncome, filteredExpenses]
+  );
+  const totalAll = useMemo(
+    () => totalIncome + totalExpenses,
+    [totalIncome, totalExpenses]
+  );
+
+  const pieAllByPlant = useMemo(() => {
+    return plantTypes.map((plantType) => {
+      const exp = plantInstances
+        .filter((p) => p.plantType === plantType.name)
+        .flatMap((p) => p.operationalCosts || [])
+        .filter((r: AnyRecord) => inRange(new Date(r.date)))
+        .reduce((s, r) => s + (r.amount || 0), 0);
+      const inc = plantInstances
+        .filter((p) => p.plantType === plantType.name)
+        .flatMap((p) => p.incomeRecords || [])
+        .filter((r: AnyRecord) => inRange(new Date(r.date)))
+        .reduce((s, r) => s + (r.amount || 0), 0);
+      return {
+        name: plantType.displayName,
+        value: exp + inc,
+        color:
+          BRUTALIST_COLORS[
+            plantTypes.indexOf(plantType) % BRUTALIST_COLORS.length
+          ],
+      };
+    });
+  }, [plantTypes, plantInstances, startDate, endDate]);
+
+  // ===================== Tren Bulanan (mengikuti rentang tanggal) =====================
+  const monthBuckets = useMemo(() => {
+    // Tentukan from-to untuk bucket:
+    // - Jika user set start/end → gunakan itu
+    // - Kalau kosong, ambil min & max dari data sesuai mode/plant
+    const dates = allRelevantDates.slice().sort((a, b) => a.getTime() - b.getTime());
+    let from: Date, to: Date;
+
+    if (startDate) from = toStart(startDate);
+    else from = dates[0] ? new Date(dates[0]) : new Date(new Date().getFullYear(), 0, 1);
+
+    if (endDate) to = toEnd(endDate);
+    else to = dates[dates.length - 1]
+      ? new Date(dates[dates.length - 1])
+      : new Date(new Date().getFullYear(), 11, 31);
+
+    // Normalisasi ke awal & akhir bulan
+    const first = new Date(from.getFullYear(), from.getMonth(), 1);
+    const last = new Date(to.getFullYear(), to.getMonth(), 1);
+
+    // Buat bucket per bulan
+    const buckets: { key: string; label: string; y: number; m: number }[] = [];
+    let cursor = new Date(first);
+    while (cursor <= last) {
+      buckets.push({
+        key: `${cursor.getFullYear()}-${cursor.getMonth() + 1}`,
+        label: cursor.toLocaleDateString("id-ID", {
+          month: "short",
+          year: "2-digit",
+        }),
+        y: cursor.getFullYear(),
+        m: cursor.getMonth() + 1,
+      });
+      cursor = new Date(cursor.getFullYear(), cursor.getMonth() + 1, 1);
+    }
+    return buckets;
+  }, [allRelevantDates, startDate, endDate]);
+
+  const monthlyTrends = useMemo(() => {
+    // expenses
+    return monthBuckets.map((b) => {
+      const monthExpenses = filteredExpenses
+        .filter((e) => {
+          const d = new Date(e.date);
+          return d.getFullYear() === b.y && d.getMonth() + 1 === b.m;
+        })
+        .reduce((sum, e) => sum + (e.amount || 0), 0);
+
+      return { month: b.label, expenses: monthExpenses };
+    });
+  }, [monthBuckets, filteredExpenses]);
+
+  const monthlyTrendsIncome = useMemo(() => {
+    // income
+    return monthBuckets.map((b) => {
+      const monthIncome = filteredIncome
+        .filter((e) => {
+          const d = new Date(e.date);
+          return d.getFullYear() === b.y && d.getMonth() + 1 === b.m;
+        })
+        .reduce((sum, e) => sum + (e.amount || 0), 0);
 
     // gunakan key "expenses" agar chart lama tetap jalan tanpa ubah prop
-    return {
-      month: new Date(selectedYear, i, 1).toLocaleDateString("id-ID", {
-        month: "short",
-      }),
-      expenses: monthIncome,
-    };
-  });
+      return { month: b.label, expenses: monthIncome };
+    });
+  }, [monthBuckets, filteredIncome]);
 
-  // ===================== EXPORT (switch by mode) =====================
+  const monthlyTrendsAll = useMemo(() => {
+    return monthBuckets.map((b) => {
+      const vExp = filteredExpenses
+        .filter((e) => {
+          const d = new Date(e.date);
+          return d.getFullYear() === b.y && d.getMonth() + 1 === b.m;
+        })
+        .reduce((s, e) => s + (e.amount || 0), 0);
+      const vInc = filteredIncome
+        .filter((e) => {
+          const d = new Date(e.date);
+          return d.getFullYear() === b.y && d.getMonth() + 1 === b.m;
+        })
+        .reduce((s, e) => s + (e.amount || 0), 0);
+      return { month: b.label, expenses: vExp + vInc };
+    });
+  }, [monthBuckets, filteredExpenses, filteredIncome]);
+
+  // ===================== EXPORT (mengikuti rentang tanggal + mode all) =====================
   const handleExportCSV = async () => {
     try {
       const allPlantsResponse = await fetch("/api/plants");
@@ -285,116 +466,105 @@ export default function LaporanPengeluaranPage() {
           ? allPlants
           : allPlants.filter((plant) => plant.plantType === selectedPlant);
 
-      const isExpense = mode === "expense";
+      const inRangeRecord = (rec: AnyRecord) => {
+        const d = new Date(rec.date);
+        return inRange(d);
+      };
 
-      // totals & transactions
-      const total = relevantPlants.reduce((sum, plant) => {
-        const arr = isExpense
-          ? plant.operationalCosts || []
-          : plant.incomeRecords || [];
-        const subtotal = arr
-          .filter((it) => {
-            const d = new Date(it.date);
-            const yearMatch = d.getFullYear() === selectedYear;
-            const monthMatch =
-              selectedMonth === null || d.getMonth() + 1 === selectedMonth;
-            return yearMatch && monthMatch;
-          })
-          .reduce((s, it) => s + (it.amount || 0), 0);
-        return sum + subtotal;
-      }, 0);
+      let total = 0;
+      let totalTransactions = 0;
 
-      const totalTransactions = relevantPlants.reduce((sum, plant) => {
-        const arr = isExpense
-          ? plant.operationalCosts || []
-          : plant.incomeRecords || [];
-        const count = arr.filter((it) => {
-          const d = new Date(it.date);
-          const yearMatch = d.getFullYear() === selectedYear;
-          const monthMatch =
-            selectedMonth === null || d.getMonth() + 1 === selectedMonth;
-          return yearMatch && monthMatch;
-        }).length;
-        return sum + count;
-      }, 0);
-
-      const average =
-        totalTransactions > 0 ? total / totalTransactions : 0;
-
-      // monthly rows
-      const monthlyRows = Array.from({ length: 12 }, (_, monthIndex) => {
-        const month = monthIndex + 1;
-        const monthName = new Date(
-          selectedYear,
-          monthIndex,
-          1
-        ).toLocaleDateString("id-ID", {
-          month: "long",
-          year: "numeric",
-        });
-
-        const mTotal = relevantPlants.reduce((sum, plant) => {
+      if (mode === "expense" || mode === "income") {
+        const isExpense = mode === "expense";
+        total = relevantPlants.reduce((sum, plant) => {
           const arr = isExpense
             ? plant.operationalCosts || []
             : plant.incomeRecords || [];
-          const subtotal = arr
-            .filter((it) => {
-              const d = new Date(it.date);
-              return (
-                d.getFullYear() === selectedYear && d.getMonth() + 1 === month
-              );
-            })
-            .reduce((s, it) => s + (it.amount || 0), 0);
-        return sum + subtotal;
+          const subtotal = arr.filter(inRangeRecord).reduce((s, it) => s + (it.amount || 0), 0);
+          return sum + subtotal;
         }, 0);
-
-        const mCount = relevantPlants.reduce((sum, plant) => {
+        totalTransactions = relevantPlants.reduce((sum, plant) => {
           const arr = isExpense
             ? plant.operationalCosts || []
             : plant.incomeRecords || [];
-          const count = arr.filter((it) => {
-            const d = new Date(it.date);
-            return (
-              d.getFullYear() === selectedYear && d.getMonth() + 1 === month
-            );
-          }).length;
+          const count = arr.filter(inRangeRecord).length;
           return sum + count;
         }, 0);
+      } else {
+        // mode "all"
+        const sumExp = relevantPlants.reduce((sum, plant) => {
+          const arr = plant.operationalCosts || [];
+          const subtotal = arr.filter(inRangeRecord).reduce((s, it) => s + (it.amount || 0), 0);
+          return sum + subtotal;
+        }, 0);
+        const sumInc = relevantPlants.reduce((sum, plant) => {
+          const arr = plant.incomeRecords || [];
+          const subtotal = arr.filter(inRangeRecord).reduce((s, it) => s + (it.amount || 0), 0);
+          return sum + subtotal;
+        }, 0);
+        total = sumExp + sumInc;
+        const countExp = relevantPlants.reduce((sum, plant) => sum + (plant.operationalCosts || []).filter(inRangeRecord).length, 0);
+        const countInc = relevantPlants.reduce((sum, plant) => sum + (plant.incomeRecords || []).filter(inRangeRecord).length, 0);
+        totalTransactions = countExp + countInc;
+      }
+
+      const average = totalTransactions > 0 ? total / totalTransactions : 0;
+
+      const buckets = monthBuckets;
+      const monthlyRows = buckets.map((b) => {
+        let mTotal = 0;
+        let mCount = 0;
+
+        if (mode === "expense" || mode === "income") {
+          const isExpense = mode === "expense";
+          relevantPlants.forEach((plant) => {
+            const arr = isExpense ? plant.operationalCosts || [] : plant.incomeRecords || [];
+            const filtered = arr.filter((it) => {
+              const d = new Date(it.date);
+              return inRange(d) && d.getFullYear() === b.y && d.getMonth() + 1 === b.m;
+            });
+            mTotal += filtered.reduce((s, it) => s + (it.amount || 0), 0);
+            mCount += filtered.length;
+          });
+        } else {
+          relevantPlants.forEach((plant) => {
+            const exp = (plant.operationalCosts || []).filter((it) => {
+              const d = new Date(it.date);
+              return inRange(d) && d.getFullYear() === b.y && d.getMonth() + 1 === b.m;
+            });
+            const inc = (plant.incomeRecords || []).filter((it) => {
+              const d = new Date(it.date);
+              return inRange(d) && d.getFullYear() === b.y && d.getMonth() + 1 === b.m;
+            });
+            mTotal += exp.reduce((s, it) => s + (it.amount || 0), 0);
+            mTotal += inc.reduce((s, it) => s + (it.amount || 0), 0);
+            mCount += exp.length + inc.length;
+          });
+        }
 
         return {
-          monthName,
+          monthName: b.label,
           expenses: mTotal,
           transactions: mCount,
         };
       });
 
-      // detail rows
-      const allRows = relevantPlants
-        .flatMap((plant) =>
-          (isExpense
-            ? plant.operationalCosts || []
-            : plant.incomeRecords || []
-          )
-            .filter((it) => {
-              const d = new Date(it.date);
-              const yearMatch = d.getFullYear() === selectedYear;
-              const monthMatch =
-                selectedMonth === null || d.getMonth() + 1 === selectedMonth;
-              return yearMatch && monthMatch;
-            })
-            .map((it) => ({
-              ...it,
-              plantName: plant.instanceName,
-              plantType: plant.plantType,
-            }))
-        )
-        .sort(
-          (a: any, b: any) =>
-            new Date(b.date).getTime() - new Date(a.date).getTime()
-        );
+      const allRows =
+        mode === "expense"
+          ? filteredExpenses
+          : mode === "income"
+          ? filteredIncome
+          : filteredAll;
 
-      const title = isExpense ? "Laporan Pengeluaran" : "Laporan Pendapatan";
-      const labelValue = isExpense ? "Pengeluaran" : "Pendapatan";
+      const title =
+        mode === "expense"
+          ? "Laporan Pengeluaran"
+          : mode === "income"
+          ? "Laporan Pendapatan"
+          : "Laporan Semua";
+
+      const labelValue =
+        mode === "expense" ? "Pengeluaran" : mode === "income" ? "Pendapatan" : "Nominal";
 
       let html = `
         <html>
@@ -418,38 +588,25 @@ export default function LaporanPengeluaranPage() {
           ? "Semua Tanaman"
           : selectedPlant.charAt(0).toUpperCase() + selectedPlant.slice(1)
       }</div>`;
-      html += `<div class="period">Periode: ${
-        selectedMonth
-          ? `${new Date(selectedYear, selectedMonth - 1, 1).toLocaleDateString(
-              "id-ID",
-              { month: "long" }
-            )} `
-          : ""
-      }${selectedYear}</div>`;
+      html += `<div class="period">Periode: ${getPeriodLabel()}</div>`;
 
       // RINGKASAN
       html += `<div class="header">RINGKASAN ${labelValue.toUpperCase()}</div>`;
       html += `<table>`;
       html += `<tr><th>Keterangan</th><th>Nilai</th></tr>`;
-      html += `<tr><td>Total ${labelValue}</td><td>Rp ${total.toLocaleString(
-        "id-ID"
-      )}</td></tr>`;
+      if (mode === "all") {
+        html += `<tr><td>Total Pendapatan</td><td>Rp ${totalIncome.toLocaleString("id-ID")}</td></tr>`;
+        html += `<tr><td>Total Pengeluaran</td><td>Rp ${totalExpenses.toLocaleString("id-ID")}</td></tr>`;
+      } else {
+        html += `<tr><td>Total ${labelValue}</td><td>Rp ${total.toLocaleString("id-ID")}</td></tr>`;
+      }
       html += `<tr><td>Jumlah Transaksi</td><td>${totalTransactions}</td></tr>`;
-      html += `<tr><td>Rata-rata per Transaksi</td><td>Rp ${average.toLocaleString(
-        "id-ID"
-      )}</td></tr>`;
-      html += `<tr><td>Periode</td><td>${
-        selectedMonth
-          ? `${new Date(selectedYear, selectedMonth - 1, 1).toLocaleDateString(
-              "id-ID",
-              { month: "long" }
-            )} ${selectedYear}`
-          : selectedYear
-      }</td></tr>`;
+      html += `<tr><td>Rata-rata per Transaksi</td><td>Rp ${average.toLocaleString("id-ID")}</td></tr>`;
+      html += `<tr><td>Periode</td><td>${getPeriodLabel()}</td></tr>`;
       html += `</table>`;
 
       // BULANAN
-      html += `<div class="header">${labelValue.toUpperCase()} BULANAN ${selectedYear}</div>`;
+      html += `<div class="header">${labelValue.toUpperCase()} BULANAN</div>`;
       html += `<table>`;
       html += `<tr><th>Bulan</th><th>Total ${labelValue}</th><th>Jumlah Transaksi</th><th>Rata-rata per Transaksi</th></tr>`;
       monthlyRows.forEach((data) => {
@@ -467,25 +624,28 @@ export default function LaporanPengeluaranPage() {
       html += `<div class="header">DETAIL TRANSAKSI ${labelValue.toUpperCase()}</div>`;
       html += `<table>`;
       html += `<tr><th>Tanggal</th><th>Deskripsi</th><th>Jumlah</th><th>Input Oleh</th></tr>`;
-      allRows.forEach((row: any) => {
+      allRows.forEach((row: AnyRecord) => {
         html += `<tr><td>${new Date(row.date).toLocaleDateString(
           "id-ID"
-        )}</td><td>${row.description}</td><td>Rp ${row.amount.toLocaleString(
-          "id-ID"
-        )}</td><td>${row.addedBy}</td></tr>`;
+        )}</td><td>${row.description || ""}</td><td>Rp ${Number(
+          row.amount || 0
+        ).toLocaleString("id-ID")}</td><td>${row.addedBy || ""}</td></tr>`;
       });
       html += `</table>`;
 
       html += `</body></html>`;
 
-      // download
       const blob = new Blob([html], {
         type: "application/vnd.ms-excel;charset=utf-8;",
       });
       const link = document.createElement("a");
       const url = URL.createObjectURL(blob);
       const excelFilename =
-        (isExpense ? "laporan-pengeluaran" : "laporan-pendapatan") + ".xls";
+        mode === "expense"
+          ? "laporan-pengeluaran.xls"
+          : mode === "income"
+          ? "laporan-pendapatan.xls"
+          : "laporan-semua.xls";
       link.setAttribute("href", url);
       link.setAttribute("download", excelFilename);
       link.style.visibility = "hidden";
@@ -504,8 +664,18 @@ export default function LaporanPengeluaranPage() {
       <FinanceSidebar>
         <div className="p-4 sm:p-6 lg:p-8 flex items-center justify-center min-h-[50vh]">
           <div className="text-center">
-            <div className={getThemeClasses("animate-spin rounded-full h-12 w-12 border-b-2 border-[#324D3E] dark:border-white mx-auto mb-4", "!border-[#FFC1CC]")}></div>
-            <p className={getThemeClasses("text-[#889063] dark:text-gray-200 text-lg", "!text-[#6b7280]")}>
+            <div
+              className={getThemeClasses(
+                "animate-spin rounded-full h-12 w-12 border-b-2 border-[#324D3E] dark:border-white mx-auto mb-4",
+                "!border-[#FFC1CC]"
+              )}
+            ></div>
+            <p
+              className={getThemeClasses(
+                "text-[#889063] dark:text-gray-200 text-lg",
+                "!text-[#6b7280]"
+              )}
+            >
               Memuat laporan pengeluaran...
             </p>
           </div>
@@ -516,10 +686,20 @@ export default function LaporanPengeluaranPage() {
 
   // ===== Helper pembalik data & label berdasar mode (UI tetap) =====
   const isExpense = mode === "expense";
-  const totalPrimary = isExpense ? totalExpenses : totalIncome;
-  const listPrimary = isExpense ? filteredExpenses : filteredIncome;
-  const piePrimary = isExpense ? expensesByPlant : incomeByPlant;
-  const trendPrimary = isExpense ? monthlyTrends : monthlyTrendsIncome;
+  const isIncome = mode === "income";
+  const isAll = mode === "all";
+
+  const totalPrimary = isExpense ? totalExpenses : isIncome ? totalIncome : totalAll;
+  const listPrimary = isExpense ? filteredExpenses : isIncome ? filteredIncome : filteredAll;
+  const piePrimary = isExpense ? expensesByPlant : isIncome ? incomeByPlant : pieAllByPlant;
+  const trendPrimary = isExpense ? monthlyTrends : isIncome ? monthlyTrendsIncome : monthlyTrendsAll;
+
+  const headerTitle = isExpense ? "Laporan Pengeluaran" : isIncome ? "Laporan Pendapatan" : "Laporan Semua";
+  const headerDesc = isExpense
+    ? "Analisis dan manajemen pengeluaran operasional per tanaman"
+    : isIncome
+    ? "Analisis dan manajemen pendapatan per tanaman"
+    : "Analisis gabungan pendapatan dan pengeluaran Tanaman";
 
   return (
     <FinanceSidebar>
@@ -546,24 +726,77 @@ export default function LaporanPengeluaranPage() {
               </motion.button>
             </Link>
             <div>
-              <h1 className={getThemeClasses("text-2xl sm:text-3xl lg:text-4xl font-bold text-[#324D3E] dark:text-white transition-colors duration-300", "!text-[#4c1d1d]")}>
-                {isExpense ? "Laporan Pengeluaran" : "Laporan Pendapatan"}
+              <h1
+                className={getThemeClasses(
+                  "text-2xl sm:text-3xl lg:text-4xl font-bold text-[#324D3E] dark:text-white transition-colors duration-300",
+                  "!text-[#4c1d1d]"
+                )}
+              >
+                {headerTitle}
               </h1>
-              <p className={getThemeClasses("text-[#889063] dark:text-gray-200 mt-1 text-sm sm:text-base lg:text-lg transition-colors duration-300", "!text-[#6b7280]")}>
-                {isExpense
-                  ? "Analisis dan manajemen pengeluaran operasional"
-                  : "Analisis dan manajemen pendapatan per tanaman"}
+              <p
+                className={getThemeClasses(
+                  "text-[#889063] dark:text-gray-200 mt-1 text-sm sm:text-base lg:text-lg transition-colors duration-300",
+                  "!text-[#6b7280]"
+                )}
+              >
+                {headerDesc}
               </p>
+              {/* Secondary nav: Laporan <-> Pendaftaran (rapi di bawah judul) */}
+<div className="mt-3">
+  <div className="inline-flex overflow-hidden rounded-2xl border border-black/10 bg-white/80 backdrop-blur px-1 py-1">
+    {/* Halaman ini (Laporan) jadi aktif/disabled */}
+    <button
+      className="px-3 py-1 text-xs font-bold rounded-xl bg-black/5 cursor-default"
+      disabled
+      title="Halaman Laporan"
+    >
+      Laporan
+    </button>
+
+    {/* Link ke /pendaftaran */}
+    <Link href="/pendaftaran" className="contents">
+      <button
+        className="px-3 py-1 text-xs font-bold rounded-xl hover:bg-black/5"
+        title="Ke halaman Pendaftaran"
+      >
+        Pendaftaran
+      </button>
+    </Link>
+  </div>
+</div>
+
             </div>
           </div>
 
           <div className="flex gap-3 items-center">
-            {/* Toggle kecil – tidak mengubah layout utama */}
-            <div className={getThemeClasses("inline-flex rounded-2xl overflow-hidden border border-black/60", "!border-[#FFC1CC]/50")}>
+            {/* Toggle kecil – ditambah tombol "Semua" */}
+            <div
+              className={getThemeClasses(
+                "inline-flex rounded-2xl overflow-hidden border border-black/60",
+                "!border-[#FFC1CC]/50"
+              )}
+            >
               <button
                 className={getThemeClasses(
-                  `px-3 py-1 text-xs font-bold ${isExpense ? "bg-[#FFEAA7]" : "bg-white"}`,
-                  isExpense ? "!bg-[#FFDEE9] !text-[#4c1d1d]" : "!bg-white !text-[#4c1d1d]"
+                  `px-3 py-1 text-xs font-bold ${isAll ? "bg-[#E9FFEF]" : "bg-white"}`,
+                  isAll
+                    ? "!bg-[#FFDEE9] !text-[#4c1d1d]"
+                    : "!bg-white !text-[#4c1d1d]"
+                )}
+                onClick={() => setMode("all")}
+                title="Lihat Semua"
+              >
+                Semua
+              </button>
+              <button
+                className={getThemeClasses(
+                  `px-3 py-1 text-xs font-bold ${
+                    isExpense ? "bg[#FFEAA7]" : "bg-white"
+                  }`,
+                  isExpense
+                    ? "!bg-[#FFDEE9] !text-[#4c1d1d]"
+                    : "!bg-white !text-[#4c1d1d]"
                 )}
                 onClick={() => setMode("expense")}
                 title="Lihat Pengeluaran"
@@ -572,8 +805,12 @@ export default function LaporanPengeluaranPage() {
               </button>
               <button
                 className={getThemeClasses(
-                  `px-3 py-1 text-xs font-bold ${!isExpense ? "bg-[#C2F5C0]" : "bg-white"}`,
-                  !isExpense ? "!bg-[#B5EAD7] !text-[#4c1d1d]" : "!bg-white !text-[#4c1d1d]"
+                  `px-3 py-1 text-xs font-bold ${
+                    isIncome ? "bg-[#C2F5C0]" : "bg-white"
+                  }`,
+                  isIncome
+                    ? "!bg-[#B5EAD7] !text-[#4c1d1d]"
+                    : "!bg-white !text-[#4c1d1d]"
                 )}
                 onClick={() => setMode("income")}
                 title="Lihat Pendapatan"
@@ -597,9 +834,20 @@ export default function LaporanPengeluaranPage() {
           </div>
         </motion.div>
 
-        <Card className={getThemeClasses("bg-white/90 dark:bg-gray-800/90 mb-6 border border-[#324D3E]/10 dark:border-gray-700 transition-colors duration-300", "!bg-white/95 !border-[#FFC1CC]/30")}>
+        {/* ===== FILTER: Rentang Tanggal (Bank-style) ===== */}
+        <Card
+          className={getThemeClasses(
+            "bg-white/90 dark:bg-gray-800/90 mb-6 border border-[#324D3E]/10 dark:border-gray-700 transition-colors duration-300",
+            "!bg-white/95 !border-[#FFC1CC]/30"
+          )}
+        >
           <CardHeader>
-            <CardTitle className={getThemeClasses("text-black dark:text-white flex items-center gap-2 transition-colors duration-300", "!text-[#4c1d1d]")}>
+            <CardTitle
+              className={getThemeClasses(
+                "text-black dark:text-white flex items-center gap-2 transition-colors duration-300",
+                "!text-[#4c1d1d]"
+              )}
+            >
               <Filter className="h-5 w-5" />
               Filter Laporan
             </CardTitle>
@@ -607,56 +855,62 @@ export default function LaporanPengeluaranPage() {
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <div>
-                <label className={getThemeClasses("block text-sm font-medium text-black dark:text-white mb-2 transition-colors duration-300", "!text-[#4c1d1d]")}>
-                  Tahun
+                <label
+                  className={getThemeClasses(
+                    "block text-sm font-medium text-black dark:text-white mb-2 transition-colors duration-300",
+                    "!text-[#4c1d1d]"
+                  )}
+                >
+                  Tanggal Awal
                 </label>
-                <div className="relative">
-                  <select
-                    value={selectedYear}
-                    onChange={(e) => setSelectedYear(Number(e.target.value))}
-                    className={getThemeClasses("w-full border bg-white/90 dark:bg-gray-700/80 border-gray-200 dark:border-gray-600 text-black dark:text-white px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none cursor-pointer transition-colors duration-300", "!bg-white/90 !border-[#FFC1CC]/30 !text-[#4c1d1d] focus:!ring-[#FFC1CC]")}
-                  >
-                    <option value={2024}>2024</option>
-                    <option value={2025}>2025</option>
-                  </select>
-                  <ChevronDown className={getThemeClasses("absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400 dark:text-gray-300 pointer-events-none", "!text-[#4c1d1d]")} />
-                </div>
+                <input
+                  type="date"
+                  value={startDate}
+                  onChange={(e) => setStartDate(e.target.value)}
+                  className={getThemeClasses(
+                    "w-full border bg-white/90 dark:bg-gray-700/80 border-gray-200 dark:border-gray-600 text-black dark:text-white px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors duration-300",
+                    "!bg-white/90 !border-[#FFC1CC]/30 !text-[#4c1d1d] focus:!ring-[#FFC1CC]"
+                  )}
+                />
               </div>
+
               <div>
-                <label className={getThemeClasses("block text-sm font-medium text-black dark:text-white mb-2 transition-colors duration-300", "!text-[#4c1d1d]")}>
-                  Bulan
+                <label
+                  className={getThemeClasses(
+                    "block text-sm font-medium text-black dark:text-white mb-2 transition-colors duration-300",
+                    "!text-[#4c1d1d]"
+                  )}
+                >
+                  Tanggal Akhir
                 </label>
-                <div className="relative">
-                  <select
-                    value={selectedMonth || ""}
-                    onChange={(e) =>
-                      setSelectedMonth(
-                        e.target.value ? Number(e.target.value) : null
-                      )
-                    }
-                    className={getThemeClasses("w-full border bg-white/90 dark:bg-gray-700/80 border-gray-200 dark:border-gray-600 text-black dark:text-white px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none cursor-pointer transition-colors duration-300", "!bg-white/90 !border-[#FFC1CC]/30 !text-[#4c1d1d] focus:!ring-[#FFC1CC]")}
-                  >
-                    <option value="">Semua Bulan</option>
-                    {Array.from({ length: 12 }, (_, i) => (
-                      <option key={i + 1} value={i + 1}>
-                        {new Date(2025, i, 1).toLocaleDateString("id-ID", {
-                          month: "long",
-                        })}
-                      </option>
-                    ))}
-                  </select>
-                  <ChevronDown className={getThemeClasses("absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400 dark:text-gray-300 pointer-events-none", "!text-[#4c1d1d]")} />
-                </div>
+                <input
+                  type="date"
+                  value={endDate}
+                  onChange={(e) => setEndDate(e.target.value)}
+                  className={getThemeClasses(
+                    "w-full border bg-white/90 dark:bg-gray-700/80 border-gray-200 dark:border-gray-600 text-black dark:text-white px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors duration-300",
+                    "!bg-white/90 !border-[#FFC1CC]/30 !text-[#4c1d1d] focus:!ring-[#FFC1CC]"
+                  )}
+                />
               </div>
+
               <div>
-                <label className={getThemeClasses("block text-sm font-medium text-black dark:text-white mb-2 transition-colors duration-300", "!text-[#4c1d1d]")}>
+                <label
+                  className={getThemeClasses(
+                    "block text-sm font-medium text-black dark:text-white mb-2 transition-colors duration-300",
+                    "!text-[#4c1d1d]"
+                  )}
+                >
                   Tanaman
                 </label>
                 <div className="relative">
                   <select
                     value={selectedPlant}
                     onChange={(e) => setSelectedPlant(e.target.value)}
-                    className={getThemeClasses("w-full border bg-white/90 dark:bg-gray-700/80 border-gray-200 dark:border-gray-600 text-black dark:text-white px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none cursor-pointer transition-colors duration-300", "!bg-white/90 !border-[#FFC1CC]/30 !text-[#4c1d1d] focus:!ring-[#FFC1CC]")}
+                    className={getThemeClasses(
+                      "w-full border bg-white/90 dark:bg-gray-700/80 border-gray-200 dark:border-gray-600 text-black dark:text-white px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none cursor-pointer transition-colors duration-300",
+                      "!bg-white/90 !border-[#FFC1CC]/30 !text-[#4c1d1d] focus:!ring-[#FFC1CC]"
+                    )}
                   >
                     <option value="all">Semua Tanaman</option>
                     {plantTypes.map((plantType) => (
@@ -665,17 +919,22 @@ export default function LaporanPengeluaranPage() {
                       </option>
                     ))}
                   </select>
-                  <ChevronDown className={getThemeClasses("absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400 dark:text-gray-300 pointer-events-none", "!text-[#4c1d1d]")} />
                 </div>
               </div>
+
               <div className="flex items-end">
                 <Button
                   onClick={() => {
-                    setSelectedMonth(null);
+                    setStartDate("");
+                    setEndDate("");
                     setSelectedPlant("all");
+                    setMode("all");
                   }}
                   variant="outline"
-                  className={getThemeClasses("w-full border bg-white/90 dark:bg-gray-700/80 border-gray-200 dark:border-gray-600 text-black dark:text-white hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors duration-300", "!bg-white/90 !border-[#FFC1CC]/30 !text-[#4c1d1d] hover:!bg-[#FFC1CC]/20")}
+                  className={getThemeClasses(
+                    "w-full border bg-white/90 dark:bg-gray-700/80 border-gray-200 dark:border-gray-600 text-black dark:text-white hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors duration-300",
+                    "!bg-white/90 !border-[#FFC1CC]/30 !text-[#4c1d1d] hover:!bg-[#FFC1CC]/20"
+                  )}
                 >
                   Reset Filter
                 </Button>
@@ -684,71 +943,184 @@ export default function LaporanPengeluaranPage() {
           </CardContent>
         </Card>
 
+        {/* KPI */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-8">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.2 }}
-          >
-            <Card className={getThemeClasses("bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl border-[#324D3E]/10 dark:border-gray-700 shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300", "!bg-white/95 !border-[#FFC1CC]/30")}>
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <div className={getThemeClasses("text-sm text-[#889063] dark:text-gray-200 transition-colors duration-300", "!text-[#6b7280]")}>
-                    {isExpense ? "Total Pengeluaran" : "Total Pendapatan"}
-                  </div>
-                  <div className={getThemeClasses(
-                    `flex h-10 w-10 items-center justify-center rounded-2xl ${isExpense ? "bg-red-500/10 text-red-600" : "bg-green-500/10 text-green-600"}`,
-                    isExpense ? "!bg-[#FFDEE9]/50 !text-[#dc2626]" : "!bg-[#B5EAD7]/50 !text-[#059669]"
-                  )}>
-                    {isExpense ? <TrendingDown className="h-5 w-5" /> : <TrendingUp className="h-5 w-5" />}
-                  </div>
-                </div>
-                <div className={getThemeClasses(
-                  `text-2xl font-bold ${isExpense ? "text-red-600 dark:text-red-400" : "text-green-600 dark:text-emerald-400"} transition-colors duration-300`,
-                  isExpense ? "!text-[#dc2626]" : "!text-[#059669]"
-                )}>
-                  {formatCurrency(totalPrimary)}
-                </div>
-              </CardContent>
-            </Card>
-          </motion.div>
+          {/* Saat mode=all, tampilkan 2 kartu total di depan */}
+          {isAll ? (
+            <>
+              {/* Total Pendapatan */}
+              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.15 }}>
+                <Card className={getThemeClasses("bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl border-[#324D3E]/10 dark:border-gray-700 shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300", "!bg-white/95 !border-[#FFC1CC]/30")}>
+                  <CardContent className="p-6">
+                    <div className="flex items-center justify-between mb-4">
+                      <div className={getThemeClasses("text-sm text-[#889063] dark:text-gray-200", "!text-[#6b7280]")}>Total Pendapatan</div>
+                      <div className={getThemeClasses("flex h-10 w-10 items-center justify-center rounded-2xl bg-green-500/10 text-green-600", "!bg-[#B5EAD7]/50 !text-[#059669]")}>
+                        <TrendingUp className="h-5 w-5" />
+                      </div>
+                    </div>
+                    <div className={getThemeClasses("text-2xl font-bold text-green-600 dark:text-emerald-400", "!text-[#059669]")}>
+                      {formatCurrency(totalIncome)}
+                    </div>
+                  </CardContent>
+                </Card>
+              </motion.div>
 
+              {/* Total Pengeluaran */}
+              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.2 }}>
+                <Card className={getThemeClasses("bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl border-[#324D3E]/10 dark:border-gray-700 shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300", "!bg-white/95 !border-[#FFC1CC]/30")}>
+                  <CardContent className="p-6">
+                    <div className="flex items-center justify-between mb-4">
+                      <div className={getThemeClasses("text-sm text-[#889063] dark:text-gray-200", "!text-[#6b7280]")}>Total Pengeluaran</div>
+                      <div className={getThemeClasses("flex h-10 w-10 items-center justify-center rounded-2xl bg-red-500/10 text-red-600", "!bg-[#FFDEE9]/50 !text-[#dc2626]")}>
+                        <TrendingDown className="h-5 w-5" />
+                      </div>
+                    </div>
+                    <div className={getThemeClasses("text-2xl font-bold text-red-600 dark:text-red-400", "!text-[#dc2626]")}>
+                      {formatCurrency(totalExpenses)}
+                    </div>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            </>
+          ) : (
+            // Jika bukan mode all: satu kartu total sesuai mode (tetap seperti sebelumnya)
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.2 }}
+            >
+              <Card
+                className={getThemeClasses(
+                  "bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl border-[#324D3E]/10 dark:border-gray-700 shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300",
+                  "!bg-white/95 !border-[#FFC1CC]/30"
+                )}
+              >
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <div
+                      className={getThemeClasses(
+                        "text-sm text-[#889063] dark:text-gray-200 transition-colors duration-300",
+                        "!text-[#6b7280]"
+                      )}
+                    >
+                      {isExpense ? "Total Pengeluaran" : "Total Pendapatan"}
+                    </div>
+                    <div
+                      className={getThemeClasses(
+                        `flex h-10 w-10 items-center justify-center rounded-2xl ${
+                          isExpense
+                            ? "bg-red-500/10 text-red-600"
+                            : "bg-green-500/10 text-green-600"
+                        }`,
+                        isExpense
+                          ? "!bg-[#FFDEE9]/50 !text-[#dc2626]"
+                          : "!bg-[#B5EAD7]/50 !text-[#059669]"
+                      )}
+                    >
+                      {isExpense ? (
+                        <TrendingDown className="h-5 w-5" />
+                      ) : (
+                        <TrendingUp className="h-5 w-5" />
+                      )}
+                    </div>
+                  </div>
+                  <div
+                    className={getThemeClasses(
+                      `text-2xl font-bold ${
+                        isExpense
+                          ? "text-red-600 dark:text-red-400"
+                          : "text-green-600 dark:text-emerald-400"
+                      } transition-colors duration-300`,
+                      isExpense ? "!text-[#dc2626]" : "!text-[#059669]"
+                    )}
+                  >
+                    {formatCurrency(totalPrimary)}
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
+          )}
+
+          {/* Jumlah Transaksi */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.3 }}
           >
-            <Card className={getThemeClasses("bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl border-[#324D3E]/10 dark:border-gray-700 shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300", "!bg-white/95 !border-[#FFC1CC]/30")}>
+            <Card
+              className={getThemeClasses(
+                "bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl border-[#324D3E]/10 dark:border-gray-700 shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300",
+                "!bg-white/95 !border-[#FFC1CC]/30"
+              )}
+            >
               <CardContent className="p-6">
                 <div className="flex items-center justify-between mb-4">
-                  <div className={getThemeClasses("text-sm text-[#889063] dark:text-gray-200 transition-colors duration-300", "!text-[#6b7280]")}>Jumlah Transaksi</div>
-                  <div className={getThemeClasses("flex h-10 w-10 items-center justify-center rounded-2xl bg-blue-500/10 text-blue-600", "!bg-[#C7CEEA]/50 !text-[#7c3aed]")}>
+                  <div
+                    className={getThemeClasses(
+                      "text-sm text-[#889063] dark:text-gray-200 transition-colors duration-300",
+                      "!text-[#6b7280]"
+                    )}
+                  >
+                    Jumlah Transaksi
+                  </div>
+                  <div
+                    className={getThemeClasses(
+                      "flex h-10 w-10 items-center justify-center rounded-2xl bg-blue-500/10 text-blue-600",
+                      "!bg-[#C7CEEA]/50 !text-[#7c3aed]"
+                    )}
+                  >
                     <BarChart3 className="h-5 w-5" />
                   </div>
                 </div>
-                <div className={getThemeClasses("text-2xl font-bold text-blue-600 dark:text-blue-400 transition-colors duration-300", "!text-[#7c3aed]")}>
+                <div
+                  className={getThemeClasses(
+                    "text-2xl font-bold text-blue-600 dark:text-blue-400 transition-colors duration-300",
+                    "!text-[#7c3aed]"
+                  )}
+                >
                   {listPrimary.length}
                 </div>
               </CardContent>
             </Card>
           </motion.div>
 
+          {/* Rata-rata per Transaksi */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.4 }}
           >
-            <Card className={getThemeClasses("bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl border-[#324D3E]/10 dark:border-gray-700 shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300", "!bg-white/95 !border-[#FFC1CC]/30")}>
+            <Card
+              className={getThemeClasses(
+                "bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl border-[#324D3E]/10 dark:border-gray-700 shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300",
+                "!bg-white/95 !border-[#FFC1CC]/30"
+              )}
+            >
               <CardContent className="p-6">
                 <div className="flex items-center justify-between mb-4">
-                  <div className={getThemeClasses("text-sm text-[#889063] dark:text-gray-200 transition-colors duration-300", "!text-[#6b7280]")}>
+                  <div
+                    className={getThemeClasses(
+                      "text-sm text-[#889063] dark:text-gray-200 transition-colors duration-300",
+                      "!text-[#6b7280]"
+                    )}
+                  >
                     Rata-rata per Transaksi
                   </div>
-                  <div className={getThemeClasses("flex h-10 w-10 items-center justify-center rounded-2xl bg-yellow-500/10 text-yellow-600", "!bg-[#FFF5BA]/70 !text-[#d97706]")}>
+                  <div
+                    className={getThemeClasses(
+                      "flex h-10 w-10 items-center justify-center rounded-2xl bg-yellow-500/10 text-yellow-600",
+                      "!bg-[#FFF5BA]/70 !text-[#d97706]"
+                    )}
+                  >
                     <DollarSign className="h-5 w-5" />
                   </div>
                 </div>
-                <div className={getThemeClasses("text-2xl font-bold text-yellow-600 dark:text-yellow-400 transition-colors duration-300", "!text-[#d97706]")}>
+                <div
+                  className={getThemeClasses(
+                    "text-2xl font-bold text-yellow-600 dark:text-yellow-400 transition-colors duration-300",
+                    "!text-[#d97706]"
+                  )}
+                >
                   {listPrimary.length > 0
                     ? formatCurrency(totalPrimary / listPrimary.length)
                     : "Rp 0"}
@@ -757,45 +1129,75 @@ export default function LaporanPengeluaranPage() {
             </Card>
           </motion.div>
 
+          {/* Periode */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.5 }}
           >
-            <Card className={getThemeClasses("bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl border-[#324D3E]/10 dark:border-gray-700 shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300", "!bg-white/95 !border-[#FFC1CC]/30")}>
+            <Card
+              className={getThemeClasses(
+                "bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl border-[#324D3E]/10 dark:border-gray-700 shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300",
+                "!bg-white/95 !border-[#FFC1CC]/30"
+              )}
+            >
               <CardContent className="p-6">
                 <div className="flex items-center justify-between mb-4">
-                  <div className={getThemeClasses("text-sm text-[#889063] dark:text-gray-200 transition-colors duration-300", "!text-[#6b7280]")}>Periode</div>
-                  <div className={getThemeClasses("flex h-10 w-10 items-center justify-center rounded-2xl bg-green-500/10 text-green-600", "!bg-[#B5EAD7]/50 !text-[#059669]")}>
+                  <div
+                    className={getThemeClasses(
+                      "text-sm text-[#889063] dark:text-gray-200 transition-colors duration-300",
+                      "!text-[#6b7280]"
+                    )}
+                  >
+                    Periode
+                  </div>
+                  <div
+                    className={getThemeClasses(
+                      "flex h-10 w-10 items-center justify-center rounded-2xl bg-green-500/10 text-green-600",
+                      "!bg-[#B5EAD7]/50 !text-[#059669]"
+                    )}
+                  >
                     <Calendar className="h-5 w-5" />
                   </div>
                 </div>
-                <div className={getThemeClasses("text-2xl font-bold text-green-600 dark:text-emerald-400 transition-colors duration-300", "!text-[#059669]")}>
-                  {selectedMonth
-                    ? `${new Date(
-                        selectedYear,
-                        selectedMonth - 1,
-                        1
-                      ).toLocaleDateString("id-ID", {
-                        month: "long",
-                      })} ${selectedYear}`
-                    : selectedYear}
+                <div
+                  className={getThemeClasses(
+                    "text-2xl font-bold text-green-600 dark:text-emerald-400 transition-colors duration-300",
+                    "!text-[#059669]"
+                  )}
+                >
+                  {getPeriodLabel()}
                 </div>
               </CardContent>
             </Card>
           </motion.div>
         </div>
 
+        {/* CHARTS */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.6 }}
           >
-            <Card className={getThemeClasses("bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl border-[#324D3E]/10 dark:border-gray-700 shadow-lg transition-colors duration-300", "!bg-white/95 !border-[#FFC1CC]/30")}>
+            <Card
+              className={getThemeClasses(
+                "bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl border-[#324D3E]/10 dark:border-gray-700 shadow-lg transition-colors duration-300",
+                "!bg-white/95 !border-[#FFC1CC]/30"
+              )}
+            >
               <CardHeader>
-                <CardTitle className={getThemeClasses("text-[#324D3E] dark:text-white transition-colors duration-300", "!text-[#4c1d1d]")}>
-                  {isExpense ? "Pengeluaran per Tanaman" : "Pendapatan per Tanaman"}
+                <CardTitle
+                  className={getThemeClasses(
+                    "text-[#324D3E] dark:text-white transition-colors duration-300",
+                    "!text-[#4c1d1d]"
+                  )}
+                >
+                  {isExpense
+                    ? "Pengeluaran per Tanaman"
+                    : isIncome
+                    ? "Pendapatan per Tanaman"
+                    : "Nominal per Tanaman"}
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -803,9 +1205,7 @@ export default function LaporanPengeluaranPage() {
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                       <Pie
-                        data={(isExpense ? piePrimary : piePrimary).filter(
-                          (plant) => plant.value > 0
-                        )}
+                        data={piePrimary.filter((plant) => plant.value > 0)}
                         cx="50%"
                         cy="50%"
                         labelLine={false}
@@ -818,14 +1218,14 @@ export default function LaporanPengeluaranPage() {
                         stroke="#000"
                         strokeWidth={3}
                       >
-                        {(isExpense ? piePrimary : piePrimary).map((entry, index) => (
+                        {piePrimary.map((entry, index) => (
                           <Cell key={`cell-${index}`} fill={entry.color} />
                         ))}
                       </Pie>
                       <Tooltip
                         formatter={(value: number) => [
                           formatCurrency(value),
-                          isExpense ? "Pengeluaran" : "Pendapatan",
+                          isExpense ? "Pengeluaran" : isIncome ? "Pendapatan" : "Nominal",
                         ]}
                         contentStyle={{
                           backgroundColor: isDark ? "#111827" : "#ffffff",
@@ -848,19 +1248,34 @@ export default function LaporanPengeluaranPage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.7 }}
           >
-            <Card className={getThemeClasses("bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl border-[#324D3E]/10 dark:border-gray-700 shadow-lg transition-colors duration-300", "!bg-white/95 !border-[#FFC1CC]/30")}>
+            <Card
+              className={getThemeClasses(
+                "bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl border-[#324D3E]/10 dark:border-gray-700 shadow-lg transition-colors duration-300",
+                "!bg-white/95 !border-[#FFC1CC]/30"
+              )}
+            >
               <CardHeader>
-                <CardTitle className={getThemeClasses("text-[#324D3E] dark:text-white transition-colors duration-300", "!text-[#4c1d1d]")}>
+                <CardTitle
+                  className={getThemeClasses(
+                    "text-[#324D3E] dark:text-white transition-colors duration-300",
+                    "!text-[#4c1d1d]"
+                  )}
+                >
                   {isExpense
-                    ? `Tren Pengeluaran Bulanan ${selectedYear}`
-                    : `Tren Pendapatan Bulanan ${selectedYear}`}
+                    ? `Tren Pengeluaran Bulanan`
+                    : isIncome
+                    ? `Tren Pendapatan Bulanan`
+                    : `Tren Nominal Bulanan`}
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="h-80">
                   <ResponsiveContainer width="100%" height="100%">
                     <LineChart data={trendPrimary}>
-                      <CartesianGrid strokeDasharray="3 3" stroke={isDark ? "#4b5563" : "#374151"} />
+                      <CartesianGrid
+                        strokeDasharray="3 3"
+                        stroke={isDark ? "#4b5563" : "#374151"}
+                      />
                       <XAxis
                         dataKey="month"
                         stroke={isDark ? "#d1d5db" : "#9ca3af"}
@@ -876,7 +1291,7 @@ export default function LaporanPengeluaranPage() {
                       <Tooltip
                         formatter={(value: number) => [
                           formatCurrency(value),
-                          isExpense ? "Pengeluaran" : "Pendapatan",
+                          isExpense ? "Pengeluaran" : isIncome ? "Pendapatan" : "Nominal",
                         ]}
                         contentStyle={{
                           backgroundColor: isDark ? "#111827" : "#ffffff",
@@ -884,16 +1299,39 @@ export default function LaporanPengeluaranPage() {
                           borderRadius: "8px",
                           color: isDark ? "#ffffff" : "#000000",
                           fontWeight: "bold",
-                          boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
+                          boxShadow:
+                            "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
                         }}
                       />
                       <Line
                         type="monotone"
                         dataKey="expenses"
-                        stroke={isExpense ? (isDark ? "#f87171" : "#ef4444") : (isDark ? "#34d399" : "#10b981")}
+                        stroke={
+                          isExpense
+                            ? isDark
+                              ? "#f87171"
+                              : "#ef4444"
+                            : isIncome
+                            ? isDark
+                              ? "#34d399"
+                              : "#10b981"
+                            : isDark
+                            ? "#60a5fa"
+                            : "#2563eb"
+                        }
                         strokeWidth={4}
                         dot={{
-                          fill: isExpense ? (isDark ? "#f87171" : "#ef4444") : (isDark ? "#34d399" : "#10b981"),
+                          fill: isExpense
+                            ? isDark
+                              ? "#f87171"
+                              : "#ef4444"
+                            : isIncome
+                            ? isDark
+                              ? "#34d399"
+                              : "#10b981"
+                            : isDark
+                            ? "#60a5fa"
+                            : "#2563eb",
                           strokeWidth: 3,
                           stroke: isDark ? "#d1d5db" : "#000",
                           r: 6,
@@ -907,15 +1345,26 @@ export default function LaporanPengeluaranPage() {
           </motion.div>
         </div>
 
+        {/* TABLE */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.8 }}
         >
-          <Card className={getThemeClasses("bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl border-[#324D3E]/10 dark:border-gray-700 shadow-lg transition-colors duration-300", "!bg-white/95 !border-[#FFC1CC]/30")}>
+          <Card
+            className={getThemeClasses(
+              "bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl border-[#324D3E]/10 dark:border-gray-700 shadow-lg transition-colors duration-300",
+              "!bg-white/95 !border-[#FFC1CC]/30"
+            )}
+          >
             <CardHeader>
-              <CardTitle className={getThemeClasses("text-[#324D3E] dark:text-white transition-colors duration-300", "!text-[#4c1d1d]")}>
-                {isExpense ? "Detail Pengeluaran" : "Detail Pendapatan"}
+              <CardTitle
+                className={getThemeClasses(
+                  "text-[#324D3E] dark:text-white transition-colors duration-300",
+                  "!text-[#4c1d1d]"
+                )}
+              >
+                {isExpense ? "Detail Pengeluaran" : isIncome ? "Detail Pendapatan" : "Detail Semua"}
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -923,17 +1372,42 @@ export default function LaporanPengeluaranPage() {
                 <div className="overflow-x-auto">
                   <table className="w-full">
                     <thead>
-                      <tr className={getThemeClasses("border-b-2 border-[#324D3E]/10 dark:border-gray-600 transition-colors duration-300", "!border-[#FFC1CC]/30")}>
-                        <th className={getThemeClasses("text-left py-3 px-4 text-[#324D3E] dark:text-white font-semibold transition-colors duration-300", "!text-[#4c1d1d]")}>
+                      <tr
+                        className={getThemeClasses(
+                          "border-b-2 border-[#324D3E]/10 dark:border-gray-600 transition-colors duration-300",
+                          "!border-[#FFC1CC]/30"
+                        )}
+                      >
+                        <th
+                          className={getThemeClasses(
+                            "text-left py-3 px-4 text-[#324D3E] dark:text-white font-semibold transition-colors duration-300",
+                            "!text-[#4c1d1d]"
+                          )}
+                        >
                           Tanggal
                         </th>
-                        <th className={getThemeClasses("text-left py-3 px-4 text-[#324D3E] dark:text-white font-semibold transition-colors duration-300", "!text-[#4c1d1d]")}>
+                        <th
+                          className={getThemeClasses(
+                            "text-left py-3 px-4 text-[#324D3E] dark:text-white font-semibold transition-colors duration-300",
+                            "!text-[#4c1d1d]"
+                          )}
+                        >
                           Deskripsi
                         </th>
-                        <th className={getThemeClasses("text-right py-3 px-4 text-[#324D3E] dark:text-white font-semibold transition-colors duration-300", "!text-[#4c1d1d]")}>
+                        <th
+                          className={getThemeClasses(
+                            "text-right py-3 px-4 text-[#324D3E] dark:text-white font-semibold transition-colors duration-300",
+                            "!text-[#4c1d1d]"
+                          )}
+                        >
                           Jumlah
                         </th>
-                        <th className={getThemeClasses("text-left py-3 px-4 text-[#324D3E] dark:text-white font-semibold transition-colors duration-300", "!text-[#4c1d1d]")}>
+                        <th
+                          className={getThemeClasses(
+                            "text-left py-3 px-4 text-[#324D3E] dark:text-white font-semibold transition-colors duration-300",
+                            "!text-[#4c1d1d]"
+                          )}
+                        >
                           Input Oleh
                         </th>
                       </tr>
@@ -945,53 +1419,97 @@ export default function LaporanPengeluaranPage() {
                             new Date(b.date).getTime() -
                             new Date(a.date).getTime()
                         )
-                        .map((row, index) => (
-                          <tr
-                            key={index}
-                            className={getThemeClasses(
-                              `border-b border-[#324D3E]/5 dark:border-gray-700 ${
-                                index % 2 === 0
-                                  ? "bg-white/40 dark:bg-gray-800/40"
-                                  : "bg-[#324D3E]/5 dark:bg-gray-700/50"
-                              } hover:bg-[#324D3E]/10 dark:hover:bg-gray-700 transition-colors duration-200`,
-                              `!border-[#FFC1CC]/20 ${
-                                index % 2 === 0
-                                  ? "!bg-white/60"
-                                  : "!bg-[#FFC1CC]/10"
-                              } hover:!bg-[#FFC1CC]/20`
-                            )}
-                          >
-                            <td className={getThemeClasses("py-3 px-4 text-[#324D3E] dark:text-white transition-colors duration-300", "!text-[#4c1d1d]")}>
-                              {new Date(row.date).toLocaleDateString("id-ID")}
-                            </td>
-                            <td className={getThemeClasses("py-3 px-4 text-[#324D3E] dark:text-white transition-colors duration-300", "!text-[#4c1d1d]")}>
-                              {row.description}
-                            </td>
-                            <td className={getThemeClasses(
-                              `py-3 px-4 text-right font-medium transition-colors duration-300 ${isExpense ? "text-red-600 dark:text-red-400" : "text-green-600 dark:text-emerald-400"}`,
-                              isExpense ? "!text-[#dc2626]" : "!text-[#059669]"
-                            )}>
-                              {formatCurrency(row.amount)}
-                            </td>
-                            <td className={getThemeClasses("py-3 px-4 text-[#889063] dark:text-gray-200 transition-colors duration-300", "!text-[#6b7280]")}>
-                              {row.addedBy}
-                            </td>
-                          </tr>
-                        ))}
+                        .map((row, index) => {
+                          const rowIsExpense =
+                            row._kind ? row._kind === "expense" : isExpense;
+                          return (
+                            <tr
+                              key={index}
+                              className={getThemeClasses(
+                                `border-b border-[#324D3E]/5 dark:border-gray-700 ${
+                                  index % 2 === 0
+                                    ? "bg-white/40 dark:bg-gray-800/40"
+                                    : "bg-[#324D3E]/5 dark:bg-gray-700/50"
+                                } hover:bg-[#324D3E]/10 dark:hover:bg-gray-700 transition-colors duration-200`,
+                                `!border-[#FFC1CC]/20 ${
+                                  index % 2 === 0
+                                    ? "!bg-white/60"
+                                    : "!bg-[#FFC1CC]/10"
+                                } hover:!bg-[#FFC1CC]/20`
+                              )}
+                            >
+                              <td
+                                className={getThemeClasses(
+                                  "py-3 px-4 text-[#324D3E] dark:text-white transition-colors duration-300",
+                                  "!text-[#4c1d1d]"
+                                )}
+                              >
+                                {new Date(row.date).toLocaleDateString("id-ID")}
+                              </td>
+                              <td
+                                className={getThemeClasses(
+                                  "py-3 px-4 text-[#324D3E] dark:text-white transition-colors duration-300",
+                                  "!text-[#4c1d1d]"
+                                )}
+                              >
+                                {row.description}
+                              </td>
+                              <td
+                                className={getThemeClasses(
+                                  `py-3 px-4 text-right font-medium transition-colors duration-300 ${
+                                    rowIsExpense
+                                      ? "text-red-600 dark:text-red-400"
+                                      : "text-green-600 dark:text-emerald-400"
+                                  }`,
+                                  rowIsExpense
+                                    ? "!text-[#dc2626]"
+                                    : "!text-[#059669]"
+                                )}
+                              >
+                                {formatCurrency((row as AnyRecord).amount || 0)}
+                              </td>
+                              <td
+                                className={getThemeClasses(
+                                  "py-3 px-4 text-[#889063] dark:text-gray-200 transition-colors duration-300",
+                                  "!text-[#6b7280]"
+                                )}
+                              >
+                                {(row as AnyRecord).addedBy || ""}
+                              </td>
+                            </tr>
+                          );
+                        })}
                     </tbody>
                   </table>
                 </div>
               ) : (
-                <div className={getThemeClasses("text-center py-8 text-[#889063] dark:text-gray-200 transition-colors duration-300", "!text-[#6b7280]")}>
-                  {(isExpense ? (
-                    <TrendingDown className={getThemeClasses("h-12 w-12 mx-auto mb-4 opacity-50 text-[#324D3E] dark:text-white transition-colors duration-300", "!text-[#4c1d1d]")} />
+                <div
+                  className={getThemeClasses(
+                    "text-center py-8 text-[#889063] dark:text-gray-200 transition-colors duration-300",
+                    "!text-[#6b7280]"
+                  )}
+                >
+                  {isExpense ? (
+                    <TrendingDown
+                      className={getThemeClasses(
+                        "h-12 w-12 mx-auto mb-4 opacity-50 text-[#324D3E] dark:text-white transition-colors duration-300",
+                        "!text-[#4c1d1d]"
+                      )}
+                    />
                   ) : (
-                    <TrendingUp className={getThemeClasses("h-12 w-12 mx-auto mb-4 opacity-50 text-[#324D3E] dark:text-white transition-colors duration-300", "!text-[#4c1d1d]")} />
-                  ))}
+                    <TrendingUp
+                      className={getThemeClasses(
+                        "h-12 w-12 mx-auto mb-4 opacity-50 text-[#324D3E] dark:text-white transition-colors duration-300",
+                        "!text-[#4c1d1d]"
+                      )}
+                    />
+                  )}
                   <p>
                     {isExpense
                       ? "Tidak ada pengeluaran ditemukan untuk filter yang dipilih"
-                      : "Tidak ada pendapatan ditemukan untuk filter yang dipilih"}
+                      : isIncome
+                      ? "Tidak ada pendapatan ditemukan untuk filter yang dipilih"
+                      : "Tidak ada data ditemukan untuk filter yang dipilih"}
                   </p>
                 </div>
               )}

@@ -194,7 +194,7 @@ export default function SemuaInvestasiPage() {
                   "!bg-[#B5EAD7]/40 !text-[#059669]"
                 )}>
                   <TrendingUp className="h-3 w-3 sm:h-4 sm:w-4" />
-                  <span className="text-xs sm:text-sm font-medium">ROI {plant.roi.toFixed(1)}%</span>
+                  {/* <span className="text-xs sm:text-sm font-medium">ROI {plant.roi.toFixed(1)}%</span> */}
                 </div>
               </div>
 
@@ -227,7 +227,7 @@ export default function SemuaInvestasiPage() {
                 "bg-gradient-to-r from-green-500/10 to-[#324D3E]/10 dark:from-green-900/20 dark:to-gray-700/50 rounded-xl sm:rounded-2xl p-3 sm:p-4 mb-4 sm:mb-6 transition-colors duration-300",
                 "!bg-gradient-to-r !from-[#FFC1CC]/20 !to-[#C7CEEA]/20"
               )}>
-                <div className="text-center">
+                {/* <div className="text-center">
                   <p className={getThemeClasses(
                     "text-[#889063] dark:text-gray-200 text-xs sm:text-sm font-medium mb-1 transition-colors duration-300",
                     "!text-[#6b7280]"
@@ -236,7 +236,7 @@ export default function SemuaInvestasiPage() {
                     "text-xl sm:text-2xl font-bold text-[#324D3E] dark:text-white transition-colors duration-300",
                     "!text-[#4c1d1d]"
                   )}>{plant.roi.toFixed(1)}%</p>
-                </div>
+                </div> */}
               </div>
 
               {/* Footer - Stack on mobile, side by side on larger screens */}

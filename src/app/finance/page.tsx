@@ -406,7 +406,7 @@ export default function FinancePage() {
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
                 <SummaryCard title="Total Investasi" value={formatCurrency(totals.invest)} icon={<DollarSign className="h-5 w-5" />} colorClass="card-a" theme={theme} />
                 <SummaryCard title="Total Keuntungan" value={formatCurrency(totals.profit)} icon={<TrendingUp className="h-5 w-5" />} colorClass="card-b" theme={theme} />
-                <SummaryCard title="ROI" value={formatPercentage(totals.roi || 0)} icon={<BarChart3 className="h-5 w-5" />} colorClass="card-c" theme={theme} />
+                {/* <SummaryCard title="ROI" value={formatPercentage(totals.roi || 0)} icon={<BarChart3 className="h-5 w-5" />} colorClass="card-c" theme={theme} /> */}
                 <SummaryCard title="Jumlah Anggota" value={`${totals.investors}`} icon={<Users className="h-5 w-5" />} colorClass="card-d" theme={theme} />
               </div>
             )}
@@ -573,12 +573,12 @@ function PlantCard({ plant, getThemeClasses }: { plant: any; getThemeClasses: (b
             <h2 className={getThemeClasses("text-2xl font-bold text-[#324D3E] dark:text-white mb-4 capitalize group-hover:text-[#4C3D19] dark:group-hover:text-gray-200 transition-colors duration-300", "!text-[#4c1d1d] group-hover:!text-[#831843]")}>{plant.name}</h2>
             <div className="flex items-center gap-4 text-sm">
               <span className={getThemeClasses("flex items-center gap-2 text-[#889063] dark:text-gray-200 transition-colors duration-300", "!text-[#6b7280]")}>
-                <BarChart3 className={getThemeClasses("h-4 w-4 text-[#324D3E] dark:text-white", "!text-[#FFC1CC]")} />
-                ROI {formatPercentage(plant.roi || 0)}
+                {/* <BarChart3 className={getThemeClasses("h-4 w-4 text-[#324D3E] dark:text-white", "!text-[#FFC1CC]")} /> */}
+                {/* ROI {formatPercentage(plant.roi || 0)} */}
               </span>
               <span className={getThemeClasses("flex items-center gap-2 text-[#889063] dark:text-gray-200 transition-colors duration-300", "!text-[#6b7280]")}>
                 <TrendingUp className={getThemeClasses("h-4 w-4 text-[#4C3D19] dark:text-emerald-300", "!text-[#FFC1CC]")} />
-                {plant.instanceCount} pohon
+                {plant.instanceCount} 
               </span>
             </div>
           </div>
@@ -602,11 +602,11 @@ function PlantCard({ plant, getThemeClasses }: { plant: any; getThemeClasses: (b
         </div>
 
         <div className={getThemeClasses("flex items-center justify-between mb-8 p-4 bg-[#324D3E]/5 dark:bg-gray-600/50 rounded-2xl border border-[#324D3E]/10 dark:border-gray-600 transition-colors duration-300", "!bg-[#FFDEE9]/30 !border-[#FFC1CC]/30")}>
-          <div className="flex items-center gap-3">
+          {/* <div className="flex items-center gap-3">
             <BarChart3 className={getThemeClasses("h-5 w-5 text-blue-600 dark:text-blue-400", "!text-[#C7CEEA]")} />
             <span className={getThemeClasses("text-lg font-medium text-[#324D3E] dark:text-white transition-colors duration-300", "!text-[#4c1d1d]")}>ROI Aktual</span>
-          </div>
-          <div className={getThemeClasses("text-2xl font-bold text-blue-600 dark:text-blue-400 transition-colors duration-300", "!text-[#4c1d1d]")}>{formatPercentage(plant.roi || 0)}</div>
+          </div> */}
+          {/* <div className={getThemeClasses("text-2xl font-bold text-blue-600 dark:text-blue-400 transition-colors duration-300", "!text-[#4c1d1d]")}>{formatPercentage(plant.roi || 0)}</div> */}
         </div>
 
         <div className="flex items-center justify-between">

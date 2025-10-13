@@ -943,7 +943,7 @@ export default function MemberDetailPage(props: {
                   "!text-[#6b7280]"
                 )}
               >
-                ROI
+                {/* ROI */}
               </div>
               <div
                 className={getThemeClasses(
@@ -960,7 +960,7 @@ export default function MemberDetailPage(props: {
                 "!text-[#7c3aed]"
               )}
             >
-              {totals.roi.toFixed(1)}%
+              {/* {totals.roi.toFixed(1)}% */}
             </div>
           </motion.div>
         </div>

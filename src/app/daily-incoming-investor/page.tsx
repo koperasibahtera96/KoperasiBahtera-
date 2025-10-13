@@ -45,9 +45,9 @@ type DailyRow = {
   amountPaid: number;
   date?: string; // ISO
 
-  // ===== optional fields yang mungkin dipulangkan API backend =====
-  orderId?: string;       // untuk matching ke plantInstances.contractNumber
-  userId?: string;        // untuk ambil No Anggota (member code)
+  // optional dari backend
+  orderId?: string;
+  userId?: string;
 };
 
 const BRUTALIST_COLORS = [
@@ -64,14 +64,17 @@ const BRUTALIST_COLORS = [
 const PER_PAGE = 10;
 
 export default function DailyIncomingInvestorPage() {
-  // ===== INPUT STATES (tidak memicu fetch langsung) =====
   const now = new Date();
-  const [selectedYear, setSelectedYear] = useState<number>(now.getFullYear());
-  const [selectedMonth, setSelectedMonth] = useState<number | null>(null);
-  const [selectedDate, setSelectedDate] = useState<string>(""); // yyyy-mm-dd
-  const [q, setQ] = useState<string>(""); // input search (baru dieksekusi saat klik Cari di header tabel)
 
-  // ===== APPLIED STATES (yang memicu fetch) =====
+  // ==== INPUT (bank-style) ====
+  const [startDate, setStartDate] = useState<string>(""); // yyyy-mm-dd
+  const [endDate, setEndDate] = useState<string>("");     // yyyy-mm-dd
+  const [q, setQ] = useState<string>("");
+
+  // ==== APPLIED (yang memicu fetch) ====
+  // dukung 2 mode: range (baru) atau fallback ke year/month/day (lama)
+  const [appliedStart, setAppliedStart] = useState<string>(""); // yyyy-mm-dd
+  const [appliedEnd, setAppliedEnd] = useState<string>("");
   const [appliedYear, setAppliedYear] = useState<number>(now.getFullYear());
   const [appliedMonth, setAppliedMonth] = useState<number | null>(null);
   const [appliedDay, setAppliedDay] = useState<number | null>(null);
@@ -93,28 +96,32 @@ export default function DailyIncomingInvestorPage() {
   const isDark = (theme === "system" ? systemTheme : theme) === "dark";
   const [mounted, setMounted] = useState(false);
 
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  useEffect(() => setMounted(true), []);
 
-  // Helper function to get theme-aware classes
-  const getThemeClasses = (baseClasses: string, pinkClasses: string = "") => {
-    if (mounted && theme === "pink" && pinkClasses) {
-      return `${baseClasses} ${pinkClasses}`;
-    }
-    return baseClasses;
-  };
+  const getThemeClasses = (base: string, pink: string = "") =>
+    mounted && theme === "pink" && pink ? `${base} ${pink}` : base;
 
-  // ===== FETCH (hanya saat applied* berubah) =====
+  // ===== FETCH (prioritas: start/end; kalau kosong → year/month/day) =====
   const load = async () => {
     try {
       setLoading(true);
-      const params = new URLSearchParams({ year: String(appliedYear) });
-      if (appliedMonth) params.set("month", String(appliedMonth));
-      if (appliedDay) params.set("day", String(appliedDay));
+      const params = new URLSearchParams();
+
+      if (appliedStart || appliedEnd) {
+        // kirim start/end seperti laporan-pengeluaran
+        if (appliedStart) params.set("startDate", appliedStart);
+        if (appliedEnd) params.set("endDate", appliedEnd);
+      } else {
+        params.set("year", String(appliedYear));
+        if (appliedMonth) params.set("month", String(appliedMonth));
+        if (appliedDay) params.set("day", String(appliedDay));
+      }
+
       if (qApplied) params.set("q", qApplied.trim());
+
       const res = await fetch(`/api/daily-incoming-investor?${params.toString()}`);
       if (!res.ok) throw new Error("Failed to load daily incoming");
+
       const data = await res.json();
       setRows(data.rows || []);
       setSummary(
@@ -144,40 +151,42 @@ export default function DailyIncomingInvestorPage() {
   useEffect(() => {
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [appliedYear, appliedMonth, appliedDay, qApplied]);
+  }, [appliedStart, appliedEnd, appliedYear, appliedMonth, appliedDay, qApplied]);
 
-  // ===== APPLY FILTERS =====
-  const applyYearMonthDay = () => {
-    // ambil dari dropdown tahun/bulan + date (opsional)
-    if (selectedDate) {
-      const d = new Date(selectedDate + "T00:00:00");
-      setAppliedYear(d.getFullYear());
-      setAppliedMonth(d.getMonth() + 1);
-      setAppliedDay(d.getDate());
-    } else {
-      setAppliedYear(selectedYear);
-      setAppliedMonth(selectedMonth);
-      setAppliedDay(null);
-    }
-  };
-
-  const handleApplySearch = () => {
-    // tombol Cari di header tabel — menerapkan query saja
-    setQApplied(q);
-  };
-
+  // ====== APPLY (bank-style) ======
   const handleApplyFilters = () => {
-    // kalau ingin menerapkan Tahun/Bulan/Tanggal dari card filter
-    applyYearMonthDay();
+    // kalau dua-duanya kosong → all data (fallback ke year saja)
+    if (!startDate && !endDate) {
+      setAppliedStart("");
+      setAppliedEnd("");
+      setAppliedYear(now.getFullYear());
+      setAppliedMonth(null);
+      setAppliedDay(null);
+      return;
+    }
+
+    // jika hanya satu sisi diisi → anggap harian di tanggal itu
+    const s = startDate || endDate;
+    const e = endDate || startDate;
+
+    setAppliedStart(s);
+    setAppliedEnd(e);
+
+    // kosongkan versi year/month/day supaya load() pakai start/end
+    setAppliedYear(now.getFullYear());
+    setAppliedMonth(null);
+    setAppliedDay(null);
   };
+
+  const handleApplySearch = () => setQApplied(q);
 
   const handleReset = () => {
     const y = now.getFullYear();
-    setSelectedYear(y);
-    setSelectedMonth(null);
-    setSelectedDate("");
+    setStartDate("");
+    setEndDate("");
     setQ("");
-
+    setAppliedStart("");
+    setAppliedEnd("");
     setAppliedYear(y);
     setAppliedMonth(null);
     setAppliedDay(null);
@@ -194,7 +203,56 @@ export default function DailyIncomingInvestorPage() {
       .format(amount)
       .replace("IDR", "Rp");
 
-  // Pie: breakdown by paymentType (pakai totalAmount)
+  // ===== Label Periode (seperti laporan-pengeluaran) =====
+  const periodLabel = useMemo(() => {
+    const s = appliedStart ? new Date(appliedStart) : null;
+    const e = appliedEnd ? new Date(appliedEnd) : null;
+
+    if (s || e) {
+      // jika hanya satu sisi
+      if (s && !e) {
+        return `≥ ${s.toLocaleDateString("id-ID", {
+          day: "2-digit",
+          month: "short",
+          year: "numeric",
+        })}`;
+      }
+      if (!s && e) {
+        return `≤ ${e.toLocaleDateString("id-ID", {
+          day: "2-digit",
+          month: "short",
+          year: "numeric",
+        })}`;
+      }
+      if (s && e) {
+        // multi-year → tampil "YYYY & YYYY"
+        if (s.getFullYear() !== e.getFullYear()) {
+          return `${s.getFullYear()} & ${e.getFullYear()}`;
+        }
+        // same year → tampil range tanggal
+        return `${s.toLocaleDateString("id-ID", {
+          day: "2-digit",
+          month: "short",
+          year: "numeric",
+        })} – ${e.toLocaleDateString("id-ID", {
+          day: "2-digit",
+          month: "short",
+          year: "numeric",
+        })}`;
+      }
+    }
+
+    // fallback ke label lama (year/month/day)
+    if (appliedDay && appliedMonth && appliedYear) {
+      return new Date(appliedYear, appliedMonth - 1, appliedDay).toLocaleDateString("id-ID");
+    }
+    if (appliedMonth) {
+      return `${new Date(appliedYear, appliedMonth - 1, 1).toLocaleDateString("id-ID", { month: "long" })} ${appliedYear}`;
+    }
+    return "Semua";
+  }, [appliedStart, appliedEnd, appliedYear, appliedMonth, appliedDay]);
+
+  // ===== Pie (paymentType) =====
   const pieData = useMemo(() => {
     const byType: Record<string, number> = {};
     for (const r of rows) {
@@ -208,7 +266,7 @@ export default function DailyIncomingInvestorPage() {
     }));
   }, [rows]);
 
-  // Line trend bulanan (gunakan appliedYear untuk label)
+  // ===== Line trend bulanan (pakai appliedYear untuk label bulan) =====
   const monthlyTrend = useMemo(() => {
     const m = Array.from({ length: 12 }, (_, i) => i + 1).map((mo) => {
       const sum = rows
@@ -239,23 +297,11 @@ export default function DailyIncomingInvestorPage() {
   const goPrev = () => setPage((p) => Math.max(1, p - 1));
   const goNext = () => setPage((p) => Math.min(totalPages, p + 1));
 
-  // Label periode berdasarkan applied states
-  const periodLabel = useMemo(() => {
-    if (appliedDay && appliedMonth && appliedYear) {
-      return new Date(appliedYear, appliedMonth - 1, appliedDay).toLocaleDateString("id-ID");
-    }
-    if (appliedMonth) {
-      return `${new Date(appliedYear, appliedMonth - 1, 1).toLocaleDateString("id-ID", { month: "long" })} ${appliedYear}`;
-    }
-    return String(appliedYear);
-  }, [appliedYear, appliedMonth, appliedDay]);
-
   // =========================
   // ======== EXPORT =========
   // =========================
   const handleExport = async () => {
     try {
-      // agregasi bulanan untuk bagian "Pemasukan Bulanan"
       const monthlyAgg = monthlyTrend.map((t, idx) => {
         const trCount = rows.filter((r) =>
           r.date ? new Date(r.date).getMonth() === idx : false
@@ -263,31 +309,6 @@ export default function DailyIncomingInvestorPage() {
         return { monthName: t.month, value: t.expenses, transactions: trCount };
       });
 
-      // ========== Ambil helper No Anggota + Kode Blok/Paket + Tanaman/Produk ==========
-      const uniq = <T,>(arr: T[]) => Array.from(new Set(arr.filter(Boolean))) as T[];
-      const userIds = uniq(rows.map(r => r.userId || r.investorId)); // tetap kirim—tidak dipakai di tabel
-      const orderIds = uniq(rows.map(r => r.orderId || r.investmentId));
-
-  
-      let plantByOrder: Record<string, { kavling?: string; productName?: string }> = {};
-
-      try {
-        const helperRes = await fetch("/api/finance/daily-export-helper", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ userIds, orderIds }),
-        });
-        if (helperRes.ok) {
-          const helperJson = await helperRes.json();
-          plantByOrder = helperJson?.plantByOrder || {};
-        } else {
-          console.warn("[daily-export] helper API not ok:", helperRes.status);
-        }
-      } catch (err) {
-        console.warn("[daily-export] helper API failed:", err);
-      }
-
-      // ========== Bangun HTML -> Excel ==========
       let html = `
       <html>
       <head>
@@ -300,21 +321,8 @@ export default function DailyIncomingInvestorPage() {
           .header { font-size: 18px; font-weight: bold; margin: 20px 0 10px 0; }
           .title { font-size: 24px; font-weight: bold; margin-bottom: 10px; }
           .period { font-size: 14px; margin-bottom: 20px; color: #666; }
-
-          /* Bar biru dengan garis untuk detail harian */
-          .bluebar { 
-            background: #6ea7d8; 
-            color: #0b2239; 
-            font-weight: 700;
-            text-align: center;
-            border: 2px solid #0b2239;
-          }
-          .bluebar th {
-            background: #6ea7d8 !important;
-            color: #0b2239 !important;
-            border: 2px solid #0b2239 !important;
-            font-weight: 700 !important;
-          }
+          .bluebar { background: #6ea7d8; color: #0b2239; font-weight: 700; text-align: center; border: 2px solid #0b2239; }
+          .bluebar th { background: #6ea7d8 !important; color: #0b2239 !important; border: 2px solid #0b2239 !important; font-weight: 700 !important; }
           .tight th, .tight td { border: 1px solid #0b2239; }
         </style>
       </head>
@@ -324,7 +332,6 @@ export default function DailyIncomingInvestorPage() {
       html += `<div class="title">Daily Incoming Investor</div>`;
       html += `<div class="period">Periode: ${periodLabel}</div>`;
 
-      // ====== RINGKASAN ======
       html += `<div class="header">RINGKASAN</div>`;
       html += `<table class="tight">`;
       html += `<tr><th>Keterangan</th><th>Nilai</th></tr>`;
@@ -333,7 +340,6 @@ export default function DailyIncomingInvestorPage() {
       html += `<tr><td>Total pemasukan belum dibayar (Sisa cicilan)</td><td>Rp ${summary.totalBelumDibayar.toLocaleString("id-ID")}</td></tr>`;
       html += `</table>`;
 
-      // ====== PEMASUKAN BULANAN ======
       html += `<div class="header">PEMASUKAN BULANAN ${appliedYear}</div>`;
       html += `<table class="tight">`;
       html += `<tr><th>Bulan</th><th>Total</th><th>Jumlah Transaksi</th></tr>`;
@@ -342,7 +348,6 @@ export default function DailyIncomingInvestorPage() {
       });
       html += `</table>`;
 
-      // ====== DETAIL TARIKAN REPOT HARIAN (tanpa No Anggota) ======
       html += `<table>`;
       html += `<tr class="bluebar"><th colspan="9">Detail Tarikan Repot Harian</th></tr>`;
       html += `<tr class="tight">
@@ -363,23 +368,16 @@ export default function DailyIncomingInvestorPage() {
       let no = 1;
       for (const r of sorted) {
         const tanggal = r.date ? new Date(r.date).toLocaleDateString("id-ID", { day: "2-digit", month: "short" }) : "-";
-
-        const keyOrder = (r.orderId || r.investmentId || "").trim();
-        const plant = plantByOrder[keyOrder] || {};
-        const kav = plant.kavling || "-";
-        const produk = plant.productName || r.productName || "-";
-
         const jumlah = `Rp ${Number(r.totalAmount || 0).toLocaleString("id-ID")}`;
-        const status = "Lunas"; // sesuai permintaan, semua "Lunas"
-
+        const status = "Lunas";
         html += `<tr class="tight">
           <td>${no++}</td>
           <td>${tanggal}</td>
           <td>${r.investorName || "-"}</td>
-          <td>${kav}</td>
+          <td>-</td>
           <td>${r.investmentId || "-"}</td>
           <td>${(r.paymentType || "").charAt(0).toUpperCase() + (r.paymentType || "").slice(1)}</td>
-          <td>${produk}</td>
+          <td>${r.productName || "-"}</td>
           <td>${jumlah}</td>
           <td>${status}</td>
         </tr>`;
@@ -460,7 +458,7 @@ export default function DailyIncomingInvestorPage() {
           </div>
         </motion.div>
 
-        {/* ===== FILTER (Tahun/Bulan/Tanggal + Reset) ===== */}
+        {/* ===== FILTER: Tanggal Awal / Tanggal Akhir (ala bank) ===== */}
         <Card className={getThemeClasses("bg-white/90 dark:bg-gray-800/90 mb-6 border border-[#324D3E]/10 dark:border-gray-700 transition-colors duration-300", "!bg-white/80 !border-[#FFC1CC]/30")}>
           <CardHeader>
             <CardTitle className={getThemeClasses("text-black dark:text-white flex items-center gap-2 transition-colors duration-300", "!text-[#4c1d1d]")}>
@@ -470,59 +468,42 @@ export default function DailyIncomingInvestorPage() {
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              {/* Tahun */}
+              {/* Tanggal Awal */}
               <div>
                 <label className={getThemeClasses("block text-sm font-medium text-black dark:text-white mb-2", "!text-[#4c1d1d]")}>
-                  Tahun
-                </label>
-                <div className="relative">
-                  <select
-                    value={selectedYear}
-                    onChange={(e) => setSelectedYear(Number(e.target.value))}
-                    className={getThemeClasses("w-full border bg-white/90 dark:bg-gray-700/80 border-gray-200 dark:border-gray-600 text-black dark:text-white px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none cursor-pointer", "!bg-white/90 !border-[#FFC1CC]/30 !text-[#4c1d1d] focus:!ring-[#FFC1CC]/20 focus:!border-[#FFC1CC]")}
-                  >
-                    {Array.from({ length: 6 }, (_, i) => now.getFullYear() - i).map((y) => (
-                      <option key={y} value={y}>{y}</option>
-                    ))}
-                  </select>
-                  <ChevronDown className={getThemeClasses("absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 dark:text-gray-300 pointer-events-none", "!text-[#6b7280]")} />
-                </div>
-              </div>
-
-              {/* Bulan */}
-              <div>
-                <label className={getThemeClasses("block text-sm font-medium text-black dark:text-white mb-2", "!text-[#4c1d1d]")}>
-                  Bulan
-                </label>
-                <div className="relative">
-                  <select
-                    value={selectedMonth ?? ""}
-                    onChange={(e) => setSelectedMonth(e.target.value ? Number(e.target.value) : null)}
-                    className={getThemeClasses("w-full border bg-white/90 dark:bg-gray-700/80 border-gray-200 dark:border-gray-600 text-black dark:text-white px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 appearance-none cursor-pointer", "!bg-white/90 !border-[#FFC1CC]/30 !text-[#4c1d1d] focus:!ring-[#FFC1CC]/20 focus:!border-[#FFC1CC]")}
-                  >
-                    <option value="">Semua Bulan</option>
-                    {Array.from({ length: 12 }, (_, i) => (
-                      <option key={i + 1} value={i + 1}>
-                        {new Date(2025, i, 1).toLocaleDateString("id-ID", { month: "long" })}
-                      </option>
-                    ))}
-                  </select>
-                  <ChevronDown className={getThemeClasses("absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 dark:text-gray-300 pointer-events-none", "!text-[#6b7280]")} />
-                </div>
-              </div>
-
-              {/* Tanggal */}
-              <div>
-                <label className={getThemeClasses("block text-sm font-medium text-black dark:text-white mb-2", "!text-[#4c1d1d]")}>
-                  Tanggal (opsional)
+                  Tanggal Awal
                 </label>
                 <input
                   type="date"
-                  value={selectedDate}
-                  onChange={(e) => setSelectedDate(e.target.value)}
+                  value={startDate}
+                  onChange={(e) => setStartDate(e.target.value)}
                   className={getThemeClasses("w-full border bg-white/90 dark:bg-gray-700/80 border-gray-200 dark:border-gray-600 text-black dark:text-white px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500", "!bg-white/90 !border-[#FFC1CC]/30 !text-[#4c1d1d] focus:!ring-[#FFC1CC]/20 focus:!border-[#FFC1CC]")}
                 />
               </div>
+
+              {/* Tanggal Akhir */}
+              <div>
+                <label className={getThemeClasses("block text-sm font-medium text-black dark:text-white mb-2", "!text-[#4c1d1d]")}>
+                  Tanggal Akhir
+                </label>
+                <input
+                  type="date"
+                  value={endDate}
+                  onChange={(e) => setEndDate(e.target.value)}
+                  className={getThemeClasses("w-full border bg-white/90 dark:bg-gray-700/80 border-gray-200 dark:border-gray-600 text-black dark:text-white px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500", "!bg-white/90 !border-[#FFC1CC]/30 !text-[#4c1d1d] focus:!ring-[#FFC1CC]/20 focus:!border-[#FFC1CC]")}
+                />
+              </div>
+
+              {/* Spacer untuk grid 4 kolom (biar layout rapi) */}
+              {/* <div>
+                <label className="block text-sm font-medium opacity-0">.</label>
+                <div className="relative">
+                  <select disabled className={getThemeClasses("w-full border bg-white/60 dark:bg-gray-700/50 border-dashed border-gray-200 dark:border-gray-600 text-gray-400 px-3 py-2 rounded-lg", "!bg-white/60 !border-[#FFC1CC]/30")}>
+                    <option>—</option>
+                  </select>
+                  <ChevronDown className={getThemeClasses("absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300", "!text-[#e5e7eb]")} />
+                </div>
+              </div> */}
 
               {/* Tombol Apply + Reset */}
               <div className="flex items-end gap-2">
@@ -709,7 +690,7 @@ export default function DailyIncomingInvestorPage() {
           </Card>
         </div>
 
-        {/* ===== Detail + Search di Header + Pagination ===== */}
+        {/* ===== Detail + Search + Pagination ===== */}
         <Card className={getThemeClasses("bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl border-[#324D3E]/10 dark:border-gray-700 shadow-lg transition-colors duration-300", "!bg-white/80 !border-[#FFC1CC]/30")}>
           <CardHeader>
             <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
@@ -723,7 +704,6 @@ export default function DailyIncomingInvestorPage() {
                 </div>
               </div>
 
-              {/* === Search investment ID dipindah ke sini === */}
               <div className="w-full md:w-auto flex gap-2">
                 <input
                   type="text"
