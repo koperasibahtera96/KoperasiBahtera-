@@ -5,7 +5,7 @@ import mongoose from "mongoose";
 
 export async function POST(req: NextRequest) {
   let targetConnection: mongoose.Connection | null = null;
-  
+
   try {
     const session = await getServerSession(authOptions);
 
@@ -17,8 +17,10 @@ export async function POST(req: NextRequest) {
     }
 
     const formData = await req.formData();
-    const backupFile = formData.get('backupFile') as File;
-    const targetConnectionString = formData.get('targetConnectionString') as string;
+    const backupFile = formData.get("backupFile") as File;
+    const targetConnectionString = formData.get(
+      "targetConnectionString"
+    ) as string;
 
     if (!backupFile) {
       return NextResponse.json(
@@ -37,7 +39,7 @@ export async function POST(req: NextRequest) {
     // Read and parse the backup file
     const backupText = await backupFile.text();
     let backupData;
-    
+
     try {
       backupData = JSON.parse(backupText);
     } catch {
@@ -47,7 +49,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    if (!backupData.data || typeof backupData.data !== 'object') {
+    if (!backupData.data || typeof backupData.data !== "object") {
       return NextResponse.json(
         { error: "Invalid backup file format - missing data section" },
         { status: 400 }
@@ -57,18 +59,23 @@ export async function POST(req: NextRequest) {
     // Connect to target database
     try {
       targetConnection = mongoose.createConnection(targetConnectionString);
-      
+
       await new Promise((resolve, reject) => {
-        targetConnection!.once('open', resolve);
-        targetConnection!.once('error', reject);
-        setTimeout(() => reject(new Error('Connection timeout')), 10000);
+        targetConnection!.once("open", resolve);
+        targetConnection!.once("error", reject);
+        setTimeout(() => reject(new Error("Connection timeout")), 10000);
       });
 
-      console.log(`Connected to target database: ${targetConnection.db?.databaseName}`);
+      console.log(
+        `Connected to target database: ${targetConnection.db?.databaseName}`
+      );
     } catch (error) {
       console.error("Failed to connect to target database:", error);
       return NextResponse.json(
-        { error: "Failed to connect to target database. Please check your connection string." },
+        {
+          error:
+            "Failed to connect to target database. Please check your connection string.",
+        },
         { status: 400 }
       );
     }
@@ -98,26 +105,38 @@ export async function POST(req: NextRequest) {
       }
 
       try {
-        console.log(`Restoring collection: ${collectionName} (${documents.length} documents)`);
-        
+        console.log(
+          `Restoring collection: ${collectionName} (${documents.length} documents)`
+        );
+
         // Drop existing collection to ensure clean restore
         try {
           await targetDb.collection(collectionName).drop();
           console.log(`Dropped existing collection: ${collectionName}`);
         } catch {
           // Collection might not exist, that's fine
-          console.log(`Collection ${collectionName} didn't exist or couldn't be dropped`);
+          console.log(
+            `Collection ${collectionName} didn't exist or couldn't be dropped`
+          );
         }
 
         // Insert all documents
         if (documents.length > 0) {
-          const result = await targetDb.collection(collectionName).insertMany(documents, { ordered: false });
+          const result = await targetDb
+            .collection(collectionName)
+            .insertMany(documents, { ordered: false });
           restoredCollections[collectionName] = result.insertedCount;
-          console.log(`Restored ${result.insertedCount} documents to ${collectionName}`);
+          console.log(
+            `Restored ${result.insertedCount} documents to ${collectionName}`
+          );
         }
       } catch (error) {
         console.error(`Error restoring collection ${collectionName}:`, error);
-        errors.push(`Collection ${collectionName}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        errors.push(
+          `Collection ${collectionName}: ${
+            error instanceof Error ? error.message : "Unknown error"
+          }`
+        );
         restoredCollections[collectionName] = 0;
       }
     }
@@ -125,26 +144,30 @@ export async function POST(req: NextRequest) {
     // Close target connection
     await targetConnection.close();
 
-    const totalRestored = Object.values(restoredCollections).reduce((sum, count) => sum + count, 0);
+    const totalRestored = Object.values(restoredCollections).reduce(
+      (sum, count) => sum + count,
+      0
+    );
 
     const response = {
       success: true,
-      message: `Database restore completed. ${totalRestored} documents restored across ${Object.keys(restoredCollections).length} collections.`,
+      message: `Database restore completed. ${totalRestored} documents restored across ${
+        Object.keys(restoredCollections).length
+      } collections.`,
       details: {
         targetDatabase: targetDb.databaseName,
         restoredCollections,
         totalDocuments: totalRestored,
         errors: errors.length > 0 ? errors : undefined,
         restoredAt: new Date().toISOString(),
-        restoredBy: session.user?.email || 'admin'
-      }
+        restoredBy: session.user?.email || "admin",
+      },
     };
 
     return NextResponse.json(response);
-
   } catch (error) {
     console.error("Database restore error:", error);
-    
+
     // Close target connection if it was created
     if (targetConnection) {
       try {
@@ -153,7 +176,7 @@ export async function POST(req: NextRequest) {
         console.error("Error closing target connection:", closeError);
       }
     }
-    
+
     return NextResponse.json(
       { error: "Failed to restore database backup" },
       { status: 500 }
