@@ -424,6 +424,7 @@ const translations = {
     "payments.cards.paymentCompleted": "Pembayaran Selesai",
     "payments.cards.fullPayment": "Pembayaran Penuh",
     "payments.cards.contractId": "Contract ID:",
+    "payments.contract.download": "Unduh Kontrak",
     "payments.empty.noPayments": "Belum ada pembayaran paket",
     "payments.empty.startPurchase": "Mulai pembelian sekarang!",
     "payments.empty.viewPackages": "Lihat Paket Tanaman",
@@ -925,6 +926,7 @@ const translations = {
     "payments.form.contractInfo": "Contract Information",
     "payments.form.product": "Product:",
     "payments.form.contractId": "Contract ID:",
+
     "payments.form.type": "Type:",
     "payments.form.typeInstallment": "Installment",
     "payments.form.typeFullPayment": "Full Payment",
@@ -960,6 +962,7 @@ const translations = {
     "payments.cards.paymentCompleted": "Payment Completed",
     "payments.cards.fullPayment": "Full Payment",
     "payments.cards.contractId": "Contract ID:",
+    "payments.contract.download": "Download Contract",
     "payments.empty.noPayments": "No package payments yet",
     "payments.empty.startPurchase": "Start purchasing now!",
     "payments.empty.viewPackages": "View Plant Packages",

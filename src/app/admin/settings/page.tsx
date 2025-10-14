@@ -4,9 +4,14 @@ import { AdminLayout } from "@/components/admin/AdminLayout";
 import { motion } from "framer-motion";
 import {
   CheckCircle,
+  ChevronDown,
+  ChevronRight,
+  Database,
+  Download,
   Eye,
   EyeOff,
   Hash,
+  Lock,
   Mail,
   MessageCircle,
   Monitor,
@@ -14,9 +19,12 @@ import {
   Phone,
   Save,
   Settings,
+  Shield,
   Sun,
   TestTube,
   Trash2,
+  Unlock,
+  Upload,
   XCircle,
 } from "lucide-react";
 import { useTheme } from "next-themes";
@@ -66,6 +74,28 @@ export default function AdminSettingsPage() {
   const [whatsappResult, setWhatsappResult] = useState<{
     type: "success" | "error";
     message: string;
+  } | null>(null);
+
+  // Backup Database states
+  const [showBackupSection, setShowBackupSection] = useState(false);
+  const [backupUnlocked, setBackupUnlocked] = useState(false);
+  const [backupResult, setBackupResult] = useState<{
+    type: "success" | "error";
+    message: string;
+  } | null>(null);
+  const [isBackingUp, setIsBackingUp] = useState(false);
+  
+  // Lainnya section state
+  const [showLainnyaSection, setShowLainnyaSection] = useState(false);
+  
+  // Restore functionality states
+  const [restoreFile, setRestoreFile] = useState<File | null>(null);
+  const [restoreConnectionString, setRestoreConnectionString] = useState("mongodb://localhost:27017/investasi-hijau-local");
+  const [isRestoring, setIsRestoring] = useState(false);
+  const [restoreResult, setRestoreResult] = useState<{
+    type: "success" | "error";
+    message: string;
+    details?: any;
   } | null>(null);
 
   useEffect(() => {
@@ -355,6 +385,107 @@ export default function AdminSettingsPage() {
       });
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleDatabaseBackup = async () => {
+    setIsBackingUp(true);
+    setBackupResult(null);
+
+    try {
+      const response = await fetch("/api/admin/backup/database", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (response.ok) {
+        // Get the blob data
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        
+        // Create download link
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `database-backup-${new Date().toISOString().split('T')[0]}.json`;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        window.URL.revokeObjectURL(url);
+
+        setBackupResult({
+          type: "success",
+          message: "Database berhasil di-backup dan didownload!",
+        });
+
+        // Reset states after successful backup
+        setTimeout(() => {
+          setBackupUnlocked(false);
+          setShowBackupSection(false);
+        }, 3000);
+      } else {
+        const data = await response.json();
+        setBackupResult({
+          type: "error",
+          message: data.error || "Gagal membuat backup database",
+        });
+      }
+    } catch (error) {
+      console.error("Error backing up database:", error);
+      setBackupResult({
+        type: "error",
+        message: "Terjadi kesalahan saat backup database",
+      });
+    } finally {
+      setIsBackingUp(false);
+    }
+  };
+
+  const handleDatabaseRestore = async () => {
+    if (!restoreFile || !restoreConnectionString) {
+      setRestoreResult({
+        type: "error",
+        message: "Please select a backup file and provide connection string"
+      });
+      return;
+    }
+
+    setIsRestoring(true);
+    setRestoreResult(null);
+
+    try {
+      const formData = new FormData();
+      formData.append('backupFile', restoreFile);
+      formData.append('targetConnectionString', restoreConnectionString);
+
+      const response = await fetch("/api/admin/backup/restore", {
+        method: "POST",
+        body: formData,
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setRestoreResult({
+          type: "success",
+          message: data.message,
+          details: data.details
+        });
+      } else {
+        setRestoreResult({
+          type: "error",
+          message: data.error || "Failed to restore database backup",
+        });
+      }
+    } catch (error) {
+      console.error("Error restoring database:", error);
+      setRestoreResult({
+        type: "error",
+        message: "Terjadi kesalahan saat restore database",
+      });
+    } finally {
+      setIsRestoring(false);
     }
   };
 
@@ -902,7 +1033,7 @@ export default function AdminSettingsPage() {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
+          transition={{ delay: 0.22 }}
           className={getThemeClasses("bg-blue-50/80 dark:bg-blue-900/20 backdrop-blur-sm rounded-2xl p-4 sm:p-6 shadow-lg border border-blue-200/50 dark:border-blue-700/50 transition-colors duration-300", "!bg-[#B5EAD7]/30 !border-[#FFC1CC]/30")}
         >
           <h3 className={getThemeClasses("text-base sm:text-lg font-semibold text-blue-800 dark:text-blue-300 mb-3 transition-colors duration-300", "!text-[#4c1d1d]")}>
@@ -967,7 +1098,306 @@ export default function AdminSettingsPage() {
                 </li>
               </ul>
             </div>
+
+            <div>
+              <h4 className={getThemeClasses("font-semibold text-blue-800 dark:text-blue-200 mb-2 text-sm sm:text-base transition-colors duration-300", "!text-[#4c1d1d]")}>                💾 Backup Database:
+              </h4>
+              <ol className="list-decimal list-inside space-y-1 text-xs sm:text-sm ml-2 sm:ml-4">
+                <li>Klik &quot;Tampilkan Opsi Backup&quot; untuk mengakses fitur</li>
+                <li>Klik tombol &quot;Unlock Backup&quot; sebanyak 3 kali untuk keamanan</li>
+                <li>Klik &quot;Backup Database&quot; untuk download file JSON</li>
+              </ol>
+              <p className={getThemeClasses("text-xs mt-2 bg-blue-50 dark:bg-blue-800/30 p-2 rounded leading-relaxed transition-colors duration-300", "!bg-[#FFC1CC]/20 !text-[#4c1d1d]")}>                <strong>🔒 Keamanan:</strong> Fitur backup dilindungi multi-step dan hanya untuk admin. Backup akan mengekspor database aplikasi saat ini dalam format JSON yang aman.
+              </p>
+            </div>
           </div>
+        </motion.div>
+
+        {/* Lainnya Section */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.25 }}
+          className={getThemeClasses("bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl p-4 sm:p-6 shadow-lg border border-[#324D3E]/10 dark:border-gray-700 transition-colors duration-300", "!bg-white/80 !border-[#FFC1CC]/30")}
+        >
+          <motion.button
+            whileHover={{ scale: 1.01 }}
+            whileTap={{ scale: 0.99 }}
+            onClick={() => setShowLainnyaSection(!showLainnyaSection)}
+            className="w-full flex items-center justify-between p-2 text-left focus:outline-none"
+          >
+            <span className={getThemeClasses("text-lg sm:text-xl font-semibold text-[#324D3E] dark:text-white transition-colors duration-300", "!text-[#4c1d1d]")}>
+              Lainnya
+            </span>
+            {showLainnyaSection ? (
+              <ChevronDown className={getThemeClasses("w-5 h-5 text-[#324D3E] dark:text-white transition-colors duration-300", "!text-[#4c1d1d]")} />
+            ) : (
+              <ChevronRight className={getThemeClasses("w-5 h-5 text-[#324D3E] dark:text-white transition-colors duration-300", "!text-[#4c1d1d]")} />
+            )}
+          </motion.button>
+
+          {showLainnyaSection && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.3 }}
+              className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-600 space-y-6"
+            >
+              {/* Database Backup Configuration */}
+              <div>
+                <div className="flex items-start sm:items-center gap-3 mb-4 sm:mb-6">
+                  <div className={getThemeClasses("p-2 sm:p-3 bg-orange-100 rounded-xl flex-shrink-0", "!bg-[#FFE4E1]/30")}>
+                    <Database className={getThemeClasses("w-5 h-5 sm:w-6 sm:h-6 text-orange-600", "!text-[#4c1d1d]")} />
+                  </div>
+                  <div>
+                    <h3 className={getThemeClasses("text-lg sm:text-xl font-semibold text-[#324D3E] dark:text-white transition-colors duration-300", "!text-[#4c1d1d]")}>
+                      Backup Database
+                    </h3>
+                    <p className={getThemeClasses("text-sm sm:text-base text-[#889063] dark:text-gray-400 transition-colors duration-300", "!text-[#6b7280]")}>
+                      Backup seluruh data sistem untuk keamanan data
+                    </p>
+                  </div>
+                </div>
+
+                {!showBackupSection ? (
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => setShowBackupSection(true)}
+                    className={getThemeClasses("flex items-center justify-center gap-2 px-4 sm:px-6 py-3 bg-orange-600 text-white rounded-xl font-medium hover:bg-orange-700 transition-colors text-sm sm:text-base", "!bg-gradient-to-r !from-[#FFE4E1] !to-[#FFF0F5] !text-[#4c1d1d] hover:!from-[#FFF0F5] hover:!to-[#FFF5BA]")}
+                  >
+                    <Shield className="w-5 h-5" />
+                    Tampilkan Opsi Backup
+                  </motion.button>
+                ) : (
+                  <div className="space-y-4">
+                    <div className={getThemeClasses("p-4 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-700 rounded-xl transition-colors duration-300", "!bg-[#FFE4E1]/30 !border-[#FFC1CC]/30")}>
+                      <div className="flex items-start gap-3">
+                        <Shield className={getThemeClasses("w-5 h-5 text-orange-600 mt-0.5 flex-shrink-0", "!text-[#4c1d1d]")} />
+                        <div>
+                          <h4 className={getThemeClasses("font-semibold text-orange-800 dark:text-orange-300 mb-2 text-sm sm:text-base transition-colors duration-300", "!text-[#4c1d1d]")}>
+                            ⚠️ Peringatan Keamanan
+                          </h4>
+                          <p className={getThemeClasses("text-orange-700 dark:text-orange-300 text-xs sm:text-sm transition-colors duration-300", "!text-[#4c1d1d]")}>
+                            Backup database akan mengunduh seluruh data sistem termasuk data sensitif. 
+                            Pastikan file backup disimpan di tempat yang aman dan hanya diakses oleh admin yang berwenang.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {!backupUnlocked ? (
+                      <div className="text-center space-y-4">
+                        <p className={getThemeClasses("text-sm text-gray-600 dark:text-gray-400 transition-colors duration-300", "!text-[#6b7280]")}>
+                          Untuk mengaktifkan fungsi backup, klik tombol berikut 3 kali
+                        </p>
+                        <motion.button
+                          whileHover={{ scale: 1.02 }}
+                          whileTap={{ scale: 0.98 }}
+                          onClick={() => {
+                            const clickCount = parseInt(sessionStorage.getItem('backupClicks') || '0') + 1;
+                            sessionStorage.setItem('backupClicks', clickCount.toString());
+                            
+                            if (clickCount >= 3) {
+                              setBackupUnlocked(true);
+                              sessionStorage.removeItem('backupClicks');
+                            }
+                          }}
+                          className={getThemeClasses("flex items-center justify-center gap-2 px-4 sm:px-6 py-3 bg-gray-600 text-white rounded-xl font-medium hover:bg-gray-700 transition-colors text-sm sm:text-base mx-auto", "!bg-gradient-to-r !from-[#D1D5DB] !to-[#E5E7EB] !text-[#4c1d1d] hover:!from-[#E5E7EB] hover:!to-[#F3F4F6]")}
+                        >
+                          <Lock className="w-5 h-5" />
+                          Unlock Backup ({parseInt(sessionStorage.getItem('backupClicks') || '0')}/3)
+                        </motion.button>
+                      </div>
+                    ) : (
+                      <div className="space-y-4">
+                        <div className={getThemeClasses("p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-700 rounded-xl transition-colors duration-300", "!bg-[#B5EAD7]/30 !border-[#FFC1CC]/30")}>
+                          <div className="flex items-center gap-3">
+                            <Unlock className={getThemeClasses("w-5 h-5 text-green-600", "!text-[#4c1d1d]")} />
+                            <p className={getThemeClasses("text-green-700 dark:text-green-300 text-sm sm:text-base font-medium transition-colors duration-300", "!text-[#4c1d1d]")}>
+                              Fungsi backup telah aktif. Pilih sumber database dan klik tombol di bawah untuk memulai backup.
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Database Source Selection - Simple message */}
+                        <div className="space-y-4">
+                          <div className={getThemeClasses("p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 rounded-xl transition-colors duration-300", "!bg-[#B5EAD7]/30 !border-[#FFC1CC]/30")}>
+                            <div className="flex items-center gap-3">
+                              <Database className={getThemeClasses("w-5 h-5 text-blue-600", "!text-[#4c1d1d]")} />
+                              <p className={getThemeClasses("text-blue-700 dark:text-blue-300 text-sm sm:text-base font-medium transition-colors duration-300", "!text-[#4c1d1d]")}>
+                                Backup akan mengekspor database aplikasi saat ini sebagai file JSON
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="flex flex-col sm:flex-row gap-3">
+                          <motion.button
+                            whileHover={{ scale: 1.02 }}
+                            whileTap={{ scale: 0.98 }}
+                            onClick={handleDatabaseBackup}
+                            disabled={isBackingUp}
+                            className={getThemeClasses("flex items-center justify-center gap-2 px-4 sm:px-6 py-3 bg-red-600 text-white rounded-xl font-medium hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base", "!bg-gradient-to-r !from-[#FF6B8A] !to-[#FF9FAB] !text-white hover:!from-[#FF9FAB] hover:!to-[#FFB3C6]")}
+                          >
+                            <Download className="w-5 h-5" />
+                            {isBackingUp ? "Memproses Backup..." : "Backup Database"}
+                          </motion.button>
+
+                          <motion.button
+                            whileHover={{ scale: 1.02 }}
+                            whileTap={{ scale: 0.98 }}
+                            onClick={() => {
+                              setBackupUnlocked(false);
+                              setShowBackupSection(false);
+                              sessionStorage.removeItem('backupClicks');
+                            }}
+                            className={getThemeClasses("flex items-center justify-center gap-2 px-4 sm:px-6 py-3 bg-gray-500 text-white rounded-xl font-medium hover:bg-gray-600 transition-colors text-sm sm:text-base", "!bg-gradient-to-r !from-[#D1D5DB] !to-[#E5E7EB] !text-[#4c1d1d] hover:!from-[#E5E7EB] hover:!to-[#F3F4F6]")}
+                          >
+                            <XCircle className="w-5 h-5" />
+                            Batal
+                          </motion.button>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Backup Result Messages */}
+                    {backupResult && (
+                      <motion.div
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className={`p-4 rounded-xl flex items-center gap-3 transition-colors duration-300 ${
+                          backupResult.type === "success"
+                            ? "bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-700 text-green-800 dark:text-green-300"
+                            : "bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 text-red-800 dark:text-red-300"
+                        }`}
+                      >
+                        {backupResult.type === "success" ? (
+                          <CheckCircle className="w-5 h-5" />
+                        ) : (
+                          <XCircle className="w-5 h-5" />
+                        )}
+                        <span>{backupResult.message}</span>
+                      </motion.div>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Database Restore Configuration */}
+              <div className="pt-6 border-t border-gray-200 dark:border-gray-600">
+                <div className="flex items-start sm:items-center gap-3 mb-4 sm:mb-6">
+                  <div className={getThemeClasses("p-2 sm:p-3 bg-blue-100 rounded-xl flex-shrink-0", "!bg-[#B5EAD7]/30")}>
+                    <Upload className={getThemeClasses("w-5 h-5 sm:w-6 sm:h-6 text-blue-600", "!text-[#4c1d1d]")} />
+                  </div>
+                  <div>
+                    <h3 className={getThemeClasses("text-lg sm:text-xl font-semibold text-[#324D3E] dark:text-white transition-colors duration-300", "!text-[#4c1d1d]")}>
+                      Restore Database
+                    </h3>
+                    <p className={getThemeClasses("text-sm sm:text-base text-[#889063] dark:text-gray-400 transition-colors duration-300", "!text-[#6b7280]")}>
+                      Restore database dari file backup JSON ke database lokal atau remote
+                    </p>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  {/* File Upload */}
+                  <div>
+                    <label className={getThemeClasses("block text-sm font-medium text-[#324D3E] dark:text-gray-200 mb-2 transition-colors duration-300", "!text-[#4c1d1d]")}>
+                      File Backup JSON
+                    </label>
+                    <input
+                      type="file"
+                      accept=".json"
+                      onChange={(e) => setRestoreFile(e.target.files?.[0] || null)}
+                      className={getThemeClasses("w-full px-4 py-3 border border-gray-200 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#324D3E] focus:border-transparent transition-colors duration-300", "!bg-white/90 !border-[#FFC1CC]/30 !text-[#4c1d1d] focus:!ring-[#FFC1CC]/20 focus:!border-[#FFC1CC]")}
+                    />
+                    {restoreFile && (
+                      <p className="text-xs text-green-600 mt-1">
+                        ✅ File selected: {restoreFile.name}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Target Database Connection */}
+                  <div>
+                    <label className={getThemeClasses("block text-sm font-medium text-[#324D3E] dark:text-gray-200 mb-2 transition-colors duration-300", "!text-[#4c1d1d]")}>
+                      Target Database Connection String
+                    </label>
+                    <input
+                      type="text"
+                      value={restoreConnectionString}
+                      onChange={(e) => setRestoreConnectionString(e.target.value)}
+                      placeholder="mongodb://localhost:27017/database_name"
+                      className={getThemeClasses("w-full px-4 py-3 border border-gray-200 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#324D3E] focus:border-transparent transition-colors duration-300", "!bg-white/90 !border-[#FFC1CC]/30 !text-[#4c1d1d] focus:!ring-[#FFC1CC]/20 focus:!border-[#FFC1CC]")}
+                    />
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-2 transition-colors duration-300">
+                      <strong>💡 Tips:</strong> Untuk database lokal gunakan mongodb://localhost:27017/nama_database
+                    </p>
+                  </div>
+
+                  {/* Warning */}
+                  <div className={getThemeClasses("p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700 rounded-xl transition-colors duration-300", "!bg-[#FFF5BA]/30 !border-[#FFC1CC]/30")}>
+                    <div className="flex items-start gap-3">
+                      <Shield className={getThemeClasses("w-5 h-5 text-yellow-600 mt-0.5 flex-shrink-0", "!text-[#4c1d1d]")} />
+                      <div>
+                        <h4 className={getThemeClasses("font-semibold text-yellow-800 dark:text-yellow-300 mb-2 text-sm sm:text-base transition-colors duration-300", "!text-[#4c1d1d]")}>
+                          ⚠️ Peringatan Restore
+                        </h4>
+                        <p className={getThemeClasses("text-yellow-700 dark:text-yellow-300 text-xs sm:text-sm transition-colors duration-300", "!text-[#4c1d1d]")}>
+                          Restore akan mengganti semua data di database target. Pastikan Anda telah backup database target jika diperlukan.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Restore Button */}
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={handleDatabaseRestore}
+                    disabled={isRestoring || !restoreFile || !restoreConnectionString.trim()}
+                    className={getThemeClasses("flex items-center justify-center gap-2 px-4 sm:px-6 py-3 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base w-full", "!bg-gradient-to-r !from-[#B5EAD7] !to-[#C7CEEA] !text-[#4c1d1d] hover:!from-[#C7CEEA] hover:!to-[#FFF5BA]")}
+                  >
+                    <Upload className="w-5 h-5" />
+                    {isRestoring ? "Memproses Restore..." : "Restore Database"}
+                  </motion.button>
+
+                  {/* Restore Result Messages */}
+                  {restoreResult && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className={`p-4 rounded-xl transition-colors duration-300 ${
+                        restoreResult.type === "success"
+                          ? "bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-700 text-green-800 dark:text-green-300"
+                          : "bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 text-red-800 dark:text-red-300"
+                      }`}
+                    >
+                      <div className="flex items-start gap-3">
+                        {restoreResult.type === "success" ? (
+                          <CheckCircle className="w-5 h-5 mt-0.5 flex-shrink-0" />
+                        ) : (
+                          <XCircle className="w-5 h-5 mt-0.5 flex-shrink-0" />
+                        )}
+                        <div>
+                          <p className="font-medium">{restoreResult.message}</p>
+                          {restoreResult.details && (
+                            <div className="mt-2 text-sm">
+                              <p>Target Database: {restoreResult.details.targetDatabase}</p>
+                              <p>Total Documents: {restoreResult.details.totalDocuments}</p>
+                              <p>Collections: {Object.keys(restoreResult.details.restoredCollections).length}</p>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+                </div>
+              </div>
+            </motion.div>
+          )}
         </motion.div>
       </div>
     </AdminLayout>
