@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 
 interface AlertProps {
   type: "success" | "error" | "warning" | "info";
@@ -65,7 +66,7 @@ export function Alert({
     }
   };
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-[60]">
       <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full transform animate-in zoom-in duration-200">
         {/* Header */}
@@ -89,7 +90,8 @@ export function Alert({
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 
@@ -153,7 +155,7 @@ export function ConfirmationModal({
   const colors = getColorClasses();
   const icon = type === "danger" ? "⚠️" : type === "warning" ? "⚠️" : "ℹ️";
 
-  return (
+  const modal = (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-[60]">
       <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full transform animate-in zoom-in duration-200">
         {/* Header */}
@@ -191,6 +193,13 @@ export function ConfirmationModal({
       </div>
     </div>
   );
+
+  // Render via portal to body so backdrop covers full viewport and isn't clipped
+  if (typeof document !== "undefined") {
+    return createPortal(modal, document.body);
+  }
+
+  return modal;
 }
 
 // Hook for using alerts
@@ -230,7 +239,12 @@ export function useAlert() {
       message: string,
       options: { autoClose?: boolean; duration?: number } = {}
     ) => {
-      console.log("🚨 showAlert called with:", { type, title, message, options });
+      console.log("🚨 showAlert called with:", {
+        type,
+        title,
+        message,
+        options,
+      });
       console.trace("Call stack:");
 
       const { autoClose = true, duration = 3000 } = options;
@@ -261,7 +275,11 @@ export function useAlert() {
   };
 
   const showSuccess = useCallback(
-    (title: string, message: string = "", options: { autoClose?: boolean; duration?: number } = {}) => {
+    (
+      title: string,
+      message: string = "",
+      options: { autoClose?: boolean; duration?: number } = {}
+    ) => {
       showAlert("success", title, message, options);
     },
     [showAlert]
@@ -343,7 +361,9 @@ export function useAlert() {
                   message={alert.message}
                   isOpen={true}
                   onClose={() => hideAlert(alert.id)}
-                  duration={alert.autoClose === false ? 0 : (alert.duration || 3000)}
+                  duration={
+                    alert.autoClose === false ? 0 : alert.duration || 3000
+                  }
                 />
               );
             })}

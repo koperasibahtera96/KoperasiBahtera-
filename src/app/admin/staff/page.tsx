@@ -32,7 +32,7 @@ export default function StaffPage() {
     fullName: "",
     phoneNumber: "",
     email: "",
-    role: "Staff",
+    role: "Mandor",
     password: "",
   });
   const [submitting, setSubmitting] = useState(false);
@@ -175,7 +175,7 @@ export default function StaffPage() {
           fullName: "",
           phoneNumber: "",
           email: "",
-          role: "Staff",
+          role: "Mandor",
           password: "",
         });
         fetchStaffUsers();
@@ -232,13 +232,16 @@ export default function StaffPage() {
       fullName: staff.fullName,
       phoneNumber: staff.phoneNumber,
       email: staff.email,
-      role: staff.role === "spv_staff" ? "SPV Staff" : 
+      role: staff.role === "spv_staff" ? "SPV Staff" :
             staff.role === "admin" ? "Admin" :
             staff.role === "finance" ? "Finance" :
             staff.role === "staff_finance" ? "Staff Finance" :
             staff.role === "ketua" ? "Ketua" :
             staff.role === "marketing" ? "Marketing" :
-            staff.role === "marketing_head" ? "Marketing Head" : "Staff",
+            staff.role === "marketing_head" ? "Marketing Head" :
+            staff.role === "mandor" ? "Mandor" :
+            staff.role === "asisten" ? "Asisten" :
+            staff.role === "manajer" ? "Manajer" : "Staff",
       password: "",
     });
     setShowEditModal(true);
@@ -619,7 +622,13 @@ export default function StaffPage() {
                               <Badge
                                 variant="outline"
                                 className={`text-xs ${
-                                  staff.role === "spv_staff"
+                                  staff.role === "mandor"
+                                    ? "bg-green-100 text-green-800 border-green-300 dark:bg-green-900/30 dark:text-green-300 dark:border-green-700/50"
+                                    : staff.role === "asisten"
+                                    ? "bg-cyan-100 text-cyan-800 border-cyan-300 dark:bg-cyan-900/30 dark:text-cyan-300 dark:border-cyan-700/50"
+                                    : staff.role === "manajer"
+                                    ? "bg-purple-100 text-purple-800 border-purple-300 dark:bg-purple-900/30 dark:text-purple-300 dark:border-purple-700/50"
+                                    : staff.role === "spv_staff"
                                     ? "bg-[#4C3D19]/10 text-[#4C3D19] border-[#4C3D19]/20 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-700/50"
                                     : staff.role === "admin"
                                     ? "bg-red-100 text-red-800 border-red-300 dark:bg-red-900/30 dark:text-red-300 dark:border-red-700/50"
@@ -628,7 +637,10 @@ export default function StaffPage() {
                                     : "bg-[#324D3E]/10 text-[#324D3E] border-[#324D3E]/20 dark:bg-gray-700 dark:text-white dark:border-gray-600"
                                 }`}
                               >
-                                {staff.role === "spv_staff" ? "SPV Staff" :
+                                {staff.role === "mandor" ? "Mandor" :
+                                 staff.role === "asisten" ? "Asisten" :
+                                 staff.role === "manajer" ? "Manajer" :
+                                 staff.role === "spv_staff" ? "SPV Staff" :
                                  staff.role === "admin" ? "Admin" :
                                  staff.role === "finance" ? "Finance" :
                                  staff.role === "staff_finance" ? "Staff Finance" :
@@ -804,20 +816,25 @@ export default function StaffPage() {
                     onChange={(e) =>
                       setFormData((prev) => ({
                         ...prev,
-                        role: e.target.value as "Staff" | "SPV Staff" | "Admin" | "Finance" | "Staff Finance" | "Ketua" | "Marketing",
+                        role: e.target.value as "Staff" | "SPV Staff" | "Admin" | "Finance" | "Staff Finance" | "Ketua" | "Marketing" | "Mandor" | "Asisten" | "Manajer",
                       }))
                     }
                     className="w-full px-3 py-2 border border-[#324D3E]/20 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#324D3E]/20 focus:border-[#324D3E] text-[#324D3E] dark:text-white bg-white dark:bg-gray-700"
                     required
                   >
-                    <option value="Staff">Staff</option>
-                    <option value="SPV Staff">SPV Staff</option>
-                    <option value="Admin">Admin</option>
-                    <option value="Finance">Finance</option>
-                    <option value="Staff Finance">Staff Finance</option>
-                    <option value="Ketua">Ketua</option>
-                    <option value="Marketing">Marketing</option>
-                    <option value="Marketing Head">Marketing Head</option>
+                    <optgroup label="Manajemen Lapangan">
+                      <option value="Mandor">Mandor</option>
+                      <option value="Asisten">Asisten</option>
+                      <option value="Manajer">Manajer</option>
+                    </optgroup>
+                    <optgroup label="Roles Lainnya">
+                      <option value="Admin">Admin</option>
+                      <option value="Finance">Finance</option>
+                      <option value="Staff Finance">Staff Finance</option>
+                      <option value="Ketua">Ketua</option>
+                      <option value="Marketing">Marketing</option>
+                      <option value="Marketing Head">Marketing Head</option>
+                    </optgroup>
                   </select>
                 </div>
 
@@ -956,20 +973,25 @@ export default function StaffPage() {
                     onChange={(e) =>
                       setFormData((prev) => ({
                         ...prev,
-                        role: e.target.value as "Staff" | "SPV Staff" | "Admin" | "Finance" | "Staff Finance" | "Ketua" | "Marketing",
+                        role: e.target.value as "Staff" | "SPV Staff" | "Admin" | "Finance" | "Staff Finance" | "Ketua" | "Marketing" | "Mandor" | "Asisten" | "Manajer",
                       }))
                     }
                     className="w-full px-3 py-2 border border-[#324D3E]/20 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#324D3E]/20 focus:border-[#324D3E] text-[#324D3E] dark:text-white bg-white dark:bg-gray-700"
                     required
                   >
-                    <option value="Staff">Staff</option>
-                    <option value="SPV Staff">SPV Staff</option>
-                    <option value="Admin">Admin</option>
-                    <option value="Finance">Finance</option>
-                    <option value="Staff Finance">Staff Finance</option>
-                    <option value="Ketua">Ketua</option>
-                    <option value="Marketing">Marketing</option>
-                    <option value="Marketing Head">Marketing Head</option>
+                    <optgroup label="Manajemen Lapangan">
+                      <option value="Mandor">Mandor</option>
+                      <option value="Asisten">Asisten</option>
+                      <option value="Manajer">Manajer</option>
+                    </optgroup>
+                    <optgroup label="Roles Lainnya">
+                      <option value="Admin">Admin</option>
+                      <option value="Finance">Finance</option>
+                      <option value="Staff Finance">Staff Finance</option>
+                      <option value="Ketua">Ketua</option>
+                      <option value="Marketing">Marketing</option>
+                      <option value="Marketing Head">Marketing Head</option>
+                    </optgroup>
                   </select>
                 </div>
 

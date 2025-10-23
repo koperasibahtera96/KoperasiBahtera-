@@ -71,7 +71,7 @@ export async function GET(req: NextRequest) {
     const fullPayments = await Payment.find({
       orderId: { $in: fullPaymentIds },
       paymentType: "full-investment",
-    }).select("orderId referralCode dueDate");
+    }).select("orderId referralCode dueDate paymentMethod proofImageUrl adminStatus adminNotes");
 
     // Get investor data for contract information
     const investor = await Investor.findOne({ userId: user._id });
@@ -147,6 +147,7 @@ export async function GET(req: NextRequest) {
             adminReviewDate: existingInstallment.adminReviewDate,
             adminNotes: existingInstallment.adminNotes,
             adminReviewBy: existingInstallment.adminReviewBy,
+            paymentMethod: existingInstallment.paymentMethod,
             createdAt: existingInstallment.createdAt,
             updatedAt: existingInstallment.updatedAt,
             exists: true,
@@ -217,6 +218,13 @@ export async function GET(req: NextRequest) {
         referralCode:
           group.installments.find((inst: any) => inst.referralCode)
             ?.referralCode || null,
+        // Get payment method from first installment that has one
+        paymentMethod:
+          group.installments.find((inst: any) => inst.paymentMethod)
+            ?.paymentMethod || null,
+        // E-materai stamping fields from contract
+        emateraiStamped: contract?.emateraiStamped || false,
+        emateraiStampedUrl: contract?.emateraiStampedUrl || null,
       };
     });
 
@@ -301,6 +309,13 @@ export async function GET(req: NextRequest) {
         isPermanentlyRejected:
           contract.adminApprovalStatus === "permanently_rejected",
         referralCode: associatedPayment?.referralCode || null,
+        paymentMethod: associatedPayment?.paymentMethod || null,
+        proofImageUrl: associatedPayment?.proofImageUrl || null,
+        adminStatus: associatedPayment?.adminStatus || null,
+        adminNotes: associatedPayment?.adminNotes || null,
+        // E-materai stamping fields
+        emateraiStamped: contract.emateraiStamped || false,
+        emateraiStampedUrl: contract.emateraiStampedUrl || null,
       };
     });
 

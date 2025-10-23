@@ -61,6 +61,18 @@ export async function POST(request: NextRequest) {
     let dbRole = "staff"; // Default for Staff
 
     switch (role) {
+      case "Mandor":
+        prefix = "MDR";
+        dbRole = "mandor";
+        break;
+      case "Asisten":
+        prefix = "AST";
+        dbRole = "asisten";
+        break;
+      case "Manajer":
+        prefix = "MNJ";
+        dbRole = "manajer";
+        break;
       case "SPV Staff":
         prefix = "SPV";
         dbRole = "spv_staff";
@@ -173,7 +185,13 @@ export async function POST(request: NextRequest) {
       domisiliProvince: "Provinsi domisili belum diisi",
       domisiliPostalCode: "00000",
       occupation:
-        role === "SPV Staff"
+        role === "Mandor"
+          ? "Mandor Lapangan"
+          : role === "Asisten"
+          ? "Asisten Lapangan"
+          : role === "Manajer"
+          ? "Manajer Lapangan"
+          : role === "SPV Staff"
           ? "SPV Staff"
           : role === "Admin"
           ? "Administrator"
@@ -305,6 +323,9 @@ export async function GET(request: NextRequest) {
           "staff_finance",
           "marketing",
           "marketing_head",
+          "mandor",
+          "asisten",
+          "manajer",
         ];
 
     const skip = (page - 1) * limit;
@@ -435,6 +456,21 @@ export async function PUT(request: NextRequest) {
     let updateOccupation = "Staff Lapangan";
 
     switch (role) {
+      case "Mandor":
+        updateDbRole = "mandor";
+        updatePrefix = "MDR";
+        updateOccupation = "Mandor Lapangan";
+        break;
+      case "Asisten":
+        updateDbRole = "asisten";
+        updatePrefix = "AST";
+        updateOccupation = "Asisten Lapangan";
+        break;
+      case "Manajer":
+        updateDbRole = "manajer";
+        updatePrefix = "MNJ";
+        updateOccupation = "Manajer Lapangan";
+        break;
       case "SPV Staff":
         updateDbRole = "spv_staff";
         updatePrefix = "SPV";
@@ -626,6 +662,9 @@ export async function DELETE(request: NextRequest) {
       "marketing",
       "ketua",
       "marketing_head",
+      "mandor",
+      "asisten",
+      "manajer",
     ];
     if (!allowedRoles.includes(userToDelete.role)) {
       return NextResponse.json(

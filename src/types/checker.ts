@@ -34,7 +34,14 @@ export type History = {
   hasImage: boolean;
   imageUrl?: string;
   addedBy: string;
+  addedById?: string;
   addedAt: string;
+  approvalStatus?: 'pending' | 'approved_by_asisten' | 'approved_by_manajer' | 'rejected';
+  approvedByAsisten?: string;
+  approvedByAsistenAt?: string;
+  approvedByManajer?: string;
+  approvedByManajerAt?: string;
+  rejectionReason?: string;
 };
 
 export type Investor = { name: string; amount: number; date: string };

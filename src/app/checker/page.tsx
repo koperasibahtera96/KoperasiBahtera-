@@ -5,6 +5,12 @@ import { Badge } from "@/components/ui-staff/badge";
 import { Button } from "@/components/ui-staff/button";
 import { Input } from "@/components/ui-staff/input";
 import type { PlantInstance, PlantHistory } from "@/types/checker";
+// For grouping
+type AssignmentGroup = {
+  groupName: string;
+  groupId: string;
+  plantIds: string[];
+};
 import {
   Calendar,
   ChevronLeft,
@@ -18,6 +24,7 @@ import Image from "next/image";
 import Link from "next/link";
 import type React from "react";
 import { useEffect, useState } from "react";
+import { useSession } from "next-auth/react";
 
 const statusColors: Record<string, string> = {
   // === General ===
@@ -103,8 +110,15 @@ const getPlantTypeImage = (plantType?: string): string | null => {
 /* =================================================== */
 
 export default function StaffDashboard() {
+  const { data: session, status: sessionStatus } = useSession();
   const [plants, setPlants] = useState<PlantInstance[]>([]);
+  // For grouping
+  const [assignmentGroups, setAssignmentGroups] = useState<AssignmentGroup[]>(
+    []
+  );
   const [loading, setLoading] = useState(true);
+  const [assignedPlantIds, setAssignedPlantIds] = useState<string[]>([]);
+  const [assignmentsLoaded, setAssignmentsLoaded] = useState(false);
 
   // Filter utama
   const [activeFilter, setActiveFilter] = useState("Semua Tanaman");
@@ -121,8 +135,75 @@ export default function StaffDashboard() {
   const [currentPage, setCurrentPage] = useState(1);
 
   useEffect(() => {
-    fetchPlants();
-  }, []);
+    if (session?.user) {
+      fetchAssignmentsAndGroups();
+    } else if (sessionStatus === "unauthenticated") {
+      setAssignmentsLoaded(true);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session, sessionStatus]);
+
+  useEffect(() => {
+    // Only fetch plants after assignments are loaded
+    if (assignmentsLoaded) {
+      fetchPlants();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [assignedPlantIds, assignmentsLoaded]);
+
+  // Fetch assignments and build groups for asisten/manajer/mandor
+  const fetchAssignmentsAndGroups = async () => {
+    try {
+      const userRole = (session?.user as any)?.role;
+      const userId = (session?.user as any)?.id;
+
+      if (userRole === "asisten" || userRole === "manajer" || userRole === "mandor") {
+        // Fetch assignments for all three roles
+        const res = await fetch("/api/assignments");
+        if (res.ok) {
+          const data = await res.json();
+          const assignments = data.assignments || [];
+
+          // For asisten: group by assignedTo (mandor), for manajer: group by assignedTo (asisten)
+          let groups: AssignmentGroup[] = [];
+          if (userRole === "asisten") {
+            // Only mandor assignments assignedBy me
+            const mandorAssignments = assignments.filter(
+              (a: any) =>
+                a.assignedRole === "mandor" &&
+                a.assignedBy?._id === userId
+            );
+            groups = mandorAssignments.map((a: any) => ({
+              groupName: a.assignedTo?.fullName || "Mandor",
+              groupId: a.assignedTo?._id || a.assignedTo,
+              plantIds: a.plantInstanceIds || [],
+            }));
+          } else if (userRole === "manajer") {
+            // Only asisten assignments
+            const asistenAssignments = assignments.filter(
+              (a: any) => a.assignedRole === "asisten"
+            );
+            groups = asistenAssignments.map((a: any) => ({
+              groupName: a.assignedTo?.fullName || "Asisten",
+              groupId: a.assignedTo?._id || a.assignedTo,
+              plantIds: a.plantInstanceIds || [],
+            }));
+          }
+          setAssignmentGroups(groups);
+          // For asisten/mandor, extract assignedPlantIds for filtering
+          const plantIds = assignments.flatMap(
+            (a: any) => a.plantInstanceIds || []
+          );
+          setAssignedPlantIds(plantIds);
+        }
+      }
+      setAssignmentsLoaded(true);
+    } catch (error) {
+      console.error("Error fetching assignments:", error);
+      setAssignmentsLoaded(true);
+    }
+  };
+
   const fetchPlants = async () => {
     try {
       const res = await fetch("/api/plants", { cache: "no-store" });
@@ -151,7 +232,24 @@ export default function StaffDashboard() {
         history: Array.isArray(p.history) ? p.history : [],
       }));
 
-      setPlants(normalized);
+      // Filter plants based on role and assignments
+      const userRole = (session?.user as any)?.role;
+      let filtered = normalized;
+
+      if (userRole === "asisten" || userRole === "mandor") {
+        // Only show plants that are assigned to this user
+        if (assignedPlantIds.length > 0) {
+          filtered = normalized.filter((p: any) =>
+            assignedPlantIds.includes(p.id)
+          );
+        } else {
+          // If no assignments yet, show empty list
+          filtered = [];
+        }
+      }
+      // For other roles (admin, manajer, staff, spv_staff, finance), show all plants
+
+      setPlants(filtered);
     } catch (err) {
       console.error("Error fetching plants:", err);
       setPlants([]);
@@ -208,6 +306,48 @@ export default function StaffDashboard() {
   const startIndex = (currentPage - 1) * PLANTS_PER_PAGE;
   const endIndex = startIndex + PLANTS_PER_PAGE;
   const currentPlants = filteredPlants.slice(startIndex, endIndex);
+
+  // Grouped plants for asisten/manajer
+  let groupedPlants: {
+    groupName: string;
+    groupId: string;
+    plants: PlantInstance[];
+  }[] = [];
+  const userRole = (session?.user as any)?.role;
+  if (userRole === "asisten" && assignmentGroups.length > 0) {
+    groupedPlants = assignmentGroups
+      .map((group) => ({
+        groupName: group.groupName,
+        groupId: group.groupId,
+        plants: filteredPlants.filter((p) => group.plantIds.includes(p.id)),
+      }))
+      .filter((g) => g.plants.length > 0);
+  } else if (userRole === "manajer") {
+    // For manajer, show (No Group) for plants not assigned to any asisten
+    const assignedPlantIds = assignmentGroups.flatMap((g) => g.plantIds);
+    const noGroupPlants = filteredPlants.filter(
+      (p) => !assignedPlantIds.includes(p.id)
+    );
+    groupedPlants = [];
+    if (noGroupPlants.length > 0) {
+      groupedPlants.push({
+        groupName: "(Belum Ditetapkan Asisten)",
+        groupId: "no-group",
+        plants: noGroupPlants,
+      });
+    }
+    if (assignmentGroups.length > 0) {
+      groupedPlants = groupedPlants.concat(
+        assignmentGroups
+          .map((group) => ({
+            groupName: group.groupName,
+            groupId: group.groupId,
+            plants: filteredPlants.filter((p) => group.plantIds.includes(p.id)),
+          }))
+          .filter((g) => g.plants.length > 0)
+      );
+    }
+  }
 
   const handleFilterChange = (filter: string) => {
     setActiveFilter(filter);
@@ -492,7 +632,7 @@ export default function StaffDashboard() {
           <div className="bg-white/80 backdrop-blur-lg rounded-2xl border border-[#324D3E]/10 p-4 mb-8">
             <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 text-center lg:text-left">
               <p className="text-[#324D3E] font-medium">
-                Menampilkan {startIndex + 1}-
+                Menampilkan {filteredPlants.length === 0 ? 0 : startIndex + 1}-
                 {Math.min(endIndex, filteredPlants.length)} dari{" "}
                 {filteredPlants.length} tanaman
               </p>
@@ -503,120 +643,291 @@ export default function StaffDashboard() {
           </div>
 
           {/* Plants Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
-            {currentPlants.map((plant) => {
-              const isRecent = isRecentlyUpdated(plant.lastUpdate);
-              const cardBgColor = isRecent
-                ? "bg-gradient-to-br from-[#4C3D19]/5 via-white/90 to-green-50/80 border-[#4C3D19]/30"
-                : "bg-gradient-to-br from-white/90 via-white/80 to-gray-50/80 border-[#324D3E]/20";
-
-              // avatar source: fotoGambar -> default plantType image -> Leaf icon
-              const typeImage = getPlantTypeImage(plant.plantType);
-
-              return (
-                <Link key={plant.id} href={`/checker/plant/${plant.id}`}>
-                  <div
-                    className={`group ${cardBgColor} backdrop-blur-xl border rounded-3xl shadow-xl hover:shadow-2xl hover:scale-105 transition-all duration-300 cursor-pointer overflow-hidden`}
+          {/* Grouped grid for asisten/manajer */}
+          {(userRole === "asisten" || userRole === "manajer") &&
+          groupedPlants.length > 0 ? (
+            <div className="space-y-12">
+              {groupedPlants.map((group) => (
+                <div key={group.groupId}>
+                  <h2 className="text-xl font-bold text-[#324D3E] mb-4">
+                    {userRole === "asisten"
+                      ? `Mandor: ${group.groupName}`
+                      : `Asisten: ${group.groupName}`}
+                  </h2>
+                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
+                    {group.plants.map((plant) => {
+                      const isRecent = isRecentlyUpdated(plant.lastUpdate);
+                      const cardBgColor = isRecent
+                        ? "bg-gradient-to-br from-[#4C3D19]/5 via-white/90 to-green-50/80 border-[#4C3D19]/30"
+                        : "bg-gradient-to-br from-white/90 via-white/80 to-gray-50/80 border-[#324D3E]/20";
+                      const typeImage = getPlantTypeImage(plant.plantType);
+                      return (
+                        <Link
+                          key={plant.id}
+                          href={`/checker/plant/${plant.id}`}
+                        >
+                          <div
+                            className={`group ${cardBgColor} backdrop-blur-xl border rounded-3xl shadow-xl hover:shadow-2xl hover:scale-105 transition-all duration-300 cursor-pointer overflow-hidden`}
+                          >
+                            <div className="p-6">
+                              {/* Header */}
+                              <div className="flex items-start justify-between mb-4">
+                                <div className="flex items-center gap-3">
+                                  {/* Avatar */}
+                                  <div className="relative w-12 h-12 rounded-xl bg-gradient-to-br from-[#324D3E] to-[#4C3D19] shadow-lg group-hover:scale-110 transition-all duration-300 overflow-hidden">
+                                    {plant.fotoGambar ? (
+                                      <Image
+                                        src={
+                                          plant.fotoGambar || "/placeholder.svg"
+                                        }
+                                        alt={plant.instanceName}
+                                        fill
+                                        sizes="48px"
+                                        className="object-cover"
+                                      />
+                                    ) : typeImage ? (
+                                      <Image
+                                        src={typeImage}
+                                        alt={plant.plantType || "Plant type"}
+                                        fill
+                                        sizes="48px"
+                                        className="object-cover"
+                                        priority={false}
+                                      />
+                                    ) : (
+                                      <Leaf className="w-6 h-6 text-white absolute inset-0 m-auto" />
+                                    )}
+                                    {isRecent && (
+                                      <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-white">
+                                        <div className="w-1 h-1 bg-white rounded-full absolute inset-0 m-auto animate-pulse"></div>
+                                      </div>
+                                    )}
+                                  </div>
+                                  <div>
+                                    <h3 className="font-bold text-lg text-[#324D3E] group-hover:text-[#4C3D19] transition-colors mb-1">
+                                      {plant.instanceName}
+                                    </h3>
+                                    <p className="text-xs text-[#889063]">
+                                      QR: {plant.qrCode}
+                                    </p>
+                                  </div>
+                                </div>
+                                <Badge
+                                  className={`${
+                                    statusColors[plant.status] ||
+                                    "bg-gray-100 text-gray-800"
+                                  } shadow-sm px-2 py-1 text-xs font-medium rounded-lg`}
+                                >
+                                  {plant.status}
+                                </Badge>
+                              </div>
+                              {/* Content */}
+                              <div className="space-y-3 text-sm">
+                                <div className="flex items-center gap-2">
+                                  <User className="w-4 h-4 text-[#4C3D19]" />
+                                  <span className="text-[#324D3E]">
+                                    Pemilik:{" "}
+                                    <span className="font-medium">
+                                      {plant.owner}
+                                    </span>
+                                  </span>
+                                </div>
+                                <div className="flex items-center justify-between">
+                                  <div className="flex items-center gap-2">
+                                    <MapPin className="w-4 h-4 text-[#4C3D19]" />
+                                    <span className="text-[#324D3E]">
+                                      Lokasi:{" "}
+                                      <span className="font-medium">
+                                        {plant.location}
+                                      </span>
+                                    </span>
+                                  </div>
+                                  <div className="text-xs text-[#889063]">
+                                    Contract ID: <br />
+                                    {String(plant.contractNumber || "").slice(
+                                      -9
+                                    )}
+                                  </div>
+                                </div>
+                                <div className="flex items-center justify-between pt-3 border-t border-[#324D3E]/10">
+                                  <div className="flex items-center gap-2">
+                                    <Calendar className="w-4 h-4 text-[#889063]" />
+                                    <span className="text-[#889063] text-xs">
+                                      Update: {plant.lastUpdate}
+                                    </span>
+                                  </div>
+                                  {isRecent && (
+                                    <div className="px-2 py-1 bg-green-100 text-green-600 rounded-full text-xs font-medium">
+                                      Baru
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </Link>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : currentPlants.length === 0 ? (
+            <div className="bg-white/90 backdrop-blur-xl rounded-3xl shadow-xl border border-[#324D3E]/10 p-12 text-center">
+              <div className="flex flex-col items-center gap-6 max-w-md mx-auto">
+                <div className="w-24 h-24 rounded-full bg-gradient-to-br from-[#324D3E]/10 to-[#4C3D19]/10 flex items-center justify-center">
+                  <Leaf className="w-12 h-12 text-[#324D3E]/40" />
+                </div>
+                <div className="space-y-2">
+                  <h3 className="text-2xl font-bold text-[#324D3E]">
+                    Tidak Ada Data Tanaman
+                  </h3>
+                  <p className="text-[#889063] text-lg">
+                    {searchQuery
+                      ? `Tidak ditemukan tanaman yang cocok dengan pencarian "${searchQuery}"`
+                      : statsFilter === "new"
+                      ? "Tidak ada tanaman baru dalam 14 hari terakhir"
+                      : statsFilter === "problem"
+                      ? "Tidak ada tanaman yang bermasalah saat ini"
+                      : selectedPlantType
+                      ? `Tidak ada tanaman ${selectedPlantType} yang tersedia`
+                      : "Belum ada data tanaman yang tersedia untuk ditampilkan"}
+                  </p>
+                </div>
+                {(searchQuery ||
+                  statsFilter !== "all" ||
+                  selectedPlantType) && (
+                  <Button
+                    onClick={() => {
+                      setSearchQuery("");
+                      setStatsFilter("all");
+                      setSelectedPlantType("");
+                      setActiveFilter("Semua Tanaman");
+                      setCurrentPage(1);
+                    }}
+                    className="px-6 py-3 bg-gradient-to-r from-[#324D3E] to-[#4C3D19] text-white rounded-2xl font-semibold hover:shadow-lg transition-all duration-300"
                   >
-                    <div className="p-6">
-                      {/* Header */}
-                      <div className="flex items-start justify-between mb-4">
-                        <div className="flex items-center gap-3">
-                          {/* Avatar */}
-                          <div className="relative w-12 h-12 rounded-xl bg-gradient-to-br from-[#324D3E] to-[#4C3D19] shadow-lg group-hover:scale-110 transition-all duration-300 overflow-hidden">
-                            {plant.fotoGambar ? (
-                              <Image
-                                src={plant.fotoGambar || "/placeholder.svg"}
-                                alt={plant.instanceName}
-                                fill
-                                sizes="48px"
-                                className="object-cover"
-                              />
-                            ) : typeImage ? (
-                              <Image
-                                src={typeImage}
-                                alt={plant.plantType || "Plant type"}
-                                fill
-                                sizes="48px"
-                                className="object-cover"
-                                priority={false}
-                              />
-                            ) : (
-                              <Leaf className="w-6 h-6 text-white absolute inset-0 m-auto" />
-                            )}
+                    Reset Filter
+                  </Button>
+                )}
+              </div>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
+              {currentPlants.map((plant) => {
+                const isRecent = isRecentlyUpdated(plant.lastUpdate);
+                const cardBgColor = isRecent
+                  ? "bg-gradient-to-br from-[#4C3D19]/5 via-white/90 to-green-50/80 border-[#4C3D19]/30"
+                  : "bg-gradient-to-br from-white/90 via-white/80 to-gray-50/80 border-[#324D3E]/20";
+
+                // avatar source: fotoGambar -> default plantType image -> Leaf icon
+                const typeImage = getPlantTypeImage(plant.plantType);
+
+                return (
+                  <Link key={plant.id} href={`/checker/plant/${plant.id}`}>
+                    <div
+                      className={`group ${cardBgColor} backdrop-blur-xl border rounded-3xl shadow-xl hover:shadow-2xl hover:scale-105 transition-all duration-300 cursor-pointer overflow-hidden`}
+                    >
+                      <div className="p-6">
+                        {/* Header */}
+                        <div className="flex items-start justify-between mb-4">
+                          <div className="flex items-center gap-3">
+                            {/* Avatar */}
+                            <div className="relative w-12 h-12 rounded-xl bg-gradient-to-br from-[#324D3E] to-[#4C3D19] shadow-lg group-hover:scale-110 transition-all duration-300 overflow-hidden">
+                              {plant.fotoGambar ? (
+                                <Image
+                                  src={plant.fotoGambar || "/placeholder.svg"}
+                                  alt={plant.instanceName}
+                                  fill
+                                  sizes="48px"
+                                  className="object-cover"
+                                />
+                              ) : typeImage ? (
+                                <Image
+                                  src={typeImage}
+                                  alt={plant.plantType || "Plant type"}
+                                  fill
+                                  sizes="48px"
+                                  className="object-cover"
+                                  priority={false}
+                                />
+                              ) : (
+                                <Leaf className="w-6 h-6 text-white absolute inset-0 m-auto" />
+                              )}
+                              {isRecent && (
+                                <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-white">
+                                  <div className="w-1 h-1 bg-white rounded-full absolute inset-0 m-auto animate-pulse"></div>
+                                </div>
+                              )}
+                            </div>
+
+                            <div>
+                              <h3 className="font-bold text-lg text-[#324D3E] group-hover:text-[#4C3D19] transition-colors mb-1">
+                                {plant.instanceName}
+                              </h3>
+                              <p className="text-xs text-[#889063]">
+                                QR: {plant.qrCode}
+                              </p>
+                            </div>
+                          </div>
+
+                          <Badge
+                            className={`${
+                              statusColors[plant.status] ||
+                              "bg-gray-100 text-gray-800"
+                            } shadow-sm px-2 py-1 text-xs font-medium rounded-lg`}
+                          >
+                            {plant.status}
+                          </Badge>
+                        </div>
+
+                        {/* Content */}
+                        <div className="space-y-3 text-sm">
+                          <div className="flex items-center gap-2">
+                            <User className="w-4 h-4 text-[#4C3D19]" />
+                            <span className="text-[#324D3E]">
+                              Pemilik:{" "}
+                              <span className="font-medium">{plant.owner}</span>
+                            </span>
+                          </div>
+
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <MapPin className="w-4 h-4 text-[#4C3D19]" />
+                              <span className="text-[#324D3E]">
+                                Lokasi:{" "}
+                                <span className="font-medium">
+                                  {plant.location}
+                                </span>
+                              </span>
+                            </div>
+                            <div className="text-xs text-[#889063]">
+                              Contract ID: <br />
+                              {String(plant.contractNumber || "").slice(-9)}
+                            </div>
+                          </div>
+
+                          <div className="flex items-center justify-between pt-3 border-t border-[#324D3E]/10">
+                            <div className="flex items-center gap-2">
+                              <Calendar className="w-4 h-4 text-[#889063]" />
+                              <span className="text-[#889063] text-xs">
+                                Update: {plant.lastUpdate}
+                              </span>
+                            </div>
                             {isRecent && (
-                              <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-white">
-                                <div className="w-1 h-1 bg-white rounded-full absolute inset-0 m-auto animate-pulse"></div>
+                              <div className="px-2 py-1 bg-green-100 text-green-600 rounded-full text-xs font-medium">
+                                Baru
                               </div>
                             )}
                           </div>
-
-                          <div>
-                            <h3 className="font-bold text-lg text-[#324D3E] group-hover:text-[#4C3D19] transition-colors mb-1">
-                              {plant.instanceName}
-                            </h3>
-                            <p className="text-xs text-[#889063]">
-                              QR: {plant.qrCode}
-                            </p>
-                          </div>
-                        </div>
-
-                        <Badge
-                          className={`${
-                            statusColors[plant.status] ||
-                            "bg-gray-100 text-gray-800"
-                          } shadow-sm px-2 py-1 text-xs font-medium rounded-lg`}
-                        >
-                          {plant.status}
-                        </Badge>
-                      </div>
-
-                      {/* Content */}
-                      <div className="space-y-3 text-sm">
-                        <div className="flex items-center gap-2">
-                          <User className="w-4 h-4 text-[#4C3D19]" />
-                          <span className="text-[#324D3E]">
-                            Pemilik:{" "}
-                            <span className="font-medium">{plant.owner}</span>
-                          </span>
-                        </div>
-
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            <MapPin className="w-4 h-4 text-[#4C3D19]" />
-                            <span className="text-[#324D3E]">
-                              Lokasi:{" "}
-                              <span className="font-medium">
-                                {plant.location}
-                              </span>
-                            </span>
-                          </div>
-                          <div className="text-xs text-[#889063]">
-                            Contract ID:{" "}
-                            {String(plant.contractNumber || "").slice(-9)}
-                          </div>
-                        </div>
-
-                        <div className="flex items-center justify-between pt-3 border-t border-[#324D3E]/10">
-                          <div className="flex items-center gap-2">
-                            <Calendar className="w-4 h-4 text-[#889063]" />
-                            <span className="text-[#889063] text-xs">
-                              Update: {plant.lastUpdate}
-                            </span>
-                          </div>
-                          {isRecent && (
-                            <div className="px-2 py-1 bg-green-100 text-green-600 rounded-full text-xs font-medium">
-                              Baru
-                            </div>
-                          )}
                         </div>
                       </div>
                     </div>
-                  </div>
-                </Link>
-              );
-            })}
-          </div>
+                  </Link>
+                );
+              })}
+            </div>
+          )}
 
           {/* Pagination */}
           {totalPages > 1 && (

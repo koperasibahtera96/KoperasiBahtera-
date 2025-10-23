@@ -157,6 +157,9 @@ function LoginContent() {
                   redirectPath = "/admin/investors"
                 case "staff":
                 case "spv_staff":
+                case "mandor":
+                case "asisten":
+                case "manajer":
                   redirectPath = "/checker";
                   break;
                 case "finance":

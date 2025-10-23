@@ -10,6 +10,9 @@ export interface IPayment extends Document {
   // Payment type: registration, full-investment, cicilan-installment
   paymentType: "registration" | "full-investment" | "cicilan-installment";
 
+  // Payment method: midtrans or manual-bca
+  paymentMethod?: "midtrans" | "manual-bca";
+
   // For Midtrans payments (registration & full investment)
   transactionStatus?:
     | "pending"
@@ -122,6 +125,11 @@ const PaymentSchema: Schema = new Schema(
       type: String,
       required: true,
       enum: ["registration", "full-investment", "cicilan-installment"],
+    },
+    paymentMethod: {
+      type: String,
+      enum: ["midtrans", "manual-bca"],
+      default: "midtrans",
     },
 
     // For Midtrans payments

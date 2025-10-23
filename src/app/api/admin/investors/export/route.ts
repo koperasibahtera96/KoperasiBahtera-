@@ -39,12 +39,6 @@ export async function GET() {
           ? `${user.domisiliAddress}, ${user.domisiliCity}, ${user.domisiliProvince}`
           : "-",
         user?.occupation || "-",
-        `Rp. ${investor.totalInvestasi.toLocaleString("id-ID")}`,
-        `Rp. ${(investor.totalPaid || 0).toLocaleString("id-ID")}`,
-        investor.jumlahPohon,
-        investor.status,
-        user?.verificationStatus || "pending",
-        investor.investments?.length || 0,
         new Date(investor.createdAt).toLocaleDateString("id-ID", {
           day: "2-digit",
           month: "short",
@@ -87,12 +81,6 @@ export async function GET() {
         "Alamat KTP",
         "Alamat Domisili",
         "Pekerjaan",
-        "Total Investasi",
-        "Total Terbayar",
-        "Jumlah Pohon",
-        "Status Investor",
-        "Status Verifikasi",
-        "Jumlah Investasi",
         "Tanggal Bergabung",
       ],
     ];
@@ -163,9 +151,8 @@ export async function GET() {
           worksheet[cellRef].s.alignment = { horizontal: "center" };
         }
 
-        // Data alignment for numbers
-        if (row > 8 && (col === 0 || col === 11 || col === 14)) {
-          // No., Jumlah Pohon, Jumlah Investasi
+        // Data alignment for numbers (center No. column)
+        if (row > 8 && col === 0) {
           worksheet[cellRef].s.alignment = { horizontal: "center" };
         }
       }
@@ -175,20 +162,23 @@ export async function GET() {
     try {
       worksheet["!merges"] = worksheet["!merges"] || [];
 
-      // Merge company header rows (0..4) across all 16 columns
+      // Merge company header rows (0..4) across all columns
       for (let r = 0; r <= 4; r++) {
-        worksheet["!merges"].push({ s: { r, c: 0 }, e: { r, c: 15 } });
+        worksheet["!merges"].push({ s: { r, c: 0 }, e: { r, c: maxCols - 1 } });
       }
       // Merge empty rows (5..6)
       for (let r = 5; r <= 6; r++) {
-        worksheet["!merges"].push({ s: { r, c: 0 }, e: { r, c: 15 } });
+        worksheet["!merges"].push({ s: { r, c: 0 }, e: { r, c: maxCols - 1 } });
       }
-      // Merge "DAFTAR INVESTOR" across all 16 columns
-      worksheet["!merges"].push({ s: { r: 7, c: 0 }, e: { r: 7, c: 15 } });
+      // Merge "DAFTAR INVESTOR" across all columns
+      worksheet["!merges"].push({
+        s: { r: 7, c: 0 },
+        e: { r: 7, c: maxCols - 1 },
+      });
 
       // Ensure merged cells are created
       for (let r = 0; r <= 7; r++) {
-        for (let c = 0; c <= 15; c++) {
+        for (let c = 0; c <= maxCols - 1; c++) {
           const cellRef = XLSX.utils.encode_cell({ r, c });
           if (!worksheet[cellRef]) {
             const val = (worksheetData[r] && worksheetData[r][c]) || "";

@@ -101,7 +101,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Spam protection: Check for recent contract creation attempts
-    const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000);
+    const fiveMinutesAgo = new Date(Date.now() - 1 * 60 * 1000);
     const recentContracts = await Contract.countDocuments({
       userId: user._id,
       createdAt: { $gte: fiveMinutesAgo },
@@ -110,8 +110,7 @@ export async function POST(req: NextRequest) {
     if (recentContracts >= 3) {
       return NextResponse.json(
         {
-          error:
-            "Too many contract creation attempts. Please wait a few minutes before creating another contract.",
+          error: "Silahkan tunggu beberapa menit sebelum membuat kontrak baru",
         },
         { status: 429 }
       );

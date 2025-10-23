@@ -110,6 +110,7 @@ export const authOptions: NextAuthOptions = {
   callbacks: {
     async jwt({ token, user, trigger }) {
       if (user) {
+        token.name = user.name; // Store fullName from user
         token.role = user.role;
         token.isVerified = user.isVerified;
         token.userCode = user.userCode;
@@ -132,6 +133,7 @@ export const authOptions: NextAuthOptions = {
           await dbConnect();
           const dbUser = await User.findById(token.sub).select("-password");
           if (dbUser) {
+            token.name = dbUser.fullName;
             token.role = dbUser.role;
             token.isVerified = dbUser.isEmailVerified;
             token.userCode = dbUser.userCode;
@@ -154,6 +156,7 @@ export const authOptions: NextAuthOptions = {
     async session({ session, token }) {
       if (session.user) {
         session.user.id = token.sub!;
+        session.user.name = token.name as string; // Map fullName to session
         session.user.role = token.role as string;
         session.user.isVerified = token.isVerified as boolean;
         session.user.userCode = token.userCode as string;
@@ -169,17 +172,18 @@ export const authOptions: NextAuthOptions = {
           session.user.email = token.email as string;
         }
       }
-      // Safety net: fetch the latest email to avoid stale session after admin changes
+      // Safety net: fetch the latest email and name to avoid stale session after admin changes
       try {
         if (token.sub) {
           await dbConnect();
-          const dbUser = await User.findById(token.sub).select("email");
+          const dbUser = await User.findById(token.sub).select("email fullName");
           if (dbUser && session.user) {
             session.user.email = dbUser.email;
+            session.user.name = dbUser.fullName;
           }
         }
       } catch (error) {
-        console.error("Error ensuring latest email in session:", error);
+        console.error("Error ensuring latest email and name in session:", error);
       }
       return session;
     },

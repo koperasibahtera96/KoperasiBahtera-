@@ -3,6 +3,7 @@ import Contract from "@/models/Contract";
 import FilteredWord from "@/models/FilteredWord";
 import Payment from "@/models/Payment"; // adjust path
 import Plant from "@/models/Plant"; // adjust path
+import PlantAssignment from "@/models/PlantAssignment";
 import PlantInstance from "@/models/PlantInstance";
 import ResubmissionRequest from "@/models/ResubmissionRequest";
 import Review from "@/models/Review";
@@ -53,6 +54,7 @@ async function dbConnect() {
         await AdminLog.syncIndexes();
         await Contract.syncIndexes();
         await ResubmissionRequest.syncIndexes();
+        await PlantAssignment.syncIndexes();
         return mongoose;
       });
   }

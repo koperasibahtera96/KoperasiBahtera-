@@ -333,8 +333,16 @@ export default function InvestasiPage() {
       pdf.text(`Lokasi: ${plantData.location}`, 20, y);
       y += 10;
 
+      // ===== Filter: Only show approved histories for users
+      const filteredHistory = (plantData.history || []).filter((h: any) => {
+        // If no approval status field (old data), show it
+        if (!h.approvalStatus) return true;
+        // Only show histories approved by manajer
+        return h.approvalStatus === "approved_by_manajer";
+      });
+
       // ===== Sort: "Kontrak Baru" selalu paling atas, sisanya tanggal paling awal
-      const sortedHistory = [...(plantData.history || [])].sort((a, b) => {
+      const sortedHistory = [...filteredHistory].sort((a, b) => {
         const aIsKontrak =
           (a.type || a.action || "").toLowerCase() === "kontrak baru";
         const bIsKontrak =
@@ -785,6 +793,7 @@ export default function InvestasiPage() {
                             </h5>
                             <div className="space-y-2 max-h-24 overflow-hidden">
                               {investment.plantInstance.history
+                                .filter((h: any) => !h.approvalStatus || h.approvalStatus === "approved_by_manajer")
                                 .slice(-2)
                                 .map((historyItem, index) => (
                                   <div
@@ -1199,6 +1208,7 @@ export default function InvestasiPage() {
                               </h4>
                               <div className="h-80 overflow-y-auto border rounded-lg p-3 bg-gray-50 space-y-3">
                                 {selectedInvestment.plantInstance.history
+                                  .filter((h: any) => !h.approvalStatus || h.approvalStatus === "approved_by_manajer")
                                   .sort(
                                     (a, b) =>
                                       new Date(b.date).getTime() -

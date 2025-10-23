@@ -1,44 +1,60 @@
-"use client"
-import { Button } from "@/components/ui-finance/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui-finance/card"
-import { ArrowLeft, Calendar, ChevronLeft, ChevronRight, DollarSign, TrendingDown } from "lucide-react"
-import Link from "next/link"
-import { useEffect, useState } from "react"
+"use client";
+import { Button } from "@/components/ui-finance/button";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui-finance/card";
+import {
+  ArrowLeft,
+  Calendar,
+  ChevronLeft,
+  ChevronRight,
+  DollarSign,
+  TrendingDown,
+} from "lucide-react";
+import Link from "next/link";
+import { useEffect, useState } from "react";
 
 export default function PengeluaranOperasionalPage() {
-  const [plantInstances, setPlantInstances] = useState<any[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  const [currentPage, setCurrentPage] = useState(1)
-  const costsPerPage = 10
+  const [plantInstances, setPlantInstances] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const costsPerPage = 10;
 
   useEffect(() => {
     const fetchPlantInstances = async () => {
       try {
-        setLoading(true)
-        const response = await fetch("/api/plants")
+        setLoading(true);
+        const response = await fetch("/api/plants");
         if (response.ok) {
-          const data = await response.json()
-          setPlantInstances(data)
+          const data = await response.json();
+          setPlantInstances(data);
         } else {
-          setError("Failed to fetch plant data")
+          setError("Failed to fetch plant data");
         }
       } catch (error) {
-        console.error("Failed to fetch plant instances:", error)
-        setError("Failed to connect to database")
+        console.error("Failed to fetch plant instances:", error);
+        setError("Failed to connect to database");
       } finally {
-        setLoading(false)
+        setLoading(false);
       }
-    }
+    };
 
-    fetchPlantInstances()
-  }, [])
+    fetchPlantInstances();
+  }, []);
 
   const totalOperationalCosts = plantInstances.reduce(
     (sum, plant) =>
-      sum + (plant.operationalCosts || []).reduce((plantSum: number, cost: any) => plantSum + cost.amount, 0),
-    0,
-  )
+      sum +
+      (plant.operationalCosts || []).reduce(
+        (plantSum: number, cost: any) => plantSum + cost.amount,
+        0
+      ),
+    0
+  );
 
   const allRecentCosts = plantInstances
     .flatMap((plant) =>
@@ -46,15 +62,21 @@ export default function PengeluaranOperasionalPage() {
         ...cost,
         plantName: plant.instanceName || plant.name,
         plantType: plant.plantTypeName || plant.plantType,
-      })),
+      }))
     )
-    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
-  const totalPages = Math.ceil(allRecentCosts.length / costsPerPage)
-  const startIndex = (currentPage - 1) * costsPerPage
-  const recentCosts = allRecentCosts.slice(startIndex, startIndex + costsPerPage)
+  const totalPages = Math.ceil(allRecentCosts.length / costsPerPage);
+  const startIndex = (currentPage - 1) * costsPerPage;
+  const recentCosts = allRecentCosts.slice(
+    startIndex,
+    startIndex + costsPerPage
+  );
 
-  const totalTransactions = plantInstances.reduce((sum, plant) => sum + (plant.operationalCosts || []).length, 0)
+  const totalTransactions = plantInstances.reduce(
+    (sum, plant) => sum + (plant.operationalCosts || []).length,
+    0
+  );
 
   if (loading) {
     return (
@@ -68,7 +90,7 @@ export default function PengeluaranOperasionalPage() {
           </div>
         </div>
       </div>
-    )
+    );
   }
 
   if (error) {
@@ -78,14 +100,17 @@ export default function PengeluaranOperasionalPage() {
           <div className="flex items-center justify-center h-64">
             <div className="text-center">
               <p className="text-red-400 mb-4">{error}</p>
-              <Button onClick={() => window.location.reload()} variant="outline">
+              <Button
+                onClick={() => window.location.reload()}
+                variant="outline"
+              >
                 Coba Lagi
               </Button>
             </div>
           </div>
         </div>
       </div>
-    )
+    );
   }
 
   return (
@@ -104,8 +129,12 @@ export default function PengeluaranOperasionalPage() {
             </Button>
           </Link>
           <div>
-            <h1 className="text-3xl font-bold text-white">Laporan Pengeluaran Operasional</h1>
-            <p className="text-slate-400 mt-1">Overview pengeluaran operasional semua kontrak investasi</p>
+            <h1 className="text-3xl font-bold text-white">
+              Laporan Pengeluaran Operasional
+            </h1>
+            <p className="text-slate-400 mt-1">
+              Overview pengeluaran operasional semua kontrak investasi
+            </p>
           </div>
         </div>
 
@@ -119,7 +148,9 @@ export default function PengeluaranOperasionalPage() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-red-400">Rp {totalOperationalCosts.toLocaleString("id-ID")}</div>
+              <div className="text-2xl font-bold text-red-400">
+                Rp {totalOperationalCosts.toLocaleString("id-ID")}
+              </div>
             </CardContent>
           </Card>
 
@@ -131,7 +162,9 @@ export default function PengeluaranOperasionalPage() {
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-white">{totalTransactions}</div>
+              <div className="text-2xl font-bold text-white">
+                {totalTransactions}
+              </div>
             </CardContent>
           </Card>
 
@@ -144,7 +177,8 @@ export default function PengeluaranOperasionalPage() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-orange-400">
-                Rp {Math.round(totalOperationalCosts / 12).toLocaleString("id-ID")}
+                Rp{" "}
+                {Math.round(totalOperationalCosts / 12).toLocaleString("id-ID")}
               </div>
             </CardContent>
           </Card>
@@ -158,17 +192,22 @@ export default function PengeluaranOperasionalPage() {
               {totalPages > 1 && (
                 <div className="flex items-center gap-2">
                   <span className="text-sm text-slate-400">
-                    Halaman {currentPage} dari {totalPages} ({allRecentCosts.length} total transaksi)
+                    Halaman {currentPage} dari {totalPages} (
+                    {allRecentCosts.length} total transaksi)
                   </span>
                   <button
-                    onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                    onClick={() =>
+                      setCurrentPage((prev) => Math.max(prev - 1, 1))
+                    }
                     disabled={currentPage === 1}
                     className="p-2 rounded-lg bg-slate-700 hover:bg-slate-600 disabled:opacity-50 disabled:cursor-not-allowed text-white"
                   >
                     <ChevronLeft className="w-4 h-4" />
                   </button>
                   <button
-                    onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+                    onClick={() =>
+                      setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+                    }
                     disabled={currentPage === totalPages}
                     className="p-2 rounded-lg bg-slate-700 hover:bg-slate-600 disabled:opacity-50 disabled:cursor-not-allowed text-white"
                   >
@@ -181,7 +220,9 @@ export default function PengeluaranOperasionalPage() {
           <CardContent>
             {recentCosts.length === 0 ? (
               <div className="text-center py-8">
-                <p className="text-slate-400">Belum ada data pengeluaran operasional</p>
+                <p className="text-slate-400">
+                  Belum ada data pengeluaran operasional
+                </p>
               </div>
             ) : (
               <div className="space-y-3">
@@ -192,13 +233,21 @@ export default function PengeluaranOperasionalPage() {
                   >
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-1">
-                        <span className="text-white font-medium">Rp {cost.amount.toLocaleString("id-ID")}</span>
-                        <span className="text-xs bg-slate-600 text-slate-300 px-2 py-1 rounded">{cost.plantType}</span>
+                        <span className="text-white font-medium">
+                          Rp {cost.amount.toLocaleString("id-ID")}
+                        </span>
+                        <span className="text-xs bg-slate-600 text-slate-300 px-2 py-1 rounded">
+                          {cost.plantType}
+                        </span>
                       </div>
-                      <p className="text-slate-400 text-sm">{cost.description}</p>
+                      <p className="text-slate-400 text-sm">
+                        {cost.description}
+                      </p>
                       <p className="text-slate-500 text-xs">{cost.plantName}</p>
                     </div>
-                    <span className="text-slate-400 text-sm">{new Date(cost.date).toLocaleDateString("id-ID")}</span>
+                    <span className="text-slate-400 text-sm">
+                      {new Date(cost.date).toLocaleDateString("id-ID")}
+                    </span>
                   </div>
                 ))}
               </div>
@@ -206,19 +255,24 @@ export default function PengeluaranOperasionalPage() {
             {totalPages > 1 && (
               <div className="mt-6 pt-4 border-t border-slate-600 flex justify-between items-center">
                 <span className="text-slate-400 text-sm">
-                  Menampilkan {startIndex + 1}-{Math.min(startIndex + costsPerPage, allRecentCosts.length)} dari{" "}
-                  {allRecentCosts.length} transaksi
+                  Menampilkan {startIndex + 1}-
+                  {Math.min(startIndex + costsPerPage, allRecentCosts.length)}{" "}
+                  dari {allRecentCosts.length} transaksi
                 </span>
                 <div className="flex gap-2">
                   <button
-                    onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                    onClick={() =>
+                      setCurrentPage((prev) => Math.max(prev - 1, 1))
+                    }
                     disabled={currentPage === 1}
                     className="px-3 py-1 bg-slate-700 hover:bg-slate-600 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded text-sm"
                   >
                     Sebelumnya
                   </button>
                   <button
-                    onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+                    onClick={() =>
+                      setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+                    }
                     disabled={currentPage === totalPages}
                     className="px-3 py-1 bg-slate-700 hover:bg-slate-600 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded text-sm"
                   >
@@ -231,5 +285,5 @@ export default function PengeluaranOperasionalPage() {
         </Card>
       </div>
     </div>
-  )
+  );
 }

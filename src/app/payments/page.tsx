@@ -6,6 +6,7 @@ import { DualSignatureInput } from "@/components/ui/dual-signature-input";
 import { downloadInvoiceImage } from "@/lib/invoiceImage";
 import { CicilanGroup, CicilanInstallmentWithPayment } from "@/types/cicilan";
 import { useLanguage } from "@/contexts/LanguageContext";
+import PaymentMethodModal from "@/components/payments/PaymentMethodModal";
 import jsPDF from "jspdf";
 import {
   Calendar,
@@ -66,6 +67,17 @@ interface FullPaymentContract {
   isPermanentlyRejected: boolean;
   // Referral code for this investment
   referralCode?: string;
+  // Payment method selected by user
+  paymentMethod?: "midtrans" | "manual-bca";
+  // Payment proof image for manual payments
+  proofImageUrl?: string;
+  // Admin status for manual payments
+  adminStatus?: "pending" | "approved" | "rejected";
+  // Admin notes/rejection reason
+  adminNotes?: string;
+  // E-materai stamping status
+  emateraiStamped?: boolean;
+  emateraiStampedUrl?: string;
 }
 
 export default function PaymentsPage() {
@@ -85,6 +97,10 @@ export default function PaymentsPage() {
   >("all");
   const [searchTerm, setSearchTerm] = useState("");
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
+  const [_bcaPayments, setBcaPayments] = useState<any[]>([]);
+  const [uploadingBCAProof, setUploadingBCAProof] = useState<string | null>(
+    null
+  );
 
   // Function to toggle group expansion
   const toggleGroupExpansion = (groupId: string) => {
@@ -129,6 +145,73 @@ export default function PaymentsPage() {
     }
   }, [searchTerm, filter]);
 
+  // Fetch BCA manual payments
+  const fetchBCAPayments = useCallback(async () => {
+    try {
+      const response = await fetch("/api/payment/manual-bca");
+      if (response.ok) {
+        const data = await response.json();
+        setBcaPayments(data.payments || []);
+      }
+    } catch (error) {
+      console.error("Error fetching BCA payments:", error);
+    }
+  }, []);
+
+  // Upload BCA payment proof
+  const handleBCAProofUpload = async (paymentId: string, file: File) => {
+    try {
+      setUploadingBCAProof(paymentId);
+
+      // Upload image first
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("orderId", paymentId);
+
+      const uploadResponse = await fetch("/api/cicilan/upload-proof", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!uploadResponse.ok) {
+        throw new Error("Failed to upload image");
+      }
+
+      const uploadData = await uploadResponse.json();
+
+      // Update payment with proof URL
+      const updateResponse = await fetch("/api/payment/upload-proof", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          paymentId,
+          proofImageUrl: uploadData.imageUrl,
+          paymentMethod: "manual-bca",
+        }),
+      });
+
+      if (updateResponse.ok) {
+        showSuccess(
+          "Berhasil",
+          "Bukti pembayaran berhasil diupload. Menunggu verifikasi finance."
+        );
+        fetchBCAPayments(); // Refresh BCA payments
+        fetchInstallments(); // Refresh full payment contracts
+      } else {
+        const errorData = await updateResponse.json();
+        console.error("Upload proof error:", errorData);
+        throw new Error(errorData.error || "Failed to update payment");
+      }
+    } catch (error) {
+      console.error("Error uploading BCA proof:", error);
+      showError("Error", "Gagal mengupload bukti pembayaran");
+    } finally {
+      setUploadingBCAProof(null);
+    }
+  };
+
   const [uploadModal, setUploadModal] = useState<{
     isOpen: boolean;
     installment: Installment | null;
@@ -144,8 +227,43 @@ export default function PaymentsPage() {
     contractType: null,
     productName: null,
   });
+  const [paymentMethodModal, setPaymentMethodModal] = useState<{
+    isOpen: boolean;
+    contract: FullPaymentContract | null;
+    installment: Installment | null;
+    group: CicilanGroup | null;
+  }>({
+    isOpen: false,
+    contract: null,
+    installment: null,
+    group: null,
+  });
   const { showSuccess, showError, AlertComponent } = useAlert();
 
+  // Open payment method selection modal for full payment
+  const handleFullPaymentClick = (contract: FullPaymentContract) => {
+    setPaymentMethodModal({
+      isOpen: true,
+      contract,
+      installment: null,
+      group: null,
+    });
+  };
+
+  // Open payment method selection modal for installment
+  const handleInstallmentPaymentClick = (
+    installment: Installment,
+    group: CicilanGroup
+  ) => {
+    setPaymentMethodModal({
+      isOpen: true,
+      contract: null,
+      installment,
+      group,
+    });
+  };
+
+  // Handle Midtrans payment for full payment
   const handleFullPayment = async (contract: FullPaymentContract) => {
     try {
       const response = await fetch("/api/payment/create-investment", {
@@ -171,6 +289,12 @@ export default function PaymentsPage() {
       if (data.success && data.data?.redirect_url) {
         // Open the Midtrans payment URL
         window.open(data.data.redirect_url, "_blank");
+        setPaymentMethodModal({
+          isOpen: false,
+          contract: null,
+          installment: null,
+          group: null,
+        });
       } else {
         showError(
           t("payments.errors.paymentFailed"),
@@ -183,6 +307,51 @@ export default function PaymentsPage() {
         t("payments.errors.general"),
         t("payments.errors.generalMessage")
       );
+    }
+  };
+
+  // Handle BCA manual payment
+  const handleBCAPayment = async () => {
+    const { contract, group } = paymentMethodModal;
+
+    try {
+      const contractId = contract ? contract.contractId : group?.cicilanOrderId;
+
+      if (!contractId) {
+        showError("Error", "Contract ID tidak ditemukan");
+        return;
+      }
+
+      const response = await fetch("/api/payment/create-manual-bca", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          contractId,
+        }),
+      });
+
+      if (response.ok) {
+        showSuccess(
+          "Berhasil",
+          "Pembayaran BCA dibuat. Silakan upload bukti pembayaran di bawah."
+        );
+        setPaymentMethodModal({
+          isOpen: false,
+          contract: null,
+          installment: null,
+          group: null,
+        });
+        // Refresh the page data
+        fetchInstallments();
+      } else {
+        const error = await response.json();
+        showError("Error", error.error || "Gagal membuat pembayaran BCA");
+      }
+    } catch (error) {
+      console.error("Error creating BCA payment:", error);
+      showError("Error", "Terjadi kesalahan saat membuat pembayaran BCA");
     }
   };
 
@@ -235,31 +404,32 @@ export default function PaymentsPage() {
     downloadInvoiceImage(paymentData);
   };
 
-  const handleDownloadContract = async (contractId: string) => {
+  const handleDownloadContract = async (
+    stampedUrl: string,
+    contractId: string
+  ) => {
     try {
-      // First get the contract data to generate the PDF
-      const response = await fetch(`/api/contract/${contractId}/download`, {
-        method: "GET",
-      });
+      // Fetch the stamped contract through our backend API
+      const response = await fetch(
+        `/api/contract/${contractId}/download-stamped`
+      );
 
-      if (response.ok) {
-        const data = await response.json();
-
-        if (data.success) {
-          // Create PDF with the signature data (may be null for some contracts)
-          await generateContractPDF(data.contractData, data.signatureData);
-        } else {
-          showError(
-            t("payments.errors.general"),
-            data.error || t("payments.errors.contractDownloadFailed")
-          );
-        }
-      } else {
-        showError(
-          t("payments.errors.general"),
-          t("payments.errors.contractDataFailed")
-        );
+      if (!response.ok) {
+        throw new Error("Failed to fetch stamped contract");
       }
+
+      // Get the PDF as blob
+      const blob = await response.blob();
+
+      // Create download link
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `contract-${contractId}-stamped.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
     } catch (error) {
       console.error("Error downloading contract:", error);
       showError(
@@ -361,6 +531,7 @@ export default function PaymentsPage() {
   };
 
   // Function to generate PDF from contract data
+  //eslint-disable-next-line @typescript-eslint/no-unused-vars
   const generateContractPDF = async (
     contractData: any,
     signatureData: string | null
@@ -971,6 +1142,7 @@ export default function PaymentsPage() {
   useEffect(() => {
     const handler = setTimeout(() => {
       fetchInstallments();
+      fetchBCAPayments();
     }, 250);
 
     return () => clearTimeout(handler);
@@ -1073,6 +1245,12 @@ export default function PaymentsPage() {
           "Pembayaran Dibuka!",
           `Halaman pembayaran cicilan ${installmentNumber} telah dibuka di tab baru. Selesaikan pembayaran untuk melanjutkan.`
         );
+        setPaymentMethodModal({
+          isOpen: false,
+          contract: null,
+          installment: null,
+          group: null,
+        });
       } else {
         showError(t("payments.errors.paymentFailed"), data.error);
       }
@@ -1622,23 +1800,25 @@ export default function PaymentsPage() {
                                     </p>
                                   </div>
                                 </div>
-                                {group.contractStatus !== "draft" && (
-                                  <button
-                                    onClick={() =>
-                                      handleDownloadContract(
-                                        group.contractId || ""
-                                      )
-                                    }
-                                    className="w-full sm:w-auto px-3 py-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white text-sm rounded-full hover:shadow-lg transition-all duration-300 font-poppins font-medium"
-                                  >
-                                    <span className="flex items-center justify-center sm:justify-center gap-2">
-                                      <Download size={16} />
-                                      <span className="truncate">
-                                        {t("payments.contract.download")}
+                                {group.emateraiStamped &&
+                                  group.emateraiStampedUrl && (
+                                    <button
+                                      onClick={() =>
+                                        handleDownloadContract(
+                                          group.emateraiStampedUrl!,
+                                          group.contractId || ""
+                                        )
+                                      }
+                                      className="w-full sm:w-auto px-3 py-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white text-sm rounded-full hover:shadow-lg transition-all duration-300 font-poppins font-medium"
+                                    >
+                                      <span className="flex items-center justify-center sm:justify-center gap-2">
+                                        <Download size={16} />
+                                        <span className="truncate">
+                                          {t("payments.contract.download")}
+                                        </span>
                                       </span>
-                                    </span>
-                                  </button>
-                                )}
+                                    </button>
+                                  )}
                               </div>
                             </div>
                           )}
@@ -1664,21 +1844,25 @@ export default function PaymentsPage() {
                                 </p>
                               </div>
                             </div>
-                            {group.contractStatus !== "draft" && (
-                              <button
-                                onClick={() =>
-                                  handleDownloadContract(group.contractId || "")
-                                }
-                                className="w-full sm:w-auto px-3 py-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white text-sm rounded-full hover:shadow-lg transition-all duration-300 font-poppins font-medium"
-                              >
-                                <span className="flex items-center justify-center gap-2">
-                                  <Download size={16} />
-                                  <span className="truncate">
-                                    {t("payments.contract.download")}
+                            {group.emateraiStamped &&
+                              group.emateraiStampedUrl && (
+                                <button
+                                  onClick={() =>
+                                    handleDownloadContract(
+                                      group.emateraiStampedUrl!,
+                                      group.contractId || ""
+                                    )
+                                  }
+                                  className="w-full sm:w-auto px-3 py-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white text-sm rounded-full hover:shadow-lg transition-all duration-300 font-poppins font-medium"
+                                >
+                                  <span className="flex items-center justify-center gap-2">
+                                    <Download size={16} />
+                                    <span className="truncate">
+                                      {t("payments.contract.download")}
+                                    </span>
                                   </span>
-                                </span>
-                              </button>
-                            )}
+                                </button>
+                              )}
                           </div>
                         </div>
                       )}
@@ -2028,26 +2212,103 @@ export default function PaymentsPage() {
                                           installment,
                                           group
                                         ) && (
-                                          <button
-                                            onClick={() =>
-                                              handlePayInstallment(
-                                                installment._id!,
-                                                installment.installmentNumber!
+                                          <>
+                                            {/* Show appropriate button based on payment method - use group's method if set, otherwise installment's */}
+                                            {(group.paymentMethod ||
+                                              installment.paymentMethod) ===
+                                            "manual-bca" ? (
+                                              installment.adminStatus !==
+                                              "approved" ? (
+                                                <div>
+                                                  <input
+                                                    type="file"
+                                                    accept="image/*"
+                                                    id={`upload-installment-${installment._id}`}
+                                                    className="hidden"
+                                                    onChange={(e) => {
+                                                      const file =
+                                                        e.target.files?.[0];
+                                                      if (
+                                                        file &&
+                                                        installment._id
+                                                      ) {
+                                                        handleBCAProofUpload(
+                                                          installment._id,
+                                                          file
+                                                        );
+                                                      }
+                                                    }}
+                                                    disabled={
+                                                      uploadingBCAProof ===
+                                                      installment._id
+                                                    }
+                                                  />
+                                                  <button
+                                                    onClick={() => {
+                                                      document
+                                                        .getElementById(
+                                                          `upload-installment-${installment._id}`
+                                                        )
+                                                        ?.click();
+                                                    }}
+                                                    disabled={
+                                                      uploadingBCAProof ===
+                                                      installment._id
+                                                    }
+                                                    className="w-full px-3 py-2 bg-gradient-to-r from-[#324D3E] to-[#4C3D19] text-white text-sm rounded-full hover:shadow-lg transition-all duration-300 font-poppins font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                                                  >
+                                                    <span className="flex items-center justify-center gap-2">
+                                                      <Upload size={16} />
+                                                      {uploadingBCAProof ===
+                                                      installment._id
+                                                        ? t(
+                                                            "payments.buttons.uploading"
+                                                          )
+                                                        : !installment.proofImageUrl
+                                                        ? t(
+                                                            "payments.buttons.uploadProof"
+                                                          )
+                                                        : t(
+                                                            "payments.buttons.changeProof"
+                                                          )}
+                                                    </span>
+                                                  </button>
+                                                </div>
+                                              ) : (
+                                                /* Show message when proof is approved */
+                                                <div className="text-center py-2 text-sm text-green-600 font-poppins font-semibold">
+                                                  {t(
+                                                    "payments.proof.paymentApproved"
+                                                  )}
+                                                </div>
                                               )
-                                            }
-                                            className="w-full px-3 py-2 bg-gradient-to-r from-[#324D3E] to-[#4C3D19] text-white text-sm rounded-full hover:shadow-lg transition-all duration-300 font-poppins font-medium"
-                                            disabled={
-                                              uploadingProof === installment._id
-                                            }
-                                          >
-                                            <span className="flex items-center justify-center gap-2">
-                                              <CreditCard size={16} />
-                                              {uploadingProof ===
-                                              installment._id
-                                                ? "Membuat Pembayaran..."
-                                                : t("payments.buttons.payNow")}
-                                            </span>
-                                          </button>
+                                            ) : (
+                                              /* Show payment method modal for midtrans or no method yet */
+                                              <button
+                                                onClick={() =>
+                                                  handleInstallmentPaymentClick(
+                                                    installment,
+                                                    group
+                                                  )
+                                                }
+                                                className="w-full px-3 py-2 bg-gradient-to-r from-[#324D3E] to-[#4C3D19] text-white text-sm rounded-full hover:shadow-lg transition-all duration-300 font-poppins font-medium"
+                                                disabled={
+                                                  uploadingProof ===
+                                                  installment._id
+                                                }
+                                              >
+                                                <span className="flex items-center justify-center gap-2">
+                                                  <CreditCard size={16} />
+                                                  {uploadingProof ===
+                                                  installment._id
+                                                    ? "Membuat Pembayaran..."
+                                                    : t(
+                                                        "payments.buttons.payNow"
+                                                      )}
+                                                </span>
+                                              </button>
+                                            )}
+                                          </>
                                         )}
 
                                         {/* Old upload button for backward compatibility */}
@@ -2068,8 +2329,12 @@ export default function PaymentsPage() {
                                               <Upload size={16} />
                                               {uploadingProof ===
                                               installment._id
-                                                ? "Mengunggah..."
-                                                : "Upload Bukti Bayar"}
+                                                ? t(
+                                                    "payments.buttons.uploading"
+                                                  )
+                                                : t(
+                                                    "payments.buttons.uploadProof"
+                                                  )}
                                             </span>
                                           </button>
                                         )}
@@ -2095,25 +2360,45 @@ export default function PaymentsPage() {
                                         )}
                                       </div>
 
-                                      {/* Proof Image Preview */}
-                                      {installment.proofImageUrl && (
-                                        <div className="mt-3">
-                                          <div className="text-xs text-gray-600 mb-1 font-poppins">
-                                            Bukti Pembayaran:
-                                          </div>
-                                          <Image
-                                            src={installment.proofImageUrl}
-                                            alt="Bukti Pembayaran"
-                                            width={100}
-                                            height={100}
-                                            className="w-full h-20 object-cover rounded-xl border cursor-pointer hover:shadow-lg transition-all duration-300"
-                                            onClick={() =>
-                                              window.open(
-                                                installment.proofImageUrl,
-                                                "_blank"
-                                              )
-                                            }
-                                          />
+                                      {/* Fixed Height Area for Manual BCA Payments - Only show if manual-bca (group-level or installment-level) */}
+                                      {(group.paymentMethod ||
+                                        installment.paymentMethod) ===
+                                        "manual-bca" && (
+                                        <div className="mt-2 mb-2 h-16">
+                                          {installment.proofImageUrl ? (
+                                            <div className="flex items-center gap-2 h-full">
+                                              <Image
+                                                width={64}
+                                                height={64}
+                                                src={installment.proofImageUrl}
+                                                alt="Bukti Pembayaran"
+                                                className="w-16 h-16 object-cover rounded-lg border-2 border-[#324D3E]/20 cursor-pointer hover:opacity-80 transition-opacity flex-shrink-0"
+                                                onClick={() =>
+                                                  window.open(
+                                                    installment.proofImageUrl,
+                                                    "_blank"
+                                                  )
+                                                }
+                                              />
+                                              {/* Show rejection reason if rejected - compact */}
+                                              {installment.adminStatus ===
+                                                "rejected" &&
+                                                installment.adminNotes && (
+                                                  <div className="flex-1 min-w-0 overflow-hidden">
+                                                    <p className="text-xs font-semibold text-red-800 truncate">
+                                                      {t(
+                                                        "payments.proof.rejected"
+                                                      )}{" "}
+                                                      {installment.adminNotes}
+                                                    </p>
+                                                  </div>
+                                                )}
+                                            </div>
+                                          ) : (
+                                            <div className="text-xs text-gray-400 font-poppins italic h-full flex items-center">
+                                              {t("payments.proof.noProof")}
+                                            </div>
+                                          )}
                                         </div>
                                       )}
                                     </div>
@@ -2340,17 +2625,23 @@ export default function PaymentsPage() {
                                     </p>
                                   </div>
                                 </div>
-                                <button
-                                  onClick={() =>
-                                    handleDownloadContract(contract.contractId)
-                                  }
-                                  className="w-full sm:w-auto px-3 py-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white text-sm rounded-full hover:shadow-lg transition-all duration-300 font-poppins font-medium"
-                                >
-                                  <span className="flex items-center justify-center gap-2">
-                                    <Download size={16} />
-                                    {t("payments.contract.download")}
-                                  </span>
-                                </button>
+                                {contract.emateraiStamped &&
+                                  contract.emateraiStampedUrl && (
+                                    <button
+                                      onClick={() =>
+                                        handleDownloadContract(
+                                          contract.emateraiStampedUrl!,
+                                          contract.contractId
+                                        )
+                                      }
+                                      className="w-full sm:w-auto px-3 py-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white text-sm rounded-full hover:shadow-lg transition-all duration-300 font-poppins font-medium"
+                                    >
+                                      <span className="flex items-center justify-center gap-2">
+                                        <Download size={16} />
+                                        {t("payments.contract.download")}
+                                      </span>
+                                    </button>
+                                  )}
                               </div>
                             </div>
                           )}
@@ -2376,17 +2667,23 @@ export default function PaymentsPage() {
                                 </p>
                               </div>
                             </div>
-                            <button
-                              onClick={() =>
-                                handleDownloadContract(contract.contractId)
-                              }
-                              className="w-full sm:w-auto px-3 py-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white text-sm rounded-full hover:shadow-lg transition-all duration-300 font-poppins font-medium"
-                            >
-                              <span className="flex items-center justify-center gap-2">
-                                <Download size={16} />
-                                {t("payments.contract.download")}
-                              </span>
-                            </button>
+                            {contract.emateraiStamped &&
+                              contract.emateraiStampedUrl && (
+                                <button
+                                  onClick={() =>
+                                    handleDownloadContract(
+                                      contract.emateraiStampedUrl!,
+                                      contract.contractId
+                                    )
+                                  }
+                                  className="w-full sm:w-auto px-3 py-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white text-sm rounded-full hover:shadow-lg transition-all duration-300 font-poppins font-medium"
+                                >
+                                  <span className="flex items-center justify-center gap-2">
+                                    <Download size={16} />
+                                    {t("payments.contract.download")}
+                                  </span>
+                                </button>
+                              )}
                           </div>
                         </div>
                       )}
@@ -2552,6 +2849,14 @@ export default function PaymentsPage() {
                                 className={`px-3 py-2 text-xs font-bold rounded-full ${
                                   contract.paymentCompleted
                                     ? "bg-gradient-to-r from-emerald-100 to-green-100 text-emerald-800 border border-emerald-200"
+                                    : contract.paymentMethod === "manual-bca" &&
+                                      contract.proofImageUrl
+                                    ? // Show BCA payment proof status
+                                      contract.adminStatus === "approved"
+                                      ? "bg-gradient-to-r from-emerald-100 to-green-100 text-emerald-800 border border-emerald-200"
+                                      : contract.adminStatus === "rejected"
+                                      ? "bg-gradient-to-r from-red-100 to-rose-100 text-red-800 border border-red-200"
+                                      : "bg-gradient-to-r from-yellow-100 to-amber-100 text-yellow-800 border border-yellow-200"
                                     : (() => {
                                         // Check if contract is overdue using actual dueDate
                                         const isContractOverdue =
@@ -2565,6 +2870,14 @@ export default function PaymentsPage() {
                               >
                                 {contract.paymentCompleted
                                   ? "Selesai"
+                                  : contract.paymentMethod === "manual-bca" &&
+                                    contract.proofImageUrl
+                                  ? // Show BCA payment proof status
+                                    contract.adminStatus === "approved"
+                                    ? t("payments.proof.approved")
+                                    : contract.adminStatus === "rejected"
+                                    ? t("payments.status.rejected")
+                                    : t("payments.proof.pendingVerification")
                                   : (() => {
                                       // Check if contract is overdue using actual dueDate
                                       const isContractOverdue =
@@ -2594,20 +2907,124 @@ export default function PaymentsPage() {
                               </div>
                             )}
 
+                            {/* Fixed Height Area for Manual BCA Payments - Only show if manual-bca */}
+                            {contract.paymentMethod === "manual-bca" && (
+                              <div className="mb-2 h-16">
+                                {contract.proofImageUrl ? (
+                                  <div className="flex items-center gap-2 h-full">
+                                    <Image
+                                      width={64}
+                                      height={64}
+                                      src={contract.proofImageUrl}
+                                      alt="Bukti Pembayaran"
+                                      className="w-16 h-16 object-cover rounded-lg border-2 border-[#324D3E]/20 cursor-pointer hover:opacity-80 transition-opacity flex-shrink-0"
+                                      onClick={() =>
+                                        window.open(
+                                          contract.proofImageUrl,
+                                          "_blank"
+                                        )
+                                      }
+                                    />
+                                    {/* Show rejection reason if rejected - compact */}
+                                    {contract.adminStatus === "rejected" &&
+                                      contract.adminNotes && (
+                                        <div className="flex-1 min-w-0 overflow-hidden">
+                                          <p className="text-xs font-semibold text-red-800 truncate">
+                                            {t("payments.proof.rejected")}{" "}
+                                            {contract.adminNotes}
+                                          </p>
+                                        </div>
+                                      )}
+                                  </div>
+                                ) : (
+                                  <div className="text-xs text-gray-400 font-poppins italic h-full flex items-center">
+                                    {t("payments.proof.noProof")}
+                                  </div>
+                                )}
+                              </div>
+                            )}
+
                             {/* Action Button */}
                             <div className="absolute bottom-6 left-6 right-6">
                               {!contract.paymentCompleted &&
                                 !contract.isPermanentlyRejected &&
                                 contract.hasEverSigned && (
-                                  <button
-                                    onClick={() => handleFullPayment(contract)}
-                                    className="w-full px-3 py-2 bg-gradient-to-r from-[#324D3E] to-[#4C3D19] text-white text-sm rounded-full hover:shadow-lg transition-all duration-300 font-poppins font-medium"
-                                  >
-                                    <span className="flex items-center justify-center gap-2">
-                                      <CreditCard size={16} />
-                                      {t("payments.buttons.payNow")}
-                                    </span>
-                                  </button>
+                                  <>
+                                    {/* Show Upload button if payment method is manual-bca */}
+                                    {contract.paymentMethod === "manual-bca" ? (
+                                      contract.adminStatus !== "approved" ? (
+                                        <div>
+                                          <input
+                                            type="file"
+                                            accept="image/*"
+                                            id={`upload-${contract.contractId}`}
+                                            className="hidden"
+                                            onChange={(e) => {
+                                              const file = e.target.files?.[0];
+                                              if (file && contract.paymentId) {
+                                                handleBCAProofUpload(
+                                                  contract.paymentId,
+                                                  file
+                                                );
+                                              }
+                                            }}
+                                            disabled={
+                                              uploadingBCAProof ===
+                                              contract.paymentId
+                                            }
+                                          />
+                                          <button
+                                            onClick={() => {
+                                              document
+                                                .getElementById(
+                                                  `upload-${contract.contractId}`
+                                                )
+                                                ?.click();
+                                            }}
+                                            disabled={
+                                              uploadingBCAProof ===
+                                              contract.paymentId
+                                            }
+                                            className="w-full px-3 py-2 bg-gradient-to-r from-[#324D3E] to-[#4C3D19] text-white text-sm rounded-full hover:shadow-lg transition-all duration-300 font-poppins font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                                          >
+                                            <span className="flex items-center justify-center gap-2">
+                                              <Upload size={16} />
+                                              {uploadingBCAProof ===
+                                              contract.paymentId
+                                                ? t(
+                                                    "payments.buttons.uploading"
+                                                  )
+                                                : !contract.proofImageUrl
+                                                ? t(
+                                                    "payments.buttons.uploadProof"
+                                                  )
+                                                : t(
+                                                    "payments.buttons.changeProof"
+                                                  )}
+                                            </span>
+                                          </button>
+                                        </div>
+                                      ) : (
+                                        /* Show message when proof is approved */
+                                        <div className="text-center py-2 text-sm text-green-600 font-poppins font-semibold">
+                                          {t("payments.proof.paymentApproved")}
+                                        </div>
+                                      )
+                                    ) : (
+                                      /* Show Pay Now button if payment method is midtrans or not set */
+                                      <button
+                                        onClick={() =>
+                                          handleFullPaymentClick(contract)
+                                        }
+                                        className="w-full px-3 py-2 bg-gradient-to-r from-[#324D3E] to-[#4C3D19] text-white text-sm rounded-full hover:shadow-lg transition-all duration-300 font-poppins font-medium"
+                                      >
+                                        <span className="flex items-center justify-center gap-2">
+                                          <CreditCard size={16} />
+                                          {t("payments.buttons.payNow")}
+                                        </span>
+                                      </button>
+                                    )}
+                                  </>
                                 )}
 
                               {/* Disabled Payment Button for Permanently Rejected Contracts */}
@@ -2685,6 +3102,33 @@ export default function PaymentsPage() {
           onClose={() => setUploadModal({ isOpen: false, installment: null })}
           onUpload={handleUploadProof}
           isUploading={uploadingProof === uploadModal.installment?._id}
+        />
+
+        {/* Payment Method Selection Modal */}
+        <PaymentMethodModal
+          isOpen={paymentMethodModal.isOpen}
+          contract={paymentMethodModal.contract}
+          installment={paymentMethodModal.installment}
+          group={paymentMethodModal.group}
+          onClose={() =>
+            setPaymentMethodModal({
+              isOpen: false,
+              contract: null,
+              installment: null,
+              group: null,
+            })
+          }
+          onSelectMidtrans={() => {
+            if (paymentMethodModal.contract) {
+              handleFullPayment(paymentMethodModal.contract);
+            } else if (paymentMethodModal.installment) {
+              handlePayInstallment(
+                paymentMethodModal.installment._id!,
+                paymentMethodModal.installment.installmentNumber!
+              );
+            }
+          }}
+          onSelectBCA={handleBCAPayment}
         />
       </div>
     </>
@@ -2961,7 +3405,9 @@ function InstallmentProofUploadModal({
         <div className="p-6">
           <div className="flex justify-between items-center mb-4">
             <h3 className="text-lg font-semibold text-[#324D3E] font-poppins">
-              Upload Bukti Pembayaran #{installment.installmentNumber}
+              {t("payments.proof.uploadTitle", {
+                number: String(installment.installmentNumber),
+              })}
             </h3>
             <button
               onClick={onClose}
@@ -3040,7 +3486,9 @@ function InstallmentProofUploadModal({
               >
                 <span className="flex items-center justify-center gap-2">
                   <Upload size={16} />
-                  {isUploading ? "Mengunggah..." : "Upload"}
+                  {isUploading
+                    ? t("payments.buttons.uploading")
+                    : t("payments.proof.upload")}
                 </span>
               </button>
             </div>

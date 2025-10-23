@@ -42,13 +42,10 @@ export async function createCommissionRecord(paymentId: string): Promise<{
         contractValue = payment.amount;
       }
     } else if (payment.paymentType === 'cicilan-installment') {
-      // Cicilan: commission only on first installment when approved
-      if (payment.installmentNumber === 1 &&
-          payment.adminStatus === 'approved' &&
-          payment.installmentAmount &&
-          payment.totalInstallments) {
+      // Cicilan: commission on each installment when approved (progressive commission)
+      if (payment.adminStatus === 'approved') {
         isEligible = true;
-        contractValue = payment.installmentAmount * payment.totalInstallments;
+        contractValue = payment.amount; // Commission on THIS installment amount only
       }
     }
 
@@ -66,10 +63,10 @@ export async function createCommissionRecord(paymentId: string): Promise<{
       };
     }
 
-    // Find marketing staff
+    // Find marketing staff or marketing head
     const marketingStaff = await User.findOne({
       referralCode: payment.referralCode,
-      role: 'marketing'
+      role: { $in: ['marketing', 'marketing_head'] }
     });
 
     if (!marketingStaff) {
@@ -147,9 +144,9 @@ export async function recalculateCommissionsForStaff(marketingStaffId: string): 
   try {
     await dbConnect();
 
-    // Find marketing staff
+    // Find marketing staff or marketing head
     const marketingStaff = await User.findById(marketingStaffId);
-    if (!marketingStaff || marketingStaff.role !== 'marketing') {
+    if (!marketingStaff || !['marketing', 'marketing_head'].includes(marketingStaff.role)) {
       return {
         success: false,
         message: "Marketing staff not found"

@@ -4,7 +4,7 @@ import { useAlert } from "@/components/ui/Alert";
 import { DualSignatureInput } from "@/components/ui/dual-signature-input";
 import jsPDF from "jspdf";
 import Image from "next/image";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 interface ContractData {
@@ -132,6 +132,7 @@ function convertNumberToWords(num: number): string {
 
 export default function ContractPage() {
   const params = useParams();
+  const router = useRouter();
   const contractId = params.contractId as string;
   const [contractData, setContractData] = useState<ContractData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -231,6 +232,8 @@ export default function ContractPage() {
     setSignatureData(newSignatureData);
   };
 
+  // Deprecated: Now redirects to payment method selection instead
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const createPaymentAndRedirect = async () => {
     if (!contractData) {
       showError("Error", "Contract data not available for payment creation.");
@@ -920,10 +923,10 @@ export default function ContractPage() {
       // Add page number to the final page
       addPageNumber();
 
-      // Save PDF
-      pdf.save(
-        `Kontrak_${contractData.contractNumber}_${contractData.investor.name}.pdf`
-      );
+      // // Save PDF
+      // pdf.save(
+      //   `Kontrak_${contractData.contractNumber}_${contractData.investor.name}.pdf`
+      // );
 
       // Call API to mark contract as signed in database
       const response = await fetch(`/api/contract/${contractId}`, {
@@ -939,8 +942,8 @@ export default function ContractPage() {
 
       if (response.ok) {
         setSigned(true);
-        // Automatically create payment after successful signing
-        await createPaymentAndRedirect();
+        // Redirect to payment method selection page
+        router.push(`/contract/${contractId}/payment-method`);
       } else {
         const errorData = await response.json().catch(() => null);
         console.error("Contract signing API error:", {

@@ -4,19 +4,23 @@ import Contract from "@/models/Contract";
 import Payment from "@/models/Payment";
 import User from "@/models/User";
 import { NextRequest, NextResponse } from "next/server";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 
 export async function POST(req: NextRequest) {
   try {
     await dbConnect();
 
-    const { plan, user, contractId, referralCode } = await req.json();
+    const session = await getServerSession(authOptions);
 
-    if (!plan || !user || !user.email) {
+    if (!session?.user?.email) {
       return NextResponse.json(
-        { error: "Missing plan or user data" },
-        { status: 400 }
+        { error: "Authentication required" },
+        { status: 401 }
       );
     }
+
+    const { contractId, referralCode } = await req.json();
 
     if (!contractId) {
       return NextResponse.json(
@@ -25,7 +29,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const dbUser = await User.findOne({ email: user.email });
+    const dbUser = await User.findOne({ email: session.user.email });
 
     if (!dbUser) {
       return NextResponse.json({ error: "User not found" }, { status: 404 });
@@ -48,14 +52,6 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         { error: "Payment not allowed for this contract" },
         { status: 403 }
-      );
-    }
-
-    // Validate contract details match payment plan
-    if (contract.totalAmount !== plan.price || contract.productName !== plan.name) {
-      return NextResponse.json(
-        { error: "Contract details do not match payment plan" },
-        { status: 400 }
       );
     }
 
@@ -99,7 +95,7 @@ export async function POST(req: NextRequest) {
 
     const transaction = await midtransService.createTransaction({
       orderId,
-      amount: plan.price,
+      amount: contract.totalAmount,
       customerDetails: {
         first_name: dbUser.fullName,
         email: dbUser.email,
@@ -107,10 +103,10 @@ export async function POST(req: NextRequest) {
       },
       itemDetails: [
         {
-          id: plan.name,
-          price: plan.price,
+          id: contract.productId,
+          price: contract.totalAmount,
           quantity: 1,
-          name: plan.name,
+          name: contract.productName,
         },
       ],
       callbacks: {

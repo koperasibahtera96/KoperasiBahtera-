@@ -10,6 +10,7 @@ import {
   Settings,
   Users,
   X,
+  CreditCard,
 } from "lucide-react";
 import { signOut, useSession } from "next-auth/react";
 import Image from "next/image";
@@ -112,6 +113,13 @@ export function FinanceSidebar({ children }: FinanceSidebarProps) {
       icon: ReceiptEuroIcon,
       description: "Marketing referral",
       gradient: "from-red-500 to-blue-600",
+    },
+    {
+      name: "Kelola Pembayaran",
+      href: "/finance/payments",
+      icon: CreditCard,
+      description: "Approve manual payments",
+      gradient: "from-blue-500 to-indigo-600",
     },
     {
       name: "Daily Income Investor",

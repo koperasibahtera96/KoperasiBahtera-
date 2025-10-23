@@ -6,6 +6,7 @@ import PlantInstance from "@/models/PlantInstance";
 import { getServerSession } from "next-auth/next";
 import { NextRequest, NextResponse } from "next/server";
 import { sendEmail, emailTemplates } from "@/lib/email";
+import { stampContractAfterPayment } from "@/lib/contract-stamping";
 
 export async function POST(
   request: NextRequest,
@@ -159,6 +160,27 @@ export async function POST(
       adminEmail: adminUser.email,
       message: "PlantInstance will be created after payment"
     });
+
+    // Stamp contract with e-materai if payment is already completed
+    if (contract.paymentCompleted) {
+      console.log(
+        `📋 Admin approved contract with payment already completed - stamping with e-materai: ${contract.contractId}`
+      );
+      const stampedUrl = await stampContractAfterPayment(contract.contractId);
+      if (stampedUrl) {
+        console.log(
+          `✅ Contract stamped successfully after admin approval: ${stampedUrl}`
+        );
+      } else {
+        console.log(
+          `⚠️ Contract stamping failed after admin approval, but approval succeeded`
+        );
+      }
+    } else {
+      console.log(
+        `ℹ️ Payment not yet completed, stamping will occur after payment`
+      );
+    }
 
     // Send email notification to user
     try {

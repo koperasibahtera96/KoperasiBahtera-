@@ -31,7 +31,7 @@ export interface IUser extends Document {
   faceImageUrl?: string; // Face verification image URL from ImageKit
   profileImageUrl?: string; // Profile image URL from ImageKit
   kartuAnggotaUrl?: string; // Kartu Anggota PDF URL from ImageKit
-  role: 'user' | 'staff' | 'spv_staff' | 'admin' | 'finance' | 'staff_finance' | 'ketua' | 'marketing' | 'marketing_head';
+  role: 'user' | 'staff' | 'spv_staff' | 'admin' | 'finance' | 'staff_finance' | 'ketua' | 'marketing' | 'marketing_head' | 'mandor' | 'asisten' | 'manajer';
   referralCode?: string; // 6-digit alphanumeric code for marketing staff
   isEmailVerified: boolean;
   isPhoneVerified: boolean;
@@ -195,7 +195,7 @@ const UserSchema: Schema = new Schema({
   },
   role: {
     type: String,
-    enum: ['user', 'staff', 'spv_staff', 'admin', 'finance', 'staff_finance', 'ketua', 'marketing', 'marketing_head'],
+    enum: ['user', 'staff', 'spv_staff', 'admin', 'finance', 'staff_finance', 'ketua', 'marketing', 'marketing_head', 'mandor', 'asisten', 'manajer'],
     default: 'user',
     required: [true, 'Role is required'],
   },

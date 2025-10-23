@@ -112,6 +112,9 @@ export interface CicilanInstallmentWithPayment {
   createdAt?: Date | string;
   updatedAt?: Date | string;
 
+  // Payment method for this installment
+  paymentMethod?: "midtrans" | "manual-bca";
+
   // API-added flag to distinguish real vs placeholder installments
   exists?: boolean;
 }
@@ -157,6 +160,11 @@ export interface CicilanGroup {
   isPermanentlyRejected?: boolean;
   // Referral code for this investment
   referralCode?: string;
+  // Payment method for this cicilan group (set by first installment payment)
+  paymentMethod?: "midtrans" | "manual-bca";
+  // E-materai stamping status
+  emateraiStamped?: boolean;
+  emateraiStampedUrl?: string;
 }
 
 export interface InvestorDetail {

@@ -44,6 +44,7 @@ import { useSession } from "next-auth/react";
 import Image from "next/image";
 import Link from "next/link";
 import { use, useEffect, useMemo, useState } from "react";
+import AssignmentSection from "@/components/checker/AssignmentSection";
 
 // ===== EditableField (tidak diubah)
 function EditableField({
@@ -284,6 +285,8 @@ export default function PlantDetail({
   const [showModal, setShowModal] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editNotes, setEditNotes] = useState("");
+  const [selectedEditPhoto, setSelectedEditPhoto] = useState<File | null>(null);
+  const [selectedEditVideo, setSelectedEditVideo] = useState<File | null>(null);
   const [showRequestModal, setShowRequestModal] = useState(false);
   const [requestFormData, setRequestFormData] = useState<PlantRequestFormData>({
     requestType: "delete",
@@ -303,6 +306,10 @@ export default function PlantDetail({
 
   // ===== pagination state (baru, tanpa mengubah logic lain)
   const [currentPage, setCurrentPage] = useState(1);
+  const [showRejectionModal, setShowRejectionModal] = useState(false);
+  const [rejectionReason, setRejectionReason] = useState("");
+  const [rejectionHistoryId, setRejectionHistoryId] = useState<number | null>(null);
+  const [isRejecting, setIsRejecting] = useState(false);
   const ITEMS_PER_PAGE = 5;
 
   useEffect(() => {
@@ -338,6 +345,57 @@ export default function PlantDetail({
       }
     } catch (err) {
       console.error("Error fetching pending requests:", err);
+    }
+  };
+
+  const handleOpenRejectionModal = (historyId: number) => {
+    setRejectionHistoryId(historyId);
+    setRejectionReason("");
+    setShowRejectionModal(true);
+  };
+
+  const handleCloseRejectionModal = () => {
+    setShowRejectionModal(false);
+    setRejectionReason("");
+    setRejectionHistoryId(null);
+  };
+
+  const handleSubmitRejection = async () => {
+    if (!rejectionReason.trim()) {
+      showError("Error", "Alasan penolakan tidak boleh kosong");
+      return;
+    }
+
+    if (!rejectionHistoryId) return;
+
+    setIsRejecting(true);
+    try {
+      const res = await fetch("/api/plant-history/approve", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          plantId: id,
+          historyId: rejectionHistoryId,
+          action: "reject",
+          rejectionReason: rejectionReason.trim(),
+        }),
+      });
+
+      if (res.ok) {
+        showSuccess("Berhasil", "Riwayat berhasil ditolak");
+        handleCloseRejectionModal();
+        fetchPlantData();
+      } else {
+        const error = await res.json();
+        showError("Error", error.error || "Gagal menolak riwayat");
+      }
+    } catch (error) {
+      console.error("Error rejecting:", error);
+      showError("Error", "Terjadi kesalahan saat menolak riwayat");
+    } finally {
+      setIsRejecting(false);
     }
   };
 
@@ -411,6 +469,61 @@ export default function PlantDetail({
     } catch {
       showError("Video tidak valid", "Gagal membaca durasi video.");
     }
+  };
+
+  // Combined edit-media handler for the resubmit modal (mandor)
+  const handleEditMediaChange = async (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.type.startsWith("image/")) {
+      if (file.size > 2 * 1024 * 1024) {
+        showError("File terlalu besar", "Maksimal ukuran foto 2MB.");
+        return;
+      }
+      setSelectedEditPhoto(file);
+      setSelectedEditVideo(null);
+      return;
+    }
+
+    if (file.type.startsWith("video/")) {
+      const getDuration = (f: File) =>
+        new Promise<number>((resolve, reject) => {
+          const url = URL.createObjectURL(f);
+          const v = document.createElement("video");
+          v.preload = "metadata";
+          v.src = url;
+          v.onloadedmetadata = () => {
+            const d = v.duration;
+            URL.revokeObjectURL(url);
+            resolve(d);
+          };
+          v.onerror = () => {
+            URL.revokeObjectURL(url);
+            reject(new Error("Gagal membaca durasi video"));
+          };
+        });
+
+      try {
+        const duration = await getDuration(file);
+        if (!Number.isFinite(duration)) {
+          showError("Video tidak valid", "Durasi video tidak dapat dibaca.");
+          return;
+        }
+        if (duration > 30) {
+          showError("Video kepanjangan", "Durasi video maksimal 30 detik.");
+          return;
+        }
+        setSelectedEditVideo(file);
+        setSelectedEditPhoto(null);
+      } catch {
+        showError("Video tidak valid", "Gagal membaca durasi video.");
+      }
+      return;
+    }
+
+    showError("Tipe tidak didukung", "Pilih file gambar atau video.");
   };
 
   // Status options dinamis
@@ -498,6 +611,9 @@ export default function PlantDetail({
           : statusOptions.find((s) => s.value === reportStatus)?.label ||
             reportStatus;
 
+      const userRole = (session?.user as any)?.role || "staff";
+      const userId = (session?.user as any)?.id;
+
       const newHistoryEntry: any = {
         id: Date.now(),
         type: finalStatus,
@@ -511,11 +627,15 @@ export default function PlantDetail({
         hasImage: true,
         imageUrl: imageUrl || undefined, // URL video/foto tetap disimpan di imageUrl
         addedBy: session?.user?.name || "Unknown User",
+        addedById: userId,
         addedAt: new Date().toLocaleDateString("id-ID", {
           day: "2-digit",
           month: "2-digit",
           year: "numeric",
         }),
+        // Approval fields - mandor submissions need approval, others don't
+        approvalStatus:
+          userRole === "mandor" ? "pending" : "approved_by_manajer",
       };
 
       if (plantData) {
@@ -567,11 +687,54 @@ export default function PlantDetail({
     }
 
     try {
-      const updatedHistory = (plantData.history || []).map((item) =>
-        item.id === selectedHistory.id
-          ? { ...item, description: editNotes }
-          : item
-      );
+      // If user changed media while editing, upload it first and get a new URL
+      let newImageUrl: string | undefined = undefined;
+      try {
+        if (selectedEditPhoto) {
+          const formData = new FormData();
+          formData.append("file", selectedEditPhoto);
+          const uploadResponse = await fetch("/api/upload", {
+            method: "POST",
+            body: formData,
+          });
+          if (uploadResponse.ok) {
+            const uploadResult = await uploadResponse.json();
+            newImageUrl = uploadResult.imageUrl;
+          } else {
+            const err = await uploadResponse.json().catch(() => ({}));
+            throw new Error(err?.error || "Gagal mengunggah gambar");
+          }
+        } else if (selectedEditVideo) {
+          // reuse existing uploadVideoServer helper
+          newImageUrl = await uploadVideoServer(selectedEditVideo);
+        }
+      } catch (err) {
+        console.error("Error uploading edited media:", err);
+        showError("Gagal mengunggah media", "Gagal mengunggah gambar/video.");
+        return;
+      }
+
+      const updatedHistory = (plantData.history || []).map((item) => {
+        if (item.id === selectedHistory.id) {
+          // If item was rejected and being resubmitted, reset to pending
+          if (item.approvalStatus === "rejected") {
+            return {
+              ...item,
+              description: editNotes,
+              approvalStatus: "pending" as const,
+              rejectionReason: undefined,
+              // if new media provided, set it; otherwise keep existing
+              ...(newImageUrl ? { imageUrl: newImageUrl, hasImage: true } : {}),
+            };
+          }
+          return {
+            ...item,
+            description: editNotes,
+            ...(newImageUrl ? { imageUrl: newImageUrl, hasImage: true } : {}),
+          };
+        }
+        return item;
+      });
 
       const updatedPlant: PlantInstance = {
         ...plantData,
@@ -586,9 +749,21 @@ export default function PlantDetail({
 
       if (response.ok) {
         setPlantData(updatedPlant);
-        setSelectedHistory({ ...selectedHistory, description: editNotes });
+        const updatedItem = updatedHistory.find(
+          (h) => h.id === selectedHistory.id
+        );
+        if (updatedItem) {
+          setSelectedHistory(updatedItem);
+        }
         setIsEditing(false);
-        showSuccess("Berhasil!", "Catatan berhasil diperbarui!");
+        // clear any edit-selected media
+        setSelectedEditPhoto(null);
+        setSelectedEditVideo(null);
+        const successMessage =
+          (updatedItem as any)?.approvalStatus === "rejected"
+            ? "Riwayat berhasil diajukan ulang untuk persetujuan!"
+            : "Catatan berhasil diperbarui!";
+        showSuccess("Berhasil!", successMessage);
       }
     } catch {
       console.error("Error updating history");
@@ -1040,7 +1215,30 @@ export default function PlantDetail({
   const jumlahTanam = stripQrPrefix(plantData.qrCode);
 
   // ===== derive pagination data
-  const historyItems = plantData.history || [];
+  const userRole = session?.user?.role || "user";
+
+  // Filter history based on role and approval status
+  let historyItems = plantData.history || [];
+
+  // For non-staff roles (regular users), only show approved histories
+  if (
+    ![
+      "mandor",
+      "asisten",
+      "manajer",
+      "admin",
+      "staff",
+      "spv_staff",
+      "finance",
+    ].includes(userRole)
+  ) {
+    historyItems = historyItems.filter(
+      (h: any) => h.approvalStatus === "approved_by_manajer"
+    );
+  }
+  // Mandor can see all their own submissions (pending, approved, rejected)
+  // Asisten and Manajer can see all submissions for their assigned plants
+
   const totalPages = Math.ceil(historyItems.length / ITEMS_PER_PAGE) || 1;
   const safePage = Math.min(Math.max(currentPage, 1), totalPages);
   const startIndex = (safePage - 1) * ITEMS_PER_PAGE;
@@ -1224,6 +1422,16 @@ export default function PlantDetail({
               </div>
             </div>
           </section>
+
+          {/* Assignment Management Section (Manajer & Asisten) */}
+          {(session?.user.role === "manajer" ||
+            session?.user.role === "asisten") && (
+            <AssignmentSection
+              plantId={id}
+              userRole={session.user.role}
+              userId={(session.user as any).id}
+            />
+          )}
 
           {/* GRID */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 lg:gap-8">
@@ -1465,29 +1673,40 @@ export default function PlantDetail({
                       key={`${item.id}-${index}`}
                       className="flex gap-3 sm:gap-4 p-4 sm:p-6 bg-white/60 rounded-xl sm:rounded-2xl border border-[#324D3E]/10 hover:bg-white/80 transition-all duration-300"
                     >
-                      <div className="w-16 h-16 sm:w-20 sm:h-20 bg-[#324D3E]/10 rounded-xl sm:rounded-2xl flex items-center justify-center flex-shrink-0">
-                        {item.imageUrl ? (
-                          isVideoUrl(item.imageUrl) ? (
-                            <video
-                              src={item.imageUrl}
-                              className="w-full h-full object-cover rounded-xl sm:rounded-2xl"
-                              controls
-                              preload="none"
-                              aria-label={`Video for ${item.type} on ${item.date}`}
-                            />
+                      <div className="flex flex-col gap-2 flex-shrink-0">
+                        <div className="w-16 h-16 sm:w-20 sm:h-20 bg-[#324D3E]/10 rounded-xl sm:rounded-2xl flex items-center justify-center">
+                          {item.imageUrl ? (
+                            isVideoUrl(item.imageUrl) ? (
+                              <video
+                                src={item.imageUrl}
+                                className="w-full h-full object-cover rounded-xl sm:rounded-2xl"
+                                controls
+                                preload="none"
+                                aria-label={`Video for ${item.type} on ${item.date}`}
+                              />
+                            ) : (
+                              <Image
+                                src={item.imageUrl || "/placeholder.svg"}
+                                alt={`Plant media for ${item.type} on ${item.date}`}
+                                className="w-full h-full object-cover rounded-xl sm:rounded-2xl"
+                                width={80}
+                                height={80}
+                                quality={75}
+                              />
+                            )
                           ) : (
-                            <Image
-                              src={item.imageUrl || "/placeholder.svg"}
-                              alt={`Plant media for ${item.type} on ${item.date}`}
-                              className="w-full h-full object-cover rounded-xl sm:rounded-2xl"
-                              width={80}
-                              height={80}
-                              quality={75}
-                            />
-                          )
-                        ) : (
-                          <Camera className="w-4 h-4 sm:w-6 sm:h-6 text-[#889063]" />
-                        )}
+                            <Camera className="w-4 h-4 sm:w-6 sm:h-6 text-[#889063]" />
+                          )}
+                        </div>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleViewDetail(item)}
+                          className="bg-blue-500 hover:bg-blue-600 text-white border-blue-500 rounded-lg text-xs px-2 py-1 w-full"
+                        >
+                          <Eye className="w-3 h-3 mr-1" />
+                          <span>Detail</span>
+                        </Button>
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-2">
@@ -1495,7 +1714,7 @@ export default function PlantDetail({
                             className={`${
                               statusColors[item.type] ||
                               "bg-gray-100 text-gray-800"
-                            } rounded-lg sm:rounded-xl px-2 sm:px-3 py-1 text-xs sm:text-sm self-start`}
+                            } rounded-lg sm:rounded-xl px-2 sm:px-3 py-1 text-xs sm:text-sm`}
                           >
                             {item.type}
                           </Badge>
@@ -1517,18 +1736,9 @@ export default function PlantDetail({
                         <p className="text-xs sm:text-sm text-[#324D3E] mb-3 break-words">
                           {item.description}
                         </p>
-                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-0">
+                        {/* Edit/Delete Buttons Row */}
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-0 mb-3">
                           <div className="flex flex-wrap gap-1 sm:gap-2">
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => handleViewDetail(item)}
-                              className="bg-blue-500 hover:bg-blue-600 text-white border-blue-500 rounded-lg sm:rounded-xl text-xs sm:text-sm px-2 sm:px-3 py-1"
-                            >
-                              <Eye className="w-3 h-3 mr-1" />
-                              <span className="hidden sm:inline">Detail</span>
-                              <span className="sm:hidden">View</span>
-                            </Button>
                             {(session?.user.role === "admin" ||
                               session?.user.role === "spv_staff") &&
                               (session?.user.role === "spv_staff" ? (
@@ -1618,6 +1828,154 @@ export default function PlantDetail({
                               </Button>
                             ))}
                         </div>
+
+                        {/* Approval Status & Buttons - Always at Bottom Right */}
+                        <div className="flex justify-end items-center gap-2 mt-2 pt-2 border-t border-[#324D3E]/10">
+                          {/* Pending - Show for Asisten to approve */}
+                          {item.approvalStatus === "pending" && (
+                            <>
+                              {session?.user.role === "asisten" ? (
+                                <>
+                                  <Button
+                                    size="sm"
+                                    onClick={async () => {
+                                      try {
+                                        const res = await fetch(
+                                          "/api/plant-history/approve",
+                                          {
+                                            method: "POST",
+                                            headers: {
+                                              "Content-Type":
+                                                "application/json",
+                                            },
+                                            body: JSON.stringify({
+                                              plantId: id,
+                                              historyId: item.id,
+                                              action: "approve",
+                                            }),
+                                          }
+                                        );
+                                        if (res.ok) {
+                                          fetchPlantData();
+                                        }
+                                      } catch (error) {
+                                        console.error(
+                                          "Error approving:",
+                                          error
+                                        );
+                                      }
+                                    }}
+                                    className="bg-green-600 hover:bg-green-700 text-white text-xs px-2 py-1 h-auto"
+                                  >
+                                    Setujui
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    onClick={() => handleOpenRejectionModal(item.id)}
+                                    className="bg-red-600 hover:bg-red-700 text-white text-xs px-2 py-1 h-auto"
+                                  >
+                                    Tolak
+                                  </Button>
+                                </>
+                              ) : (
+                                <span className="text-xs text-yellow-700 italic">
+                                  Menunggu Asisten
+                                </span>
+                              )}
+                            </>
+                          )}
+
+                          {/* Approved by Asisten - Show for Manajer to approve */}
+                          {item.approvalStatus === "approved_by_asisten" && (
+                            <>
+                              {session?.user.role === "manajer" ? (
+                                <>
+                                  <Button
+                                    size="sm"
+                                    onClick={async () => {
+                                      try {
+                                        const res = await fetch(
+                                          "/api/plant-history/approve",
+                                          {
+                                            method: "POST",
+                                            headers: {
+                                              "Content-Type":
+                                                "application/json",
+                                            },
+                                            body: JSON.stringify({
+                                              plantId: id,
+                                              historyId: item.id,
+                                              action: "approve",
+                                            }),
+                                          }
+                                        );
+                                        if (res.ok) {
+                                          fetchPlantData();
+                                        }
+                                      } catch (error) {
+                                        console.error(
+                                          "Error approving:",
+                                          error
+                                        );
+                                      }
+                                    }}
+                                    className="bg-green-600 hover:bg-green-700 text-white text-xs px-2 py-1 h-auto"
+                                  >
+                                    Setujui
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    onClick={() => handleOpenRejectionModal(item.id)}
+                                    className="bg-red-600 hover:bg-red-700 text-white text-xs px-2 py-1 h-auto"
+                                  >
+                                    Tolak
+                                  </Button>
+                                </>
+                              ) : (
+                                <span className="text-xs text-blue-700 italic">
+                                  Menunggu Manajer
+                                </span>
+                              )}
+                            </>
+                          )}
+
+                          {/* Rejected */}
+                          {item.approvalStatus === "rejected" && (
+                            <div className="flex flex-col gap-2">
+                              <div className="flex items-center gap-2">
+                                <span className="text-xs text-red-700 font-semibold">
+                                  Ditolak
+                                </span>
+                                {session?.user.role === "mandor" &&
+                                  item.addedById === session?.user.id && (
+                                    <Button
+                                      size="sm"
+                                      onClick={() => {
+                                        setSelectedHistory(item);
+                                        setEditNotes(item.description);
+                                        setIsEditing(true);
+                                        setShowModal(true);
+                                      }}
+                                      className="bg-orange-500 hover:bg-orange-600 text-white text-xs px-2 py-1 h-auto"
+                                    >
+                                      Ajukan Ulang
+                                    </Button>
+                                  )}
+                              </div>
+                              {item.rejectionReason && (
+                                <div className="bg-red-50 border border-red-200 rounded-lg p-2 max-w-xs">
+                                  <p className="text-xs text-red-800">
+                                    <span className="font-semibold">
+                                      Alasan penolakan:
+                                    </span>
+                                    <br />
+                                    {item.rejectionReason}
+                                  </p>
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </div>
                   ))}
@@ -1683,6 +2041,8 @@ export default function PlantDetail({
                       onClick={() => {
                         setShowModal(false);
                         setIsEditing(false);
+                        setSelectedEditPhoto(null);
+                        setSelectedEditVideo(null);
                       }}
                       className="text-[#889063] hover:text-[#324D3E] hover:bg-[#324D3E]/10 rounded-lg sm:rounded-xl p-2 flex-shrink-0"
                     >
@@ -1694,7 +2054,28 @@ export default function PlantDetail({
                     <div className="space-y-4">
                       {/* MEDIA BOX — diperbaiki: parent RELATIVE + CONTAIN */}
                       <div className="relative aspect-square bg-gray-100 rounded-lg overflow-hidden flex items-center justify-center">
-                        {selectedHistory.imageUrl ? (
+                        {selectedEditPhoto || selectedEditVideo ? (
+                          selectedEditVideo ? (
+                            <video
+                              src={URL.createObjectURL(selectedEditVideo)}
+                              className="absolute inset-0 w-full h-full object-contain"
+                              controls
+                              preload="none"
+                              aria-label={`Edited video preview for ${selectedHistory.type} on ${selectedHistory.date}`}
+                            />
+                          ) : (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img
+                              src={
+                                selectedEditPhoto
+                                  ? URL.createObjectURL(selectedEditPhoto)
+                                  : ""
+                              }
+                              alt={`Edited media preview`}
+                              className="max-w-full max-h-full object-contain"
+                            />
+                          )
+                        ) : selectedHistory.imageUrl ? (
                           isVideoUrl(selectedHistory.imageUrl) ? (
                             <video
                               src={selectedHistory.imageUrl}
@@ -1740,6 +2121,47 @@ export default function PlantDetail({
                           </div>
                         </CardContent>
                       </Card>
+
+                      {/* Mandor-only: change media when editing/resubmitting */}
+                      {isEditing && session?.user.role === "mandor" && (
+                        <div className="mt-3">
+                          <label className="block text-sm font-medium text-[#324D3E] mb-2">
+                            Ganti Foto/Video (opsional)
+                          </label>
+                          <div className="flex items-center gap-2">
+                            <input
+                              id="edit-media-input"
+                              type="file"
+                              accept="image/*,video/*"
+                              onChange={handleEditMediaChange}
+                              className="hidden"
+                            />
+                            <label
+                              htmlFor="edit-media-input"
+                              className="inline-flex items-center gap-2 px-3 py-2 bg-white border border-[#324D3E]/20 rounded-lg cursor-pointer text-sm"
+                            >
+                              <Upload className="w-4 h-4 text-[#324D3E]" />
+                              Pilih File
+                            </label>
+                            {(selectedEditPhoto || selectedEditVideo) && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => {
+                                  setSelectedEditPhoto(null);
+                                  setSelectedEditVideo(null);
+                                }}
+                                className="text-[#324D3E]"
+                              >
+                                Batalkan
+                              </Button>
+                            )}
+                          </div>
+                          <p className="text-xs text-[#889063] mt-2">
+                            Maks foto 2MB, video maks 30 detik.
+                          </p>
+                        </div>
+                      )}
                     </div>
 
                     <div className="space-y-4">
@@ -1805,6 +2227,64 @@ export default function PlantDetail({
                         Download Foto/Video
                       </Button>
                     )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Rejection Modal */}
+          {showRejectionModal && (
+            <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+              <div className="bg-white/95 backdrop-blur-xl rounded-3xl max-w-md w-full shadow-2xl border border-[#324D3E]/10">
+                <div className="p-6">
+                  <div className="flex justify-between items-center mb-6">
+                    <h2 className="text-xl font-bold text-[#324D3E]">
+                      Tolak Riwayat
+                    </h2>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={handleCloseRejectionModal}
+                      className="text-[#889063] hover:text-[#324D3E] hover:bg-[#324D3E]/10 rounded-xl"
+                    >
+                      <X className="w-5 h-5" />
+                    </Button>
+                  </div>
+
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-[#324D3E] mb-2">
+                        Alasan Penolakan <span className="text-red-600">*</span>
+                      </label>
+                      <Textarea
+                        value={rejectionReason}
+                        onChange={(e) => setRejectionReason(e.target.value)}
+                        placeholder="Masukkan alasan penolakan..."
+                        className="min-h-[120px] resize-none bg-white/80 border-[#324D3E]/20 focus:border-[#324D3E] focus:ring-[#324D3E]/20"
+                      />
+                      <p className="text-xs text-gray-500 mt-1">
+                        Alasan ini akan ditampilkan kepada mandor
+                      </p>
+                    </div>
+
+                    <div className="flex gap-3 pt-4">
+                      <Button
+                        variant="outline"
+                        onClick={handleCloseRejectionModal}
+                        disabled={isRejecting}
+                        className="flex-1 border-[#324D3E]/30 text-[#324D3E] hover:bg-[#324D3E]/10"
+                      >
+                        Batal
+                      </Button>
+                      <Button
+                        onClick={handleSubmitRejection}
+                        disabled={isRejecting || !rejectionReason.trim()}
+                        className="flex-1 bg-red-600 hover:bg-red-700 text-white"
+                      >
+                        {isRejecting ? "Menolak..." : "Tolak Riwayat"}
+                      </Button>
+                    </div>
                   </div>
                 </div>
               </div>

@@ -45,6 +45,12 @@ export interface IContract extends Document {
   contractDate: Date;
   referralCode?: string; // Optional referral code
 
+  // E-Materai stamping (done after payment)
+  emateraiStamped?: boolean;
+  emateraiUuid?: string; // UUID from MeteraIku API
+  emateraiStampedUrl?: string; // URL to download stamped contract
+  emateraiStampedAt?: Date;
+
   // Overall status
   status: 'draft' | 'signed' | 'approved' | 'rejected' | 'permanently_rejected' | 'paid';
 
@@ -170,6 +176,23 @@ const ContractSchema: Schema = new Schema({
       },
       message: 'Referral code must be exactly 6 uppercase alphanumeric characters'
     }
+  },
+  // E-Materai stamping fields
+  emateraiStamped: {
+    type: Boolean,
+    default: false
+  },
+  emateraiUuid: {
+    type: String,
+    required: false
+  },
+  emateraiStampedUrl: {
+    type: String,
+    required: false
+  },
+  emateraiStampedAt: {
+    type: Date,
+    required: false
   },
   status: {
     type: String,

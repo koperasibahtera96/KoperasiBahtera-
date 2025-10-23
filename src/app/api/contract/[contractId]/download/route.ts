@@ -133,6 +133,8 @@ export async function GET(
       success: true,
       contractData,
       signatureData: signatureData || null,
+      emateraiStamped: contract.emateraiStamped || false,
+      emateraiStampedUrl: contract.emateraiStampedUrl || null,
     });
     
   } catch (error: any) {

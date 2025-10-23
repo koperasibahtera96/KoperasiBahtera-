@@ -55,6 +55,8 @@ export default async function middleware(req: NextRequest) {
     }
   }
 
+  console.log(userRole, "userrole ");
+
   // === FINANCE ACCESS ===
   if (
     pathname.startsWith("/finance") ||
@@ -77,7 +79,15 @@ export default async function middleware(req: NextRequest) {
 
   // === CHECKER ACCESS ===
   if (pathname.startsWith("/checker")) {
-    const allowedRoles = ["staff", "spv_staff", "finance", "admin"];
+    const allowedRoles = [
+      "staff",
+      "spv_staff",
+      "finance",
+      "admin",
+      "mandor",
+      "asisten",
+      "manajer",
+    ];
     if (allowedRoles.includes(userRole)) {
       console.log(`✅ ${userRole} access granted to ${pathname}`);
       return NextResponse.next();
