@@ -174,37 +174,85 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Check if user already has an active assignment, deactivate it
+    // Handle reassignment: remove plants from other users' assignments if they're being reassigned
+    const conflictingAssignments = await PlantAssignment.find({
+      plantInstanceIds: { $in: plantInstanceIds },
+      assignedRole,
+      isActive: true,
+      assignedTo: { $ne: assignedToId }, // Different user
+    });
+
+    // Remove the plants from conflicting assignments (reassignment)
+    for (const conflictAssignment of conflictingAssignments) {
+      const plantsToRemove = plantInstanceIds.filter((id: string) =>
+        conflictAssignment.plantInstanceIds.includes(id)
+      );
+
+      if (plantsToRemove.length > 0) {
+        // Remove these plants from the old assignment
+        conflictAssignment.plantInstanceIds =
+          conflictAssignment.plantInstanceIds.filter(
+            (id: string) => !plantsToRemove.includes(id)
+          );
+
+        // If no plants left in old assignment, delete it
+        if (conflictAssignment.plantInstanceIds.length === 0) {
+          await PlantAssignment.findByIdAndDelete(conflictAssignment._id);
+        } else {
+          await conflictAssignment.save();
+        }
+      }
+    }
+
+    // Check if user already has an active assignment
     const existingAssignment = await PlantAssignment.findOne({
       assignedTo: assignedToId,
       assignedRole,
       isActive: true,
     });
 
+    let assignment;
+
     if (existingAssignment) {
-      existingAssignment.isActive = false;
+      // Update existing assignment by adding new plant IDs (avoid duplicates)
+      const existingPlantIds = existingAssignment.plantInstanceIds;
+      const newPlantIds = plantInstanceIds.filter(
+        (id: string) => !existingPlantIds.includes(id)
+      );
+
+      existingAssignment.plantInstanceIds = [
+        ...existingPlantIds,
+        ...newPlantIds,
+      ];
+      existingAssignment.assignedBy = userId; // Update assignedBy to current user
+      existingAssignment.assignedAt = new Date(); // Update timestamp
+
       await existingAssignment.save();
+      assignment = existingAssignment;
+    } else {
+      // Create new assignment
+      const newAssignment = new PlantAssignment({
+        plantInstanceIds,
+        assignedTo: assignedToId,
+        assignedBy: userId,
+        assignedRole,
+        assignedAt: new Date(),
+        isActive: true,
+      });
+
+      await newAssignment.save();
+      assignment = newAssignment;
     }
 
-    // Create new assignment
-    const newAssignment = new PlantAssignment({
-      plantInstanceIds,
-      assignedTo: assignedToId,
-      assignedBy: userId,
-      assignedRole,
-      assignedAt: new Date(),
-      isActive: true,
-    });
-
-    await newAssignment.save();
-
     // Populate before returning
-    await newAssignment.populate("assignedTo", "fullName email role");
-    await newAssignment.populate("assignedBy", "fullName email role");
+    await assignment.populate("assignedTo", "fullName email role");
+    await assignment.populate("assignedBy", "fullName email role");
 
     return NextResponse.json({
-      message: "Assignment created successfully",
-      assignment: newAssignment,
+      message: existingAssignment
+        ? "Assignment updated successfully"
+        : "Assignment created successfully",
+      assignment: assignment,
     });
   } catch (error: any) {
     console.error("Error creating assignment:", error);
@@ -316,7 +364,7 @@ export async function PUT(req: NextRequest) {
   }
 }
 
-// DELETE - Deactivate assignment
+// DELETE - Remove assignment or specific plants from assignment
 export async function DELETE(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
@@ -329,6 +377,7 @@ export async function DELETE(req: NextRequest) {
 
     const { searchParams } = new URL(req.url);
     const assignmentId = searchParams.get("id");
+    const plantIds = searchParams.get("plantIds"); // Optional: comma-separated plant IDs to remove
 
     if (!assignmentId) {
       return NextResponse.json(
@@ -369,7 +418,29 @@ export async function DELETE(req: NextRequest) {
       );
     }
 
-    // Hard delete the assignment
+    // If plantIds specified, remove only those plants
+    if (plantIds) {
+      const plantsToRemove = plantIds.split(",");
+      assignment.plantInstanceIds = assignment.plantInstanceIds.filter(
+        (id: string) => !plantsToRemove.includes(id)
+      );
+
+      // If no plants left, delete the assignment
+      if (assignment.plantInstanceIds.length === 0) {
+        await PlantAssignment.findByIdAndDelete(assignment._id);
+        return NextResponse.json({
+          message: "All plants removed. Assignment deleted.",
+        });
+      }
+
+      await assignment.save();
+      return NextResponse.json({
+        message: "Plants removed from assignment successfully",
+        assignment,
+      });
+    }
+
+    // Otherwise, delete the entire assignment
     await PlantAssignment.findByIdAndDelete(assignment._id);
 
     return NextResponse.json({

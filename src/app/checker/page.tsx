@@ -166,8 +166,20 @@ export default function StaffDashboard() {
 
           // For asisten: group by assignedTo (mandor), for manajer: group by assignedTo (asisten)
           let groups: AssignmentGroup[] = [];
+          let myPlantIds: string[] = [];
+
           if (userRole === "asisten") {
-            // Only mandor assignments assignedBy me
+            // Find MY assignment (where I am assignedTo)
+            const myAssignment = assignments.find(
+              (a: any) =>
+                a.assignedRole === "asisten" &&
+                a.assignedTo?._id === userId
+            );
+
+            // All plants assigned to me
+            myPlantIds = myAssignment?.plantInstanceIds || [];
+
+            // Mandor assignments I created
             const mandorAssignments = assignments.filter(
               (a: any) =>
                 a.assignedRole === "mandor" &&
@@ -188,13 +200,20 @@ export default function StaffDashboard() {
               groupId: a.assignedTo?._id || a.assignedTo,
               plantIds: a.plantInstanceIds || [],
             }));
+            // Manajer sees all plants
+            myPlantIds = [];
+          } else if (userRole === "mandor") {
+            // Find MY assignment (where I am assignedTo as mandor)
+            const myAssignment = assignments.find(
+              (a: any) =>
+                a.assignedRole === "mandor" &&
+                a.assignedTo?._id === userId
+            );
+            myPlantIds = myAssignment?.plantInstanceIds || [];
           }
+
           setAssignmentGroups(groups);
-          // For asisten/mandor, extract assignedPlantIds for filtering
-          const plantIds = assignments.flatMap(
-            (a: any) => a.plantInstanceIds || []
-          );
-          setAssignedPlantIds(plantIds);
+          setAssignedPlantIds(myPlantIds);
         }
       }
       setAssignmentsLoaded(true);
@@ -314,14 +333,31 @@ export default function StaffDashboard() {
     plants: PlantInstance[];
   }[] = [];
   const userRole = (session?.user as any)?.role;
-  if (userRole === "asisten" && assignmentGroups.length > 0) {
-    groupedPlants = assignmentGroups
-      .map((group) => ({
-        groupName: group.groupName,
-        groupId: group.groupId,
-        plants: filteredPlants.filter((p) => group.plantIds.includes(p.id)),
-      }))
-      .filter((g) => g.plants.length > 0);
+  if (userRole === "asisten") {
+    // For asisten, show (No Group) for plants not assigned to any mandor
+    const assignedPlantIds = assignmentGroups.flatMap((g) => g.plantIds);
+    const noGroupPlants = filteredPlants.filter(
+      (p) => !assignedPlantIds.includes(p.id)
+    );
+    groupedPlants = [];
+    if (noGroupPlants.length > 0) {
+      groupedPlants.push({
+        groupName: "(Belum Ditetapkan Mandor)",
+        groupId: "no-group",
+        plants: noGroupPlants,
+      });
+    }
+    if (assignmentGroups.length > 0) {
+      groupedPlants = groupedPlants.concat(
+        assignmentGroups
+          .map((group) => ({
+            groupName: group.groupName,
+            groupId: group.groupId,
+            plants: filteredPlants.filter((p) => group.plantIds.includes(p.id)),
+          }))
+          .filter((g) => g.plants.length > 0)
+      );
+    }
   } else if (userRole === "manajer") {
     // For manajer, show (No Group) for plants not assigned to any asisten
     const assignedPlantIds = assignmentGroups.flatMap((g) => g.plantIds);
@@ -651,7 +687,11 @@ export default function StaffDashboard() {
                 <div key={group.groupId}>
                   <h2 className="text-xl font-bold text-[#324D3E] mb-4">
                     {userRole === "asisten"
-                      ? `Mandor: ${group.groupName}`
+                      ? group.groupId === "no-group"
+                        ? group.groupName
+                        : `Mandor: ${group.groupName}`
+                      : group.groupId === "no-group"
+                      ? group.groupName
                       : `Asisten: ${group.groupName}`}
                   </h2>
                   <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">

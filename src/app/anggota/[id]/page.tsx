@@ -866,7 +866,7 @@ export default function MemberDetailPage(props: {
             <div className="flex items-center justify-between mb-4">
               <div
                 className={getThemeClasses(
-                  "text-sm text-[#889063]",
+                  "text-sm text-[#889063] dark:text-gray-200",
                   "!text-[#6b7280]"
                 )}
               >
@@ -874,7 +874,7 @@ export default function MemberDetailPage(props: {
               </div>
               <div
                 className={getThemeClasses(
-                  "flex h-10 w-10 items-center justify-center rounded-2xl bg-[#324D3E]/10 text-[#324D3E]",
+                  "flex h-10 w-10 items-center justify-center rounded-2xl bg-[#324D3E]/10 dark:bg-[#324D3E]/20 text-[#324D3E] dark:text-white transition-colors duration-300",
                   "!bg-[#FFC1CC]/30 !text-[#4c1d1d]"
                 )}
               >
@@ -883,7 +883,7 @@ export default function MemberDetailPage(props: {
             </div>
             <div
               className={getThemeClasses(
-                "text-2xl font-bold text-[#324D3E]",
+                "text-2xl font-bold text-[#324D3E] dark:text-white transition-colors duration-300",
                 "!text-[#4c1d1d]"
               )}
             >
@@ -903,7 +903,7 @@ export default function MemberDetailPage(props: {
             <div className="flex items-center justify-between mb-4">
               <div
                 className={getThemeClasses(
-                  "text-sm text-[#889063]",
+                  "text-sm text-[#889063] dark:text-gray-200",
                   "!text-[#6b7280]"
                 )}
               >
@@ -939,7 +939,7 @@ export default function MemberDetailPage(props: {
             <div className="flex items-center justify-between mb-4">
               <div
                 className={getThemeClasses(
-                  "text-sm text-[#889063]",
+                  "text-sm text-[#889063] dark:text-gray-200",
                   "!text-[#6b7280]"
                 )}
               >
@@ -978,7 +978,7 @@ export default function MemberDetailPage(props: {
           >
             <div
               className={getThemeClasses(
-                "text-lg font-semibold mb-4 text-[#324D3E]",
+                "text-lg font-semibold mb-4 text-[#324D3E] dark:text-white",
                 "!text-[#4c1d1d]"
               )}
             >
@@ -1010,7 +1010,7 @@ export default function MemberDetailPage(props: {
             <div className="flex items-center justify-between mb-4">
               <div
                 className={getThemeClasses(
-                  "text-lg font-semibold text-[#324D3E]",
+                  "text-lg font-semibold text-[#324D3E] dark:text-white transition-colors duration-300",
                   "!text-[#4c1d1d]"
                 )}
               >
@@ -1018,8 +1018,8 @@ export default function MemberDetailPage(props: {
               </div>
               <select
                 className={getThemeClasses(
-                  "border border-[#324D3E]/20 rounded-xl px-3 py-2 text-sm bg-white/80",
-                  "!border-[#FFC1CC]/30 !bg-white/90"
+                  "border border-[#324D3E]/20 dark:border-gray-600 rounded-xl px-3 py-2 text-sm bg-white/80 dark:bg-gray-700/80 text-[#324D3E] dark:text-white transition-colors duration-300",
+                  "!border-[#FFC1CC]/30 !bg-white/90 !text-[#4c1d1d]"
                 )}
                 value={year}
                 onChange={(e) => fetchDetail(Number(e.target.value))}
@@ -1099,7 +1099,7 @@ export default function MemberDetailPage(props: {
           <div className="flex items-center justify-between mb-4">
             <div
               className={getThemeClasses(
-                "text-lg font-semibold text-[#324D3E]",
+                "text-lg font-semibold text-[#324D3E] dark:text-white transition-colors duration-300",
                 "!text-[#4c1d1d]"
               )}
             >
@@ -1107,8 +1107,8 @@ export default function MemberDetailPage(props: {
             </div>
             <select
               className={getThemeClasses(
-                "border border-[#324D3E]/20 rounded-xl px-3 py-2 text-sm bg-white/80",
-                "!border-[#FFC1CC]/30 !bg-white/90"
+                "border border-[#324D3E]/20 dark:border-gray-600 rounded-xl px-3 py-2 text-sm bg-white/80 dark:bg-gray-700/80 text-[#324D3E] dark:text-white transition-colors duration-300",
+                "!border-[#FFC1CC]/30 !bg-white/90 !text-[#4c1d1d]"
               )}
               value={year}
               onChange={(e) => fetchDetail(Number(e.target.value))}
@@ -1128,13 +1128,13 @@ export default function MemberDetailPage(props: {
               <thead>
                 <tr
                   className={getThemeClasses(
-                    "border-b-2 border-[#324D3E]/10",
+                    "border-b-2 border-[#324D3E]/10 dark:border-gray-600 transition-colors duration-300",
                     "!border-[#FFC1CC]/30"
                   )}
                 >
                   <th
                     className={getThemeClasses(
-                      "text-left py-3 text-[#324D3E] font-semibold",
+                      "text-left py-3 text-[#324D3E] dark:text-white font-semibold transition-colors duration-300",
                       "!text-[#4c1d1d]"
                     )}
                   >
@@ -1142,7 +1142,7 @@ export default function MemberDetailPage(props: {
                   </th>
                   <th
                     className={getThemeClasses(
-                      "text-right py-3 text-[#324D3E] font-semibold",
+                      "text-right py-3 text-[#324D3E] dark:text-white font-semibold transition-colors duration-300",
                       "!text-[#4c1d1d]"
                     )}
                   >
@@ -1150,7 +1150,7 @@ export default function MemberDetailPage(props: {
                   </th>
                   <th
                     className={getThemeClasses(
-                      "text-right py-3 text-[#324D3E] font-semibold",
+                      "text-right py-3 text-[#324D3E] dark:text-white font-semibold transition-colors duration-300",
                       "!text-[#4c1d1d]"
                     )}
                   >
@@ -1158,7 +1158,7 @@ export default function MemberDetailPage(props: {
                   </th>
                   <th
                     className={getThemeClasses(
-                      "text-right py-3 text-[#324D3E] font-semibold",
+                      "text-right py-3 text-[#324D3E] dark:text-white font-semibold transition-colors duration-300",
                       "!text-[#4c1d1d]"
                     )}
                   >
@@ -1166,7 +1166,7 @@ export default function MemberDetailPage(props: {
                   </th>
                   <th
                     className={getThemeClasses(
-                      "text-right py-3 text-[#324D3E] font-semibold",
+                      "text-right py-3 text-[#324D3E] dark:text-white font-semibold transition-colors duration-300",
                       "!text-[#4c1d1d]"
                     )}
                   >
@@ -1188,17 +1188,17 @@ export default function MemberDetailPage(props: {
                     <tr
                       key={r.month}
                       className={getThemeClasses(
-                        `border-b border-[#324D3E]/5 ${
-                          idx % 2 === 0 ? "bg-white/40" : "bg-[#324D3E]/5"
-                        }`,
+                        `border-b border-[#324D3E]/5 dark:border-gray-700 ${
+                          idx % 2 === 0 ? "bg-white/40 dark:bg-gray-800/40" : "bg-[#324D3E]/5 dark:bg-gray-700/50"
+                        } hover:bg-[#324D3E]/10 dark:hover:bg-gray-700 transition-colors duration-200`,
                         `!border-[#FFC1CC]/20 ${
                           idx % 2 === 0 ? "!bg-white/60" : "!bg-[#FFC1CC]/10"
-                        }`
+                        } hover:!bg-[#FFC1CC]/20`
                       )}
                     >
                       <td
                         className={getThemeClasses(
-                          "py-3 text-[#324D3E]",
+                          "py-3 text-[#324D3E] dark:text-white transition-colors duration-300",
                           "!text-[#4c1d1d]"
                         )}
                       >
@@ -1206,7 +1206,7 @@ export default function MemberDetailPage(props: {
                       </td>
                       <td
                         className={getThemeClasses(
-                          "py-3 text-right text-green-600 font-medium",
+                          "py-3 text-right text-green-600 dark:text-emerald-400 font-medium transition-colors duration-300",
                           "!text-[#059669]"
                         )}
                       >
@@ -1214,7 +1214,7 @@ export default function MemberDetailPage(props: {
                       </td>
                       <td
                         className={getThemeClasses(
-                          "py-3 text-right text-red-600 font-medium",
+                          "py-3 text-right text-red-600 dark:text-red-400 font-medium transition-colors duration-300",
                           "!text-[#dc2626]"
                         )}
                       >
@@ -1222,7 +1222,7 @@ export default function MemberDetailPage(props: {
                       </td>
                       <td
                         className={getThemeClasses(
-                          "py-3 text-right text-blue-600 font-medium",
+                          "py-3 text-right text-blue-600 dark:text-blue-400 font-medium transition-colors duration-300",
                           "!text-[#7c3aed]"
                         )}
                       >
@@ -1230,7 +1230,7 @@ export default function MemberDetailPage(props: {
                       </td>
                       <td
                         className={getThemeClasses(
-                          "py-3 text-right text-[#324D3E] font-medium",
+                          "py-3 text-right text-[#324D3E] dark:text-white font-medium transition-colors duration-300",
                           "!text-[#4c1d1d]"
                         )}
                       >
@@ -1256,7 +1256,7 @@ export default function MemberDetailPage(props: {
         >
           <div
             className={getThemeClasses(
-              "text-lg font-semibold mb-4 text-[#324D3E]",
+              "text-lg font-semibold mb-4 text-[#324D3E] dark:text-white",
               "!text-[#4c1d1d]"
             )}
           >
@@ -1266,14 +1266,14 @@ export default function MemberDetailPage(props: {
           {/* ======== (NEW) Toggle Bulk Input ======== */}
           <div
             className={getThemeClasses(
-              "rounded-2xl border border-[#324D3E]/10 p-4 mb-6 bg-white/70",
+              "rounded-2xl border border-[#324D3E]/10 dark:border-gray-700 p-4 mb-6 bg-white/70 dark:bg-gray-800/70 transition-colors duration-300",
               "!border-[#FFC1CC]/30 !bg-white/80"
             )}
           >
             <div className="flex items-center justify-between gap-3">
               <div
                 className={getThemeClasses(
-                  "font-medium text-[#324D3E]",
+                  "font-medium text-[#324D3E] dark:text-white transition-colors duration-300",
                   "!text-[#4c1d1d]"
                 )}
               >
@@ -1281,8 +1281,8 @@ export default function MemberDetailPage(props: {
               </div>
               <button
                 className={getThemeClasses(
-                  "inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-[#324D3E]/20 hover:bg-[#324D3E] hover:text-white",
-                  "!border-[#FFC1CC]/30 hover:!bg-[#FFC1CC] hover:!text-[#4c1d1d]"
+                  "inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-[#324D3E]/20 dark:border-gray-600 text-[#324D3E] dark:text-white hover:bg-[#324D3E] hover:text-white dark:hover:bg-gray-700 transition-colors duration-300",
+                  "!border-[#FFC1CC]/30 !text-[#4c1d1d] hover:!bg-[#FFC1CC] hover:!text-white"
                 )}
                 onClick={() => setBulkOpen((v) => !v)}
               >
@@ -1296,8 +1296,8 @@ export default function MemberDetailPage(props: {
                 <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
                   <select
                     className={getThemeClasses(
-                      "border border-[#324D3E]/20 rounded-xl px-3 py-2 bg-white/80",
-                      "!border-[#FFC1CC]/30 !bg-white/90"
+                      "border border-[#324D3E]/20 dark:border-gray-600 rounded-xl px-3 py-2 bg-white/80 dark:bg-gray-700/80 text-[#324D3E] dark:text-white transition-colors duration-300",
+                      "!border-[#FFC1CC]/30 !bg-white/90 !text-[#4c1d1d]"
                     )}
                     value={bulkType}
                     onChange={(e) =>
@@ -1313,8 +1313,8 @@ export default function MemberDetailPage(props: {
                     value={bulkDate}
                     onChange={(e) => setBulkDate(e.target.value)}
                     className={getThemeClasses(
-                      "border border-[#324D3E]/20 rounded-xl px-3 py-2 bg-white/80",
-                      "!border-[#FFC1CC]/30 !bg-white/90"
+                      "border border-[#324D3E]/20 dark:border-gray-600 rounded-xl px-3 py-2 bg-white/80 dark:bg-gray-700/80 text-[#324D3E] dark:text-white transition-colors duration-300",
+                      "!border-[#FFC1CC]/30 !bg-white/90 !text-[#4c1d1d]"
                     )}
                   />
 
@@ -1327,8 +1327,8 @@ export default function MemberDetailPage(props: {
                     placeholder="Nominal (IDR)"
                     inputMode="numeric"
                     className={getThemeClasses(
-                      "border border-[#324D3E]/20 rounded-xl px-3 py-2 bg-white/80",
-                      "!border-[#FFC1CC]/30 !bg-white/90"
+                      "border border-[#324D3E]/20 dark:border-gray-600 rounded-xl px-3 py-2 bg-white/80 dark:bg-gray-700/80 text-[#324D3E] dark:text-white transition-colors duration-300",
+                      "!border-[#FFC1CC]/30 !bg-white/90 !text-[#4c1d1d]"
                     )}
                   />
 
@@ -1338,8 +1338,8 @@ export default function MemberDetailPage(props: {
                       onChange={(e) => setBulkNote(e.target.value)}
                       placeholder="Catatan (opsional)"
                       className={getThemeClasses(
-                        "border border-[#324D3E]/20 rounded-xl px-3 py-2 bg-white/80",
-                        "!border-[#FFC1CC]/30 !bg-white/90"
+                        "border border-[#324D3E]/20 dark:border-gray-600 rounded-xl px-3 py-2 bg-white/80 dark:bg-gray-700/80 text-[#324D3E] dark:text-white transition-colors duration-300",
+                        "!border-[#FFC1CC]/30 !bg-white/90 !text-[#4c1d1d]"
                       )}
                     />
                   ) : (
@@ -1348,8 +1348,8 @@ export default function MemberDetailPage(props: {
                       onChange={(e) => setBulkCategory(e.target.value)}
                       placeholder="Kategori (Operasional/Pupuk/...)"
                       className={getThemeClasses(
-                        "border border-[#324D3E]/20 rounded-xl px-3 py-2 bg-white/80",
-                        "!border-[#FFC1CC]/30 !bg-white/90"
+                        "border border-[#324D3E]/20 dark:border-gray-600 rounded-xl px-3 py-2 bg-white/80 dark:bg-gray-700/80 text-[#324D3E] dark:text-white transition-colors duration-300",
+                        "!border-[#FFC1CC]/30 !bg-white/90 !text-[#4c1d1d]"
                       )}
                     />
                   )}
@@ -1357,8 +1357,8 @@ export default function MemberDetailPage(props: {
                   <button
                     onClick={submitBulk}
                     className={getThemeClasses(
-                      "rounded-xl border border-[#324D3E]/20 px-3 py-2 text-sm bg-[#324D3E] text-white disabled:opacity-50",
-                      "!border-[#FFC1CC]/30 !bg-[#FFC1CC] !text-[#4c1d1d]"
+                      "rounded-xl border border-[#324D3E]/20 dark:border-gray-600 px-3 py-2 text-sm bg-[#324D3E] dark:bg-gray-700 text-white disabled:opacity-50 hover:bg-[#4C3D19] dark:hover:bg-gray-600 transition-colors duration-300",
+                      "!border-[#FFC1CC]/30 !bg-[#FFC1CC] !text-[#4c1d1d] hover:!bg-[#FFDEE9]"
                     )}
                     disabled={!bulkAmount || bulkSelectedCount === 0}
                     title="Tambahkan ke semua yang tercentang"
@@ -1370,32 +1370,43 @@ export default function MemberDetailPage(props: {
                 {/* Checklist grouped by plantType */}
                 <div
                   className={getThemeClasses(
-                    "rounded-xl border border-[#324D3E]/10 p-3",
-                    "!border-[#FFC1CC]/30"
+                    "rounded-xl border border-[#324D3E]/10 dark:border-gray-700 p-3 bg-white/50 dark:bg-gray-800/50 transition-colors duration-300",
+                    "!border-[#FFC1CC]/30 !bg-white/60"
                   )}
                 >
                   <div className="flex items-center justify-between">
                     <div
                       className={getThemeClasses(
-                        "text-sm font-medium text-[#324D3E]",
+                        "text-sm font-medium text-[#324D3E] dark:text-white transition-colors duration-300",
                         "!text-[#4c1d1d]"
                       )}
                     >
                       Pilih Tanaman / Kontrak
                     </div>
-                    <div className="flex items-center gap-3 text-xs">
+                    <div
+                      className={getThemeClasses(
+                        "flex items-center gap-3 text-xs text-[#324D3E] dark:text-white transition-colors duration-300",
+                        "!text-[#4c1d1d]"
+                      )}
+                    >
                       <span className="opacity-70">
                         Dipilih: <b>{bulkSelectedCount}</b>
                       </span>
                       <button
-                        className="underline"
+                        className={getThemeClasses(
+                          "underline hover:opacity-80 transition-opacity",
+                          ""
+                        )}
                         onClick={() => toggleBulkAll(true)}
                       >
                         Pilih semua
                       </button>
                       <span className="opacity-40">|</span>
                       <button
-                        className="underline"
+                        className={getThemeClasses(
+                          "underline hover:opacity-80 transition-opacity",
+                          ""
+                        )}
                         onClick={() => toggleBulkAll(false)}
                       >
                         Kosongkan
@@ -1415,22 +1426,33 @@ export default function MemberDetailPage(props: {
                         <div className="flex items-center justify-between">
                           <div
                             className={getThemeClasses(
-                              "font-semibold capitalize text-[#324D3E]",
+                              "font-semibold capitalize text-[#324D3E] dark:text-white transition-colors duration-300",
                               "!text-[#4c1d1d]"
                             )}
                           >
                             {g.plantType}
                           </div>
-                          <div className="flex items-center gap-2 text-xs">
+                          <div
+                            className={getThemeClasses(
+                              "flex items-center gap-2 text-xs text-[#324D3E] dark:text-white transition-colors duration-300",
+                              "!text-[#4c1d1d]"
+                            )}
+                          >
                             <button
-                              className="underline"
+                              className={getThemeClasses(
+                                "underline hover:opacity-80 transition-opacity",
+                                ""
+                              )}
                               onClick={() => toggleBulkGroup(g.plantType, true)}
                             >
                               Pilih {g.plantType}
                             </button>
                             <span className="opacity-40">|</span>
                             <button
-                              className="underline"
+                              className={getThemeClasses(
+                                "underline hover:opacity-80 transition-opacity",
+                                ""
+                              )}
                               onClick={() =>
                                 toggleBulkGroup(g.plantType, false)
                               }
@@ -1445,8 +1467,8 @@ export default function MemberDetailPage(props: {
                             <label
                               key={it.id}
                               className={getThemeClasses(
-                                "flex items-center gap-2 rounded-lg border border-[#324D3E]/10 p-2 cursor-pointer",
-                                "!border-[#FFC1CC]/30"
+                                "flex items-center gap-2 rounded-lg border border-[#324D3E]/10 dark:border-gray-700 p-2 cursor-pointer hover:bg-[#324D3E]/5 dark:hover:bg-gray-700/50 transition-colors duration-300",
+                                "!border-[#FFC1CC]/30 hover:!bg-[#FFC1CC]/10"
                               )}
                             >
                               <input
@@ -1456,7 +1478,12 @@ export default function MemberDetailPage(props: {
                                   toggleBulkOne(it.id, e.target.checked)
                                 }
                               />
-                              <span className="text-sm">
+                              <span
+                                className={getThemeClasses(
+                                  "text-sm text-[#324D3E] dark:text-white transition-colors duration-300",
+                                  "!text-[#4c1d1d]"
+                                )}
+                              >
                                 {it.contractNumber
                                   ? `${it.contractNumber} `
                                   : ""}
@@ -1468,14 +1495,24 @@ export default function MemberDetailPage(props: {
                       </div>
                     ))}
                     {bulkGroups.length === 0 && (
-                      <div className="text-sm opacity-70">
+                      <div
+                        className={getThemeClasses(
+                          "text-sm opacity-70 text-[#889063] dark:text-gray-200 transition-colors duration-300",
+                          "!text-[#6b7280]"
+                        )}
+                      >
                         Tidak ada PlantInstance.
                       </div>
                     )}
                   </div>
                 </div>
 
-                <div className="text-xs opacity-70">
+                <div
+                  className={getThemeClasses(
+                    "text-xs opacity-70 text-[#889063] dark:text-gray-200 transition-colors duration-300",
+                    "!text-[#6b7280]"
+                  )}
+                >
                   Aksi ini <b>menambahkan</b>{" "}
                   {bulkType === "income" ? "pendapatan" : "pengeluaran"} dengan
                   nominal yang sama ke semua tanaman yang dicentang. Data lain
@@ -1495,15 +1532,15 @@ export default function MemberDetailPage(props: {
                 onChange={(e) => setInstanceQueryInput(e.target.value)}
                 placeholder="Cari kontrak / nama instance"
                 className={getThemeClasses(
-                  "w-full border border-[#324D3E]/20 rounded-xl px-3 py-2 bg-white/80",
-                  "!border-[#FFC1CC]/30 !bg-white/90"
+                  "w-full border border-[#324D3E]/20 dark:border-gray-600 rounded-xl px-3 py-2 bg-white/80 dark:bg-gray-700/80 text-[#324D3E] dark:text-white transition-colors duration-300",
+                  "!border-[#FFC1CC]/30 !bg-white/90 !text-[#4c1d1d]"
                 )}
               />
               <button
                 onClick={() => setInstanceQuery(instanceQueryInput.trim())}
                 className={getThemeClasses(
-                  "inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-[#324D3E]/20 hover:bg-[#324D3E] hover:text-white",
-                  "!border-[#FFC1CC]/30 hover:!bg-[#FFC1CC] hover:!text-[#4c1d1d]"
+                  "inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-[#324D3E]/20 dark:border-gray-600 text-[#324D3E] dark:text-white hover:bg-[#324D3E] hover:text-white dark:hover:bg-gray-700 transition-colors duration-300",
+                  "!border-[#FFC1CC]/30 !text-[#4c1d1d] hover:!bg-[#FFC1CC] hover:!text-white"
                 )}
                 title="Cari"
               >
@@ -1517,8 +1554,8 @@ export default function MemberDetailPage(props: {
                   setInstanceQuery("");
                 }}
                 className={getThemeClasses(
-                  "inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-[#324D3E]/20 hover:bg-[#324D3E] hover:text-white",
-                  "!border-[#FFC1CC]/30 hover:!bg-[#FFC1CC] hover:!text-[#4c1d1d]"
+                  "inline-flex items-center gap-2 px-3 py-2 rounded-xl border border-[#324D3E]/20 dark:border-gray-600 text-[#324D3E] dark:text-white hover:bg-[#324D3E] hover:text-white dark:hover:bg-gray-700 transition-colors duration-300",
+                  "!border-[#FFC1CC]/30 !text-[#4c1d1d] hover:!bg-[#FFC1CC] hover:!text-white"
                 )}
                 title="Reset pencarian"
               >
@@ -1531,8 +1568,8 @@ export default function MemberDetailPage(props: {
               value={selectedPlant}
               onChange={(e) => setSelectedPlant(e.target.value)}
               className={getThemeClasses(
-                "flex-1 border border-[#324D3E]/20 rounded-xl px-3 py-2 bg-white/80",
-                "!border-[#FFC1CC]/30 !bg-white/90"
+                "flex-1 border border-[#324D3E]/20 dark:border-gray-600 rounded-xl px-3 py-2 bg-white/80 dark:bg-gray-700/80 text-[#324D3E] dark:text-white transition-colors duration-300",
+                "!border-[#FFC1CC]/30 !bg-white/90 !text-[#4c1d1d]"
               )}
             >
               <option value="">Pilih Tanaman / Kontrak</option>
@@ -1568,7 +1605,7 @@ export default function MemberDetailPage(props: {
           {!selectedPlant ? (
             <div
               className={getThemeClasses(
-                "text-sm text-[#889063]",
+                "text-sm text-[#889063] dark:text-gray-200",
                 "!text-[#6b7280]"
               )}
             >
@@ -1605,8 +1642,8 @@ export default function MemberDetailPage(props: {
                           setIncForm((f) => ({ ...f, date: e.target.value }))
                         }
                         className={getThemeClasses(
-                          "border border-[#324D3E]/20 rounded-xl px-3 py-2 bg-white/80",
-                          "!border-[#FFC1CC]/30 !bg-white/90"
+                          "border border-[#324D3E]/20 dark:border-gray-600 rounded-xl px-3 py-2 bg-white/80 dark:bg-gray-700/80 text-[#324D3E] dark:text-white transition-colors duration-300",
+                          "!border-[#FFC1CC]/30 !bg-white/90 !text-[#4c1d1d]"
                         )}
                       />
                       <input
@@ -1618,8 +1655,8 @@ export default function MemberDetailPage(props: {
                           }))
                         }
                         className={getThemeClasses(
-                          "border border-[#324D3E]/20 rounded-xl px-3 py-2 bg-white/80",
-                          "!border-[#FFC1CC]/30 !bg-white/90"
+                          "border border-[#324D3E]/20 dark:border-gray-600 rounded-xl px-3 py-2 bg-white/80 dark:bg-gray-700/80 text-[#324D3E] dark:text-white transition-colors duration-300",
+                          "!border-[#FFC1CC]/30 !bg-white/90 !text-[#4c1d1d]"
                         )}
                         placeholder="Deskripsi"
                       />
@@ -1630,16 +1667,16 @@ export default function MemberDetailPage(props: {
                           setIncForm((f) => ({ ...f, amount: formatted }));
                         }}
                         className={getThemeClasses(
-                          "border border-[#324D3E]/20 rounded-xl px-3 py-2 bg-white/80",
-                          "!border-[#FFC1CC]/30 !bg-white/90"
+                          "border border-[#324D3E]/20 dark:border-gray-600 rounded-xl px-3 py-2 bg-white/80 dark:bg-gray-700/80 text-[#324D3E] dark:text-white transition-colors duration-300",
+                          "!border-[#FFC1CC]/30 !bg-white/90 !text-[#4c1d1d]"
                         )}
                         placeholder="Jumlah"
                         inputMode="numeric"
                       />
                       <button
                         className={getThemeClasses(
-                          "rounded-xl border border-[#324D3E]/20 px-3 py-2 text-sm hover:bg-[#324D3E] hover:text-white",
-                          "!border-[#FFC1CC]/30 hover:!bg-[#FFC1CC] hover:!text-[#4c1d1d]"
+                          "rounded-xl border border-[#324D3E]/20 dark:border-gray-600 px-3 py-2 text-sm text-[#324D3E] dark:text-white hover:bg-[#324D3E] hover:text-white dark:hover:bg-gray-700 transition-colors duration-300",
+                          "!border-[#FFC1CC]/30 !text-[#4c1d1d] hover:!bg-[#FFC1CC] hover:!text-white"
                         )}
                       >
                         Simpan
@@ -1691,8 +1728,8 @@ export default function MemberDetailPage(props: {
                           setExpForm((f) => ({ ...f, date: e.target.value }))
                         }
                         className={getThemeClasses(
-                          "border border-[#324D3E]/20 rounded-xl px-3 py-2 bg-white/80",
-                          "!border-[#FFC1CC]/30 !bg-white/90"
+                          "border border-[#324D3E]/20 dark:border-gray-600 rounded-xl px-3 py-2 bg-white/80 dark:bg-gray-700/80 text-[#324D3E] dark:text-white transition-colors duration-300",
+                          "!border-[#FFC1CC]/30 !bg-white/90 !text-[#4c1d1d]"
                         )}
                       />
                       <input
@@ -1704,8 +1741,8 @@ export default function MemberDetailPage(props: {
                           }))
                         }
                         className={getThemeClasses(
-                          "border border-[#324D3E]/20 rounded-xl px-3 py-2 bg-white/80",
-                          "!border-[#FFC1CC]/30 !bg-white/90"
+                          "border border-[#324D3E]/20 dark:border-gray-600 rounded-xl px-3 py-2 bg-white/80 dark:bg-gray-700/80 text-[#324D3E] dark:text-white transition-colors duration-300",
+                          "!border-[#FFC1CC]/30 !bg-white/90 !text-[#4c1d1d]"
                         )}
                         placeholder="Deskripsi"
                       />
@@ -1716,16 +1753,16 @@ export default function MemberDetailPage(props: {
                           setExpForm((f) => ({ ...f, amount: formatted }));
                         }}
                         className={getThemeClasses(
-                          "border border-[#324D3E]/20 rounded-xl px-3 py-2 bg-white/80",
-                          "!border-[#FFC1CC]/30 !bg-white/90"
+                          "border border-[#324D3E]/20 dark:border-gray-600 rounded-xl px-3 py-2 bg-white/80 dark:bg-gray-700/80 text-[#324D3E] dark:text-white transition-colors duration-300",
+                          "!border-[#FFC1CC]/30 !bg-white/90 !text-[#4c1d1d]"
                         )}
                         placeholder="Jumlah"
                         inputMode="numeric"
                       />
                       <button
                         className={getThemeClasses(
-                          "rounded-xl border border-[#324D3E]/20 px-3 py-2 text-sm hover:bg-[#324D3E] hover:text-white",
-                          "!border-[#FFC1CC]/30 hover:!bg-[#FFC1CC] hover:!text-[#4c1d1d]"
+                          "rounded-xl border border-[#324D3E]/20 dark:border-gray-600 px-3 py-2 text-sm text-[#324D3E] dark:text-white hover:bg-[#324D3E] hover:text-white dark:hover:bg-gray-700 transition-colors duration-300",
+                          "!border-[#FFC1CC]/30 !text-[#4c1d1d] hover:!bg-[#FFC1CC] hover:!text-white"
                         )}
                       >
                         Simpan

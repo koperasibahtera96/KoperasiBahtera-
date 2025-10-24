@@ -818,10 +818,18 @@ export default function LaporanPengeluaranPage() {
               </p>
               {/* Secondary nav: Laporan <-> Pendaftaran (rapi di bawah judul) */}
               <div className="mt-3">
-                <div className="inline-flex overflow-hidden rounded-2xl border border-black/10 bg-white/80 backdrop-blur px-1 py-1">
+                <div
+                  className={getThemeClasses(
+                    "inline-flex overflow-hidden rounded-2xl border border-black/10 dark:border-gray-600 bg-white/80 dark:bg-gray-700/80 backdrop-blur px-1 py-1 transition-colors duration-300",
+                    "!border-[#FFC1CC]/30 !bg-white/90"
+                  )}
+                >
                   {/* Halaman ini (Laporan) jadi aktif/disabled */}
                   <button
-                    className="px-3 py-1 text-xs font-bold rounded-xl bg-black/5 cursor-default"
+                    className={getThemeClasses(
+                      "px-3 py-1 text-xs font-bold rounded-xl bg-black/5 dark:bg-gray-600/50 cursor-default text-[#324D3E] dark:text-white transition-colors duration-300",
+                      "!bg-[#FFC1CC]/20 !text-[#4c1d1d]"
+                    )}
                     disabled
                     title="Halaman Laporan"
                   >
@@ -831,7 +839,10 @@ export default function LaporanPengeluaranPage() {
                   {/* Link ke /pendaftaran */}
                   <Link href="/pendaftaran" className="contents">
                     <button
-                      className="px-3 py-1 text-xs font-bold rounded-xl hover:bg-black/5"
+                      className={getThemeClasses(
+                        "px-3 py-1 text-xs font-bold rounded-xl hover:bg-black/5 dark:hover:bg-gray-600/50 text-[#324D3E] dark:text-white transition-colors duration-300",
+                        "!text-[#4c1d1d] hover:!bg-[#FFC1CC]/20"
+                      )}
                       title="Ke halaman Pendaftaran"
                     >
                       Pendaftaran
@@ -846,14 +857,14 @@ export default function LaporanPengeluaranPage() {
             {/* Toggle kecil – ditambah tombol "Semua" */}
             <div
               className={getThemeClasses(
-                "inline-flex rounded-2xl overflow-hidden border border-black/60",
+                "inline-flex rounded-2xl overflow-hidden border border-black/60 dark:border-gray-600 transition-colors duration-300",
                 "!border-[#FFC1CC]/50"
               )}
             >
               <button
                 className={getThemeClasses(
-                  `px-3 py-1 text-xs font-bold ${
-                    isAll ? "bg-[#E9FFEF]" : "bg-white"
+                  `px-3 py-1 text-xs font-bold transition-colors duration-300 ${
+                    isAll ? "bg-[#E9FFEF] text-[#324D3E] dark:bg-emerald-500/30 dark:text-white" : "bg-white text-[#324D3E] dark:bg-gray-700 dark:text-white"
                   }`,
                   isAll
                     ? "!bg-[#FFDEE9] !text-[#4c1d1d]"
@@ -866,8 +877,8 @@ export default function LaporanPengeluaranPage() {
               </button>
               <button
                 className={getThemeClasses(
-                  `px-3 py-1 text-xs font-bold ${
-                    isExpense ? "bg[#FFEAA7]" : "bg-white"
+                  `px-3 py-1 text-xs font-bold transition-colors duration-300 ${
+                    isExpense ? "bg-[#FFEAA7] text-[#324D3E] dark:bg-red-500/30 dark:text-white" : "bg-white text-[#324D3E] dark:bg-gray-700 dark:text-white"
                   }`,
                   isExpense
                     ? "!bg-[#FFDEE9] !text-[#4c1d1d]"
@@ -880,8 +891,8 @@ export default function LaporanPengeluaranPage() {
               </button>
               <button
                 className={getThemeClasses(
-                  `px-3 py-1 text-xs font-bold ${
-                    isIncome ? "bg-[#C2F5C0]" : "bg-white"
+                  `px-3 py-1 text-xs font-bold transition-colors duration-300 ${
+                    isIncome ? "bg-[#C2F5C0] text-[#324D3E] dark:bg-green-500/30 dark:text-white" : "bg-white text-[#324D3E] dark:bg-gray-700 dark:text-white"
                   }`,
                   isIncome
                     ? "!bg-[#B5EAD7] !text-[#4c1d1d]"
@@ -897,7 +908,7 @@ export default function LaporanPengeluaranPage() {
             <motion.button
               onClick={handleExportCSV}
               className={getThemeClasses(
-                "inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-green-500 to-[#324D3E] hover:from-green-600 hover:to-[#4C3D19] px-4 py-2 text-sm font-medium text-white transition-all duration-300 shadow-lg hover:shadow-xl",
+                "inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-green-500 to-[#324D3E] hover:from-green-600 hover:to-[#4C3D19] px-4 py-2 text-sm font-medium text-white transition-all duration-300 shadow-lg hover:shadow-xl dark:from-emerald-600 dark:to-gray-700 dark:hover:from-emerald-500 dark:hover:to-gray-600",
                 "!bg-gradient-to-r !from-[#FFC1CC] !to-[#FFDEE9] !text-[#4c1d1d] hover:!from-[#FFDEE9] hover:!to-[#FFF5BA]"
               )}
               whileHover={{ scale: 1.05 }}

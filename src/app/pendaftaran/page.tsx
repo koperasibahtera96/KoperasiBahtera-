@@ -1,11 +1,12 @@
 "use client";
 
 import * as React from "react";
-import { Suspense } from "react";
+import { Suspense, useState, useEffect } from "react";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import Link from "next/link"; // <-- tambah untuk toggle navigasi
 import { FinanceSidebar } from "@/components/finance/FinanceSidebar";
 import { Download, Search } from "lucide-react";
+import { useTheme } from "next-themes";
 
 // ============== XLSX dynamic import ==============
 let XLSXMod: any;
@@ -82,6 +83,20 @@ function Content() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
+  const { theme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+
+  // Theme helper
+  const getThemeClasses = (baseClasses: string, pinkClasses: string = "") => {
+    if (mounted && theme === "pink" && pinkClasses) {
+      return `${baseClasses} ${pinkClasses}`;
+    }
+    return baseClasses;
+  };
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Query umum (tanpa filter kategori)
   const q = (searchParams?.get("q") || "").trim();
@@ -365,12 +380,31 @@ function Content() {
     <div className="px-6 lg:px-8 py-6">
       {/* Header judul + tanggal */}
       <div className="mb-4">
-        <h1 className="text-3xl font-bold text-[#324D3E]">Pendaftaran</h1>
-        <div className="text-sm text-gray-600">{today}</div>
+        <h1
+          className={getThemeClasses(
+            "text-3xl font-bold text-[#324D3E] dark:text-white transition-colors duration-300",
+            "!text-[#4c1d1d]"
+          )}
+        >
+          Pendaftaran
+        </h1>
+        <div
+          className={getThemeClasses(
+            "text-sm text-gray-600 dark:text-gray-200 transition-colors duration-300",
+            "!text-[#6b7280]"
+          )}
+        >
+          {today}
+        </div>
       </div>
 
       {/* Bar atas: Search + kanan (sort/hasil/perPage/pager) */}
-      <div className="mb-4 rounded-3xl border border-[#324D3E]/10 bg-white p-4">
+      <div
+        className={getThemeClasses(
+          "mb-4 rounded-3xl border border-[#324D3E]/10 dark:border-gray-700 bg-white dark:bg-gray-800/90 p-4 transition-colors duration-300",
+          "!border-[#FFC1CC]/30 !bg-white/95"
+        )}
+      >
         <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
           {/* search */}
           <div className="flex-1">
@@ -384,7 +418,10 @@ function Content() {
                     setSearch(val);
                   }
                 }}
-                className="w-full rounded-2xl border border-[#324D3E]/20 bg-white px-5 py-3 text-sm shadow-sm"
+                className={getThemeClasses(
+                  "w-full rounded-2xl border border-[#324D3E]/20 dark:border-gray-600 bg-white dark:bg-gray-700/80 text-[#324D3E] dark:text-white px-5 py-3 text-sm shadow-sm transition-colors duration-300",
+                  "!border-[#FFC1CC]/30 !bg-white/90 !text-[#4c1d1d]"
+                )}
               />
               <button
                 onClick={() => {
@@ -393,7 +430,10 @@ function Content() {
                   );
                   setSearch(el?.value || "");
                 }}
-                className="absolute right-2 top-1/2 -translate-y-1/2 inline-flex items-center gap-2 rounded-xl bg-[#324D3E] px-3 py-2 text-sm text-white"
+                className={getThemeClasses(
+                  "absolute right-2 top-1/2 -translate-y-1/2 inline-flex items-center gap-2 rounded-xl bg-[#324D3E] dark:bg-gray-700 hover:bg-[#4C3D19] dark:hover:bg-gray-600 px-3 py-2 text-sm text-white transition-colors duration-300",
+                  "!bg-[#FFC1CC] !text-[#4c1d1d] hover:!bg-[#FFDEE9]"
+                )}
                 title="Search"
               >
                 <Search className="h-4 w-4" />
@@ -405,20 +445,30 @@ function Content() {
           {/* kanan controls */}
           <div className="flex flex-wrap items-center gap-2 justify-end">
             {/* sort */}
-            <div className="inline-flex items-center gap-2 rounded-2xl border border-[#324D3E]/20 bg-white px-3 py-2 text-sm">
+            <div className={getThemeClasses("inline-flex items-center gap-2 rounded-2xl border border-[#324D3E]/20 dark:border-gray-600 bg-white dark:bg-gray-700/80 px-3 py-2 text-sm transition-colors duration-300", "!border-[#FFC1CC]/30 !bg-white/90")}>
               <button
-                className={`rounded-lg px-2 py-1 ${
-                  sort === "desc" ? "bg-[#324D3E] text-white" : ""
-                }`}
+                className={getThemeClasses(
+                  `rounded-lg px-2 py-1 transition-colors duration-200 ${
+                    sort === "desc"
+                      ? "bg-[#324D3E] dark:bg-gray-600 text-white"
+                      : "text-[#324D3E] dark:text-white hover:bg-[#324D3E]/10 dark:hover:bg-gray-600"
+                  }`,
+                  sort === "desc" ? "!bg-[#FFC1CC] !text-[#4c1d1d]" : "!text-[#4c1d1d] hover:!bg-[#FFC1CC]/20"
+                )}
                 onClick={() => setSort("desc")}
                 title="Terbaru"
               >
                 Terbaru
               </button>
               <button
-                className={`rounded-lg px-2 py-1 ${
-                  sort === "asc" ? "bg-[#324D3E] text-white" : ""
-                }`}
+                className={getThemeClasses(
+                  `rounded-lg px-2 py-1 transition-colors duration-200 ${
+                    sort === "asc"
+                      ? "bg-[#324D3E] dark:bg-gray-600 text-white"
+                      : "text-[#324D3E] dark:text-white hover:bg-[#324D3E]/10 dark:hover:bg-gray-600"
+                  }`,
+                  sort === "asc" ? "!bg-[#FFC1CC] !text-[#4c1d1d]" : "!text-[#4c1d1d] hover:!bg-[#FFC1CC]/20"
+                )}
                 onClick={() => setSort("asc")}
                 title="Terlama"
               >
@@ -427,13 +477,16 @@ function Content() {
             </div>
 
             {/* ringkasan hasil */}
-            <div className="inline-flex items-center gap-2 rounded-2xl border border-[#324D3E]/20 bg-white px-3 py-2 text-sm">
+            <div className={getThemeClasses("inline-flex items-center gap-2 rounded-2xl border border-[#324D3E]/20 dark:border-gray-600 bg-white dark:bg-gray-700/80 px-3 py-2 text-sm text-[#324D3E] dark:text-white transition-colors duration-300", "!border-[#FFC1CC]/30 !bg-white/90 !text-[#4c1d1d]")}>
               <span className="opacity-70">{total} hasil</span>
               <span>•</span>
               <select
                 value={perPage}
                 onChange={(e) => setPerPage(Number(e.target.value))}
-                className="rounded-xl border border-[#324D3E]/20 bg-white px-2 py-1"
+                className={getThemeClasses(
+                  "rounded-xl border border-[#324D3E]/20 dark:border-gray-600 bg-white dark:bg-gray-700 text-[#324D3E] dark:text-white px-2 py-1 transition-colors duration-300",
+                  "!border-[#FFC1CC]/30 !bg-white/90 !text-[#4c1d1d]"
+                )}
               >
                 {[10, 20, 50, 100].map((n) => (
                   <option key={n} value={n}>
@@ -444,21 +497,32 @@ function Content() {
             </div>
 
             {/* pager ringkas */}
-            <div className="inline-flex items-center gap-2 rounded-2xl border border-[#324D3E]/20 bg-white px-2 py-2 text-sm">
+            <div className={getThemeClasses("inline-flex items-center gap-2 rounded-2xl border border-[#324D3E]/20 dark:border-gray-600 bg-white dark:bg-gray-700/80 px-2 py-2 text-sm text-[#324D3E] dark:text-white transition-colors duration-300", "!border-[#FFC1CC]/30 !bg-white/90 !text-[#4c1d1d]")}>
               <button
                 disabled={currentPage <= 1}
                 onClick={() => setPage(currentPage - 1)}
-                className="rounded-lg px-3 py-1 disabled:opacity-50"
+                className={getThemeClasses(
+                  "rounded-lg px-3 py-1 disabled:opacity-50 text-[#324D3E] dark:text-white hover:bg-[#324D3E]/10 dark:hover:bg-gray-600 transition-colors duration-200",
+                  "!text-[#4c1d1d] hover:!bg-[#FFC1CC]/20"
+                )}
               >
                 ‹
               </button>
-              <div className="rounded-lg border border-[#324D3E]/20 px-3 py-1">
+              <div
+                className={getThemeClasses(
+                  "rounded-lg border border-[#324D3E]/20 dark:border-gray-600 px-3 py-1 text-[#324D3E] dark:text-white transition-colors duration-300",
+                  "!border-[#FFC1CC]/30 !text-[#4c1d1d]"
+                )}
+              >
                 {currentPage}
               </div>
               <button
                 disabled={currentPage >= totalPages}
                 onClick={() => setPage(currentPage + 1)}
-                className="rounded-lg px-3 py-1 disabled:opacity-50"
+                className={getThemeClasses(
+                  "rounded-lg px-3 py-1 disabled:opacity-50 text-[#324D3E] dark:text-white hover:bg-[#324D3E]/10 dark:hover:bg-gray-600 transition-colors duration-200",
+                  "!text-[#4c1d1d] hover:!bg-[#FFC1CC]/20"
+                )}
               >
                 ›
               </button>
@@ -469,16 +533,24 @@ function Content() {
 
       {/* Bar: Total Pendaftaran (kiri) — Export XLS (kanan) */}
       <div className="mb-1 flex items-center justify-between">
-        <div className="inline-flex items-center gap-2 rounded-2xl border border-[#324D3E]/20 bg-white px-4 py-2 text-sm">
+        <div className={getThemeClasses("inline-flex items-center gap-2 rounded-2xl border border-[#324D3E]/20 dark:border-gray-600 bg-white dark:bg-gray-700/80 px-4 py-2 text-sm text-[#324D3E] dark:text-white transition-colors duration-300", "!border-[#FFC1CC]/30 !bg-white/90 !text-[#4c1d1d]")}>
           <span className="opacity-70">Total Pendaftaran</span>
-          <span className="rounded-lg bg-[#324D3E] px-2 py-1 text-white">
+          <span
+            className={getThemeClasses(
+              "rounded-lg bg-[#324D3E] dark:bg-gray-600 px-2 py-1 text-white transition-colors duration-300",
+              "!bg-[#FFC1CC] !text-[#4c1d1d]"
+            )}
+          >
             {loadingTotal ? "..." : formatIDR(totalNominal)}
           </span>
         </div>
 
         <button
           onClick={exportAllXLS}
-          className="inline-flex items-center gap-2 rounded-xl border border-[#324D3E]/20 bg-white px-4 py-2 text-sm font-medium hover:bg-[#324D3E] hover:text-white"
+          className={getThemeClasses(
+            "inline-flex items-center gap-2 rounded-xl border border-[#324D3E]/20 dark:border-gray-600 bg-white dark:bg-gray-700/80 text-[#324D3E] dark:text-white px-4 py-2 text-sm font-medium hover:bg-[#324D3E] hover:text-white dark:hover:bg-gray-600 transition-colors duration-300",
+            "!border-[#FFC1CC]/30 !bg-white/90 !text-[#4c1d1d] hover:!bg-[#FFC1CC] hover:!text-white"
+          )}
         >
           <Download className="h-4 w-4" />
           Export XLS
@@ -487,17 +559,28 @@ function Content() {
 
       {/* === Toggle Navigasi (Laporan <-> Pendaftaran) di bawah Export === */}
       <div className="mb-4 flex justify-end">
-        <div className="inline-flex overflow-hidden rounded-2xl border border-[#324D3E]/20 bg-white">
+        <div
+          className={getThemeClasses(
+            "inline-flex overflow-hidden rounded-2xl border border-[#324D3E]/20 dark:border-gray-600 bg-white dark:bg-gray-700/80 transition-colors duration-300",
+            "!border-[#FFC1CC]/30 !bg-white/90"
+          )}
+        >
           <Link href="/laporan-pengeluaran" className="contents">
             <button
-              className="px-3 py-1 text-xs font-bold hover:bg-black/5"
+              className={getThemeClasses(
+                "px-3 py-1 text-xs font-bold hover:bg-black/5 dark:hover:bg-gray-600/50 text-[#324D3E] dark:text-white transition-colors duration-300",
+                "!text-[#4c1d1d] hover:!bg-[#FFC1CC]/20"
+              )}
               title="Ke halaman Laporan"
             >
               Laporan
             </button>
           </Link>
           <button
-            className="px-3 py-1 text-xs font-bold bg-[#E9FFEF] cursor-default"
+            className={getThemeClasses(
+              "px-3 py-1 text-xs font-bold bg-[#E9FFEF] dark:bg-emerald-500/30 cursor-default text-[#324D3E] dark:text-white transition-colors duration-300",
+              "!bg-[#B5EAD7] !text-[#4c1d1d]"
+            )}
             title="Halaman Pendaftaran"
             disabled
           >
@@ -507,7 +590,12 @@ function Content() {
       </div>
 
       {/* Tabel daftar */}
-      <div className="rounded-3xl border border-[#324D3E]/10 bg-white p-0">
+      <div
+        className={getThemeClasses(
+          "rounded-3xl border border-[#324D3E]/10 dark:border-gray-700 bg-white dark:bg-gray-800/90 p-0 transition-colors duration-300",
+          "!border-[#FFC1CC]/30 !bg-white/95"
+        )}
+      >
         {loading ? (
           <div className="p-8 text-center text-sm opacity-70">Memuat data…</div>
         ) : err ? (
@@ -521,14 +609,68 @@ function Content() {
             <div className="w-full overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-gray-200 bg-[#F8FAF9] text-left">
-                    <th className="px-6 py-3">No</th>
-                    <th className="px-6 py-3">Jenis</th>
-                    <th className="px-6 py-3">User</th>
-                    <th className="px-6 py-3">Nominal</th>
-                    <th className="px-6 py-3">Tanggal</th>
-                    <th className="px-6 py-3">Invoice</th>
-                    <th className="px-6 py-3">Status</th>
+                  <tr
+                    className={getThemeClasses(
+                      "border-b border-gray-200 dark:border-gray-600 bg-[#F8FAF9] dark:bg-gray-700/50 text-left transition-colors duration-300",
+                      "!bg-[#FFDEE9]/30 !border-[#FFC1CC]/30"
+                    )}
+                  >
+                    <th
+                      className={getThemeClasses(
+                        "px-6 py-3 text-[#324D3E] dark:text-white font-semibold transition-colors duration-300",
+                        "!text-[#4c1d1d]"
+                      )}
+                    >
+                      No
+                    </th>
+                    <th
+                      className={getThemeClasses(
+                        "px-6 py-3 text-[#324D3E] dark:text-white font-semibold transition-colors duration-300",
+                        "!text-[#4c1d1d]"
+                      )}
+                    >
+                      Jenis
+                    </th>
+                    <th
+                      className={getThemeClasses(
+                        "px-6 py-3 text-[#324D3E] dark:text-white font-semibold transition-colors duration-300",
+                        "!text-[#4c1d1d]"
+                      )}
+                    >
+                      User
+                    </th>
+                    <th
+                      className={getThemeClasses(
+                        "px-6 py-3 text-[#324D3E] dark:text-white font-semibold transition-colors duration-300",
+                        "!text-[#4c1d1d]"
+                      )}
+                    >
+                      Nominal
+                    </th>
+                    <th
+                      className={getThemeClasses(
+                        "px-6 py-3 text-[#324D3E] dark:text-white font-semibold transition-colors duration-300",
+                        "!text-[#4c1d1d]"
+                      )}
+                    >
+                      Tanggal
+                    </th>
+                    <th
+                      className={getThemeClasses(
+                        "px-6 py-3 text-[#324D3E] dark:text-white font-semibold transition-colors duration-300",
+                        "!text-[#4c1d1d]"
+                      )}
+                    >
+                      Invoice
+                    </th>
+                    <th
+                      className={getThemeClasses(
+                        "px-6 py-3 text-[#324D3E] dark:text-white font-semibold transition-colors duration-300",
+                        "!text-[#4c1d1d]"
+                      )}
+                    >
+                      Status
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
@@ -538,17 +680,61 @@ function Content() {
                       p.amount ?? p.totalAmount ?? p.gross_amount ?? 0;
                     const user = p.userName || p.userEmail || p.userId || "-";
                     return (
-                      <tr key={p._id} className="border-b border-gray-100">
-                        <td className="px-6 py-3">{idx}</td>
-                        <td className="px-6 py-3">Pendaftaran</td>
-                        <td className="px-6 py-3">{user}</td>
-                        <td className="px-6 py-3 font-medium">
+                      <tr
+                        key={p._id}
+                        className={getThemeClasses(
+                          "border-b border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors duration-200",
+                          "!border-[#FFC1CC]/20 hover:!bg-[#FFC1CC]/10"
+                        )}
+                      >
+                        <td
+                          className={getThemeClasses(
+                            "px-6 py-3 text-[#324D3E] dark:text-white transition-colors duration-300",
+                            "!text-[#4c1d1d]"
+                          )}
+                        >
+                          {idx}
+                        </td>
+                        <td
+                          className={getThemeClasses(
+                            "px-6 py-3 text-[#324D3E] dark:text-white transition-colors duration-300",
+                            "!text-[#4c1d1d]"
+                          )}
+                        >
+                          Pendaftaran
+                        </td>
+                        <td
+                          className={getThemeClasses(
+                            "px-6 py-3 text-[#324D3E] dark:text-white transition-colors duration-300",
+                            "!text-[#4c1d1d]"
+                          )}
+                        >
+                          {user}
+                        </td>
+                        <td
+                          className={getThemeClasses(
+                            "px-6 py-3 font-medium text-[#324D3E] dark:text-white transition-colors duration-300",
+                            "!text-[#4c1d1d]"
+                          )}
+                        >
                           {formatIDR(nominal)}
                         </td>
-                        <td className="px-6 py-3">
+                        <td
+                          className={getThemeClasses(
+                            "px-6 py-3 text-[#324D3E] dark:text-white transition-colors duration-300",
+                            "!text-[#4c1d1d]"
+                          )}
+                        >
                           {formatDateText(p.createdAt)}
                         </td>
-                        <td className="px-6 py-3">{p.orderId || "-"}</td>
+                        <td
+                          className={getThemeClasses(
+                            "px-6 py-3 text-[#324D3E] dark:text-white transition-colors duration-300",
+                            "!text-[#4c1d1d]"
+                          )}
+                        >
+                          {p.orderId || "-"}
+                        </td>
                         <td className="px-6 py-3">
                           <span
                             className={`inline-flex rounded-full px-2 py-1 text-xs ${
