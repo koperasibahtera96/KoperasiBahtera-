@@ -17,6 +17,7 @@ export interface ISettings extends Document {
 
     // For system settings
     registrationFee?: number;
+    commissionRate?: number; // Marketing commission rate (stored as decimal, e.g., 0.02 for 2%)
 
     // For other settings
     [key: string]: any;

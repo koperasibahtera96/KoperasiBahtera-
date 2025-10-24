@@ -2,493 +2,420 @@
 
 import { FinanceSidebar } from "@/components/finance/FinanceSidebar";
 import { useAlert } from "@/components/ui/Alert";
-import {
-  CheckCircle,
-  CreditCard,
-  Search,
-  X,
-  XCircle,
-  Image as ImageIcon,
-} from "lucide-react";
+import { InvestorGroup, Pagination } from "@/types/cicilan";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import Image from "next/image";
-
-interface Payment {
-  _id: string;
-  orderId: string;
-  cicilanOrderId?: string;
-  amount: number;
-  paymentType: string;
-  paymentMethod: string;
-  adminStatus: string;
-  status: string;
-  productName: string;
-  proofImageUrl?: string;
-  proofDescription?: string;
-  installmentNumber?: number;
-  totalInstallments?: number;
-  dueDate?: string;
-  createdAt: string;
-  updatedAt: string;
-  user: {
-    fullName: string;
-    email: string;
-    phoneNumber: string;
-    userCode: string;
-  };
-  adminReviewDate?: string;
-  adminNotes?: string;
-}
+import { Users, DollarSign, AlertTriangle } from "lucide-react";
 
 export default function FinancePaymentsPage() {
-  const [payments, setPayments] = useState<Payment[]>([]);
+  const [investorGroups, setInvestorGroups] = useState<InvestorGroup[]>([]);
+  const [pagination, setPagination] = useState<Pagination | null>(null);
   const [loading, setLoading] = useState(true);
-  const [paymentTypeFilter, setPaymentTypeFilter] = useState("all");
-  const [statusFilter, setStatusFilter] = useState("pending");
-  const [searchTerm, setSearchTerm] = useState("");
-  const [selectedPayment, setSelectedPayment] = useState<Payment | null>(null);
-  const [showImageModal, setShowImageModal] = useState(false);
-  const [showApprovalModal, setShowApprovalModal] = useState(false);
-  const [approvalAction, setApprovalAction] = useState<"approve" | "reject">(
-    "approve"
-  );
-  const [adminNotes, setAdminNotes] = useState("");
-  const [processing, setProcessing] = useState(false);
-  const { showSuccess, showError, AlertComponent } = useAlert();
+  const [filters, setFilters] = useState({
+    status: "",
+    search: "",
+    page: 1,
+  });
+  const { AlertComponent } = useAlert();
+  const router = useRouter();
 
-  useEffect(() => {
-    fetchPayments();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [paymentTypeFilter, statusFilter, searchTerm]);
-
-  const fetchPayments = async () => {
+  const fetchInvestorGroups = async () => {
     try {
       setLoading(true);
       const params = new URLSearchParams();
-      if (paymentTypeFilter !== "all") params.append("paymentType", paymentTypeFilter);
-      params.append("status", statusFilter);
-      if (searchTerm) params.append("search", searchTerm);
+      if (filters.status) params.append("status", filters.status);
+      if (filters.search) params.append("search", filters.search);
+      params.append("page", filters.page.toString());
+      params.append("limit", "10");
 
-      const response = await fetch(
-        `/api/finance/payments/pending?${params.toString()}`
-      );
+      const response = await fetch(`/api/finance/payments/investors?${params}`);
       if (response.ok) {
         const data = await response.json();
-        setPayments(data.payments || []);
+        setInvestorGroups(data.investors);
+        setPagination(data.pagination);
       } else {
-        showError("Error", "Gagal memuat data pembayaran");
+        console.error("Failed to fetch investor groups");
       }
     } catch (error) {
-      console.error("Error fetching payments:", error);
-      showError("Error", "Terjadi kesalahan saat memuat data");
+      console.error("Error fetching investor groups:", error);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleApproveReject = async () => {
-    if (!selectedPayment) return;
+  useEffect(() => {
+    fetchInvestorGroups();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filters]);
 
-    try {
-      setProcessing(true);
-      const response = await fetch("/api/finance/payments/approve", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          paymentId: selectedPayment._id,
-          action: approvalAction,
-          adminNotes,
-        }),
-      });
+  const handleViewDetails = (userId: string) => {
+    router.push(`/finance/payments/${userId}`);
+  };
 
-      if (response.ok) {
-        showSuccess(
-          "Berhasil",
-          approvalAction === "approve"
-            ? "Pembayaran berhasil disetujui"
-            : "Pembayaran ditolak"
-        );
-        setShowApprovalModal(false);
-        setSelectedPayment(null);
-        setAdminNotes("");
-        fetchPayments();
-      } else {
-        const error = await response.json();
-        showError("Error", error.error || "Gagal memproses pembayaran");
-      }
-    } catch (error) {
-      console.error("Error processing payment:", error);
-      showError("Error", "Terjadi kesalahan saat memproses pembayaran");
-    } finally {
-      setProcessing(false);
+  const getInvestmentStatusColor = (status: string) => {
+    switch (status) {
+      case "active":
+        return "bg-blue-100 dark:bg-blue-900/20 text-blue-800 dark:text-blue-300";
+      case "completed":
+        return "bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-300";
+      case "overdue":
+        return "bg-red-100 dark:bg-red-900/20 text-red-800 dark:text-red-300";
+      default:
+        return "bg-gray-100 dark:bg-gray-600 text-gray-800 dark:text-gray-300";
     }
   };
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat("id-ID", {
-      style: "currency",
-      currency: "IDR",
-      minimumFractionDigits: 0,
-    }).format(amount);
-  };
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("id-ID", {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
+  const getInvestmentStatusText = (status: string) => {
+    switch (status) {
+      case "active":
+        return "Aktif";
+      case "completed":
+        return "Selesai";
+      case "overdue":
+        return "Terlambat";
+      default:
+        return status;
+    }
   };
 
   return (
     <FinanceSidebar>
-      <div className="p-6 sm:p-8">
-        <AlertComponent />
-
+      <AlertComponent />
+      <div className="space-y-6 px-4 sm:px-6 lg:px-8 py-6">
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-[#324D3E] mb-2">
-            Kelola Pembayaran
-          </h1>
-          <p className="text-[#889063]">
-            Approve atau reject pembayaran manual BCA
-          </p>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="min-w-0 flex-1">
+            <h1 className="text-3xl font-bold text-[#324D3E] font-[family-name:var(--font-poppins)]">
+              Kelola Pembayaran
+            </h1>
+            <p className="text-[#889063] mt-2">
+              Kelola pembayaran manual BCA dari investor
+            </p>
+          </div>
         </div>
 
-        {/* Filters */}
-        <div className="bg-white rounded-2xl shadow-lg border border-[#324D3E]/10 p-6 mb-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {/* Payment Type Filter */}
+        {/* Search and Filters */}
+        <div className="bg-white rounded-2xl shadow-lg border border-[#324D3E]/10 p-4 sm:p-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="sm:col-span-2 lg:col-span-2">
+              <label className="block text-sm font-medium text-[#324D3E] mb-2 font-[family-name:var(--font-poppins)]">
+                Cari Investor
+              </label>
+              <input
+                type="text"
+                placeholder="Cari berdasarkan nama, email, atau kode user..."
+                value={filters.search}
+                onChange={(e) =>
+                  setFilters((prev) => ({
+                    ...prev,
+                    search: e.target.value,
+                    page: 1,
+                  }))
+                }
+                className="w-full border border-[#324D3E]/20 rounded-xl p-3 bg-white focus:border-[#324D3E] focus:ring-2 focus:ring-[#324D3E]/20 text-[#324D3E] placeholder-[#889063] transition-all duration-300 text-sm sm:text-base"
+              />
+            </div>
             <div>
-              <label className="block text-sm font-medium text-[#324D3E] mb-2">
-                Tipe Pembayaran
+              <label className="block text-sm font-medium text-[#324D3E] mb-2 font-[family-name:var(--font-poppins)]">
+                Status Investasi
               </label>
               <select
-                value={paymentTypeFilter}
-                onChange={(e) => setPaymentTypeFilter(e.target.value)}
-                className="w-full px-4 py-2 border border-[#324D3E]/20 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#324D3E]/50"
+                value={filters.status}
+                onChange={(e) =>
+                  setFilters((prev) => ({
+                    ...prev,
+                    status: e.target.value,
+                    page: 1,
+                  }))
+                }
+                className="w-full border border-[#324D3E]/20 rounded-xl p-3 bg-white focus:border-[#324D3E] focus:ring-2 focus:ring-[#324D3E]/20 text-[#324D3E] transition-all duration-300 text-sm sm:text-base"
               >
-                <option value="all">Semua</option>
-                <option value="full-investment">Pembayaran Penuh</option>
-                <option value="cicilan-installment">Cicilan</option>
+                <option value="">Semua Status</option>
+                <option value="active">Aktif</option>
+                <option value="completed">Selesai</option>
+                <option value="overdue">Terlambat</option>
               </select>
             </div>
-
-            {/* Status Filter */}
-            <div>
-              <label className="block text-sm font-medium text-[#324D3E] mb-2">
-                Status
-              </label>
-              <select
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-                className="w-full px-4 py-2 border border-[#324D3E]/20 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#324D3E]/50"
+            <div className="flex items-end">
+              <button
+                onClick={() => setFilters({ status: "", search: "", page: 1 })}
+                className="w-full px-4 py-3 bg-[#324D3E]/10 text-[#324D3E] rounded-xl hover:bg-[#324D3E]/20 transition-all duration-300 font-medium font-[family-name:var(--font-poppins)] text-sm sm:text-base"
               >
-                <option value="pending">Menunggu</option>
-                <option value="approved">Disetujui</option>
-                <option value="rejected">Ditolak</option>
-              </select>
+                Reset Filter
+              </button>
             </div>
+          </div>
+        </div>
 
-            {/* Search */}
-            <div>
-              <label className="block text-sm font-medium text-[#324D3E] mb-2">
-                Cari
-              </label>
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#889063] w-5 h-5" />
-                <input
-                  type="text"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  placeholder="Nama, email, kode user, atau contract ID..."
-                  className="w-full pl-10 pr-4 py-2 border border-[#324D3E]/20 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#324D3E]/50"
-                />
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="bg-white rounded-2xl shadow-lg border border-[#324D3E]/10 p-6 hover:shadow-xl hover:scale-105 transition-all duration-300">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-[#889063] font-[family-name:var(--font-poppins)]">
+                  Total Investor
+                </p>
+                <p className="text-2xl font-bold text-[#324D3E]">
+                  {pagination?.totalCount || 0}
+                </p>
+              </div>
+              <div className="w-12 h-12 bg-[#324D3E]/10 rounded-xl flex items-center justify-center">
+                <Users className="text-[#324D3E] w-6 h-6" />
+              </div>
+            </div>
+          </div>
+          <div className="bg-white rounded-2xl shadow-lg border border-[#324D3E]/10 p-6 hover:shadow-xl hover:scale-105 transition-all duration-300">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-[#889063] font-[family-name:var(--font-poppins)]">
+                  Total Terbayar
+                </p>
+                <p className="text-2xl font-bold text-[#889063]">
+                  Rp{" "}
+                  {investorGroups
+                    .reduce((sum, group) => sum + group.totalPaid, 0)
+                    .toLocaleString("id-ID")}
+                </p>
+              </div>
+              <div className="w-12 h-12 bg-[#889063]/10 rounded-xl flex items-center justify-center">
+                <DollarSign className="text-[#889063] w-6 h-6" />
+              </div>
+            </div>
+          </div>
+          <div className="bg-white rounded-2xl shadow-lg border border-[#324D3E]/10 p-6 hover:shadow-xl hover:scale-105 transition-all duration-300">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-[#889063] font-[family-name:var(--font-poppins)]">
+                  Total Investasi
+                </p>
+                <p className="text-2xl font-bold text-[#4C3D19]">
+                  Rp{" "}
+                  {investorGroups
+                    .reduce((sum, group) => sum + (group.totalAmount || 0), 0)
+                    .toLocaleString("id-ID")}
+                </p>
+              </div>
+              <div className="w-12 h-12 bg-[#4C3D19]/10 rounded-xl flex items-center justify-center">
+                <DollarSign className="text-[#4C3D19] w-6 h-6" />
+              </div>
+            </div>
+          </div>
+          <div className="bg-white rounded-2xl shadow-lg border border-[#324D3E]/10 p-6 hover:shadow-xl hover:scale-105 transition-all duration-300">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-[#889063] font-[family-name:var(--font-poppins)]">
+                  Terlambat
+                </p>
+                <p className="text-2xl font-bold text-red-600">
+                  {investorGroups.reduce(
+                    (sum, group) => sum + (group.latePayments || 0),
+                    0
+                  )}
+                </p>
+              </div>
+              <div className="w-12 h-12 bg-red-100 rounded-xl flex items-center justify-center">
+                <AlertTriangle className="text-red-600 w-6 h-6" />
               </div>
             </div>
           </div>
         </div>
 
-        {/* Payments List */}
-        {loading ? (
-          <div className="flex items-center justify-center py-12">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#324D3E]"></div>
-          </div>
-        ) : payments.length === 0 ? (
-          <div className="bg-white rounded-2xl shadow-lg border border-[#324D3E]/10 p-12 text-center">
-            <CreditCard className="w-16 h-16 text-[#889063] mx-auto mb-4" />
-            <p className="text-[#889063] text-lg">Tidak ada pembayaran</p>
-          </div>
-        ) : (
-          <div className="grid gap-4">
-            {payments.map((payment) => (
-              <div
-                key={payment._id}
-                className="bg-white rounded-2xl shadow-lg border border-[#324D3E]/10 p-6 hover:shadow-xl transition-shadow"
-              >
-                <div className="grid md:grid-cols-2 gap-6">
-                  {/* Left Section - Payment Info */}
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <h3 className="text-lg font-bold text-[#324D3E]">
-                          {payment.productName}
-                        </h3>
-                        <p className="text-sm text-[#889063]">
-                          {payment.paymentType === "full-investment"
-                            ? "Pembayaran Penuh"
-                            : `Cicilan ${payment.installmentNumber}/${payment.totalInstallments}`}
-                        </p>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-2xl font-bold text-[#324D3E]">
-                          {formatCurrency(payment.amount)}
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <p className="text-xs text-[#889063] mb-1">User</p>
-                        <p className="text-sm font-medium text-[#324D3E]">
-                          {payment.user.fullName}
-                        </p>
-                        <p className="text-xs text-[#889063]">
-                          {payment.user.userCode}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-[#889063] mb-1">Email</p>
-                        <p className="text-sm font-medium text-[#324D3E]">
-                          {payment.user.email}
-                        </p>
-                      </div>
-                    </div>
-
-                    <div>
-                      <p className="text-xs text-[#889063] mb-1">Order ID</p>
-                      <p className="text-sm font-mono font-medium text-[#324D3E]">
-                        {payment.orderId}
-                      </p>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <p className="text-xs text-[#889063] mb-1">
-                          Tanggal Upload
-                        </p>
-                        <p className="text-sm font-medium text-[#324D3E]">
-                          {formatDate(payment.createdAt)}
-                        </p>
-                      </div>
-                      {payment.dueDate && (
-                        <div>
-                          <p className="text-xs text-[#889063] mb-1">
-                            Jatuh Tempo
-                          </p>
-                          <p className="text-sm font-medium text-[#324D3E]">
-                            {formatDate(payment.dueDate)}
-                          </p>
-                        </div>
-                      )}
-                    </div>
-
-                    {payment.proofDescription && (
-                      <div>
-                        <p className="text-xs text-[#889063] mb-1">
-                          Keterangan
-                        </p>
-                        <p className="text-sm text-[#324D3E]">
-                          {payment.proofDescription}
-                        </p>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Right Section - Actions */}
-                  <div className="flex flex-col justify-between">
-                    {/* Payment Proof */}
-                    <div>
-                      <p className="text-sm font-medium text-[#324D3E] mb-2">
-                        Bukti Pembayaran
-                      </p>
-                      {payment.proofImageUrl ? (
-                        <div
-                          className="relative h-48 bg-gray-100 rounded-xl overflow-hidden cursor-pointer hover:opacity-90 transition-opacity"
-                          onClick={() => {
-                            setSelectedPayment(payment);
-                            setShowImageModal(true);
-                          }}
-                        >
-                          <Image
-                            src={payment.proofImageUrl}
-                            alt="Bukti Pembayaran"
-                            fill
-                            className="object-contain"
-                          />
-                        </div>
-                      ) : (
-                        <div className="h-48 bg-gray-100 rounded-xl flex items-center justify-center">
-                          <div className="text-center">
-                            <ImageIcon className="w-12 h-12 text-gray-400 mx-auto mb-2" />
-                            <p className="text-sm text-gray-500">
-                              Belum ada bukti
+        {/* Investor List */}
+        <div className="bg-white rounded-2xl shadow-lg border border-[#324D3E]/10">
+          {loading ? (
+            <div className="p-6 sm:p-8 text-center">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#324D3E] mx-auto mb-4"></div>
+              <p className="text-[#889063] font-[family-name:var(--font-poppins)] text-sm sm:text-base">
+                Memuat data investor...
+              </p>
+            </div>
+          ) : investorGroups.length === 0 ? (
+            <div className="p-8 text-center">
+              <div className="text-[#889063] text-4xl mb-4">👥</div>
+              <h3 className="text-lg font-semibold text-[#324D3E] mb-2 font-[family-name:var(--font-poppins)]">
+                Belum ada data investor
+              </h3>
+              <p className="text-[#889063]">
+                Data investor akan muncul di sini ketika ada pembayaran manual
+                BCA
+              </p>
+            </div>
+          ) : (
+            <>
+              <div className="divide-y divide-[#324D3E]/10">
+                {investorGroups.map((investor) => (
+                  <div
+                    key={investor.userId}
+                    className="p-4 sm:p-6 hover:bg-[#324D3E]/5 transition-all duration-300"
+                  >
+                    <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-3 sm:gap-4">
+                          <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-[#324D3E]/10 to-[#4C3D19]/10 rounded-full flex items-center justify-center border border-[#324D3E]/20 flex-shrink-0">
+                            <span className="text-[#324D3E] font-semibold text-base sm:text-lg font-[family-name:var(--font-poppins)]">
+                              {investor.userInfo.fullName
+                                .charAt(0)
+                                .toUpperCase()}
+                            </span>
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <h3 className="text-base sm:text-lg font-semibold text-[#324D3E] font-[family-name:var(--font-poppins)] truncate">
+                              {investor.userInfo.fullName}
+                            </h3>
+                            <p className="text-xs sm:text-sm text-[#889063] truncate">
+                              {investor.userInfo.email}
+                            </p>
+                            {investor.userInfo.userCode && (
+                              <p className="text-xs text-[#4C3D19] truncate font-medium">
+                                No Anggota: {investor.userInfo.userCode}
+                              </p>
+                            )}
+                            <p className="text-xs text-[#889063]/70 truncate">
+                              {investor.userInfo.phoneNumber}
                             </p>
                           </div>
                         </div>
-                      )}
+
+                        <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+                          <div className="bg-gradient-to-r from-[#324D3E]/5 to-[#324D3E]/10 p-3 sm:p-4 rounded-xl border border-[#324D3E]/10">
+                            <div className="text-xs sm:text-sm text-[#889063] font-[family-name:var(--font-poppins)]">
+                              Total Investasi
+                            </div>
+                            <div className="text-base sm:text-lg font-semibold text-[#324D3E]">
+                              {investor.totalInvestments}
+                            </div>
+                          </div>
+                          <div className="bg-gradient-to-r from-[#4C3D19]/5 to-[#4C3D19]/10 p-3 sm:p-4 rounded-xl border border-[#4C3D19]/10">
+                            <div className="text-xs sm:text-sm text-[#889063] font-[family-name:var(--font-poppins)]">
+                              Nilai Investasi
+                            </div>
+                            <div className="text-base sm:text-lg font-semibold text-[#4C3D19] truncate">
+                              Rp {investor.totalAmount.toLocaleString("id-ID")}
+                            </div>
+                          </div>
+                          <div className="bg-gradient-to-r from-[#889063]/5 to-[#889063]/10 p-3 sm:p-4 rounded-xl border border-[#889063]/10">
+                            <div className="text-xs sm:text-sm text-[#889063] font-[family-name:var(--font-poppins)]">
+                              Sudah Dibayar
+                            </div>
+                            <div className="text-base sm:text-lg font-semibold text-[#889063] truncate">
+                              Rp {investor.totalPaid.toLocaleString("id-ID")}
+                            </div>
+                          </div>
+                          <div className="bg-gradient-to-r from-orange-50 to-orange-100 p-3 sm:p-4 rounded-xl border border-orange-200">
+                            <div className="text-xs sm:text-sm text-orange-700 font-[family-name:var(--font-poppins)]">
+                              Terlambat
+                            </div>
+                            <div className="text-base sm:text-lg font-semibold text-orange-600">
+                              {investor.latePayments || 0}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Investment Summary */}
+                        <div className="mt-4">
+                          <div className="text-xs sm:text-sm text-[#889063] mb-2 font-[family-name:var(--font-poppins)]">
+                            Investasi Aktif:
+                          </div>
+                          <div className="flex flex-wrap gap-2">
+                            {investor.investments
+                              .slice(0, 3)
+                              .map((investment, index) => (
+                                <div
+                                  key={`${investor.userId}-investment-${index}`}
+                                  className="flex items-center gap-1 sm:gap-2 bg-[#324D3E]/5 px-2 sm:px-3 py-1 sm:py-2 rounded-full text-xs sm:text-sm border border-[#324D3E]/10"
+                                >
+                                  <span className="text-[#324D3E] font-medium truncate max-w-20 sm:max-w-none">
+                                    {investment.productName}
+                                  </span>
+                                  <span
+                                    className={`px-1.5 sm:px-2 py-0.5 text-xs rounded-full ${getInvestmentStatusColor(
+                                      investment.status
+                                    )}`}
+                                  >
+                                    {getInvestmentStatusText(investment.status)}
+                                  </span>
+                                </div>
+                              ))}
+                            {investor.investments.length > 3 && (
+                              <span className="text-xs sm:text-sm text-[#889063]">
+                                +{investor.investments.length - 3} lainnya
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex flex-col gap-2 lg:min-w-0 lg:w-auto">
+                        <div className="flex flex-wrap gap-2">
+                          {(investor.latePayments || 0) > 0 && (
+                            <div className="bg-gradient-to-r from-red-100 to-red-200 text-red-800 px-2 sm:px-3 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-medium border border-red-300 text-center whitespace-nowrap">
+                              {investor.latePayments} Terlambat
+                            </div>
+                          )}
+                          {(investor.pendingReviews || 0) > 0 && (
+                            <div className="bg-gradient-to-r from-yellow-100 to-yellow-200 text-yellow-800 px-2 sm:px-3 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-medium border border-yellow-300 text-center whitespace-nowrap">
+                              {investor.pendingReviews} Perlu Review
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Action Buttons */}
+                        <div className="flex flex-col gap-2">
+                          <button
+                            onClick={() => handleViewDetails(investor.userId)}
+                            className="px-4 sm:px-6 py-2 sm:py-3 bg-gradient-to-r from-[#324D3E] to-[#4C3D19] text-white rounded-xl hover:shadow-lg hover:scale-105 transition-all duration-300 text-xs sm:text-sm font-semibold font-[family-name:var(--font-poppins)] whitespace-nowrap"
+                          >
+                            Lihat Detail
+                          </button>
+                        </div>
+                      </div>
                     </div>
+                  </div>
+                ))}
+              </div>
 
-                    {/* Action Buttons */}
-                    {payment.adminStatus === "pending" && (
-                      <div className="flex gap-2 mt-4">
-                        <button
-                          onClick={() => {
-                            setSelectedPayment(payment);
-                            setApprovalAction("approve");
-                            setShowApprovalModal(true);
-                          }}
-                          disabled={!payment.proofImageUrl}
-                          className="flex-1 bg-gradient-to-r from-green-500 to-green-600 text-white py-2 px-4 rounded-xl font-semibold hover:shadow-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                        >
-                          <CheckCircle className="w-5 h-5" />
-                          Setujui
-                        </button>
-                        <button
-                          onClick={() => {
-                            setSelectedPayment(payment);
-                            setApprovalAction("reject");
-                            setShowApprovalModal(true);
-                          }}
-                          className="flex-1 bg-gradient-to-r from-red-500 to-red-600 text-white py-2 px-4 rounded-xl font-semibold hover:shadow-lg transition-all duration-200 flex items-center justify-center gap-2"
-                        >
-                          <XCircle className="w-5 h-5" />
-                          Tolak
-                        </button>
-                      </div>
-                    )}
-
-                    {payment.adminStatus === "approved" && (
-                      <div className="mt-4 bg-green-50 border border-green-200 rounded-xl p-3 text-center">
-                        <CheckCircle className="w-6 h-6 text-green-600 mx-auto mb-1" />
-                        <p className="text-sm font-medium text-green-700">
-                          Disetujui
-                        </p>
-                        {payment.adminReviewDate && (
-                          <p className="text-xs text-green-600">
-                            {formatDate(payment.adminReviewDate)}
-                          </p>
-                        )}
-                      </div>
-                    )}
-
-                    {payment.adminStatus === "rejected" && (
-                      <div className="mt-4 bg-red-50 border border-red-200 rounded-xl p-3 text-center">
-                        <XCircle className="w-6 h-6 text-red-600 mx-auto mb-1" />
-                        <p className="text-sm font-medium text-red-700">
-                          Ditolak
-                        </p>
-                        {payment.adminNotes && (
-                          <p className="text-xs text-red-600 mt-1">
-                            {payment.adminNotes}
-                          </p>
-                        )}
-                      </div>
-                    )}
+              {/* Pagination */}
+              {pagination && pagination.totalPages > 1 && (
+                <div className="flex flex-col sm:flex-row justify-between items-center gap-4 p-4 sm:p-6 border-t border-[#324D3E]/10">
+                  <div className="text-xs sm:text-sm text-[#889063] font-[family-name:var(--font-poppins)] text-center sm:text-left">
+                    Menampilkan {(pagination.page - 1) * pagination.limit + 1} -{" "}
+                    {Math.min(
+                      pagination.page * pagination.limit,
+                      pagination.totalCount
+                    )}{" "}
+                    dari {pagination.totalCount} investor
+                  </div>
+                  <div className="flex gap-2 items-center">
+                    <button
+                      onClick={() =>
+                        setFilters((prev) => ({ ...prev, page: prev.page - 1 }))
+                      }
+                      disabled={!pagination.hasPrev}
+                      className="px-3 sm:px-4 py-2 border border-[#324D3E]/20 rounded-xl text-xs sm:text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[#324D3E]/5 text-[#324D3E] font-medium transition-all duration-300"
+                    >
+                      <span className="hidden sm:inline">Sebelumnya</span>
+                      <span className="sm:hidden">‹</span>
+                    </button>
+                    <span className="px-2 sm:px-4 py-2 text-xs sm:text-sm text-[#324D3E] font-semibold whitespace-nowrap">
+                      {pagination.page} / {pagination.totalPages}
+                    </span>
+                    <button
+                      onClick={() =>
+                        setFilters((prev) => ({ ...prev, page: prev.page + 1 }))
+                      }
+                      disabled={!pagination.hasNext}
+                      className="px-3 sm:px-4 py-2 border border-[#324D3E]/20 rounded-xl text-xs sm:text-sm disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[#324D3E]/5 text-[#324D3E] font-medium transition-all duration-300"
+                    >
+                      <span className="hidden sm:inline">Selanjutnya</span>
+                      <span className="sm:hidden">›</span>
+                    </button>
                   </div>
                 </div>
-              </div>
-            ))}
-          </div>
-        )}
+              )}
+            </>
+          )}
+        </div>
       </div>
-
-      {/* Image Modal */}
-      {showImageModal && selectedPayment?.proofImageUrl && (
-        <div
-          className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4"
-          onClick={() => setShowImageModal(false)}
-        >
-          <div className="relative max-w-4xl w-full h-full flex items-center justify-center">
-            <button
-              onClick={() => setShowImageModal(false)}
-              className="absolute top-4 right-4 text-white bg-black/50 rounded-full p-2 hover:bg-black/70"
-            >
-              <X className="w-6 h-6" />
-            </button>
-            <Image
-              src={selectedPayment.proofImageUrl}
-              alt="Bukti Pembayaran"
-              fill
-              className="object-contain"
-            />
-          </div>
-        </div>
-      )}
-
-      {/* Approval Modal */}
-      {showApprovalModal && selectedPayment && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-8 relative">
-            <button
-              onClick={() => setShowApprovalModal(false)}
-              className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"
-            >
-              <X className="w-6 h-6" />
-            </button>
-
-            <h3 className="text-2xl font-bold text-[#324D3E] mb-4">
-              {approvalAction === "approve"
-                ? "Setujui Pembayaran"
-                : "Tolak Pembayaran"}
-            </h3>
-
-            <div className="bg-gray-50 rounded-xl p-4 mb-4">
-              <p className="text-sm text-[#889063] mb-1">Pembayaran</p>
-              <p className="text-lg font-bold text-[#324D3E]">
-                {formatCurrency(selectedPayment.amount)}
-              </p>
-              <p className="text-sm text-[#889063] mt-2">
-                {selectedPayment.user.fullName} ({selectedPayment.user.userCode}
-                )
-              </p>
-            </div>
-
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-[#324D3E] mb-2">
-                Catatan (Opsional)
-              </label>
-              <textarea
-                value={adminNotes}
-                onChange={(e) => setAdminNotes(e.target.value)}
-                placeholder="Tambahkan catatan jika diperlukan..."
-                rows={3}
-                className="w-full px-4 py-2 border border-[#324D3E]/20 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#324D3E]/50"
-              />
-            </div>
-
-            <button
-              onClick={handleApproveReject}
-              disabled={processing}
-              className={`w-full ${
-                approvalAction === "approve"
-                  ? "bg-gradient-to-r from-green-500 to-green-600"
-                  : "bg-gradient-to-r from-red-500 to-red-600"
-              } text-white py-3 px-6 rounded-xl font-semibold hover:shadow-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed`}
-            >
-              {processing
-                ? "Memproses..."
-                : approvalAction === "approve"
-                ? "Setujui Pembayaran"
-                : "Tolak Pembayaran"}
-            </button>
-          </div>
-        </div>
-      )}
     </FinanceSidebar>
   );
 }

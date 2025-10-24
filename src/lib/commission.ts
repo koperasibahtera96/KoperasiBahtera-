@@ -2,6 +2,7 @@ import dbConnect from "@/lib/mongodb";
 import CommissionHistory from "@/models/CommissionHistory";
 import Payment from "@/models/Payment";
 import User from "@/models/User";
+import Settings from "@/models/Settings";
 
 export async function createCommissionRecord(paymentId: string): Promise<{
   success: boolean;
@@ -76,8 +77,9 @@ export async function createCommissionRecord(paymentId: string): Promise<{
       };
     }
 
-    // Calculate commission
-    const commissionRate = 0.02; // 2%
+    // Get commission rate from settings
+    const settings = await Settings.findOne({ type: "system" });
+    const commissionRate = settings?.config?.commissionRate ?? 0.02; // Default to 2% if not set
     const commissionAmount = Math.round(contractValue * commissionRate);
 
     // Create commission record

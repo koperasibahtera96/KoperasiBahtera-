@@ -2,7 +2,7 @@
 
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import { motion } from 'framer-motion';
-import { RefreshCw } from 'lucide-react';
+import { RefreshCw, Users, TreePine, DollarSign, TrendingUp, Sprout, CreditCard, Percent, CheckCircle, UserCog } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useTheme } from 'next-themes';
 
@@ -122,7 +122,7 @@ export default function AdminDashboard() {
       value: dashboardData.stats.totalInvestors.toLocaleString('id-ID'),
       change: dashboardData.stats.monthlyGrowth.investors,
       changeType: dashboardData.stats.monthlyGrowth.investors.startsWith('+') || dashboardData.stats.monthlyGrowth.investors === '0%' ? 'positive' : 'negative',
-      icon: '👥',
+      icon: Users,
       color: 'emerald'
     },
     {
@@ -130,7 +130,7 @@ export default function AdminDashboard() {
       value: dashboardData.stats.totalTrees.toLocaleString('id-ID'),
       change: dashboardData.stats.monthlyGrowth.trees,
       changeType: dashboardData.stats.monthlyGrowth.trees.startsWith('+') || dashboardData.stats.monthlyGrowth.trees === '0%' ? 'positive' : 'negative',
-      icon: '🌳',
+      icon: TreePine,
       color: 'green'
     },
     {
@@ -138,7 +138,7 @@ export default function AdminDashboard() {
       value: dashboardData.stats.activeInvestment,
       change: dashboardData.stats.monthlyGrowth.investment,
       changeType: dashboardData.stats.monthlyGrowth.investment.startsWith('+') || dashboardData.stats.monthlyGrowth.investment === '0%' ? 'positive' : 'negative',
-      icon: '💰',
+      icon: DollarSign,
       color: 'yellow'
     },
     {
@@ -146,7 +146,7 @@ export default function AdminDashboard() {
       value: dashboardData.stats.averageTreeAge,
       change: dashboardData.stats.monthlyGrowth.roi,
       changeType: dashboardData.stats.monthlyGrowth.roi.startsWith('+') || dashboardData.stats.monthlyGrowth.roi === '0%' ? 'positive' : 'negative',
-      icon: '📈',
+      icon: TrendingUp,
       color: 'blue'
     }
   ];
@@ -210,7 +210,7 @@ export default function AdminDashboard() {
                   <p className={getThemeClasses("text-lg sm:text-xl lg:text-2xl font-bold text-[#324D3E] dark:text-white mt-1 truncate transition-colors duration-300", "!text-[#4c1d1d] dark:!text-white")}>{stat.value}</p>
                 </div>
                 <motion.div
-                  className="text-2xl sm:text-3xl ml-2 flex-shrink-0"
+                  className="ml-2 flex-shrink-0"
                   animate={{
                     rotate: [0, 10, -10, 0],
                     transition: {
@@ -220,7 +220,7 @@ export default function AdminDashboard() {
                     }
                   }}
                 >
-                  {stat.icon}
+                  <stat.icon className={getThemeClasses("w-8 h-8 sm:w-10 sm:h-10 text-[#324D3E]", "!text-[#4c1d1d]")} />
                 </motion.div>
               </div>
               <div className="mt-3 sm:mt-4 flex items-center">
@@ -363,7 +363,8 @@ export default function AdminDashboard() {
               onClick={() => window.location.href = '/admin/plant-showcase'}
               className={getThemeClasses("flex items-center gap-3 p-4 border-2 border-dashed border-[#4C3D19]/20 rounded-xl hover:border-[#4C3D19] hover:bg-[#4C3D19]/5 transition-all group", "!border-[#FFC1CC]/30 hover:!border-[#FFC1CC] hover:!bg-[#FFC1CC]/10")}
             >
-              <div className={getThemeClasses("w-10 h-10 bg-[#4C3D19]/10 group-hover:bg-[#4C3D19]/20 rounded-xl flex items-center justify-center transition-colors", "!bg-[#B5EAD7]/20 group-hover:!bg-[#B5EAD7]/30")}>                <span className={getThemeClasses("text-[#4C3D19]", "!text-[#4c1d1d] dark:!text-white")}>🌿</span>
+              <div className={getThemeClasses("w-10 h-10 bg-[#4C3D19]/10 group-hover:bg-[#4C3D19]/20 rounded-xl flex items-center justify-center transition-colors", "!bg-[#B5EAD7]/20 group-hover:!bg-[#B5EAD7]/30")}>
+                <Sprout className={getThemeClasses("w-5 h-5 text-[#4C3D19]", "!text-[#4c1d1d]")} />
               </div>
               <div className="text-left">
                 <p className={getThemeClasses("font-medium text-[#324D3E] dark:text-white", "!text-[#4c1d1d] dark:!text-white")}>Edit Harga Tanaman</p>
@@ -374,11 +375,24 @@ export default function AdminDashboard() {
               onClick={() => window.location.href = '/admin/registration-fee'}
               className={getThemeClasses("flex items-center gap-3 p-4 border-2 border-dashed border-[#324D3E]/20 rounded-xl hover:border-[#324D3E] hover:bg-[#324D3E]/5 transition-all group", "!border-[#C7CEEA]/30 hover:!border-[#C7CEEA] hover:!bg-[#C7CEEA]/10")}
             >
-              <div className={getThemeClasses("w-10 h-10 bg-[#324D3E]/10 group-hover:bg-[#324D3E]/20 rounded-xl flex items-center justify-center transition-colors", "!bg-[#C7CEEA]/20 group-hover:!bg-[#C7CEEA]/30")}>                <span className={getThemeClasses("text-[#324D3E]", "!text-[#4c1d1d] dark:!text-white")}>💳</span>
+              <div className={getThemeClasses("w-10 h-10 bg-[#324D3E]/10 group-hover:bg-[#324D3E]/20 rounded-xl flex items-center justify-center transition-colors", "!bg-[#C7CEEA]/20 group-hover:!bg-[#C7CEEA]/30")}>
+                <CreditCard className={getThemeClasses("w-5 h-5 text-[#324D3E]", "!text-[#4c1d1d]")} />
               </div>
               <div className="text-left">
                 <p className={getThemeClasses("font-medium text-[#324D3E] dark:text-white", "!text-[#4c1d1d] dark:!text-white")}>Biaya Pendaftaran</p>
                 <p className={getThemeClasses("text-sm text-[#889063] dark:text-gray-300", "!text-[#6b7280] dark:!text-gray-300")}>Kelola biaya pendaftaran user</p>
+              </div>
+            </button>
+            <button
+              onClick={() => window.location.href = '/admin/commission-rate'}
+              className={getThemeClasses("flex items-center gap-3 p-4 border-2 border-dashed border-[#889063]/20 rounded-xl hover:border-[#889063] hover:bg-[#889063]/5 transition-all group", "!border-[#FFDEE9]/30 hover:!border-[#FFDEE9] hover:!bg-[#FFDEE9]/10")}
+            >
+              <div className={getThemeClasses("w-10 h-10 bg-[#889063]/10 group-hover:bg-[#889063]/20 rounded-xl flex items-center justify-center transition-colors", "!bg-[#FFDEE9]/20 group-hover:!bg-[#FFDEE9]/30")}>
+                <Percent className={getThemeClasses("w-5 h-5 text-[#889063]", "!text-[#4c1d1d]")} />
+              </div>
+              <div className="text-left">
+                <p className={getThemeClasses("font-medium text-[#324D3E] dark:text-white", "!text-[#4c1d1d] dark:!text-white")}>Tarif Komisi Marketing</p>
+                <p className={getThemeClasses("text-sm text-[#889063] dark:text-gray-300", "!text-[#6b7280] dark:!text-gray-300")}>Atur persentase komisi marketing</p>
               </div>
             </button>
           </div>
@@ -404,7 +418,8 @@ export default function AdminDashboard() {
               onClick={() => window.location.href = '/admin/verification'}
               className={getThemeClasses("flex items-center gap-3 p-4 border-2 border-dashed border-[#324D3E]/20 rounded-xl hover:border-[#324D3E] hover:bg-[#324D3E]/5 transition-all group", "!border-[#FFC1CC]/30 hover:!border-[#FFC1CC] hover:!bg-[#FFC1CC]/10")}
             >
-              <div className={getThemeClasses("w-10 h-10 bg-[#324D3E]/10 group-hover:bg-[#324D3E]/20 rounded-xl flex items-center justify-center transition-colors", "!bg-[#FFC1CC]/30 group-hover:!bg-[#FFC1CC]/40")}>                <span className={getThemeClasses("text-[#324D3E]", "!text-[#4c1d1d] dark:!text-white")}>✅</span>
+              <div className={getThemeClasses("w-10 h-10 bg-[#324D3E]/10 group-hover:bg-[#324D3E]/20 rounded-xl flex items-center justify-center transition-colors", "!bg-[#FFC1CC]/30 group-hover:!bg-[#FFC1CC]/40")}>
+                <CheckCircle className={getThemeClasses("w-5 h-5 text-[#324D3E]", "!text-[#4c1d1d]")} />
               </div>
               <div className="text-left">
                 <p className={getThemeClasses("font-medium text-[#324D3E] dark:text-white", "!text-[#4c1d1d] dark:!text-white")}>Verifikasi User</p>
@@ -416,7 +431,8 @@ export default function AdminDashboard() {
               onClick={() => window.location.href = '/admin/investors'}
               className={getThemeClasses("flex items-center gap-3 p-4 border-2 border-dashed border-[#324D3E]/20 rounded-xl hover:border-[#324D3E] hover:bg-[#324D3E]/5 transition-all group", "!border-[#B5EAD7]/30 hover:!border-[#B5EAD7] hover:!bg-[#B5EAD7]/10")}
             >
-              <div className={getThemeClasses("w-10 h-10 bg-[#324D3E]/10 group-hover:bg-[#324D3E]/20 rounded-xl flex items-center justify-center transition-colors", "!bg-[#B5EAD7]/30 group-hover:!bg-[#B5EAD7]/40")}>                <span className={getThemeClasses("text-[#324D3E]", "!text-[#4c1d1d] dark:!text-white")}>👥</span>
+              <div className={getThemeClasses("w-10 h-10 bg-[#324D3E]/10 group-hover:bg-[#324D3E]/20 rounded-xl flex items-center justify-center transition-colors", "!bg-[#B5EAD7]/30 group-hover:!bg-[#B5EAD7]/40")}>
+                <UserCog className={getThemeClasses("w-5 h-5 text-[#324D3E]", "!text-[#4c1d1d]")} />
               </div>
               <div className="text-left">
                 <p className={getThemeClasses("font-medium text-[#324D3E] dark:text-white", "!text-[#4c1d1d] dark:!text-white")}>Kelola Investor</p>
@@ -428,7 +444,8 @@ export default function AdminDashboard() {
               onClick={() => window.location.href = '/admin/trees'}
               className={getThemeClasses("flex items-center gap-3 p-4 border-2 border-dashed border-[#4C3D19]/20 rounded-xl hover:border-[#4C3D19] hover:bg-[#4C3D19]/5 transition-all group", "!border-[#C7CEEA]/30 hover:!border-[#C7CEEA] hover:!bg-[#C7CEEA]/10")}
             >
-              <div className={getThemeClasses("w-10 h-10 bg-[#4C3D19]/10 group-hover:bg-[#4C3D19]/20 rounded-xl flex items-center justify-center transition-colors", "!bg-[#C7CEEA]/30 group-hover:!bg-[#C7CEEA]/40")}>                <span className={getThemeClasses("text-[#4C3D19]", "!text-[#4c1d1d] dark:!text-white")}>🌳</span>
+              <div className={getThemeClasses("w-10 h-10 bg-[#4C3D19]/10 group-hover:bg-[#4C3D19]/20 rounded-xl flex items-center justify-center transition-colors", "!bg-[#C7CEEA]/30 group-hover:!bg-[#C7CEEA]/40")}>
+                <TreePine className={getThemeClasses("w-5 h-5 text-[#4C3D19]", "!text-[#4c1d1d]")} />
               </div>
               <div className="text-left">
                 <p className={getThemeClasses("font-medium text-[#324D3E] dark:text-white", "!text-[#4c1d1d] dark:!text-white")}>Kelola Pohon</p>

@@ -6,6 +6,7 @@ import Contract from "@/models/Contract";
 import Payment from "@/models/Payment";
 import PlantInstance from "@/models/PlantInstance";
 import User from "@/models/User";
+import Settings from "@/models/Settings";
 import mongoose from "mongoose";
 import { stampContractAfterPayment } from "@/lib/contract-stamping";
 
@@ -271,8 +272,9 @@ export async function processFullPayment(
         }).session(mongoSession);
 
         if (marketingStaff) {
-          // Calculate commission
-          const commissionRate = 0.02; // 2%
+          // Get commission rate from settings
+          const settings = await Settings.findOne({ type: "system" }).session(mongoSession);
+          const commissionRate = settings?.config?.commissionRate ?? 0.02; // Default to 2% if not set
           const contractValue = payment.amount;
           const commissionAmount = Math.round(contractValue * commissionRate);
 
@@ -793,9 +795,11 @@ export async function processInstallmentPayment(
         }).session(mongoSession);
 
         if (marketingStaff) {
-          // Calculate commission based on THIS installment amount only (2% per installment)
+          // Calculate commission based on THIS installment amount only
           const installmentAmount = payment.amount;
-          const commissionRate = 0.02; // 2%
+          // Get commission rate from settings
+          const settings = await Settings.findOne({ type: "system" }).session(mongoSession);
+          const commissionRate = settings?.config?.commissionRate ?? 0.02; // Default to 2% if not set
           const commissionAmount = Math.round(
             installmentAmount * commissionRate
           );
