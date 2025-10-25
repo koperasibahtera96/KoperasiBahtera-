@@ -65,17 +65,30 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    console.log("Searching for payment with orderId:", contractId);
+    console.log("Searching for payment with contractId:", contractId);
+    console.log("Contract payment type:", targetContract.paymentType);
 
-    const existingPayment = await Payment.findOne({
-      orderId: contractId, // contractId should match payment orderId
-      userId: dbUser._id,
-      paymentType: "full-investment"
-    });
+    // For cicilan contracts, find the first installment payment
+    // For full contracts, find the full-investment payment
+    let existingPayment;
+    if (targetContract.paymentType === "cicilan") {
+      existingPayment = await Payment.findOne({
+        cicilanOrderId: contractId, // For cicilan, contractId is stored in cicilanOrderId
+        userId: dbUser._id,
+        paymentType: "cicilan-installment",
+        installmentNumber: 1
+      });
+    } else {
+      existingPayment = await Payment.findOne({
+        orderId: contractId, // contractId should match payment orderId
+        userId: dbUser._id,
+        paymentType: "full-investment"
+      });
+    }
 
     if (!existingPayment) {
       // Debug: Check if there are any payments for this user
-      const userPayments = await Payment.find({ userId: dbUser._id }).select('orderId contractId paymentType');
+      const userPayments = await Payment.find({ userId: dbUser._id }).select('orderId cicilanOrderId installmentNumber paymentType');
       console.log("User payments found:", userPayments);
 
       return NextResponse.json(
@@ -86,16 +99,22 @@ export async function POST(req: NextRequest) {
 
     console.log("Found existing payment:", {
       orderId: existingPayment.orderId,
-      contractId: existingPayment.contractId,
-      paymentType: existingPayment.paymentType
+      cicilanOrderId: existingPayment.cicilanOrderId,
+      paymentType: existingPayment.paymentType,
+      installmentNumber: existingPayment.installmentNumber
     });
 
     // Use the orderId from the existing payment record
     const orderId = existingPayment.orderId;
 
+    // For cicilan, use the installment amount; for full, use total amount
+    const paymentAmount = targetContract.paymentType === "cicilan"
+      ? existingPayment.amount
+      : contract.totalAmount;
+
     const transaction = await midtransService.createTransaction({
       orderId,
-      amount: contract.totalAmount,
+      amount: paymentAmount,
       customerDetails: {
         first_name: dbUser.fullName,
         email: dbUser.email,
@@ -104,9 +123,11 @@ export async function POST(req: NextRequest) {
       itemDetails: [
         {
           id: contract.productId,
-          price: contract.totalAmount,
+          price: paymentAmount,
           quantity: 1,
-          name: contract.productName,
+          name: targetContract.paymentType === "cicilan"
+            ? `${contract.productName} - Cicilan 1/${targetContract.totalInstallments}`
+            : contract.productName,
         },
       ],
       callbacks: {

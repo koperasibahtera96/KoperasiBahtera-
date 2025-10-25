@@ -1140,6 +1140,17 @@ export default function MarketingHeadPage() {
                             </p>
                           </div>
 
+                          {commission.paymentType === "full-investment" && (
+                            <div>
+                              <p className="text-xs font-medium text-gray-600 uppercase tracking-wide mb-1">
+                                Total Investasi
+                              </p>
+                              <p className="text-sm font-semibold text-gray-900">
+                                {formatCurrency(commission.contractValue)}
+                              </p>
+                            </div>
+                          )}
+
                           {commission.installmentDetails && (
                             <div className="md:col-span-1">
                               <p className="text-xs font-medium text-gray-600 uppercase tracking-wide mb-1">

@@ -77,6 +77,17 @@ export async function GET() {
           pembayaran = "Penuh";
       }
 
+      // Format tenor (Lunas or installment number)
+      let tenor = "";
+      if (commission.paymentType === "full-investment") {
+        tenor = "Lunas";
+      } else if (commission.paymentType === "cicilan-installment") {
+        const installmentNum = commission.installmentDetails?.installmentNumber || 1;
+        tenor = installmentNum.toString();
+      } else {
+        tenor = "Lunas";
+      }
+
       // Format join date
       const tanggalBergabung = new Date(commission.earnedAt).toLocaleDateString(
         "id-ID",
@@ -107,6 +118,7 @@ export async function GET() {
         plantInstance?.kavling || "-",
         commission.productName,
         pembayaran,
+        tenor,
         tanggalBergabung,
         totalKomisi,
         totalReferrals,
@@ -147,6 +159,7 @@ export async function GET() {
         "Kavling",
         "Paket Investasi",
         "Pembayaran",
+        "Tenor",
         "Tanggal Bergabung",
         "Total Komisi",
         "Total Referal",
@@ -232,20 +245,20 @@ export async function GET() {
     try {
       worksheet["!merges"] = worksheet["!merges"] || [];
 
-      // Merge company header rows (0..4) across all 12 columns
+      // Merge company header rows (0..4) across all 13 columns
       for (let r = 0; r <= 4; r++) {
-        worksheet["!merges"].push({ s: { r, c: 0 }, e: { r, c: 11 } });
+        worksheet["!merges"].push({ s: { r, c: 0 }, e: { r, c: 12 } });
       }
       // Merge empty rows (5..6)
       for (let r = 5; r <= 6; r++) {
-        worksheet["!merges"].push({ s: { r, c: 0 }, e: { r, c: 11 } });
+        worksheet["!merges"].push({ s: { r, c: 0 }, e: { r, c: 12 } });
       }
-      // Merge "DAFTAR MARKETING" across all 12 columns
-      worksheet["!merges"].push({ s: { r: 7, c: 0 }, e: { r: 7, c: 11 } });
+      // Merge "DAFTAR MARKETING" across all 13 columns
+      worksheet["!merges"].push({ s: { r: 7, c: 0 }, e: { r: 7, c: 12 } });
 
       // Ensure merged cells are created
       for (let r = 0; r <= 7; r++) {
-        for (let c = 0; c <= 11; c++) {
+        for (let c = 0; c <= 12; c++) {
           const cellRef = XLSX.utils.encode_cell({ r, c });
           if (!worksheet[cellRef]) {
             const val = (worksheetData[r] && worksheetData[r][c]) || "";
@@ -263,7 +276,7 @@ export async function GET() {
                   ? { style: "thin", color: { rgb: "000000" } }
                   : undefined,
               right:
-                c === 11
+                c === 12
                   ? { style: "thin", color: { rgb: "000000" } }
                   : undefined,
             };
