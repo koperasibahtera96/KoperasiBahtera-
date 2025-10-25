@@ -301,6 +301,7 @@ export default function PlantDetail({
     updates: Record<string, boolean>;
     deletes: Record<string, boolean>;
   }>({ deletePlant: false, updates: {}, deletes: {} });
+  const [fullPendingRequests, setFullPendingRequests] = useState<any[]>([]);
   const { showError, showSuccess, showConfirmation, AlertComponent } =
     useAlert();
 
@@ -308,8 +309,13 @@ export default function PlantDetail({
   const [currentPage, setCurrentPage] = useState(1);
   const [showRejectionModal, setShowRejectionModal] = useState(false);
   const [rejectionReason, setRejectionReason] = useState("");
-  const [rejectionHistoryId, setRejectionHistoryId] = useState<number | null>(null);
+  const [rejectionHistoryId, setRejectionHistoryId] = useState<number | null>(
+    null
+  );
   const [isRejecting, setIsRejecting] = useState(false);
+  const [showRequestRejectionModal, setShowRequestRejectionModal] = useState(false);
+  const [requestRejectionReason, setRequestRejectionReason] = useState("");
+  const [requestToReject, setRequestToReject] = useState<string | null>(null);
   const ITEMS_PER_PAGE = 5;
 
   useEffect(() => {
@@ -318,33 +324,48 @@ export default function PlantDetail({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
-  // Fetch pending requests for this plant (pending status)
+  // Fetch pending and rejected requests for this plant
   const fetchPendingRequests = async () => {
     try {
-      const res = await fetch(
-        `/api/admin/plant-requests?plantId=${id}&status=pending&limit=100`
-      );
-      if (res.ok) {
-        const data = await res.json();
-        const items: any[] = data.data || [];
-        const updates: Record<string, boolean> = {};
-        const deletes: Record<string, boolean> = {};
-        let deletePlant = false;
-        for (const r of items) {
-          if (r.requestType === "delete") {
-            deletePlant = true;
-          }
-          if (r.requestType === "update_history" && r.historyId) {
-            updates[r.historyId] = true;
-          }
-          if (r.requestType === "delete_history" && r.historyId) {
-            deletes[r.historyId] = true;
-          }
-        }
-        setPendingRequests({ deletePlant, updates, deletes });
+      // Fetch both pending and rejected requests
+      const [pendingRes, rejectedRes] = await Promise.all([
+        fetch(`/api/admin/plant-requests?plantId=${id}&status=pending&limit=100`),
+        fetch(`/api/admin/plant-requests?plantId=${id}&status=rejected&limit=100`)
+      ]);
+      
+      const allItems: any[] = [];
+      
+      if (pendingRes.ok) {
+        const data = await pendingRes.json();
+        allItems.push(...(data.data || []));
       }
+      
+      if (rejectedRes.ok) {
+        const data = await rejectedRes.json();
+        allItems.push(...(data.data || []));
+      }
+      
+      // Build flags for pending requests only (for button states)
+      const updates: Record<string, boolean> = {};
+      const deletes: Record<string, boolean> = {};
+      let deletePlant = false;
+      
+      for (const r of allItems.filter(r => r.status === 'pending')) {
+        if (r.requestType === "delete") {
+          deletePlant = true;
+        }
+        if (r.requestType === "update_history" && r.historyId) {
+          updates[r.historyId] = true;
+        }
+        if (r.requestType === "delete_history" && r.historyId) {
+          deletes[r.historyId] = true;
+        }
+      }
+      
+      setPendingRequests({ deletePlant, updates, deletes });
+      setFullPendingRequests(allItems); // Store all requests (pending + rejected)
     } catch (err) {
-      console.error("Error fetching pending requests:", err);
+      console.error("Error fetching requests:", err);
     }
   };
 
@@ -611,7 +632,7 @@ export default function PlantDetail({
           : statusOptions.find((s) => s.value === reportStatus)?.label ||
             reportStatus;
 
-      const userRole = (session?.user as any)?.role || "staff";
+      const userRole = (session?.user as any)?.role || "mandor";
       const userId = (session?.user as any)?.id;
 
       const newHistoryEntry: any = {
@@ -633,9 +654,16 @@ export default function PlantDetail({
           month: "2-digit",
           year: "numeric",
         }),
-        // Approval fields - mandor submissions need approval, others don't
+        // Approval fields:
+        // - Mandor: needs approval from Asisten -> Manajer
+        // - Asisten: needs approval from Manajer
+        // - Manajer/Admin: no approval needed
         approvalStatus:
-          userRole === "mandor" ? "pending" : "approved_by_manajer",
+          userRole === "mandor"
+            ? "pending"
+            : userRole === "asisten"
+            ? "pending"
+            : "approved_by_manajer",
       };
 
       if (plantData) {
@@ -774,7 +802,8 @@ export default function PlantDetail({
   const handleDeleteHistoryItem = async (historyId: number) => {
     if (!plantData) return;
 
-    if (session?.user.role === "admin") {
+    // Manajer and Admin can delete directly
+    if (session?.user.role === "admin" || session?.user.role === "manajer") {
       const confirmed = await showConfirmation(
         "Hapus Riwayat",
         "Apakah Anda yakin ingin menghapus riwayat ini?",
@@ -806,7 +835,8 @@ export default function PlantDetail({
         console.error("Error deleting history");
         showError("Gagal menghapus", "Gagal menghapus riwayat.");
       }
-    } else if (session?.user.role === "spv_staff") {
+    } else if (session?.user.role === "asisten") {
+      // Asisten can only request delete
       setRequestFormData({
         requestType: "delete_history",
         deleteReason: "",
@@ -816,10 +846,12 @@ export default function PlantDetail({
       });
       setShowRequestModal(true);
     }
+    // Mandor cannot delete at all - no action
   };
 
   const handleDeletePlant = async () => {
-    if (session?.user.role === "admin") {
+    // Manajer and Admin can delete directly
+    if (session?.user.role === "admin" || session?.user.role === "manajer") {
       const confirmed = await showConfirmation(
         "Hapus Tanaman",
         "Apakah Anda yakin ingin menghapus tanaman ini? Aksi ini tidak dapat dibatalkan.",
@@ -846,7 +878,8 @@ export default function PlantDetail({
           `Gagal menghapus tanaman: ${errorMessage}`
         );
       }
-    } else if (session?.user.role === "spv_staff") {
+    } else if (session?.user.role === "asisten") {
+      // Asisten can only request delete
       setRequestFormData({
         requestType: "delete",
         deleteReason: "",
@@ -856,6 +889,7 @@ export default function PlantDetail({
       });
       setShowRequestModal(true);
     }
+    // Mandor cannot delete plant at all - no action
   };
 
   const handleDownloadPhoto = () => {
@@ -949,6 +983,80 @@ export default function PlantDetail({
       newDescription: historyItem.description,
     });
     setShowRequestModal(true);
+  };
+
+  const handleApproveRequest = async (requestId: string) => {
+    try {
+      const res = await fetch("/api/admin/plant-requests", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          requestId,
+          status: "approved",
+        }),
+      });
+
+      if (res.ok) {
+        showSuccess("Berhasil", "Permintaan berhasil disetujui");
+        await fetchPendingRequests();
+        await fetchPlantData();
+      } else {
+        const error = await res.json();
+        showError("Error", error.error || "Gagal menyetujui permintaan");
+      }
+    } catch (error) {
+      console.error("Error approving request:", error);
+      showError("Error", "Terjadi kesalahan saat menyetujui permintaan");
+    }
+  };
+
+  const handleOpenRequestRejectionModal = (requestId: string) => {
+    setRequestToReject(requestId);
+    setRequestRejectionReason("");
+    setShowRequestRejectionModal(true);
+  };
+
+  const handleCloseRequestRejectionModal = () => {
+    setShowRequestRejectionModal(false);
+    setRequestRejectionReason("");
+    setRequestToReject(null);
+  };
+
+  const handleRejectRequest = async () => {
+    if (!requestRejectionReason.trim()) {
+      showError("Error", "Alasan penolakan tidak boleh kosong");
+      return;
+    }
+
+    if (!requestToReject) return;
+
+    setIsRejecting(true);
+    try {
+      const res = await fetch("/api/admin/plant-requests", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          requestId: requestToReject,
+          status: "rejected",
+          reviewNotes: requestRejectionReason.trim(),
+        }),
+      });
+
+      if (res.ok) {
+        showSuccess("Berhasil", "Permintaan berhasil ditolak");
+        handleCloseRequestRejectionModal();
+        await fetchPendingRequests();
+        await fetchPlantData(); // Refresh plant data too
+      } else {
+        const error = await res.json();
+        showError("Error", error.error || "Gagal menolak permintaan");
+      }
+    } catch (error) {
+      console.error("Error rejecting request:", error);
+      showError("Error", "Terjadi kesalahan saat menolak permintaan");
+    } finally {
+      setIsRejecting(false);
+    }
   };
 
   const handleDownloadHistoryPDF = async () => {
@@ -1222,15 +1330,7 @@ export default function PlantDetail({
 
   // For non-staff roles (regular users), only show approved histories
   if (
-    ![
-      "mandor",
-      "asisten",
-      "manajer",
-      "admin",
-      "staff",
-      "spv_staff",
-      "finance",
-    ].includes(userRole)
+    !["mandor", "asisten", "manajer", "admin", "finance"].includes(userRole)
   ) {
     historyItems = historyItems.filter(
       (h: any) => h.approvalStatus === "approved_by_manajer"
@@ -1342,7 +1442,7 @@ export default function PlantDetail({
                   <div className="flex items-center gap-2 min-w-0">
                     <MapPin className="w-3 h-3 sm:w-4 sm:h-4 text-[#4C3D19] flex-shrink-0" />
                     {session?.user.role === "admin" ||
-                    session?.user.role === "spv_staff" ? (
+                    session?.user.role === "manajer" ? (
                       <EditableField
                         plantId={id}
                         fieldName="location"
@@ -1367,7 +1467,7 @@ export default function PlantDetail({
                   <div className="flex items-center gap-2 min-w-0">
                     <MapPin className="w-3 h-3 sm:w-4 sm:h-4 text-[#4C3D19] flex-shrink-0" />
                     {session?.user.role === "admin" ||
-                    session?.user.role === "spv_staff" ? (
+                    session?.user.role === "manajer" ? (
                       <EditableField
                         plantId={id}
                         fieldName="kavling"
@@ -1390,7 +1490,7 @@ export default function PlantDetail({
                   <div className="flex items-center gap-2 min-w-0">
                     <MapPin className="w-3 h-3 sm:w-4 sm:h-4 text-[#4C3D19] flex-shrink-0" />
                     {session?.user.role === "admin" ||
-                    session?.user.role === "spv_staff" ? (
+                    session?.user.role === "manajer" ? (
                       <EditableField
                         plantId={id}
                         fieldName="blok"
@@ -1622,19 +1722,57 @@ export default function PlantDetail({
                       <span className="text-xs sm:text-sm">Download PDF</span>
                     </Button>
                     {(session?.user.role === "admin" ||
-                      session?.user.role === "spv_staff") && (
-                      <>
-                        {session?.user.role === "spv_staff" ? (
-                          pendingRequests?.deletePlant ? (
+                      session?.user.role === "manajer" ||
+                      session?.user.role === "asisten") && (() => {
+                        // Check if there's a PENDING delete plant request (not rejected)
+                        const deletePlantRequest = fullPendingRequests.find(
+                          (r) => r.requestType === "delete" && r.status === "pending"
+                        );
+
+                        // Manajer/Admin sees the request with approve/reject buttons
+                        if ((session?.user.role === "manajer" || session?.user.role === "admin") && deletePlantRequest) {
+                          return (
+                            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 bg-yellow-50 border border-yellow-300 rounded-lg p-3">
+                              <div className="flex-1 min-w-0">
+                                <p className="text-xs sm:text-sm font-semibold text-yellow-800 mb-1">
+                                  Permintaan hapus tanaman dari {deletePlantRequest.requestedBy?.fullName}
+                                </p>
+                                <p className="text-xs sm:text-sm text-gray-600 break-words">
+                                  Alasan: {deletePlantRequest.deleteReason}
+                                </p>
+                              </div>
+                              <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+                                <Button
+                                  size="sm"
+                                  onClick={() => handleApproveRequest(deletePlantRequest._id)}
+                                  className="bg-green-600 hover:bg-green-700 text-white text-xs sm:text-sm px-3 py-2 w-full sm:w-auto"
+                                >
+                                  Setujui
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  onClick={() => handleOpenRequestRejectionModal(deletePlantRequest._id)}
+                                  className="bg-red-600 hover:bg-red-700 text-white text-xs sm:text-sm px-3 py-2 w-full sm:w-auto"
+                                >
+                                  Tolak
+                                </Button>
+                              </div>
+                            </div>
+                          );
+                        }
+
+                        // Asisten sees pending status or can request
+                        if (session?.user.role === "asisten") {
+                          return pendingRequests?.deletePlant ? (
                             <Button
                               disabled
                               size="sm"
                               className="bg-gray-300 text-white rounded-lg sm:rounded-xl flex-1 sm:flex-none"
-                              title="Permintaan penghapusan tanaman sedang diajukan"
+                              title="Delete Plant (Pending)"
                             >
                               <Trash2 className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
                               <span className="text-xs sm:text-sm">
-                                Permintaan sedang diajukan
+                                Delete Plant (Pending)
                               </span>
                             </Button>
                           ) : (
@@ -1645,11 +1783,14 @@ export default function PlantDetail({
                             >
                               <Trash2 className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
                               <span className="text-xs sm:text-sm">
-                                Request Delete
+                                Delete Plant
                               </span>
                             </Button>
-                          )
-                        ) : (
+                          );
+                        }
+
+                        // Manajer/Admin without pending request - can delete directly
+                        return (
                           <Button
                             onClick={() => handleDeletePlant()}
                             className="bg-gradient-to-r from-red-500 to-red-600 hover:shadow-lg text-white rounded-lg sm:rounded-xl flex-1 sm:flex-none"
@@ -1660,9 +1801,8 @@ export default function PlantDetail({
                               Delete Plant
                             </span>
                           </Button>
-                        )}
-                      </>
-                    )}
+                        );
+                      })()}
                   </div>
                 </div>
               </CardHeader>
@@ -1671,10 +1811,13 @@ export default function PlantDetail({
                   {currentItems.map((item, index) => (
                     <div
                       key={`${item.id}-${index}`}
-                      className="flex gap-3 sm:gap-4 p-4 sm:p-6 bg-white/60 rounded-xl sm:rounded-2xl border border-[#324D3E]/10 hover:bg-white/80 transition-all duration-300"
+                      className="flex flex-col p-4 sm:p-6 bg-white/60 rounded-xl sm:rounded-2xl border border-[#324D3E]/10 hover:bg-white/80 transition-all duration-300 min-h-[200px]"
                     >
-                      <div className="flex flex-col gap-2 flex-shrink-0">
-                        <div className="w-16 h-16 sm:w-20 sm:h-20 bg-[#324D3E]/10 rounded-xl sm:rounded-2xl flex items-center justify-center">
+                      {/* Content area that grows to push buttons to bottom */}
+                      <div className="flex-1 flex flex-col gap-3">
+                      {/* Top section: Image and content */}
+                      <div className="flex gap-3 sm:gap-4">
+                        <div className="w-16 h-16 sm:w-20 sm:h-20 bg-[#324D3E]/10 rounded-xl sm:rounded-2xl flex items-center justify-center flex-shrink-0">
                           {item.imageUrl ? (
                             isVideoUrl(item.imageUrl) ? (
                               <video
@@ -1698,139 +1841,144 @@ export default function PlantDetail({
                             <Camera className="w-4 h-4 sm:w-6 sm:h-6 text-[#889063]" />
                           )}
                         </div>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleViewDetail(item)}
-                          className="bg-blue-500 hover:bg-blue-600 text-white border-blue-500 rounded-lg text-xs px-2 py-1 w-full"
-                        >
-                          <Eye className="w-3 h-3 mr-1" />
-                          <span>Detail</span>
-                        </Button>
+                        <div className="flex-1 min-w-0 flex flex-col">
+                          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-2">
+                            <Badge
+                              className={`${
+                                statusColors[item.type] ||
+                                "bg-gray-100 text-gray-800"
+                              } rounded-lg sm:rounded-xl px-2 sm:px-3 py-1 text-xs sm:text-sm`}
+                            >
+                              {item.type}
+                            </Badge>
+
+                            <div className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm text-[#889063]">
+                              <span className="flex items-center gap-1 truncate">
+                                <User className="w-3 h-3 flex-shrink-0" />
+                                <span className="truncate">{item.addedBy}</span>
+                              </span>
+                              <span className="text-[#324D3E]/30 hidden sm:inline">
+                                •
+                              </span>
+                              <span className="flex items-center gap-1">
+                                <Clock className="w-3 h-3 flex-shrink-0" />
+                                {item.date}
+                              </span>
+                            </div>
+                          </div>
+                          <p className="text-xs sm:text-sm text-[#324D3E] break-words">
+                            {item.description}
+                          </p>
+                        </div>
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-2">
-                          <Badge
-                            className={`${
-                              statusColors[item.type] ||
-                              "bg-gray-100 text-gray-800"
-                            } rounded-lg sm:rounded-xl px-2 sm:px-3 py-1 text-xs sm:text-sm`}
-                          >
-                            {item.type}
-                          </Badge>
 
-                          <div className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm text-[#889063]">
-                            <span className="flex items-center gap-1 truncate">
-                              <User className="w-3 h-3 flex-shrink-0" />
-                              <span className="truncate">{item.addedBy}</span>
-                            </span>
-                            <span className="text-[#324D3E]/30 hidden sm:inline">
-                              •
-                            </span>
-                            <span className="flex items-center gap-1">
-                              <Clock className="w-3 h-3 flex-shrink-0" />
-                              {item.date}
-                            </span>
-                          </div>
-                        </div>
-                        <p className="text-xs sm:text-sm text-[#324D3E] mb-3 break-words">
-                          {item.description}
-                        </p>
-                        {/* Edit/Delete Buttons Row */}
-                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-0 mb-3">
-                          <div className="flex flex-wrap gap-1 sm:gap-2">
-                            {(session?.user.role === "admin" ||
-                              session?.user.role === "spv_staff") &&
-                              (session?.user.role === "spv_staff" ? (
-                                pendingRequests?.updates?.[item.id] ? (
-                                  <Button
-                                    size="sm"
-                                    disabled
-                                    className="bg-gray-300 text-white border-gray-300 rounded-lg sm:rounded-xl text-xs sm:text-sm px-2 sm:px-3 py-1"
-                                    title="Permintaan update riwayat sedang diajukan"
-                                  >
-                                    <Edit className="w-3 h-3 mr-1" />
-                                    <span className="hidden sm:inline">
-                                      Permintaan sedang diajukan
-                                    </span>
-                                    <span className="sm:hidden">Pending</span>
-                                  </Button>
-                                ) : (
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    onClick={() =>
-                                      handleRequestHistoryUpdate(item)
-                                    }
-                                    className="bg-yellow-500 hover:bg-yellow-600 text-white border-yellow-500 rounded-lg sm:rounded-xl text-xs sm:text-sm px-2 sm:px-3 py-1"
-                                  >
-                                    <Edit className="w-3 h-3 mr-1" />
-                                    <span className="hidden sm:inline">
-                                      Request Edit
-                                    </span>
-                                    <span className="sm:hidden">Edit</span>
-                                  </Button>
-                                )
-                              ) : (
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={() => {
-                                    setSelectedHistory(item);
-                                    setEditNotes(item.description);
-                                    setIsEditing(true);
-                                    setShowModal(true);
-                                  }}
-                                  className="bg-yellow-500 hover:bg-yellow-600 text-white border-yellow-500 rounded-lg sm:rounded-xl text-xs sm:text-sm px-2 sm:px-3 py-1"
-                                >
-                                  <Edit className="w-3 h-3 mr-1" />
-                                  <span className="hidden sm:inline">
-                                    Update
-                                  </span>
-                                  <span className="sm:hidden">Edit</span>
-                                </Button>
-                              ))}
-                          </div>
-                          {(session?.user.role === "admin" ||
-                            session?.user.role === "spv_staff") &&
-                            (session?.user.role === "spv_staff" ? (
-                              pendingRequests?.deletes?.[item.id] ? (
-                                <Button
-                                  size="sm"
-                                  disabled
-                                  className="bg-gray-300 text-white border-gray-300 p-1.5 sm:p-2 min-w-0 rounded-lg sm:rounded-xl self-start sm:self-auto"
-                                  title="Permintaan penghapusan riwayat sedang diajukan"
-                                >
-                                  <Trash2 className="w-3 h-3" />
-                                </Button>
-                              ) : (
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={() =>
-                                    handleDeleteHistoryItem(item.id)
-                                  }
-                                  className="bg-red-500 hover:bg-red-600 text-white border-red-500 p-1.5 sm:p-2 min-w-0 rounded-lg sm:rounded-xl self-start sm:self-auto"
-                                  title="Request Delete"
-                                >
-                                  <Trash2 className="w-3 h-3" />
-                                </Button>
-                              )
-                            ) : (
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => handleDeleteHistoryItem(item.id)}
-                                className="bg-red-500 hover:bg-red-600 text-white border-red-500 p-1.5 sm:p-2 min-w-0 rounded-lg sm:rounded-xl self-start sm:self-auto"
-                                title="Delete"
-                              >
-                                <Trash2 className="w-3 h-3" />
-                              </Button>
-                            ))}
+                      {/* Pending Requests & Rejection Reasons */}
+                      <div className="flex flex-col gap-2">
+                        <div className="flex-1">
+                          {(() => {
+                            // Find ONLY pending requests for this history item (not rejected)
+                            // Convert both to strings for comparison to handle type mismatches
+                            const updateRequest = fullPendingRequests.find(
+                              (r) => r.requestType === "update_history" && String(r.historyId) === String(item.id) && r.status === "pending"
+                            );
+                            const deleteRequest = fullPendingRequests.find(
+                              (r) => r.requestType === "delete_history" && String(r.historyId) === String(item.id) && r.status === "pending"
+                            );
+
+                            // If Manajer/Admin sees pending requests, show yellow box
+                            if ((session?.user.role === "manajer" || session?.user.role === "admin") && (updateRequest || deleteRequest)) {
+                              return (
+                                <div className="bg-yellow-50 border border-yellow-300 rounded-lg p-3">
+                                  <p className="text-xs sm:text-sm font-semibold text-yellow-800 mb-2">
+                                    Permintaan dari Asisten: {updateRequest?.requestedBy?.fullName || deleteRequest?.requestedBy?.fullName}
+                                  </p>
+                                  {updateRequest && (
+                                    <div className="text-xs sm:text-sm space-y-1 mb-3">
+                                      <p className="text-gray-700">
+                                        <span className="font-semibold">Tipe:</span> Edit Riwayat
+                                      </p>
+                                      <p className="text-gray-700 break-words">
+                                        <span className="font-semibold">Deskripsi Lama:</span> {updateRequest.originalDescription}
+                                      </p>
+                                      <p className="text-gray-700 break-words">
+                                        <span className="font-semibold">Deskripsi Baru:</span> {updateRequest.newDescription}
+                                      </p>
+                                    </div>
+                                  )}
+                                  {deleteRequest && (
+                                    <div className="text-xs sm:text-sm space-y-1 mb-3">
+                                      <p className="text-gray-700">
+                                        <span className="font-semibold">Tipe:</span> Hapus Riwayat
+                                      </p>
+                                      <p className="text-gray-700 break-words">
+                                        <span className="font-semibold">Alasan:</span> {deleteRequest.deleteReason || "Tidak ada alasan"}
+                                      </p>
+                                    </div>
+                                  )}
+                                  <div className="flex flex-col sm:flex-row gap-2">
+                                    <Button
+                                      size="sm"
+                                      onClick={() => handleApproveRequest(updateRequest?._id || deleteRequest?._id)}
+                                      className="bg-green-600 hover:bg-green-700 text-white text-xs sm:text-sm px-3 py-2 w-full sm:w-auto"
+                                    >
+                                      Setujui
+                                    </Button>
+                                    <Button
+                                      size="sm"
+                                      onClick={() => handleOpenRequestRejectionModal(updateRequest?._id || deleteRequest?._id)}
+                                      className="bg-red-600 hover:bg-red-700 text-white text-xs sm:text-sm px-3 py-2 w-full sm:w-auto"
+                                    >
+                                      Tolak
+                                    </Button>
+                                  </div>
+                                </div>
+                              );
+                            }
+
+                            // Show rejection reasons for Asisten
+                            if (session?.user.role === "asisten") {
+                              const editRejected = fullPendingRequests.find(
+                                (r) => r.requestType === "update_history" && String(r.historyId) === String(item.id) && r.status === "rejected"
+                              );
+                              const deleteRejected = fullPendingRequests.find(
+                                (r) => r.requestType === "delete_history" && String(r.historyId) === String(item.id) && r.status === "rejected"
+                              );
+
+                              if (editRejected || deleteRejected) {
+                                return (
+                                  <div className="flex flex-col gap-2">
+                                    {editRejected && (
+                                      <div className="bg-red-50 border border-red-300 rounded-lg p-2">
+                                        <p className="text-xs font-semibold text-red-800 mb-1">
+                                          Permintaan Edit Ditolak
+                                        </p>
+                                        <p className="text-xs text-red-700">
+                                          <span className="font-semibold">Alasan:</span> {editRejected.reviewNotes || "Tidak ada alasan"}
+                                        </p>
+                                      </div>
+                                    )}
+                                    {deleteRejected && (
+                                      <div className="bg-red-50 border border-red-300 rounded-lg p-2">
+                                        <p className="text-xs font-semibold text-red-800 mb-1">
+                                          Permintaan Hapus Ditolak
+                                        </p>
+                                        <p className="text-xs text-red-700">
+                                          <span className="font-semibold">Alasan:</span> {deleteRejected.reviewNotes || "Tidak ada alasan"}
+                                        </p>
+                                      </div>
+                                    )}
+                                  </div>
+                                );
+                              }
+                            }
+
+                            // No content needed - buttons are now in left column
+                            return null;
+                          })()}
                         </div>
 
-                        {/* Approval Status & Buttons - Always at Bottom Right */}
-                        <div className="flex justify-end items-center gap-2 mt-2 pt-2 border-t border-[#324D3E]/10">
+                        {/* Approval Status & Buttons */}
+                        <div className="flex justify-end items-center gap-2 mt-2">
                           {/* Pending - Show for Asisten to approve */}
                           {item.approvalStatus === "pending" && (
                             <>
@@ -1871,7 +2019,9 @@ export default function PlantDetail({
                                   </Button>
                                   <Button
                                     size="sm"
-                                    onClick={() => handleOpenRejectionModal(item.id)}
+                                    onClick={() =>
+                                      handleOpenRejectionModal(item.id)
+                                    }
                                     className="bg-red-600 hover:bg-red-700 text-white text-xs px-2 py-1 h-auto"
                                   >
                                     Tolak
@@ -1885,10 +2035,11 @@ export default function PlantDetail({
                             </>
                           )}
 
-                          {/* Approved by Asisten - Show for Manajer to approve */}
+                          {/* Approved by Asisten - Show for Manajer/Admin to approve */}
                           {item.approvalStatus === "approved_by_asisten" && (
                             <>
-                              {session?.user.role === "manajer" ? (
+                              {session?.user.role === "manajer" ||
+                              session?.user.role === "admin" ? (
                                 <>
                                   <Button
                                     size="sm"
@@ -1925,7 +2076,9 @@ export default function PlantDetail({
                                   </Button>
                                   <Button
                                     size="sm"
-                                    onClick={() => handleOpenRejectionModal(item.id)}
+                                    onClick={() =>
+                                      handleOpenRejectionModal(item.id)
+                                    }
                                     className="bg-red-600 hover:bg-red-700 text-white text-xs px-2 py-1 h-auto"
                                   >
                                     Tolak
@@ -1975,6 +2128,152 @@ export default function PlantDetail({
                               )}
                             </div>
                           )}
+                        </div>
+                      </div>
+                      </div>
+
+                      {/* Bottom section: 1x3 Grid for buttons - FIXED TO BOTTOM */}
+                      <div className="grid grid-cols-3 gap-2 mt-3">
+                        {/* Detail Button */}
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleViewDetail(item)}
+                          className="bg-blue-500 hover:bg-blue-600 text-white border-blue-500 rounded-lg text-xs px-2 py-1 w-full"
+                        >
+                          <Eye className="w-3 h-3 mr-1" />
+                          <span className="hidden sm:inline">Detail</span>
+                        </Button>
+
+                        {/* Update/Edit Button */}
+                        <div>
+                        {(() => {
+                          // Find ONLY pending requests for this history item (not rejected)
+                          // Convert both to strings for comparison to handle type mismatches
+                          const updateRequest = fullPendingRequests.find(
+                            (r) => r.requestType === "update_history" && String(r.historyId) === String(item.id) && r.status === "pending"
+                          );
+                          const deleteRequest = fullPendingRequests.find(
+                            (r) => r.requestType === "delete_history" && String(r.historyId) === String(item.id) && r.status === "pending"
+                          );
+
+                          // If Manajer/Admin sees pending requests, show them in expanded view
+                          if ((session?.user.role === "manajer" || session?.user.role === "admin") && (updateRequest || deleteRequest)) {
+                            return null; // Will show in main content area below
+                          }
+
+                          // Manajer/Admin: can edit directly
+                          if (session?.user.role === "admin" || session?.user.role === "manajer") {
+                            return (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => {
+                                  setSelectedHistory(item);
+                                  setEditNotes(item.description);
+                                  setIsEditing(true);
+                                  setShowModal(true);
+                                }}
+                                className="bg-yellow-500 hover:bg-yellow-600 text-white border-yellow-500 rounded-lg text-xs px-2 py-1 w-full"
+                              >
+                                <Edit className="w-3 h-3 mr-1" />
+                                <span className="hidden sm:inline">Update</span>
+                              </Button>
+                            );
+                          }
+
+                          // Asisten: can request edit
+                          if (session?.user.role === "asisten") {
+                            if (pendingRequests?.updates?.[item.id]) {
+                              return (
+                                <Button
+                                  size="sm"
+                                  disabled
+                                  className="bg-gray-300 text-white border-gray-300 rounded-lg text-xs px-2 py-1 w-full"
+                                  title="Update (Pending)"
+                                >
+                                  <Edit className="w-3 h-3 mr-1" />
+                                  <span className="hidden sm:inline">Update (Pending)</span>
+                                </Button>
+                              );
+                            }
+                            return (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleRequestHistoryUpdate(item)}
+                                className="bg-yellow-500 hover:bg-yellow-600 text-white border-yellow-500 rounded-lg text-xs px-2 py-1 w-full"
+                              >
+                                <Edit className="w-3 h-3 mr-1" />
+                                <span className="hidden sm:inline">Update</span>
+                              </Button>
+                            );
+                          }
+
+                          return null;
+                        })()}
+                        </div>
+
+                        {/* Delete Button */}
+                        <div>
+                        {(() => {
+                          const updateRequest = fullPendingRequests.find(
+                            (r) => r.requestType === "update_history" && String(r.historyId) === String(item.id) && r.status === "pending"
+                          );
+                          const deleteRequest = fullPendingRequests.find(
+                            (r) => r.requestType === "delete_history" && String(r.historyId) === String(item.id) && r.status === "pending"
+                          );
+
+                          // If Manajer/Admin sees pending requests, return null (will show below)
+                          if ((session?.user.role === "manajer" || session?.user.role === "admin") && (updateRequest || deleteRequest)) {
+                            return null;
+                          }
+
+                          // Manajer/Admin: can delete directly
+                          if (session?.user.role === "admin" || session?.user.role === "manajer") {
+                            return (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleDeleteHistoryItem(item.id)}
+                                className="bg-red-500 hover:bg-red-600 text-white border-red-500 rounded-lg text-xs px-2 py-1 w-full"
+                              >
+                                <Trash2 className="w-3 h-3 mr-1" />
+                                <span className="sr-only">Delete</span>
+                              </Button>
+                            );
+                          }
+
+                          // Asisten: can request delete
+                          if (session?.user.role === "asisten") {
+                            if (pendingRequests?.deletes?.[item.id]) {
+                              return (
+                                <Button
+                                  size="sm"
+                                  disabled
+                                  className="bg-gray-300 text-white border-gray-300 rounded-lg text-xs px-2 py-1 w-full"
+                                  title="Delete (Pending)"
+                                >
+                                  <Trash2 className="w-3 h-3 mr-1" />
+                                  <span className="sr-only">Delete (Pending)</span>
+                                </Button>
+                              );
+                            }
+                            return (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleDeleteHistoryItem(item.id)}
+                                className="bg-red-500 hover:bg-red-600 text-white border-red-500 rounded-lg text-xs px-2 py-1 w-full"
+                              >
+                                <Trash2 className="w-3 h-3 mr-1" />
+                                <span className="sr-only">Delete</span>
+                              </Button>
+                            );
+                          }
+
+                          return null;
+                        })()}
                         </div>
                       </div>
                     </div>
@@ -2201,7 +2500,8 @@ export default function PlantDetail({
                               <p className="text-gray-700 leading-relaxed">
                                 {selectedHistory.description}
                               </p>
-                              {session?.user.role === "admin" && (
+                              {(session?.user.role === "admin" ||
+                                session?.user.role === "manajer") && (
                                 <Button
                                   onClick={() => setIsEditing(true)}
                                   className="bg-yellow-500 hover:bg-yellow-600 text-white"
@@ -2233,7 +2533,7 @@ export default function PlantDetail({
             </div>
           )}
 
-          {/* Rejection Modal */}
+          {/* Rejection Modal for History Approval (Mandor submissions) */}
           {showRejectionModal && (
             <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
               <div className="bg-white/95 backdrop-blur-xl rounded-3xl max-w-md w-full shadow-2xl border border-[#324D3E]/10">
@@ -2283,6 +2583,64 @@ export default function PlantDetail({
                         className="flex-1 bg-red-600 hover:bg-red-700 text-white"
                       >
                         {isRejecting ? "Menolak..." : "Tolak Riwayat"}
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Request Rejection Modal (for Asisten's requests) */}
+          {showRequestRejectionModal && (
+            <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+              <div className="bg-white/95 backdrop-blur-xl rounded-3xl max-w-md w-full shadow-2xl border border-[#324D3E]/10">
+                <div className="p-6">
+                  <div className="flex justify-between items-center mb-6">
+                    <h2 className="text-xl font-bold text-[#324D3E]">
+                      Tolak Permintaan
+                    </h2>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={handleCloseRequestRejectionModal}
+                      className="text-[#889063] hover:text-[#324D3E] hover:bg-[#324D3E]/10 rounded-xl"
+                    >
+                      <X className="w-5 h-5" />
+                    </Button>
+                  </div>
+
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-[#324D3E] mb-2">
+                        Alasan Penolakan <span className="text-red-600">*</span>
+                      </label>
+                      <Textarea
+                        value={requestRejectionReason}
+                        onChange={(e) => setRequestRejectionReason(e.target.value)}
+                        placeholder="Masukkan alasan penolakan..."
+                        className="min-h-[120px] resize-none bg-white/80 border-[#324D3E]/20 focus:border-[#324D3E] focus:ring-[#324D3E]/20"
+                      />
+                      <p className="text-xs text-gray-500 mt-1">
+                        Alasan ini akan ditampilkan kepada asisten
+                      </p>
+                    </div>
+
+                    <div className="flex gap-3 pt-4">
+                      <Button
+                        variant="outline"
+                        onClick={handleCloseRequestRejectionModal}
+                        disabled={isRejecting}
+                        className="flex-1 border-[#324D3E]/30 text-[#324D3E] hover:bg-[#324D3E]/10"
+                      >
+                        Batal
+                      </Button>
+                      <Button
+                        onClick={handleRejectRequest}
+                        disabled={isRejecting || !requestRejectionReason.trim()}
+                        className="flex-1 bg-red-600 hover:bg-red-700 text-white"
+                      >
+                        {isRejecting ? "Menolak..." : "Tolak Permintaan"}
                       </Button>
                     </div>
                   </div>

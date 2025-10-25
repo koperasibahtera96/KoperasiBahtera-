@@ -795,48 +795,145 @@ export async function processInstallmentPayment(
         }).session(mongoSession);
 
         if (marketingStaff) {
-          // Calculate commission based on THIS installment amount only
-          const installmentAmount = payment.amount;
-          // Get commission rate from settings
+          // Get commission rate and minConsecutiveTenor from settings
           const settings = await Settings.findOne({ type: "system" }).session(mongoSession);
           const commissionRate = settings?.config?.commissionRate ?? 0.02; // Default to 2% if not set
-          const commissionAmount = Math.round(
-            installmentAmount * commissionRate
-          );
+          const minConsecutiveTenor = settings?.config?.minConsecutiveTenor ?? 10; // Default to 10
 
-          // Create commission record for this specific installment
-          const commissionRecord = new CommissionHistory({
-            marketingStaffId: marketingStaff._id,
-            marketingStaffName: marketingStaff.fullName,
-            referralCodeUsed: payment.referralCode,
+          // Check if payment term is monthly (minConsecutiveTenor only applies to monthly payments)
+          const isMonthlyPayment = payment.paymentTerm === "monthly";
 
-            paymentId: payment._id,
-            cicilanOrderId: payment.cicilanOrderId,
-            customerId: user._id,
-            customerName: user.fullName,
-            customerEmail: user.email,
+          // Check if this installment triggers bulk commission payout (only for monthly)
+          if (isMonthlyPayment && installmentNumber === minConsecutiveTenor) {
+            // At threshold: Calculate remaining commission (from this tenor onwards)
+            const totalInstallments = payment.totalInstallments;
+            const installmentAmount = payment.installmentAmount;
+            
+            // Total contract value
+            const totalContractValue = installmentAmount * totalInstallments;
+            const totalCommission = Math.round(totalContractValue * commissionRate);
+            
+            // Commission already paid (installments 1 to minConsecutiveTenor - 1)
+            const commissionsPaid = (minConsecutiveTenor - 1) * Math.round(installmentAmount * commissionRate);
+            
+            // Remaining commission to pay in bulk
+            const remainingCommission = totalCommission - commissionsPaid;
 
-            contractValue: installmentAmount, // This installment's amount only
-            commissionRate,
-            commissionAmount,
+            // Create bulk commission record
+            const commissionRecord = new CommissionHistory({
+              marketingStaffId: marketingStaff._id,
+              marketingStaffName: marketingStaff.fullName,
+              referralCodeUsed: payment.referralCode,
 
-            paymentType: payment.paymentType,
-            earnedAt: payment.adminReviewDate || new Date(),
-            calculatedAt: new Date(),
+              paymentId: payment._id,
+              cicilanOrderId: payment.cicilanOrderId,
+              customerId: user._id,
+              customerName: user.fullName,
+              customerEmail: user.email,
 
-            contractId: cicilanOrderId,
-            productName: payment.productName || "Unknown Product",
-            installmentDetails: {
-              installmentAmount: payment.installmentAmount,
-              totalInstallments: payment.totalInstallments,
-              installmentNumber: payment.installmentNumber,
-            },
-          });
+              contractValue: totalContractValue - (minConsecutiveTenor - 1) * installmentAmount, // Remaining contract value
+              commissionRate,
+              commissionAmount: remainingCommission,
 
-          await commissionRecord.save({ session: mongoSession });
-          console.log(
-            `💰 [${txnId}] Commission created for installment ${installmentNumber}: ${commissionAmount} for ${marketingStaff.fullName} (${payment.referralCode})`
-          );
+              paymentType: payment.paymentType,
+              earnedAt: payment.adminReviewDate || new Date(),
+              calculatedAt: new Date(),
+
+              contractId: cicilanOrderId,
+              productName: payment.productName || "Unknown Product",
+              installmentDetails: {
+                installmentAmount: payment.installmentAmount,
+                totalInstallments: payment.totalInstallments,
+                installmentNumber: payment.installmentNumber,
+              },
+            });
+
+            await commissionRecord.save({ session: mongoSession });
+            console.log(
+              `💰 [${txnId}] BULK commission created at tenor ${installmentNumber}: ${remainingCommission} for ${marketingStaff.fullName} (${payment.referralCode})`
+            );
+          } else if (isMonthlyPayment && installmentNumber < minConsecutiveTenor) {
+            // Before threshold: Regular per-installment commission
+            const installmentAmount = payment.amount;
+            const commissionAmount = Math.round(installmentAmount * commissionRate);
+
+            // Create commission record for this specific installment
+            const commissionRecord = new CommissionHistory({
+              marketingStaffId: marketingStaff._id,
+              marketingStaffName: marketingStaff.fullName,
+              referralCodeUsed: payment.referralCode,
+
+              paymentId: payment._id,
+              cicilanOrderId: payment.cicilanOrderId,
+              customerId: user._id,
+              customerName: user.fullName,
+              customerEmail: user.email,
+
+              contractValue: installmentAmount, // This installment's amount only
+              commissionRate,
+              commissionAmount,
+
+              paymentType: payment.paymentType,
+              earnedAt: payment.adminReviewDate || new Date(),
+              calculatedAt: new Date(),
+
+              contractId: cicilanOrderId,
+              productName: payment.productName || "Unknown Product",
+              installmentDetails: {
+                installmentAmount: payment.installmentAmount,
+                totalInstallments: payment.totalInstallments,
+                installmentNumber: payment.installmentNumber,
+              },
+            });
+
+            await commissionRecord.save({ session: mongoSession });
+            console.log(
+              `💰 [${txnId}] Commission created for installment ${installmentNumber}: ${commissionAmount} for ${marketingStaff.fullName} (${payment.referralCode})`
+            );
+          } else if (isMonthlyPayment && installmentNumber > minConsecutiveTenor) {
+            // After threshold: No commission (already paid in bulk) - only for monthly
+            console.log(
+              `ℹ️ [${txnId}] Installment ${installmentNumber} after threshold ${minConsecutiveTenor}, no commission created (already paid in bulk)`
+            );
+          } else {
+            // Non-monthly payments (yearly, quarterly, etc.): Regular per-installment commission
+            const installmentAmount = payment.amount;
+            const commissionAmount = Math.round(installmentAmount * commissionRate);
+
+            // Create commission record for this specific installment
+            const commissionRecord = new CommissionHistory({
+              marketingStaffId: marketingStaff._id,
+              marketingStaffName: marketingStaff.fullName,
+              referralCodeUsed: payment.referralCode,
+
+              paymentId: payment._id,
+              cicilanOrderId: payment.cicilanOrderId,
+              customerId: user._id,
+              customerName: user.fullName,
+              customerEmail: user.email,
+
+              contractValue: installmentAmount, // This installment's amount only
+              commissionRate,
+              commissionAmount,
+
+              paymentType: payment.paymentType,
+              earnedAt: payment.adminReviewDate || new Date(),
+              calculatedAt: new Date(),
+
+              contractId: cicilanOrderId,
+              productName: payment.productName || "Unknown Product",
+              installmentDetails: {
+                installmentAmount: payment.installmentAmount,
+                totalInstallments: payment.totalInstallments,
+                installmentNumber: payment.installmentNumber,
+              },
+            });
+
+            await commissionRecord.save({ session: mongoSession });
+            console.log(
+              `💰 [${txnId}] Commission created for installment ${installmentNumber} (${payment.paymentTerm}): ${commissionAmount} for ${marketingStaff.fullName} (${payment.referralCode})`
+            );
+          }
         } else {
           console.log(
             `⚠️ [${txnId}] Marketing staff not found for referral code: ${payment.referralCode}`

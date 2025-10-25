@@ -104,10 +104,10 @@ export async function GET(request: NextRequest) {
 
     if (
       !session?.user ||
-      (session.user.role !== "admin" && session.user.role !== "spv_staff")
+      (session.user.role !== "admin" && session.user.role !== "manajer" && session.user.role !== "asisten")
     ) {
       return NextResponse.json(
-        { error: "Unauthorized - Admin or SPV Staff access required" },
+        { error: "Unauthorized - Admin, Manajer, or Asisten access required" },
         { status: 401 }
       );
     }
@@ -123,8 +123,8 @@ export async function GET(request: NextRequest) {
     // Build query
     const query: any = {};
 
-    if (session.user.role === "spv_staff") {
-      // SPV staff can only see their own requests
+    if (session.user.role === "asisten") {
+      // Asisten can only see their own requests
       query.requestedBy = session.user.id;
     }
 
@@ -171,9 +171,10 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
 
-    if (!session?.user || session.user.role !== "spv_staff") {
+    // Only Asisten can submit requests (for edit/delete approval from Manajer)
+    if (!session?.user || session.user.role !== "asisten") {
       return NextResponse.json(
-        { error: "Unauthorized - SPV Staff access required" },
+        { error: "Unauthorized - Asisten access required" },
         { status: 401 }
       );
     }
@@ -229,6 +230,22 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Delete any existing rejected requests with the same criteria
+    // This ensures old rejection notes don't persist when resubmitting
+    const deleteQuery: any = {
+      plantId,
+      requestedBy: session.user.id,
+      requestType,
+      status: "rejected",
+    };
+
+    // Add historyId to query if it's a history operation
+    if (historyId) {
+      deleteQuery.historyId = historyId;
+    }
+
+    await PlantRequest.deleteMany(deleteQuery);
+
     // Create the request
     const plantRequest = new PlantRequest({
       plantId,
@@ -266,9 +283,10 @@ export async function PUT(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
 
-    if (!session?.user || session.user.role !== "admin") {
+    // Only Manajer or Admin can approve/reject requests
+    if (!session?.user || (session.user.role !== "admin" && session.user.role !== "manajer")) {
       return NextResponse.json(
-        { error: "Unauthorized - Admin access required" },
+        { error: "Unauthorized - Manajer or Admin access required" },
         { status: 401 }
       );
     }

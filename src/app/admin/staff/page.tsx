@@ -1110,161 +1110,208 @@ export default function StaffPage() {
               </div>
             </div>
 
-            {/* Requests Table */}
-            <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg rounded-2xl shadow-lg border border-[#324D3E]/10 dark:border-gray-700 overflow-hidden">
-              <div className="p-4 sm:p-6 border-b border-[#324D3E]/10 dark:border-gray-700">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                  <h3 className="text-lg sm:text-xl font-bold text-[#324D3E] dark:text-white font-[family-name:var(--font-poppins)]">
-                    Daftar Permintaan
-                  </h3>
-                  <div className="flex flex-wrap gap-2 text-xs">
-                    {requestFilter !== "all" && (
-                      <span className="px-2 py-1 bg-[#324D3E]/10 text-[#324D3E] dark:bg-gray-700 dark:text-white rounded-lg">
-                        Status:{" "}
-                        {requestFilter === "pending"
-                          ? "Menunggu Review"
-                          : requestFilter === "approved"
-                          ? "Disetujui"
-                          : "Ditolak"}
-                      </span>
-                    )}
-                    {requestTypeFilter !== "all" && (
-                      <span className="px-2 py-1 bg-[#4C3D19]/10 text-[#4C3D19] dark:bg-emerald-900/30 dark:text-emerald-300 rounded-lg">
-                        Tipe:{" "}
-                        {requestTypeFilter === "delete"
-                          ? "Hapus Tanaman"
-                          : requestTypeFilter === "update_history"
-                          ? "Edit Riwayat"
-                          : "Hapus Riwayat"}
-                      </span>
-                    )}
-                  </div>
-                </div>
-              </div>
-              <div className="p-0 sm:p-6">
-                {requestsLoading ? (
-                  <div className="text-center py-8 px-4">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#324D3E] dark:border-white mx-auto"></div>
-                    <p className="mt-2 text-[#889063] dark:text-gray-300 text-sm sm:text-base">
+            {/* Requests Cards */}
+            <div className="space-y-4">
+              {requestsLoading ? (
+                <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg rounded-2xl shadow-lg border border-[#324D3E]/10 dark:border-gray-700 p-8">
+                  <div className="text-center">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#324D3E] dark:border-white mx-auto"></div>
+                    <p className="mt-4 text-[#889063] dark:text-gray-300 text-sm sm:text-base">
                       Memuat permintaan...
                     </p>
                   </div>
-                ) : (
-                  <div className="overflow-x-auto">
-                    <table className="w-full min-w-[800px]">
-                      <thead>
-                        <tr className="border-b border-[#324D3E]/10 dark:border-gray-700">
-                          <th className="text-left py-3 px-3 sm:px-4 font-medium text-[#324D3E] dark:text-white text-xs sm:text-sm">
-                            Staff
-                          </th>
-                          <th className="text-left py-3 px-3 sm:px-4 font-medium text-[#324D3E] dark:text-white text-xs sm:text-sm hidden sm:table-cell">
-                            Tipe
-                          </th>
-                          <th className="text-left py-3 px-3 sm:px-4 font-medium text-[#324D3E] dark:text-white text-xs sm:text-sm hidden md:table-cell">
-                            Plant ID
-                          </th>
-                          <th className="text-left py-3 px-3 sm:px-4 font-medium text-[#324D3E] dark:text-white text-xs sm:text-sm">
-                            Status
-                          </th>
-                          <th className="text-left py-3 px-3 sm:px-4 font-medium text-[#324D3E] dark:text-white text-xs sm:text-sm hidden lg:table-cell">
-                            Tanggal
-                          </th>
-                          <th className="text-left py-3 px-3 sm:px-4 font-medium text-[#324D3E] dark:text-white text-xs sm:text-sm">
-                            Aksi
-                          </th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {requests.map((request) => (
-                          <tr
-                            key={request._id}
-                            className="border-b border-[#324D3E]/5 dark:border-gray-700 hover:bg-[#324D3E]/5 dark:hover:bg-gray-800 transition-colors"
-                          >
-                            <td className="py-3 px-3 sm:px-4">
-                              <div className="font-medium text-[#324D3E] dark:text-white text-sm sm:text-base truncate">
-                                {request.requestedBy.fullName}
-                              </div>
-                              <div className="text-xs text-[#889063] dark:text-gray-300 truncate sm:hidden">
-                                {request.requestedBy.email}
-                              </div>
-                              <div className="text-xs text-[#889063] dark:text-gray-300 sm:hidden mt-1">
-                                <Badge
-                                  className={`text-xs font-medium mr-2 ${getRequestTypeColor(
-                                    request.requestType
-                                  )}`}
-                                >
-                                  {getRequestTypeLabel(request.requestType)}
-                                </Badge>
-                              </div>
-                              <div className="text-xs text-[#889063] dark:text-gray-300 md:hidden mt-1">
-                                <span className="font-mono">
-                                  {request.plantId}
-                                </span>
-                              </div>
-                            </td>
-                            <td className="py-3 px-3 sm:px-4 hidden sm:table-cell">
-                              <Badge
-                                className={`text-xs font-medium ${getRequestTypeColor(
-                                  request.requestType
-                                )}`}
-                              >
-                                {getRequestTypeLabel(request.requestType)}
-                              </Badge>
-                            </td>
-                            <td className="py-3 px-3 sm:px-4 hidden md:table-cell">
-                              <span className="font-mono text-sm">
-                                {request.plantId}
-                              </span>
-                            </td>
-                            <td className="py-3 px-3 sm:px-4">
-                              <Badge
-                                className={`text-xs ${getStatusColor(
-                                  request.status
-                                )}`}
-                              >
-                                {request.status === "pending"
-                                  ? "Menunggu"
-                                  : request.status === "approved"
-                                  ? "Disetujui"
-                                  : "Ditolak"}
-                              </Badge>
-                            </td>
-                            <td className="py-3 px-3 sm:px-4 text-[#889063] dark:text-gray-300 text-sm hidden lg:table-cell">
-                              {new Date(request.requestDate).toLocaleDateString(
-                                "id-ID"
-                              )}
-                            </td>
-                            <td className="py-3 px-3 sm:px-4">
-                              {request.status === "pending" ? (
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => handleReviewRequest(request)}
-                                  className="border-[#324D3E]/20 dark:border-gray-600 text-[#324D3E] dark:text-gray-300 hover:bg-[#324D3E]/10 dark:hover:bg-gray-700 hover:border-[#324D3E] text-xs px-2 py-1"
-                                >
-                                  Review
-                                </Button>
-                              ) : (
-                                <span className="text-xs text-[#889063] dark:text-gray-300 truncate">
-                                  {request.reviewedBy?.fullName || "System"}
-                                </span>
-                              )}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                </div>
+              ) : requests.length === 0 ? (
+                <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg rounded-2xl shadow-lg border border-[#324D3E]/10 dark:border-gray-700 p-8">
+                  <div className="text-center">
+                    <p className="text-[#889063] dark:text-gray-300 text-sm sm:text-base">
+                      Tidak ada permintaan ditemukan
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                requests.map((request) => (
+                  <div
+                    key={request._id}
+                    className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg rounded-2xl shadow-lg border border-[#324D3E]/10 dark:border-gray-700 overflow-hidden hover:shadow-xl transition-all duration-300"
+                  >
+                    {/* Card Header */}
+                    <div className={`p-4 sm:p-6 border-b ${request.status === 'pending' ? 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-700/50' : request.status === 'approved' ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-700/50' : 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-700/50'}`}>
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <div className="flex items-center gap-3 min-w-0 flex-1">
+                          <div className="flex-shrink-0">
+                            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#324D3E] to-[#4C3D19] flex items-center justify-center text-white font-bold text-lg">
+                              {request.requestedBy.fullName.charAt(0).toUpperCase()}
+                            </div>
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <h3 className="font-bold text-[#324D3E] dark:text-white text-sm sm:text-base truncate">
+                              {request.requestedBy.fullName}
+                            </h3>
+                            <p className="text-xs sm:text-sm text-[#889063] dark:text-gray-300 truncate">
+                              {request.requestedBy.email}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <Badge className={`text-xs font-medium ${getRequestTypeColor(request.requestType)}`}>
+                            {getRequestTypeLabel(request.requestType)}
+                          </Badge>
+                          <Badge className={`text-xs font-medium ${getStatusColor(request.status)}`}>
+                            {request.status === "pending" ? "Menunggu" : request.status === "approved" ? "Disetujui" : "Ditolak"}
+                          </Badge>
+                        </div>
+                      </div>
+                    </div>
 
-                    {requests.length === 0 && (
-                      <div className="text-center py-8">
-                        <p className="text-[#889063] dark:text-gray-300 text-sm sm:text-base">
-                          Tidak ada permintaan ditemukan
-                        </p>
+                    {/* Card Body */}
+                    <div className="p-4 sm:p-6 space-y-4">
+                      {/* Plant ID & Date */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-xs font-medium text-[#889063] dark:text-gray-400 mb-1">
+                            Plant ID
+                          </label>
+                          <div className="bg-gray-50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-600 rounded-lg p-3">
+                            <p className="text-sm font-mono font-bold text-[#324D3E] dark:text-white break-all">
+                              {request.plantId}
+                            </p>
+                          </div>
+                        </div>
+                        <div>
+                          <label className="block text-xs font-medium text-[#889063] dark:text-gray-400 mb-1">
+                            Tanggal Permintaan
+                          </label>
+                          <div className="bg-gray-50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-600 rounded-lg p-3">
+                            <p className="text-sm font-medium text-[#324D3E] dark:text-white">
+                              {new Date(request.requestDate).toLocaleString("id-ID", {
+                                dateStyle: "medium",
+                                timeStyle: "short"
+                              })}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* History ID (for history operations) */}
+                      {request.historyId && (
+                        <div>
+                          <label className="block text-xs font-medium text-[#889063] dark:text-gray-400 mb-1">
+                            History ID
+                          </label>
+                          <div className="bg-gray-50 dark:bg-gray-900/50 border border-gray-200 dark:border-gray-600 rounded-lg p-3">
+                            <p className="text-sm font-mono font-bold text-[#324D3E] dark:text-white">
+                              {request.historyId}
+                            </p>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Delete Reason */}
+                      {request.deleteReason && (
+                        <div>
+                          <label className="block text-xs font-medium text-red-700 dark:text-red-400 mb-2">
+                            Alasan {request.requestType === "delete" ? "Penghapusan Tanaman" : "Penghapusan Riwayat"}
+                          </label>
+                          <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700/50 rounded-lg p-4">
+                            <p className="text-sm text-red-800 dark:text-red-300 font-medium whitespace-pre-wrap break-words">
+                              {request.deleteReason}
+                            </p>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Update History Details */}
+                      {request.requestType === "update_history" && (
+                        <div className="space-y-3">
+                          <div>
+                            <label className="block text-xs font-medium text-gray-600 dark:text-gray-400 mb-2">
+                              Deskripsi Lama
+                            </label>
+                            <div className="bg-gray-100 dark:bg-gray-900/50 border border-gray-300 dark:border-gray-600 rounded-lg p-4">
+                              <p className="text-sm text-gray-700 dark:text-gray-300 italic whitespace-pre-wrap break-words">
+                                {request.originalDescription}
+                              </p>
+                            </div>
+                          </div>
+                          <div>
+                            <label className="block text-xs font-medium text-blue-700 dark:text-blue-300 mb-2">
+                              Deskripsi Baru (Usulan Perubahan)
+                            </label>
+                            <div className="bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700/50 rounded-lg p-4">
+                              <p className="text-sm text-blue-800 dark:text-blue-300 font-medium whitespace-pre-wrap break-words">
+                                {request.newDescription}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Review Info (if reviewed) */}
+                      {request.status !== "pending" && (
+                        <div className={`${request.status === 'approved' ? 'bg-green-50 dark:bg-green-900/20' : 'bg-red-50 dark:bg-red-900/20'} border ${request.status === 'approved' ? 'border-green-200 dark:border-green-700/50' : 'border-red-200 dark:border-red-700/50'} rounded-lg p-4`}>
+                          <div className="flex items-start justify-between gap-3 mb-2">
+                            <label className={`text-xs font-semibold ${request.status === 'approved' ? 'text-green-700 dark:text-green-300' : 'text-red-700 dark:text-red-300'}`}>
+                              {request.status === "approved" ? "✓ Disetujui oleh" : "✕ Ditolak oleh"}
+                            </label>
+                            <span className={`text-xs font-medium ${request.status === 'approved' ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                              {request.reviewedAt && new Date(request.reviewedAt).toLocaleString("id-ID", {
+                                dateStyle: "medium",
+                                timeStyle: "short"
+                              })}
+                            </span>
+                          </div>
+                          <p className={`text-sm font-bold mb-2 ${request.status === 'approved' ? 'text-green-800 dark:text-green-200' : 'text-red-800 dark:text-red-200'}`}>
+                            {request.reviewedBy?.fullName || "System"}
+                          </p>
+                          {request.reviewNotes && (
+                            <div className="mt-2">
+                              <label className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-1 block">
+                                Catatan:
+                              </label>
+                              <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap break-words">
+                                {request.reviewNotes}
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Card Footer - Actions */}
+                    {request.status === "pending" && (
+                      <div className="p-4 sm:p-6 bg-gray-50 dark:bg-gray-900/50 border-t border-[#324D3E]/10 dark:border-gray-700">
+                        <div className="flex flex-col sm:flex-row gap-3">
+                          <Button
+                            variant="outline"
+                            onClick={() => handleReviewRequest(request)}
+                            className="flex-1 border-[#324D3E]/20 dark:border-gray-600 text-[#324D3E] dark:text-gray-300 hover:bg-[#324D3E]/10 dark:hover:bg-gray-700 hover:border-[#324D3E] rounded-xl font-semibold"
+                          >
+                            📋 Review Detail
+                          </Button>
+                          <Button
+                            onClick={() => {
+                              setSelectedRequest(request);
+                              setReviewNotes("");
+                              handleSubmitReview("approved");
+                            }}
+                            disabled={reviewingRequest}
+                            className="flex-1 bg-gradient-to-r from-green-500 to-green-600 hover:shadow-lg text-white font-semibold rounded-xl transition-all duration-300"
+                          >
+                            ✓ Setujui
+                          </Button>
+                          <Button
+                            onClick={() => handleReviewRequest(request)}
+                            className="flex-1 bg-gradient-to-r from-red-500 to-red-600 hover:shadow-lg text-white font-semibold rounded-xl transition-all duration-300"
+                          >
+                            ✕ Tolak
+                          </Button>
+                        </div>
                       </div>
                     )}
                   </div>
-                )}
-              </div>
+                ))
+              )}
             </div>
           </>
         )}

@@ -17,6 +17,7 @@ export async function GET() {
         success: true,
         data: {
           commissionRate: 0.02, // Default 2%
+          minConsecutiveTenor: 10, // Default 10 tenors
         },
       });
     }
@@ -25,6 +26,7 @@ export async function GET() {
       success: true,
       data: {
         commissionRate: settings.config.commissionRate,
+        minConsecutiveTenor: settings.config.minConsecutiveTenor ?? 10,
       },
     });
   } catch (error) {
@@ -54,7 +56,7 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    const { commissionRate } = await request.json();
+    const { commissionRate, minConsecutiveTenor } = await request.json();
 
     // Validate commission rate
     if (
@@ -81,16 +83,47 @@ export async function PUT(request: NextRequest) {
       );
     }
 
+    // Validate minConsecutiveTenor if provided
+    if (minConsecutiveTenor !== undefined) {
+      if (typeof minConsecutiveTenor !== "number" || !Number.isInteger(minConsecutiveTenor)) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: "Minimum consecutive tenor must be an integer",
+          },
+          { status: 400 }
+        );
+      }
+
+      if (minConsecutiveTenor < 1 || minConsecutiveTenor > 60) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: "Minimum consecutive tenor must be between 1 and 60",
+          },
+          { status: 400 }
+        );
+      }
+    }
+
     await dbConnect();
+
+    // Prepare update object
+    const updateObj: any = {
+      "config.commissionRate": commissionRate,
+      updatedBy: session.user.id,
+    };
+
+    // Add minConsecutiveTenor if provided
+    if (minConsecutiveTenor !== undefined) {
+      updateObj["config.minConsecutiveTenor"] = minConsecutiveTenor;
+    }
 
     // Update or create system settings
     const settings = await Settings.findOneAndUpdate(
       { type: "system" },
       {
-        $set: {
-          "config.commissionRate": commissionRate,
-          updatedBy: session.user.id,
-        },
+        $set: updateObj,
       },
       {
         new: true,
@@ -103,8 +136,9 @@ export async function PUT(request: NextRequest) {
       success: true,
       data: {
         commissionRate: settings.config.commissionRate,
+        minConsecutiveTenor: settings.config.minConsecutiveTenor ?? 10,
       },
-      message: "Commission rate updated successfully",
+      message: "Commission settings updated successfully",
     });
   } catch (error) {
     console.error("Error updating commission rate:", error);

@@ -16,7 +16,7 @@ import {
   Search,
   Activity,
   PieChart,
-  CreditCard,
+  // CreditCard,
 } from "lucide-react";
 import { signOut, useSession } from "next-auth/react";
 import Image from "next/image";
@@ -48,12 +48,12 @@ const navigation = [
     icon: ClipboardCheck,
     color: "text-emerald-600",
   },
-  {
-    name: "Kelola Cicilan",
-    href: "/admin/cicilan",
-    icon: CreditCard,
-    color: "text-orange-600",
-  },
+  // {
+  //   name: "Kelola Cicilan",
+  //   href: "/admin/cicilan",
+  //   icon: CreditCard,
+  //   color: "text-orange-600",
+  // },
   {
     name: "Manajemen Investor",
     href: "/admin/investors",
@@ -176,9 +176,27 @@ export function AdminLayout({ children }: AdminLayoutProps) {
   const { data: session } = useSession();
   const { theme } = useTheme();
   const [mounted, setMounted] = useState(false);
+  const [pendingRequestsCount, setPendingRequestsCount] = useState(0);
 
   useEffect(() => {
     setMounted(true);
+  }, []);
+
+  // Fetch pending requests count on mount
+  useEffect(() => {
+    const fetchPendingRequests = async () => {
+      try {
+        const response = await fetch('/api/admin/plant-requests?status=pending&limit=100');
+        if (response.ok) {
+          const data = await response.json();
+          setPendingRequestsCount(data.data?.length || 0);
+        }
+      } catch (error) {
+        console.error('Error fetching pending requests:', error);
+      }
+    };
+
+    fetchPendingRequests();
   }, []);
 
   // Debug: log theme/mounted to help verify runtime theme value
@@ -322,6 +340,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
                   )}
                   onClick={() => setSidebarOpen(false)} // Close sidebar on mobile when clicking nav item
                 >
+                  <div className="flex items-center gap-3 flex-1 min-w-0">
                   <div
                     className={getThemeClasses(
                       `w-8 h-8 sm:w-9 sm:h-9 flex items-center justify-center rounded-lg mr-1 transition-all duration-300 ${
@@ -392,7 +411,19 @@ export function AdminLayout({ children }: AdminLayoutProps) {
                       )}
                     />
                   </div>
-                  <span className="truncate">{item.name}</span>
+                  <span className="truncate flex-1">{item.name}</span>
+                  {/* Notification badge for Kelola Staff */}
+                  {item.name === "Kelola Staff" && pendingRequestsCount > 0 && (
+                    <span
+                      className={getThemeClasses(
+                        "flex-shrink-0 min-w-[20px] h-5 px-1.5 rounded-full bg-red-500 text-white text-xs font-bold flex items-center justify-center dark:bg-red-600",
+                        "!bg-[#FF1744] dark:!bg-[#FF1744]"
+                      )}
+                    >
+                      {pendingRequestsCount > 99 ? '99+' : pendingRequestsCount}
+                    </span>
+                  )}
+                  </div>
                 </Link>
               </motion.div>
             );

@@ -15,6 +15,8 @@ import {
   AlertTriangle,
   X,
   Download,
+  Bell,
+  // CheckCircle,
 } from "lucide-react";
 
 interface MarketingStaff {
@@ -70,6 +72,8 @@ export default function MarketingHeadPage() {
   const [error, setError] = useState("");
   const [isExporting, setIsExporting] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [recentCommissions, setRecentCommissions] = useState<any[]>([]);
+  const [showNotifications, setShowNotifications] = useState(false);
 
   useEffect(() => {
     setMounted(true);
@@ -113,6 +117,7 @@ export default function MarketingHeadPage() {
 
   useEffect(() => {
     fetchData();
+    fetchRecentCommissions();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -151,6 +156,20 @@ export default function MarketingHeadPage() {
       }
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchRecentCommissions = async () => {
+    try {
+      const response = await fetch(
+        "/api/admin/marketing/notifications/recent-commissions?limit=10&hours=168"
+      );
+      if (response.ok) {
+        const data = await response.json();
+        setRecentCommissions(data.data.commissions);
+      }
+    } catch (error) {
+      console.error("Error fetching recent commissions:", error);
     }
   };
 
@@ -445,6 +464,266 @@ export default function MarketingHeadPage() {
           </div>
         </motion.div>
 
+        {/* Recent Commissions Notification - Modern Compact Design */}
+        {recentCommissions.length > 0 && (
+          <motion.div
+            className="mb-6 relative"
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3, duration: 0.4 }}
+          >
+            {/* Compact Header Banner */}
+            <div
+              className={getThemeClasses(
+                "bg-white/90 dark:bg-gray-800/90 backdrop-blur-md border border-gray-200 dark:border-gray-700 rounded-xl shadow-sm hover:shadow-md transition-shadow cursor-pointer",
+                "!bg-white/95 !border-[#FFC1CC]/30"
+              )}
+              onClick={() => setShowNotifications(!showNotifications)}
+            >
+              <div className="px-4 py-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div
+                      className={getThemeClasses(
+                        "relative p-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg",
+                        "!bg-[#FFF0F3]"
+                      )}
+                    >
+                      <Bell
+                        className={getThemeClasses(
+                          "w-4 h-4 text-blue-600 dark:text-blue-400",
+                          "!text-[#4c1d1d]"
+                        )}
+                      />
+                      {recentCommissions.length > 0 && (
+                        <span
+                          className={getThemeClasses(
+                            "absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center",
+                            "!bg-[#4c1d1d]"
+                          )}
+                        >
+                          {recentCommissions.length > 9
+                            ? "9+"
+                            : recentCommissions.length}
+                        </span>
+                      )}
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <h3
+                          className={getThemeClasses(
+                            "text-sm font-semibold text-gray-900 dark:text-white",
+                            "!text-[#4c1d1d]"
+                          )}
+                        >
+                          Komisi Minggu Ini
+                        </h3>
+                        <span
+                          className={getThemeClasses(
+                            "px-2 py-0.5 text-xs font-medium bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300 rounded-full",
+                            "!bg-[#FFC1CC]/40 !text-[#4c1d1d]"
+                          )}
+                        >
+                          {recentCommissions.length} baru
+                        </span>
+                      </div>
+                      <p
+                        className={getThemeClasses(
+                          "text-xs text-gray-600 dark:text-gray-400 mt-0.5",
+                          "!text-[#6b7280]"
+                        )}
+                      >
+                        Total:{" "}
+                        {formatCurrency(
+                          recentCommissions.reduce(
+                            (sum: number, c: any) => sum + c.commissionAmount,
+                            0
+                          )
+                        )}
+                      </p>
+                    </div>
+                  </div>
+                  <motion.div
+                    animate={{ rotate: showNotifications ? 180 : 0 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    <svg
+                      className={getThemeClasses(
+                        "w-5 h-5 text-gray-400 dark:text-gray-500",
+                        "!text-[#6b7280]"
+                      )}
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M19 9l-7 7-7-7"
+                      />
+                    </svg>
+                  </motion.div>
+                </div>
+              </div>
+            </div>
+
+            {/* Expandable Details Dropdown */}
+            <AnimatePresence>
+              {showNotifications && (
+                <motion.div
+                  className={getThemeClasses(
+                    "mt-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg overflow-hidden",
+                    "!bg-white !border-[#FFC1CC]/30"
+                  )}
+                  initial={{ opacity: 0, height: 0, y: -10 }}
+                  animate={{ opacity: 1, height: "auto", y: 0 }}
+                  exit={{ opacity: 0, height: 0, y: -10 }}
+                  transition={{ duration: 0.3, ease: "easeInOut" }}
+                >
+                  <div className="max-h-[400px] overflow-y-auto">
+                    <div className="divide-y divide-gray-100 dark:divide-gray-700">
+                      {recentCommissions.map(
+                        (commission: any, index: number) => (
+                          <motion.div
+                            key={commission._id}
+                            className={getThemeClasses(
+                              "p-3 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors",
+                              "hover:!bg-[#FFF7F9]"
+                            )}
+                            initial={{ opacity: 0, x: -20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            transition={{ delay: index * 0.05, duration: 0.2 }}
+                          >
+                            <div className="flex items-start gap-3">
+                              {/* Icon/Avatar */}
+                              <div
+                                className={getThemeClasses(
+                                  "flex-shrink-0 w-8 h-8 bg-gradient-to-br from-green-100 to-emerald-100 dark:from-green-900/30 dark:to-emerald-900/30 rounded-full flex items-center justify-center",
+                                  "!bg-gradient-to-br !from-[#B5EAD7]/40 !to-[#C7CEEA]/40"
+                                )}
+                              >
+                                <DollarSign
+                                  className={getThemeClasses(
+                                    "w-4 h-4 text-green-600 dark:text-green-400",
+                                    "!text-[#4c1d1d]"
+                                  )}
+                                />
+                              </div>
+
+                              {/* Content */}
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-start justify-between gap-2 mb-1">
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <p
+                                    className={getThemeClasses(
+                                      "text-sm font-semibold text-gray-900 dark:text-white truncate",
+                                      "!text-[#4c1d1d]"
+                                    )}
+                                  >
+                                    {commission.marketingStaffId?.fullName || "Unknown"}
+                                    {commission.marketingStaffId?.userCode && (
+                                      <span
+                                        className={getThemeClasses(
+                                          "ml-1.5 text-xs font-normal text-gray-500 dark:text-gray-400",
+                                          "!text-[#6b7280]"
+                                        )}
+                                      >
+                                        ({commission.marketingStaffId.userCode})
+                                      </span>
+                                    )}
+                                  </p>
+                                  <span
+                                    className={getThemeClasses(
+                                      "px-1.5 py-0.5 text-[10px] font-mono font-semibold bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300 rounded",
+                                      "!bg-[#FFC1CC]/30 !text-[#4c1d1d]"
+                                    )}
+                                  >
+                                    {commission.referralCodeUsed}
+                                  </span>
+                                </div>
+                                <p
+                                  className={getThemeClasses(
+                                    "text-xs text-gray-500 dark:text-gray-400 whitespace-nowrap",
+                                    "!text-[#6b7280]"
+                                  )}
+                                >
+                                  {new Date(
+                                    commission.createdAt
+                                  ).toLocaleDateString("id-ID", {
+                                    month: "short",
+                                    day: "numeric",
+                                    hour: "2-digit",
+                                    minute: "2-digit",
+                                  })}
+                                </p>
+                              </div>
+
+                                <p
+                                  className={getThemeClasses(
+                                    "text-xs text-gray-600 dark:text-gray-400 mb-2 truncate",
+                                    "!text-[#6b7280]"
+                                  )}
+                                >
+                                  {commission.customerName}
+                                </p>
+
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <span
+                                    className={getThemeClasses(
+                                      "text-sm font-bold text-green-600 dark:text-green-400",
+                                      "!text-[#4c1d1d]"
+                                    )}
+                                  >
+                                    {formatCurrency(
+                                      commission.commissionAmount
+                                    )}
+                                  </span>
+                                  <span className="text-gray-300 dark:text-gray-600">
+                                    •
+                                  </span>
+                                  <span
+                                    className={`px-2 py-0.5 text-[10px] font-medium rounded-full ${
+                                      commission.paymentType ===
+                                      "full-investment"
+                                        ? "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300"
+                                        : "bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300"
+                                    }`}
+                                  >
+                                    {commission.paymentType ===
+                                    "full-investment"
+                                      ? "Lunas"
+                                      : "Cicilan"}
+                                  </span>
+                                  {commission.productName && (
+                                    <>
+                                      <span className="text-gray-300 dark:text-gray-600">
+                                        •
+                                      </span>
+                                      <span
+                                        className={getThemeClasses(
+                                          "text-[10px] text-gray-500 dark:text-gray-400 truncate",
+                                          "!text-[#6b7280]"
+                                        )}
+                                      >
+                                        {commission.productName}
+                                      </span>
+                                    </>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          </motion.div>
+                        )
+                      )}
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </motion.div>
+        )}
+
         {/* Error Display */}
         <AnimatePresence>
           {error && (
@@ -691,7 +970,8 @@ export default function MarketingHeadPage() {
                   "!text-[#6b7280]"
                 )}
               >
-                Menampilkan {filteredStaff.length} dari {marketingStaff.length} staff marketing
+                Menampilkan {filteredStaff.length} dari {marketingStaff.length}{" "}
+                staff marketing
               </div>
             )}
           </div>
@@ -787,155 +1067,158 @@ export default function MarketingHeadPage() {
                   </tr>
                 ) : (
                   filteredStaff.map((staff) => (
-                  <tr
-                    key={staff._id}
-                    className={getThemeClasses(
-                      "hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors",
-                      ""
-                    )}
-                  >
-                    <td className="px-6 py-4">
-                      <div>
-                        <p
-                          className={getThemeClasses(
-                            "font-medium text-gray-900 dark:text-white",
-                            ""
-                          )}
-                        >
-                          {staff.fullName}
-                        </p>
-                        <p
-                          className={getThemeClasses(
-                            "text-sm text-gray-600 dark:text-gray-300",
-                            ""
-                          )}
-                        >
-                          {staff.email}
-                        </p>
-                        <p
-                          className={getThemeClasses(
-                            "text-xs text-gray-500 dark:text-gray-400",
-                            ""
-                          )}
-                        >
-                          {staff.phoneNumber}
-                        </p>
-                      </div>
-                    </td>
+                    <tr
+                      key={staff._id}
+                      className={getThemeClasses(
+                        "hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors",
+                        ""
+                      )}
+                    >
+                      <td className="px-6 py-4">
+                        <div>
+                          <p
+                            className={getThemeClasses(
+                              "font-medium text-gray-900 dark:text-white",
+                              ""
+                            )}
+                          >
+                            {staff.fullName}
+                          </p>
+                          <p
+                            className={getThemeClasses(
+                              "text-sm text-gray-600 dark:text-gray-300",
+                              ""
+                            )}
+                          >
+                            {staff.email}
+                          </p>
+                          <p
+                            className={getThemeClasses(
+                              "text-xs text-gray-500 dark:text-gray-400",
+                              ""
+                            )}
+                          >
+                            {staff.phoneNumber}
+                          </p>
+                        </div>
+                      </td>
 
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-2">
-                        {staff.referralCode ? (
-                          <code
-                            className={getThemeClasses(
-                              "px-3 py-1 bg-gray-100 rounded-lg text-sm font-mono font-semibold dark:bg-gray-900/30 dark:text-gray-200",
-                              "!bg-[#FFF7F9] !text-[#4c1d1d]"
-                            )}
-                          >
-                            {staff.referralCode}
-                          </code>
-                        ) : (
-                          <span
-                            className={getThemeClasses(
-                              "text-sm text-gray-500 italic dark:text-gray-400",
-                              "!text-[#4c1d1d]"
-                            )}
-                          >
-                            Belum ada kode
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-2">
+                          {staff.referralCode ? (
+                            <code
+                              className={getThemeClasses(
+                                "px-3 py-1 bg-gray-100 rounded-lg text-sm font-mono font-semibold dark:bg-gray-900/30 dark:text-gray-200",
+                                "!bg-[#FFF7F9] !text-[#4c1d1d]"
+                              )}
+                            >
+                              {staff.referralCode}
+                            </code>
+                          ) : (
+                            <span
+                              className={getThemeClasses(
+                                "text-sm text-gray-500 italic dark:text-gray-400",
+                                "!text-[#4c1d1d]"
+                              )}
+                            >
+                              Belum ada kode
+                            </span>
+                          )}
+                        </div>
+                      </td>
+
+                      <td className="px-6 py-4">
+                        <p
+                          className={getThemeClasses(
+                            "font-semibold text-gray-900 dark:text-white",
+                            ""
+                          )}
+                        >
+                          {formatCurrency(
+                            staff.commissionSummary.totalCommission
+                          )}
+                        </p>
+                      </td>
+
+                      <td className="px-6 py-4">
+                        <p
+                          className={getThemeClasses(
+                            "font-semibold text-gray-900 dark:text-white",
+                            ""
+                          )}
+                        >
+                          {staff.commissionSummary.totalReferrals}
+                        </p>
+                        <div
+                          className={getThemeClasses(
+                            "flex gap-2 text-xs text-gray-600 mt-1",
+                            "dark:text-gray-300"
+                          )}
+                        >
+                          <span>
+                            Lunas: {staff.commissionSummary.fullInvestments}
                           </span>
-                        )}
-                      </div>
-                    </td>
+                          <span>
+                            Cicilan:{" "}
+                            {staff.commissionSummary.cicilanInvestments}
+                          </span>
+                        </div>
+                      </td>
 
-                    <td className="px-6 py-4">
-                      <p
-                        className={getThemeClasses(
-                          "font-semibold text-gray-900 dark:text-white",
-                          ""
-                        )}
-                      >
-                        {formatCurrency(
-                          staff.commissionSummary.totalCommission
-                        )}
-                      </p>
-                    </td>
-
-                    <td className="px-6 py-4">
-                      <p
-                        className={getThemeClasses(
-                          "font-semibold text-gray-900 dark:text-white",
-                          ""
-                        )}
-                      >
-                        {staff.commissionSummary.totalReferrals}
-                      </p>
-                      <div
-                        className={getThemeClasses(
-                          "flex gap-2 text-xs text-gray-600 mt-1",
-                          "dark:text-gray-300"
-                        )}
-                      >
-                        <span>
-                          Lunas: {staff.commissionSummary.fullInvestments}
-                        </span>
-                        <span>
-                          Cicilan: {staff.commissionSummary.cicilanInvestments}
-                        </span>
-                      </div>
-                    </td>
-
-                    <td className="px-6 py-4">
-                      <span
-                        className={getThemeClasses(
-                          `px-2 py-1 text-xs rounded-full ${
-                            staff.isActive
-                              ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300"
-                              : "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300"
-                          }`,
-                          ""
-                        )}
-                      >
-                        {staff.isActive ? "Aktif" : "Tidak Aktif"}
-                      </span>
-                    </td>
-
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-2">
-                        <button
-                          onClick={() => handleEditReferralCode(staff)}
+                      <td className="px-6 py-4">
+                        <span
                           className={getThemeClasses(
-                            "p-1 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded transition-colors",
-                            "dark:text-blue-300 dark:hover:bg-blue-900/30"
-                          )}
-                          title="Ubah kode referral"
-                        >
-                          <Edit3 className="w-4 h-4" />
-                        </button>
-
-                        <button
-                          onClick={() => handleGenerateReferralCode(staff._id)}
-                          className={getThemeClasses(
-                            "p-1 text-green-600 hover:text-green-800 hover:bg-green-50 rounded transition-colors",
-                            "dark:text-green-300 dark:hover:bg-green-900/30"
-                          )}
-                          title="Buat kode baru"
-                        >
-                          <RefreshCw className="w-4 h-4" />
-                        </button>
-
-                        <button
-                          onClick={() => handleViewCommissionHistory(staff)}
-                          className={getThemeClasses(
-                            "p-1 text-gray-600 hover:text-gray-800 hover:bg-gray-50 rounded transition-colors dark:text-white dark:hover:text-white dark:hover:bg-gray-800/30",
+                            `px-2 py-1 text-xs rounded-full ${
+                              staff.isActive
+                                ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300"
+                                : "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300"
+                            }`,
                             ""
                           )}
-                          title="Lihat riwayat komisi"
                         >
-                          <Eye className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
+                          {staff.isActive ? "Aktif" : "Tidak Aktif"}
+                        </span>
+                      </td>
+
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => handleEditReferralCode(staff)}
+                            className={getThemeClasses(
+                              "p-1 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded transition-colors",
+                              "dark:text-blue-300 dark:hover:bg-blue-900/30"
+                            )}
+                            title="Ubah kode referral"
+                          >
+                            <Edit3 className="w-4 h-4" />
+                          </button>
+
+                          <button
+                            onClick={() =>
+                              handleGenerateReferralCode(staff._id)
+                            }
+                            className={getThemeClasses(
+                              "p-1 text-green-600 hover:text-green-800 hover:bg-green-50 rounded transition-colors",
+                              "dark:text-green-300 dark:hover:bg-green-900/30"
+                            )}
+                            title="Buat kode baru"
+                          >
+                            <RefreshCw className="w-4 h-4" />
+                          </button>
+
+                          <button
+                            onClick={() => handleViewCommissionHistory(staff)}
+                            className={getThemeClasses(
+                              "p-1 text-gray-600 hover:text-gray-800 hover:bg-gray-50 rounded transition-colors dark:text-white dark:hover:text-white dark:hover:bg-gray-800/30",
+                              ""
+                            )}
+                            title="Lihat riwayat komisi"
+                          >
+                            <Eye className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
                   ))
                 )}
               </tbody>
