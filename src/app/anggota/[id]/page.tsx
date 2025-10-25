@@ -282,11 +282,8 @@ export default function MemberDetailPage(props: {
     wsData.push(B("Total Keuntungan", member!.totalProfit));
     wsData.push(
       B(
-        "ROI Keseluruhan",
-        `${(
-          (member!.totalProfit / (member!.totalInvestment || 1)) *
-          100
-        ).toFixed(2)}%`
+        "",
+        ``
       )
     );
     wsData.push(B("Jumlah Investasi", investments.length));
@@ -306,7 +303,6 @@ export default function MemberDetailPage(props: {
         "Invoice",
         "Jumlah Investasi",
         "Keuntungan",
-        "ROI",
         "Status"
       )
     );
@@ -324,7 +320,7 @@ export default function MemberDetailPage(props: {
       const tanamanProduk =
         (inv.plantInstanceId && plantTypeById.get(inv.plantInstanceId)) || "-";
 
-      const roiStr = `${(inv.roi ?? 0).toFixed(2)}%`;
+      // const roiStr = `${(inv.roi ?? 0).toFixed(2)}%`;
 
       wsData.push(
         B(
@@ -337,7 +333,6 @@ export default function MemberDetailPage(props: {
           invoice,
           inv.amount || 0,
           inv.profit || 0,
-          roiStr,
           status
         )
       );
@@ -349,16 +344,16 @@ export default function MemberDetailPage(props: {
     function pushMonthlyTable(title: string, rows: MonthlyRow[]) {
       wsData.push(B(title));
       wsData.push(
-        B("Bulan", "Pemasukan", "Pengeluaran", "Keuntungan Bersih", "ROI")
+        B("Bulan", "Pemasukan", "Pengeluaran", "Keuntungan Bersih",)
       );
       rows.forEach((r) => {
-        const roi = r.income > 0 ? (r.profit / r.income) * 100 : 0;
+        // const roi = r.income > 0 ? (r.profit / r.income) * 100 : 0;
         const bulanLabel = new Date(r.month + "-01").toLocaleDateString(
           "id-ID",
           { month: "long", year: "numeric" }
         );
         wsData.push(
-          B(bulanLabel, r.income, r.expense, r.profit, `${roi.toFixed(2)}%`)
+          B(bulanLabel, r.income, r.expense, r.profit,)
         );
       });
       wsData.push(B("")); // spacer

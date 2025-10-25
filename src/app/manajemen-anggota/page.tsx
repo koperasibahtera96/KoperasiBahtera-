@@ -152,7 +152,7 @@ function BulkFinanceBar() {
 
   // === NEW: filter baris berdasarkan Kav/Blok dan Anggota ===
   const [filterKav, setFilterKav] = useState<string>("");
-  const [filterMember, setFilterMember] = useState<string>("");
+const [filterMember, setFilterMember] = useState<string>("");
 
   const showToast = (t: Omit<Toast, "open">) => {
     setToast({ open: true, ...t });
@@ -222,36 +222,102 @@ function BulkFinanceBar() {
     field: "income" | "expense" | "note",
     value: number | string
   ) => {
-    // hanya terapkan ke baris TERSELEKSI (checked) — ini konsisten dgn logic lama
+    // hanya terapkan ke baris TERSELEKSI (checked) — konsisten dgn logic lama
     setRows((prev) =>
       prev.map((r) => (r.checked ? { ...r, [field]: value } : r))
     );
   };
 
-  // === DI-UBAH: enrich Kav/Blok via /api/kv ===
+  // ===== Helpers untuk memuat SEMUA data saat "Semua" dipilih =====
+  const FALLBACK_TYPES = ["alpukat", "aren", "gaharu", "jengkol"];
+
+  const fetchPlantTypes = async (): Promise<string[]> => {
+    try {
+      const t = await fetch("/api/plant-types", { cache: "no-store" });
+      if (t.ok) {
+        const arr = await t.json();
+        // dukung bentuk [{name:'alpukat'}] atau array string
+        const names = Array.isArray(arr)
+          ? arr.map((x: any) => (typeof x === "string" ? x : x?.name)).filter(Boolean)
+          : [];
+        if (names.length) return names;
+      }
+    } catch {
+      // ignore
+    }
+    return FALLBACK_TYPES;
+  };
+
+  const fetchByType = async (pt: string) => {
+    const r = await fetch(
+      `/api/manajemen-anggota/instances-by-planttype?plantType=${encodeURIComponent(
+        pt
+      )}`,
+      { cache: "no-store" }
+    );
+    if (!r.ok) return [];
+    const d = await r.json();
+    const items: {
+      instanceId: string;
+      contractNumber?: string;
+      memberName: string;
+      memberId: string;
+    }[] = d?.items || [];
+    return items;
+  };
+
+  // === DI-UBAH: fetchInstances sekarang mendukung 'all' ===
   const fetchInstances = async (pt: string) => {
     if (!pt) return;
     setLoading(true);
     try {
-      const r = await fetch(
-        `/api/manajemen-anggota/instances-by-planttype?plantType=${encodeURIComponent(
-          pt
-        )}`,
-        { cache: "no-store" }
-      );
-      if (!r.ok) throw new Error("gagal load instances");
-      const data: {
-        items: {
-          instanceId: string;
-          contractNumber?: string;
-          memberName: string;
-          memberId: string;
-        }[];
-      } = await r.json();
+      let baseItems:
+        | {
+            instanceId: string;
+            contractNumber?: string;
+            memberName: string;
+            memberId: string;
+          }[]
+        | [] = [];
 
-      const baseItems = data.items || [];
+      if (pt === "all") {
+        // 1) Coba endpoint khusus semua
+        let okAll = false;
+        try {
+          const rAll = await fetch(
+            "/api/manajemen-anggota/instances-all",
+            { cache: "no-store" }
+          );
+          if (rAll.ok) {
+            const jAll = await rAll.json();
+            baseItems = jAll?.items || [];
+            okAll = Array.isArray(baseItems) && baseItems.length >= 0;
+          }
+        } catch {
+          // abaikan dan fallback
+        }
 
-      // enrich kav/blok dari /api/kv (sama seperti di laporan-harian)
+        // 2) Jika endpoint khusus tidak ada, muat semua plant types & gabungkan
+        if (!okAll) {
+          const types = await fetchPlantTypes();
+          const results = await Promise.all(types.map(fetchByType));
+          const merged = results.flat();
+
+          // pastikan unik berdasarkan instanceId
+          const uniqMap = new Map<string, any>();
+          merged.forEach((x) => {
+            if (x?.instanceId && !uniqMap.has(x.instanceId)) {
+              uniqMap.set(x.instanceId, x);
+            }
+          });
+          baseItems = Array.from(uniqMap.values());
+        }
+      } else {
+        // mode spesifik plant type seperti sebelumnya
+        baseItems = await fetchByType(pt);
+      }
+
+      // enrich kav/blok (sama seperti sebelumnya), dilakukan SEKALI untuk seluruh list
       let enriched = baseItems.map((x) => ({
         ...x,
         blok: null as any,
@@ -261,17 +327,11 @@ function BulkFinanceBar() {
         const idsParam = baseItems.map((x) => x.instanceId).join(",");
         const kvRes = await fetch(
           `/api/manajemen-anggota/kv?ids=${encodeURIComponent(idsParam)}`,
-          {
-            cache: "no-store",
-          }
+          { cache: "no-store" }
         );
         if (kvRes.ok) {
           const kvJson: {
-            items: {
-              instanceId: string;
-              blok: string | null;
-              kavling: string | null;
-            }[];
+            items: { instanceId: string; blok: string | null; kavling: string | null }[];
           } = await kvRes.json();
           const kvMap = new Map(
             (kvJson.items || []).map((k) => [String(k.instanceId), k])
@@ -310,7 +370,7 @@ function BulkFinanceBar() {
       showToast({
         type: "error",
         title: "Gagal memuat instance",
-        message: "Coba ganti PlantType atau muat ulang.",
+        message: "Coba pilih plant type lain atau muat ulang.",
       });
     } finally {
       setLoading(false);
@@ -325,7 +385,6 @@ function BulkFinanceBar() {
         income: r.income,
         expense: r.expense,
         note: r.note?.trim() || "Bulk input",
-        // addedBy dari user login (UI only; server boleh abaikan bila tidak dipakai)
         addedBy: currentUserName || undefined,
       }));
 
@@ -406,7 +465,18 @@ function BulkFinanceBar() {
                   "!bg-white/95 !border-[#FFC1CC]/30"
                 )}
               >
-                {/* sesuaikan daftar berikut dengan PlantType di sistemmu */}
+                {/* ====== Opsi 'Semua' untuk memuat seluruh data ====== */}
+                <SelectItem
+                  value="all"
+                  className={getThemeClasses(
+                    "text-[#324D3E] dark:text-white hover:bg-[#324D3E]/10 dark:hover:bg-gray-600",
+                    "!text-[#4c1d1d] hover:!bg-[#FFC1CC]/20"
+                  )}
+                >
+                  Semua
+                </SelectItem>
+
+                {/* Daftar PlantType spesifik (as is) */}
                 <SelectItem
                   value="alpukat"
                   className={getThemeClasses(
@@ -918,17 +988,11 @@ export default function ManajemenAnggotaPage() {
                 icon={<TrendingUp className="h-5 w-5" />}
                 colorClass="text-chart-3"
               />
-              {/* <SummaryCard
-                title="Rata-rata ROI"
-                value={kpi.loading ? "…" : formatPercentage(kpi.avgROI)}
-                icon={<BarChart3 className="h-5 w-5" />}
-                colorClass="text-chart-4"
-              /> */}
+              {/* ROI card disembunyikan seperti sebelumnya */}
             </div>
           )}
         </motion.header>
 
-        {/* ======= Pembatas UI (garis + spasi) sebelum Bulk ======= */}
         <div className="border-t border-[#324D3E]/10 dark:border-gray-700 my-2" />
 
         {/* === Bulk Input === */}
@@ -996,7 +1060,7 @@ export default function ManajemenAnggotaPage() {
                 )}
               </div>
 
-              {/* ===== Pagination dipindah ke bawah ===== */}
+              {/* Pagination */}
               <div className="mt-6 flex items-center justify-center gap-3">
                 <Button
                   variant="outline"
@@ -1290,24 +1354,7 @@ function MemberCard({ member }: { member: Member }) {
               {formatCurrency(member.totalProfit)}
             </p>
           </div>
-          {/* <div>
-            <p
-              className={getThemeClasses(
-                "text-sm font-medium text-[#889063] dark:text-gray-200 mb-1 transition-colors durataion-300",
-                "!text-[#6b7280]"
-              )}
-            >
-              ROI
-            </p>
-            <p
-              className={getThemeClasses(
-                "text-lg font-bold text-blue-600 dark:text-blue-400 transition-colors durataion-300",
-                "!text-[#7c3aed]"
-              )}
-            >
-              {formatPercentage(member.overallROI)}
-            </p>
-          </div> */}
+          {/* ROI disembunyikan seperti sebelumnya */}
         </div>
       </div>
 
@@ -1350,7 +1397,7 @@ function MemberCard({ member }: { member: Member }) {
                     "!text-[#7c3aed]"
                   )}
                 >
-                  {/* {formatPercentage(investment.roi)} */}
+                  {/* ROI tidak ditampilkan */}
                 </span>
               </div>
               <div

@@ -38,6 +38,16 @@ import {
 import { useTheme } from "next-themes";
 import * as React from "react";
 
+/* ⬇️ Tambahan import untuk dropdown & router (UI saja) */
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+} from "@/components/ui-finance/dropdown-menu";
+import { useRouter } from "next/navigation";
+/* ⬆️ */
+
 const BRUTALIST_COLORS = [
   "#FF6B35",
   "#F7931E",
@@ -79,6 +89,10 @@ export default function LaporanPengeluaranPage() {
   const { theme, systemTheme } = useTheme();
   const isDark = (theme === "system" ? systemTheme : theme) === "dark";
   const [mounted, setMounted] = React.useState(false);
+
+  /* ⬇️ Router dipakai oleh dropdown */
+  const router = useRouter();
+  /* ⬆️ */
 
   React.useEffect(() => {
     setMounted(true);
@@ -816,15 +830,14 @@ export default function LaporanPengeluaranPage() {
               >
                 {headerDesc}
               </p>
-              {/* Secondary nav: Laporan <-> Pendaftaran (rapi di bawah judul) */}
-              <div className="mt-3">
+              {/* Secondary nav lama: Laporan <-> Pendaftaran (dipertahankan, disembunyikan) */}
+              <div className="mt-3 hidden">
                 <div
                   className={getThemeClasses(
                     "inline-flex overflow-hidden rounded-2xl border border-black/10 dark:border-gray-600 bg-white/80 dark:bg-gray-700/80 backdrop-blur px-1 py-1 transition-colors duration-300",
                     "!border-[#FFC1CC]/30 !bg-white/90"
                   )}
                 >
-                  {/* Halaman ini (Laporan) jadi aktif/disabled */}
                   <button
                     className={getThemeClasses(
                       "px-3 py-1 text-xs font-bold rounded-xl bg-black/5 dark:bg-gray-600/50 cursor-default text-[#324D3E] dark:text-white transition-colors duration-300",
@@ -835,8 +848,6 @@ export default function LaporanPengeluaranPage() {
                   >
                     Laporan
                   </button>
-
-                  {/* Link ke /pendaftaran */}
                   <Link href="/pendaftaran" className="contents">
                     <button
                       className={getThemeClasses(
@@ -853,56 +864,97 @@ export default function LaporanPengeluaranPage() {
             </div>
           </div>
 
-          <div className="flex gap-3 items-center">
-            {/* Toggle kecil – ditambah tombol "Semua" */}
-            <div
-              className={getThemeClasses(
-                "inline-flex rounded-2xl overflow-hidden border border-black/60 dark:border-gray-600 transition-colors duration-300",
-                "!border-[#FFC1CC]/50"
-              )}
-            >
-              <button
+          {/* Kanan: grup mode + dropdown di bawahnya + Export */}
+          <div className="flex gap-3 items-start">
+            <div className="flex flex-col">
+              {/* Toggle kecil – ditambah tombol "Semua" */}
+              <div
                 className={getThemeClasses(
-                  `px-3 py-1 text-xs font-bold transition-colors duration-300 ${
-                    isAll ? "bg-[#E9FFEF] text-[#324D3E] dark:bg-emerald-500/30 dark:text-white" : "bg-white text-[#324D3E] dark:bg-gray-700 dark:text-white"
-                  }`,
-                  isAll
-                    ? "!bg-[#FFDEE9] !text-[#4c1d1d]"
-                    : "!bg-white !text-[#4c1d1d]"
+                  "inline-flex rounded-2xl overflow-hidden border border-black/60 dark:border-gray-600 transition-colors duration-300",
+                  "!border-[#FFC1CC]/50"
                 )}
-                onClick={() => setMode("all")}
-                title="Lihat Semua"
               >
-                Semua
-              </button>
-              <button
-                className={getThemeClasses(
-                  `px-3 py-1 text-xs font-bold transition-colors duration-300 ${
-                    isExpense ? "bg-[#FFEAA7] text-[#324D3E] dark:bg-red-500/30 dark:text-white" : "bg-white text-[#324D3E] dark:bg-gray-700 dark:text-white"
-                  }`,
-                  isExpense
-                    ? "!bg-[#FFDEE9] !text-[#4c1d1d]"
-                    : "!bg-white !text-[#4c1d1d]"
-                )}
-                onClick={() => setMode("expense")}
-                title="Lihat Pengeluaran"
-              >
-                Pengeluaran
-              </button>
-              <button
-                className={getThemeClasses(
-                  `px-3 py-1 text-xs font-bold transition-colors duration-300 ${
-                    isIncome ? "bg-[#C2F5C0] text-[#324D3E] dark:bg-green-500/30 dark:text-white" : "bg-white text-[#324D3E] dark:bg-gray-700 dark:text-white"
-                  }`,
-                  isIncome
-                    ? "!bg-[#B5EAD7] !text-[#4c1d1d]"
-                    : "!bg-white !text-[#4c1d1d]"
-                )}
-                onClick={() => setMode("income")}
-                title="Lihat Pendapatan"
-              >
-                Pendapatan
-              </button>
+                <button
+                  className={getThemeClasses(
+                    `px-3 py-1 text-xs font-bold transition-colors duration-300 ${
+                      isAll ? "bg-[#E9FFEF] text-[#324D3E] dark:bg-emerald-500/30 dark:text-white" : "bg-white text-[#324D3E] dark:bg-gray-700 dark:text-white"
+                    }`,
+                    isAll
+                      ? "!bg-[#FFDEE9] !text-[#4c1d1d]"
+                      : "!bg-white !text-[#4c1d1d]"
+                  )}
+                  onClick={() => setMode("all")}
+                  title="Lihat Semua"
+                >
+                  Semua
+                </button>
+                <button
+                  className={getThemeClasses(
+                    `px-3 py-1 text-xs font-bold transition-colors duration-300 ${
+                      isExpense ? "bg-[#FFEAA7] text-[#324D3E] dark:bg-red-500/30 dark:text-white" : "bg-white text-[#324D3E] dark:bg-gray-700 dark:text-white"
+                    }`,
+                    isExpense
+                      ? "!bg-[#FFDEE9] !text-[#4c1d1d]"
+                      : "!bg-white !text-[#4c1d1d]"
+                  )}
+                  onClick={() => setMode("expense")}
+                  title="Lihat Pengeluaran"
+                >
+                  Pengeluaran
+                </button>
+                <button
+                  className={getThemeClasses(
+                    `px-3 py-1 text-xs font-bold transition-colors duration-300 ${
+                      isIncome ? "bg-[#C2F5C0] text-[#324D3E] dark:bg-green-500/30 dark:text-white" : "bg-white text-[#324D3E] dark:bg-gray-700 dark:text-white"
+                    }`,
+                    isIncome
+                      ? "!bg-[#B5EAD7] !text-[#4c1d1d]"
+                      : "!bg-white !text-[#4c1d1d]"
+                  )}
+                  onClick={() => setMode("income")}
+                  title="Lihat Pendapatan"
+                >
+                  Pendapatan
+                </button>
+              </div>
+
+              {/* ⬇️ Dropdown Menu Laporan tepat di bawah grup mode */}
+              <div className="mt-2">
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button
+                      className={getThemeClasses(
+                        "px-4 py-2 text-sm font-semibold rounded-2xl border transition-colors duration-200",
+                        "bg-white hover:bg-gray-100 text-[#324D3E] border-gray-300",
+                        // "!bg-[#FFF5BA] !text-[#4c1d1d] hover:!bg-[#FFEAA7]"
+                      )}
+                    >
+                      Laporan ▼
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent
+                    className={getThemeClasses(
+                      "mt-2 rounded-xl border shadow-lg bg-white dark:bg-gray-800",
+                      "!border-[#FFC1CC]/40"
+                    )}
+                    align="start"
+                  >
+                    <DropdownMenuItem
+                      onClick={() => router.push("/laporan-pengeluaran")}
+                      className="cursor-pointer px-3 py-2 text-sm font-medium hover:bg-gray-100"
+                    >
+                      📄 Laporan
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={() => router.push("/pendaftaran")}
+                      className="cursor-pointer px-3 py-2 text-sm font-medium hover:bg-gray-100"
+                    >
+                      🧾 Pendaftaran
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+              {/* ⬆️ */}
             </div>
 
             <motion.button

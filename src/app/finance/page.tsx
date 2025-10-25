@@ -340,7 +340,7 @@ export default function FinancePage() {
         ["", "", "Total Investasi", totals.invest],
         ["", "", "Total Keuntungan", totals.profit],
         ["", "", "Total Pengeluaran", totalExpensesAll],
-        ["", "", "ROI Keseluruhan", `${(totals.roi || 0).toFixed(2)}%`],
+        ["", "", "", ""],
         ["", "", "Jumlah Anggota", totals.investors],
         ["", "", "Jumlah Kontrak", contractsCount],
         ["", "", "", ""],
