@@ -218,11 +218,13 @@ export default function RegisterPage() {
           dateOfBirth: new Date(formData.dateOfBirth),
           ktpAddress: formData.ktpAddress.trim(),
           ktpVillage: formData.ktpVillage.trim(),
+          ktpKecamatan: formData.ktpKecamatan.trim(),
           ktpCity: formData.ktpCity.trim(),
           ktpProvince: formData.ktpProvince,
           ktpPostalCode: formData.ktpPostalCode.trim(),
           domisiliAddress: formData.domisiliAddress.trim(),
           domisiliVillage: formData.domisiliVillage.trim(),
+          domisiliKecamatan: formData.domisiliKecamatan.trim(),
           domisiliCity: formData.domisiliCity.trim(),
           domisiliProvince: formData.domisiliProvince,
           domisiliPostalCode: formData.domisiliPostalCode.trim(),
@@ -322,11 +324,13 @@ export default function RegisterPage() {
         "occupation",
         "ktpAddress",
         "ktpVillage",
+        "ktpKecamatan",
         "ktpCity",
         "ktpProvince",
         "ktpPostalCode",
         "domisiliAddress",
         "domisiliVillage",
+        "domisiliKecamatan",
         "domisiliCity",
         "domisiliProvince",
         "domisiliPostalCode",
@@ -401,11 +405,13 @@ export default function RegisterPage() {
           dateOfBirth: data.dateOfBirth,
           ktpAddress: data.ktpAddress.trim(),
           ktpVillage: data.ktpVillage.trim(),
+          ktpKecamatan: data.ktpKecamatan.trim(),
           ktpCity: data.ktpCity.trim(),
           ktpProvince: data.ktpProvince,
           ktpPostalCode: data.ktpPostalCode.trim(),
           domisiliAddress: data.domisiliAddress.trim(),
           domisiliVillage: data.domisiliVillage.trim(),
+          domisiliKecamatan: data.domisiliKecamatan.trim(),
           domisiliCity: data.domisiliCity.trim(),
           domisiliProvince: data.domisiliProvince,
           domisiliPostalCode: data.domisiliPostalCode.trim(),
@@ -467,14 +473,16 @@ export default function RegisterPage() {
       <div className="absolute inset-0 bg-black/30"></div>
 
       <LandingHeader />
-      <div className="container max-w-6xl mx-auto px-4 py-12 relative z-10">
+      {/* Spacer for fixed navbar */}
+      <div className="h-16 sm:h-20 lg:h-20" aria-hidden="true" />
+      <div className="container max-w-6xl mx-auto px-4 py-8 sm:py-12 relative z-10">
         {/* Header */}
-        <div className="text-center mb-8">
+        <div className="text-center mb-6 sm:mb-8">
           <div className="space-y-2">
-            <h2 className="text-3xl font-bold text-white font-[family-name:var(--font-poppins)]">
+            <h2 className="text-2xl sm:text-3xl font-bold text-white font-[family-name:var(--font-poppins)]">
               Buat Akun Baru
             </h2>
-            <p className="text-white/80">
+            <p className="text-sm sm:text-base text-white/80">
               Daftar untuk mulai berinvestasi tanaman
             </p>
           </div>
@@ -771,6 +779,17 @@ export default function RegisterPage() {
                           showValidation={false}
                         />
                         <ValidationInput
+                          label="Kecamatan"
+                          {...register("ktpKecamatan")}
+                          placeholder="Nama kecamatan"
+                          required
+                          error={errors.ktpKecamatan?.message}
+                          showValidation={false}
+                        />
+                      </FormRow>
+
+                      <FormRow cols={2}>
+                        <ValidationInput
                           label="Kota/Kabupaten"
                           {...register("ktpCity")}
                           placeholder="Nama kota/kabupaten"
@@ -778,6 +797,7 @@ export default function RegisterPage() {
                           error={errors.ktpCity?.message}
                           showValidation={false}
                         />
+                        <div></div>
                       </FormRow>
 
                       <FormRow cols={2}>
@@ -823,12 +843,14 @@ export default function RegisterPage() {
                               const ktpValues = watch();
                               setValue("domisiliAddress", ktpValues.ktpAddress || "");
                               setValue("domisiliVillage", ktpValues.ktpVillage || "");
+                              setValue("domisiliKecamatan", ktpValues.ktpKecamatan || "");
                               setValue("domisiliCity", ktpValues.ktpCity || "");
                               setValue("domisiliProvince", ktpValues.ktpProvince || "");
                               setValue("domisiliPostalCode", ktpValues.ktpPostalCode || "");
                             } else {
                               setValue("domisiliAddress", "");
                               setValue("domisiliVillage", "");
+                              setValue("domisiliKecamatan", "");
                               setValue("domisiliCity", "");
                               setValue("domisiliProvince", "");
                               setValue("domisiliPostalCode", "");
@@ -861,6 +883,17 @@ export default function RegisterPage() {
                           showValidation={false}
                         />
                         <ValidationInput
+                          label="Kecamatan"
+                          {...register("domisiliKecamatan")}
+                          placeholder="Nama kecamatan"
+                          required
+                          error={errors.domisiliKecamatan?.message}
+                          showValidation={false}
+                        />
+                      </FormRow>
+
+                      <FormRow cols={2}>
+                        <ValidationInput
                           label="Kota/Kabupaten"
                           {...register("domisiliCity")}
                           placeholder="Nama kota/kabupaten"
@@ -868,6 +901,7 @@ export default function RegisterPage() {
                           error={errors.domisiliCity?.message}
                           showValidation={false}
                         />
+                        <div></div>
                       </FormRow>
 
                       <FormRow cols={2}>

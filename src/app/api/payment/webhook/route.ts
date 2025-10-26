@@ -188,6 +188,7 @@ export async function POST(request: NextRequest) {
             : null,
           ktpAddress: String(payment.customerData.ktpAddress || "").trim(),
           ktpVillage: String(payment.customerData.ktpVillage || "").trim(),
+          ktpKecamatan: String(payment.customerData.ktpKecamatan || "").trim(),
           ktpCity: String(payment.customerData.ktpCity || "").trim(),
           ktpProvince: String(payment.customerData.ktpProvince || "").trim(),
           ktpPostalCode: String(
@@ -198,6 +199,9 @@ export async function POST(request: NextRequest) {
           ).trim(),
           domisiliVillage: String(
             payment.customerData.domisiliVillage || ""
+          ).trim(),
+          domisiliKecamatan: String(
+            payment.customerData.domisiliKecamatan || ""
           ).trim(),
           domisiliCity: String(payment.customerData.domisiliCity || "").trim(),
           domisiliProvince: String(

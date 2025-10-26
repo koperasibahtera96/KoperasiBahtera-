@@ -88,7 +88,7 @@ export async function GET(req: NextRequest) {
     const contracts = await Contract.find({
       contractId: { $in: contractIds },
     }).select(
-      "contractId adminApprovalStatus status adminApprovedDate paymentAllowed signatureAttempts currentAttempt maxAttempts totalAmount"
+      "contractId adminApprovalStatus status adminApprovedDate paymentAllowed signatureAttempts currentAttempt maxAttempts totalAmount emateraiStamped emateraiStampedUrl"
     );
 
     // Group by cicilanOrderId

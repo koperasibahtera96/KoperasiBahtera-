@@ -28,6 +28,8 @@ export const registrationSchema = z.object({
     .min(1, 'Alamat KTP wajib diisi'),
   ktpVillage: z.string()
     .min(1, 'Desa/Kelurahan KTP wajib diisi'),
+  ktpKecamatan: z.string()
+    .min(1, 'Kecamatan KTP wajib diisi'),
   ktpCity: z.string()
     .min(1, 'Kota/Kabupaten KTP wajib diisi'),
   ktpProvince: z.string()
@@ -39,6 +41,8 @@ export const registrationSchema = z.object({
     .min(1, 'Alamat domisili wajib diisi'),
   domisiliVillage: z.string()
     .min(1, 'Desa/Kelurahan domisili wajib diisi'),
+  domisiliKecamatan: z.string()
+    .min(1, 'Kecamatan domisili wajib diisi'),
   domisiliCity: z.string()
     .min(1, 'Kota/Kabupaten domisili wajib diisi'),
   domisiliProvince: z.string()

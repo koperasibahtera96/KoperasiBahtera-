@@ -162,7 +162,24 @@ export async function POST(
     });
 
     // Stamp contract with e-materai if payment is already completed
-    if (contract.paymentCompleted) {
+    // For full payments: check paymentCompleted flag
+    // For installments: check if first installment has been approved
+    let shouldStamp = false;
+    
+    if (contract.paymentType === 'full') {
+      shouldStamp = contract.paymentCompleted === true;
+    } else if (contract.paymentType === 'cicilan') {
+      // For installments, check if first installment has been approved
+      const Payment = (await import("@/models/Payment")).default;
+      const firstInstallment = await Payment.findOne({
+        cicilanOrderId: contract.contractId,
+        installmentNumber: 1,
+        adminStatus: "approved"
+      });
+      shouldStamp = firstInstallment !== null;
+    }
+    
+    if (shouldStamp) {
       console.log(
         `📋 Admin approved contract with payment already completed - stamping with e-materai: ${contract.contractId}`
       );
