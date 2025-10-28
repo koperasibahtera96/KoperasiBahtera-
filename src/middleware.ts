@@ -22,11 +22,46 @@ export default async function middleware(req: NextRequest) {
 
   const userRole = token.role as string;
 
+  // === PROFILE ACCESS ===
+  // All authenticated users can access profile page (check this first before role restrictions)
+  if (pathname.startsWith("/profile")) {
+    console.log(`✅ ${userRole} access granted to ${pathname}`);
+    return NextResponse.next();
+  }
+
   // === ADMIN ACCESS ===
   // Admin can access everything
   if (userRole === "admin") {
     console.log(`✅ Admin access granted to ${pathname}`);
     return NextResponse.next();
+  }
+
+  // === STAFF ADMIN ACCESS ===
+  // Staff admin can only access specific admin pages
+  if (userRole === "staff_admin") {
+    const allowedStaffAdminPaths = [
+      "/admin",
+      "/admin/verification",
+      "/admin/contract-approvals",
+      "/admin/reviews",
+      "/admin/trees",
+    ];
+
+    const isAllowedPath = allowedStaffAdminPaths.some((path) =>
+      pathname === path || pathname.startsWith(path + "/")
+    );
+
+    if (isAllowedPath) {
+      console.log(`✅ Staff admin access granted to ${pathname}`);
+      return NextResponse.next();
+    } else {
+      console.log(
+        `❌ Staff admin role denied access to ${pathname} - only allowed ${allowedStaffAdminPaths.join(
+          ", "
+        )}`
+      );
+      return NextResponse.redirect(new URL("/admin", req.url));
+    }
   }
 
   // === KETUA ACCESS ===
@@ -129,7 +164,6 @@ export default async function middleware(req: NextRequest) {
   if (userRole === "user") {
     // Routes users can always access (regardless of verification status)
     const alwaysAllowedPaths = [
-      "/profile",
       "/verification-pending",
       "/kartu-anggota",
     ];

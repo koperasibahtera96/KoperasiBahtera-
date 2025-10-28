@@ -103,7 +103,7 @@ export async function POST(req: NextRequest) {
         throw new Error("Contract details do not match cicilan request");
       }
 
-      // Calculate payment terms
+      // Calculate payment terms using duration from contract
       const termToMonths = {
         monthly: 1,
         quarterly: 3,
@@ -113,7 +113,11 @@ export async function POST(req: NextRequest) {
 
       const paymentTermMonths =
         termToMonths[paymentTerm as keyof typeof termToMonths];
-      const totalInstallments = Math.ceil(60 / paymentTermMonths); // 5 years
+      
+      // Get duration years from contract (e.g., 3, 5, 8 years)
+      const durationYears = contract.durationYears || 5; // Default to 5 if not set
+      const totalMonths = durationYears * 12; // e.g., 5 years = 60 months, 8 years = 96 months
+      const totalInstallments = Math.ceil(totalMonths / paymentTermMonths);
       const installmentAmount = Math.ceil(totalAmount / totalInstallments);
 
       // First payment is due 24 hours from creation
@@ -122,6 +126,11 @@ export async function POST(req: NextRequest) {
 
       // Use contract ID as base for cicilan order ID
       const cicilanOrderId = contractId;
+
+      // Get minConsecutiveTenor from settings and store it with the payment
+      const Settings = (await import("@/models/Settings")).default;
+      const settings = await Settings.findOne({ type: "system" }).session(mongoSession);
+      const minConsecutiveTenor = settings?.config?.minConsecutiveTenor || 10; // Default to 10
 
       // Create only the first installment Payment record (due 24 hours from now)
       const firstInstallmentOrderId = await generateInvoiceNumber({
@@ -144,6 +153,7 @@ export async function POST(req: NextRequest) {
         installmentAmount,
         paymentTerm,
         dueDate: firstDueDate,
+        minConsecutiveTenor, // Store minConsecutiveTenor at time of payment creation
         productName,
         productId,
         contractId: contractId, // Link to contract

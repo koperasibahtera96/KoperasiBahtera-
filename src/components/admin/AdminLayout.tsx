@@ -177,6 +177,9 @@ export function AdminLayout({ children }: AdminLayoutProps) {
   const { theme } = useTheme();
   const [mounted, setMounted] = useState(false);
   const [pendingRequestsCount, setPendingRequestsCount] = useState(0);
+  
+  // Check if user is staff_admin
+  const isStaffAdmin = session?.user?.role === 'staff_admin';
 
   useEffect(() => {
     setMounted(true);
@@ -227,6 +230,25 @@ export function AdminLayout({ children }: AdminLayoutProps) {
     } catch (error) {
       console.error("Logout error:", error);
     }
+  };
+
+  // Get proper role display name
+  const getRoleDisplayName = (role: string) => {
+    const roleMap: Record<string, string> = {
+      admin: "Administrator",
+      staff_admin: "Staff Administrator",
+      finance: "Finance",
+      staff_finance: "Staff Finance",
+      ketua: "Ketua",
+      marketing: "Marketing",
+      marketing_head: "Marketing Head",
+      mandor: "Mandor",
+      asisten: "Asisten",
+      manajer: "Manajer",
+      spv_staff: "SPV Staff",
+      staff: "Staff",
+    };
+    return roleMap[role] || "Administrator";
   };
 
   return (
@@ -296,7 +318,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
               )}
               whileHover={{ color: theme === "pink" ? "#831843" : "#4C3D19" }}
             >
-              Admin Panel
+              {isStaffAdmin ? "Staff Admin Panel" : "Admin Panel"}
             </motion.h1>
             <p
               className={getThemeClasses(
@@ -314,7 +336,22 @@ export function AdminLayout({ children }: AdminLayoutProps) {
           className="p-4 space-y-1 flex-1 overflow-y-auto"
           variants={sidebarVariants}
         >
-          {navigation.map((item, index) => {
+          {navigation
+            .filter((item) => {
+              // Staff admin can only see specific pages (no dashboard)
+              if (isStaffAdmin) {
+                const allowedPages = [
+                  '/admin/verification',
+                  '/admin/contract-approvals',
+                  '/admin/reviews',
+                  '/admin/trees',
+                ];
+                return allowedPages.includes(item.href);
+              }
+              // Regular admin can see everything
+              return true;
+            })
+            .map((item, index) => {
             const isActive = pathname === item.href;
             return (
               <motion.div
@@ -438,50 +475,71 @@ export function AdminLayout({ children }: AdminLayoutProps) {
           )}
           variants={itemVariants}
         >
-          <motion.div
-            className={getThemeClasses(
-              "flex items-center gap-2 sm:gap-3 p-2 sm:p-3 rounded-xl hover:bg-[#324D3E]/5 dark:hover:bg-gray-700/50 transition-colors mb-1 sm:mb-2",
-              "hover:!bg-[#FFC1CC]/10"
-            )}
-          >
+          <Link href="/profile" className="block">
             <motion.div
               className={getThemeClasses(
-                "w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-r from-[#324D3E] to-[#4C3D19] rounded-full flex items-center justify-center flex-shrink-0",
-                "!bg-gradient-to-r !from-[#FFC1CC] !to-[#FFDEE9]"
+                "flex items-center gap-2 sm:gap-3 p-2 sm:p-3 rounded-xl hover:bg-[#324D3E]/5 dark:hover:bg-gray-700/50 transition-colors mb-1 sm:mb-2 cursor-pointer",
+                "hover:!bg-[#FFC1CC]/10"
               )}
-              whileHover={{
-                rotate: 360,
-                transition: { duration: 0.6 },
-              }}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
             >
-              <span
+              <motion.div
                 className={getThemeClasses(
-                  "text-white font-bold text-sm sm:text-base",
-                  "!text-[#4c1d1d]"
+                  "w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden",
+                  ""
                 )}
+                whileHover={{
+                  rotate: 360,
+                  transition: { duration: 0.6 },
+                }}
               >
-                {session?.user?.name?.charAt(0).toUpperCase() || "A"}
-              </span>
+                {session?.user?.profileImageUrl ? (
+                  <Image
+                    src={session.user.profileImageUrl}
+                    alt={session.user.name || "User"}
+                    width={40}
+                    height={40}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div
+                    className={getThemeClasses(
+                      "w-full h-full bg-gradient-to-r from-[#324D3E] to-[#4C3D19] flex items-center justify-center",
+                      "!bg-gradient-to-r !from-[#FFC1CC] !to-[#FFDEE9]"
+                    )}
+                  >
+                    <span
+                      className={getThemeClasses(
+                        "text-white font-bold text-sm sm:text-base",
+                        "!text-[#4c1d1d]"
+                      )}
+                    >
+                      {session?.user?.name?.charAt(0).toUpperCase() || "A"}
+                    </span>
+                  </div>
+                )}
+              </motion.div>
+              <div className="flex-1 min-w-0">
+                <p
+                  className={getThemeClasses(
+                    "font-semibold text-[#324D3E] dark:text-white text-sm sm:text-base truncate",
+                    "!text-[#4c1d1d]"
+                  )}
+                >
+                  {session?.user?.name || "Admin"}
+                </p>
+                <p
+                  className={getThemeClasses(
+                    "text-xs sm:text-sm text-[#889063] dark:text-gray-400 truncate",
+                    "!text-[#6b7280]"
+                  )}
+                >
+                  {getRoleDisplayName(session?.user?.role || "admin")}
+                </p>
+              </div>
             </motion.div>
-            <div className="flex-1 min-w-0">
-              <p
-                className={getThemeClasses(
-                  "font-semibold text-[#324D3E] dark:text-white text-sm sm:text-base truncate",
-                  "!text-[#4c1d1d]"
-                )}
-              >
-                {session?.user?.name || "Admin"}
-              </p>
-              <p
-                className={getThemeClasses(
-                  "text-xs sm:text-sm text-[#889063] dark:text-gray-400 truncate",
-                  "!text-[#6b7280]"
-                )}
-              >
-                Administrator
-              </p>
-            </div>
-          </motion.div>
+          </Link>
 
           {/* Logout button */}
           <motion.button

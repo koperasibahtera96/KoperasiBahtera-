@@ -19,7 +19,12 @@ import { useTheme } from "next-themes";
 
 interface Investor {
   _id: string;
-  userId: string;
+  userId: {
+    _id: string;
+    email: string;
+    fullName: string;
+    userCode: string;
+  };
   name: string;
   email: string;
   totalInvestasi: number;
@@ -131,6 +136,9 @@ export default function InvestorsPage() {
       const response = await fetch("/api/admin/investors");
       if (response.ok) {
         const result = await response.json();
+
+        console.log(result.data);
+
         setInvestors(result.data);
       } else {
         showError(
@@ -201,6 +209,7 @@ export default function InvestorsPage() {
       statusFilter === "all" || investor.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
+
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -718,7 +727,7 @@ export default function InvestorsPage() {
                               {investor.email}
                             </p>
                             <p className="text-xs text-[#889063] dark:text-gray-200 transition-colors duration-300">
-                              ID: {investor._id.slice(-6)}
+                              ID: {investor.userId.userCode}
                             </p>
                           </div>
                         </div>
@@ -755,17 +764,17 @@ export default function InvestorsPage() {
                       <td className="px-3 lg:px-6 py-4">
                         {(() => {
                           const pendingCount = getPendingRequestCount(
-                            investor.userId
+                            investor.userId._id
                           );
                           const totalRequests = getUserRequests(
-                            investor.userId
+                            investor.userId._id
                           ).length;
                           const hasPending = pendingCount > 0;
                           return (
                             <div className="flex items-center gap-2">
                               <button
                                 onClick={() =>
-                                  handleViewInvestorRequests(investor.userId)
+                                  handleViewInvestorRequests(investor.userId._id)
                                 }
                                 className={`px-2 py-1 text-xs font-semibold rounded-full transition-colors duration-300 ${
                                   hasPending

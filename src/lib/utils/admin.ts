@@ -3,6 +3,16 @@ import AdminLog from "@/models/AdminLog";
 import dbConnect from "@/lib/mongodb";
 import { NextRequest } from 'next/server';
 
+// Check if user has admin or staff_admin role
+export function isAdminOrStaffAdmin(role: string): boolean {
+  return role === 'admin' || role === 'staff_admin';
+}
+
+// Check if user has full admin privileges (not staff_admin)
+export function isFullAdmin(role: string): boolean {
+  return role === 'admin';
+}
+
 export async function getFirstAdminId(): Promise<string> {
   try {
     await dbConnect();

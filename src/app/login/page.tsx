@@ -19,6 +19,16 @@ function LoginContent() {
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(false);
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [forgotPasswordStep, setForgotPasswordStep] = useState<'phone' | 'otp'>('phone');
+  const [forgotPasswordData, setForgotPasswordData] = useState({
+    phoneNumber: '',
+    otp: '',
+    newPassword: '',
+    confirmPassword: '',
+  });
+  const [forgotPasswordErrors, setForgotPasswordErrors] = useState<Record<string, string>>({});
+  const [isForgotPasswordLoading, setIsForgotPasswordLoading] = useState(false);
 
   // Force light theme on this page and restore on unmount
   useEffect(() => {
@@ -150,11 +160,15 @@ function LoginContent() {
             // If no valid callback URL, use role-based redirect
             if (!redirectPath) {
               switch (session.user.role) {
+                case "staff_admin":
+                  redirectPath = "/admin/verification";
+                  break;
                 case "admin":
                   redirectPath = "/admin";
                   break;
                 case "ketua":
-                  redirectPath = "/admin/investors"
+                  redirectPath = "/admin/investors";
+                  break;
                 case "staff":
                 case "spv_staff":
                 case "mandor":
@@ -285,6 +299,13 @@ function LoginContent() {
                 />
                 <span className="text-sm text-gray-600">Ingat saya</span>
               </label>
+              <button
+                type="button"
+                onClick={() => setShowForgotPassword(true)}
+                className="text-sm text-[#324D3E] hover:text-[#889063] font-medium"
+              >
+                Lupa password?
+              </button>
             </div>
 
             {errors.submit && (
@@ -328,6 +349,271 @@ function LoginContent() {
           </Link>
         </div>
       </div>
+
+      {/* Forgot Password Modal */}
+      {showForgotPassword && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
+          <div className="bg-white rounded-2xl p-6 sm:p-8 w-full max-w-md shadow-2xl">
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-xl font-bold text-[#4C3D19]">
+                {forgotPasswordStep === 'phone' ? 'Lupa Password' : 'Verifikasi OTP'}
+              </h3>
+              <button
+                onClick={() => {
+                  setShowForgotPassword(false);
+                  setForgotPasswordStep('phone');
+                  setForgotPasswordData({ phoneNumber: '', otp: '', newPassword: '', confirmPassword: '' });
+                  setForgotPasswordErrors({});
+                }}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            {forgotPasswordStep === 'phone' ? (
+              <form onSubmit={async (e) => {
+                e.preventDefault();
+                const newErrors: Record<string, string> = {};
+
+                if (!forgotPasswordData.phoneNumber) {
+                  newErrors.phoneNumber = 'No. HP wajib diisi';
+                } else {
+                  const phoneValid = /^(\+62|62|0)[0-9]{9,13}$/.test(
+                    forgotPasswordData.phoneNumber.replace(/\s|\-|[().]/g, '')
+                  );
+                  if (!phoneValid) {
+                    newErrors.phoneNumber = 'Format No. HP Indonesia tidak valid';
+                  }
+                }
+
+                if (Object.keys(newErrors).length > 0) {
+                  setForgotPasswordErrors(newErrors);
+                  return;
+                }
+
+                setIsForgotPasswordLoading(true);
+                setForgotPasswordErrors({});
+
+                try {
+                  const response = await fetch('/api/auth/send-otp', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ phoneNumber: forgotPasswordData.phoneNumber }),
+                  });
+
+                  const data = await response.json();
+
+                  if (!response.ok) {
+                    setForgotPasswordErrors({ submit: data.error || 'Gagal mengirim OTP' });
+                  } else {
+                    setForgotPasswordStep('otp');
+                  }
+                } catch (error) {
+                  console.error('Send OTP error:', error);
+                  setForgotPasswordErrors({ submit: 'Terjadi kesalahan saat mengirim OTP' });
+                } finally {
+                  setIsForgotPasswordLoading(false);
+                }
+              }} className="space-y-4">
+                <FormField>
+                  <Input
+                    label="No. HP"
+                    type="text"
+                    name="phoneNumber"
+                    value={forgotPasswordData.phoneNumber}
+                    onChange={(e) => {
+                      setForgotPasswordData(prev => ({ ...prev, phoneNumber: e.target.value }));
+                      if (forgotPasswordErrors.phoneNumber) {
+                        setForgotPasswordErrors(prev => ({ ...prev, phoneNumber: '' }));
+                      }
+                    }}
+                    placeholder="Masukkan No. HP Anda"
+                    error={forgotPasswordErrors.phoneNumber}
+                    required
+                  />
+                </FormField>
+
+                {forgotPasswordErrors.submit && (
+                  <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+                    <p className="text-sm text-red-600">{forgotPasswordErrors.submit}</p>
+                  </div>
+                )}
+
+                <button
+                  type="submit"
+                  disabled={isForgotPasswordLoading}
+                  className="w-full bg-gradient-to-r from-[#364D32] to-[#889063] text-white px-6 py-3 rounded-full font-semibold hover:from-[#889063] hover:to-[#364D32] transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isForgotPasswordLoading ? 'Mengirim OTP...' : 'Kirim OTP'}
+                </button>
+              </form>
+            ) : (
+              <form onSubmit={async (e) => {
+                e.preventDefault();
+                const newErrors: Record<string, string> = {};
+
+                if (!forgotPasswordData.otp) {
+                  newErrors.otp = 'Kode OTP wajib diisi';
+                } else if (forgotPasswordData.otp.length !== 6) {
+                  newErrors.otp = 'Kode OTP harus 6 digit';
+                }
+
+                if (!forgotPasswordData.newPassword) {
+                  newErrors.newPassword = 'Password baru wajib diisi';
+                } else if (forgotPasswordData.newPassword.length < 8) {
+                  newErrors.newPassword = 'Password minimal 8 karakter';
+                }
+
+                if (!forgotPasswordData.confirmPassword) {
+                  newErrors.confirmPassword = 'Konfirmasi password wajib diisi';
+                } else if (forgotPasswordData.newPassword !== forgotPasswordData.confirmPassword) {
+                  newErrors.confirmPassword = 'Password tidak cocok';
+                }
+
+                if (Object.keys(newErrors).length > 0) {
+                  setForgotPasswordErrors(newErrors);
+                  return;
+                }
+
+                setIsForgotPasswordLoading(true);
+                setForgotPasswordErrors({});
+
+                try {
+                  // First verify OTP
+                  const verifyResponse = await fetch('/api/auth/verify-otp', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                      phoneNumber: forgotPasswordData.phoneNumber,
+                      otp: forgotPasswordData.otp,
+                    }),
+                  });
+
+                  const verifyData = await verifyResponse.json();
+
+                  if (!verifyResponse.ok) {
+                    setForgotPasswordErrors({ submit: verifyData.error || 'Kode OTP tidak valid' });
+                    return;
+                  }
+
+                  // Then reset password
+                  const resetResponse = await fetch('/api/auth/reset-password', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                      token: verifyData.resetToken,
+                      newPassword: forgotPasswordData.newPassword,
+                    }),
+                  });
+
+                  const resetData = await resetResponse.json();
+
+                  if (!resetResponse.ok) {
+                    setForgotPasswordErrors({ submit: resetData.error || 'Gagal mereset password' });
+                  } else {
+                    // Success - close modal and show success message
+                    alert('Password berhasil direset! Silakan login dengan password baru Anda.');
+                    setShowForgotPassword(false);
+                    setForgotPasswordStep('phone');
+                    setForgotPasswordData({ phoneNumber: '', otp: '', newPassword: '', confirmPassword: '' });
+                    setForgotPasswordErrors({});
+                  }
+                } catch (error) {
+                  console.error('Reset password error:', error);
+                  setForgotPasswordErrors({ submit: 'Terjadi kesalahan saat mereset password' });
+                } finally {
+                  setIsForgotPasswordLoading(false);
+                }
+              }} className="space-y-4">
+                <FormField>
+                  <Input
+                    label="Kode OTP"
+                    type="text"
+                    name="otp"
+                    value={forgotPasswordData.otp}
+                    onChange={(e) => {
+                      setForgotPasswordData(prev => ({ ...prev, otp: e.target.value }));
+                      if (forgotPasswordErrors.otp) {
+                        setForgotPasswordErrors(prev => ({ ...prev, otp: '' }));
+                      }
+                    }}
+                    placeholder="Masukkan kode OTP 6 digit"
+                    error={forgotPasswordErrors.otp}
+                    maxLength={6}
+                    required
+                  />
+                </FormField>
+
+                <FormField>
+                  <Input
+                    label="Password Baru"
+                    type="password"
+                    name="newPassword"
+                    value={forgotPasswordData.newPassword}
+                    onChange={(e) => {
+                      setForgotPasswordData(prev => ({ ...prev, newPassword: e.target.value }));
+                      if (forgotPasswordErrors.newPassword) {
+                        setForgotPasswordErrors(prev => ({ ...prev, newPassword: '' }));
+                      }
+                    }}
+                    placeholder="Masukkan password baru"
+                    error={forgotPasswordErrors.newPassword}
+                    required
+                  />
+                </FormField>
+
+                <FormField>
+                  <Input
+                    label="Konfirmasi Password Baru"
+                    type="password"
+                    name="confirmPassword"
+                    value={forgotPasswordData.confirmPassword}
+                    onChange={(e) => {
+                      setForgotPasswordData(prev => ({ ...prev, confirmPassword: e.target.value }));
+                      if (forgotPasswordErrors.confirmPassword) {
+                        setForgotPasswordErrors(prev => ({ ...prev, confirmPassword: '' }));
+                      }
+                    }}
+                    placeholder="Konfirmasi password baru"
+                    error={forgotPasswordErrors.confirmPassword}
+                    required
+                  />
+                </FormField>
+
+                {forgotPasswordErrors.submit && (
+                  <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+                    <p className="text-sm text-red-600">{forgotPasswordErrors.submit}</p>
+                  </div>
+                )}
+
+                <div className="flex gap-3">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setForgotPasswordStep('phone');
+                      setForgotPasswordData(prev => ({ ...prev, otp: '', newPassword: '', confirmPassword: '' }));
+                      setForgotPasswordErrors({});
+                    }}
+                    className="flex-1 bg-gray-200 text-gray-700 px-6 py-3 rounded-full font-semibold hover:bg-gray-300 transition-all duration-300"
+                  >
+                    Kembali
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isForgotPasswordLoading}
+                    className="flex-1 bg-gradient-to-r from-[#364D32] to-[#889063] text-white px-6 py-3 rounded-full font-semibold hover:from-[#889063] hover:to-[#364D32] transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {isForgotPasswordLoading ? 'Mereset...' : 'Reset Password'}
+                  </button>
+                </div>
+              </form>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

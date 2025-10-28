@@ -327,6 +327,7 @@ export async function POST(request: NextRequest) {
                 installmentAmount: payment.installmentAmount,
                 paymentTerm: payment.paymentTerm,
                 dueDate: nextDueDate,
+                minConsecutiveTenor: payment.minConsecutiveTenor, // Preserve minConsecutiveTenor
                 productName: payment.productName,
                 productId: payment.productId,
                 adminStatus: "pending",

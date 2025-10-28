@@ -34,6 +34,7 @@ export interface IPayment extends Document {
   installmentAmount?: number; // Amount per installment
   paymentTerm?: string; // monthly, quarterly, semiannual, annual
   dueDate?: Date;
+  minConsecutiveTenor?: number; // Stored value of minConsecutiveTenor at time of payment creation
 
   // Payment proof (for cicilan installments)
   proofImageUrl?: string;
@@ -182,6 +183,10 @@ const PaymentSchema: Schema = new Schema(
     },
     dueDate: {
       type: Date,
+    },
+    minConsecutiveTenor: {
+      type: Number,
+      min: 1,
     },
 
     // Payment proof

@@ -20,9 +20,9 @@ export async function POST(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Check if user is admin
+    // Check if user is admin or staff_admin
     const adminUser = await User.findOne({ email: session.user.email });
-    if (!adminUser || adminUser.role !== 'admin') {
+    if (!adminUser || (adminUser.role !== 'admin' && adminUser.role !== 'staff_admin')) {
       return NextResponse.json({ error: "Admin access required" }, { status: 403 });
     }
 

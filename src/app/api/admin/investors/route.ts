@@ -34,6 +34,7 @@ export async function GET(request: NextRequest) {
     // Apply pagination
     const skip = (page - 1) * limit;
     const investors = await Investor.find(query)
+      .populate('userId', 'userCode fullName email') // Populate userId to get userCode
       .skip(skip)
       .limit(limit)
       .sort({ createdAt: -1 });

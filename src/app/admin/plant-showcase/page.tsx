@@ -26,6 +26,7 @@ interface Plant {
   years: string;
   location: string;
   description: string;
+  durationYears: number; // Investment duration in years (e.g., 3, 5, 8)
   // Profit projections per tree
   pricing: {
     profit: {
@@ -76,6 +77,7 @@ export default function PlantShowcasePage() {
       years: oldPlant.years,
       location: oldPlant.location,
       description: oldPlant.description,
+      durationYears: oldPlant.investmentPlan?.durationYears || 5, // Default to 5 years
       pricing: {
         profit: {
           daily: parseInt(oldPlant.pricing?.profit?.daily || "0"),
@@ -225,6 +227,8 @@ export default function PlantShowcasePage() {
       } else if (field === "sellPrice") {
         const cleanValue = parseIDRInput(value as string);
         updated[plantIndex].pricing.sellPrice = parseInt(cleanValue) || 0;
+      } else if (field === "durationYears") {
+        updated[plantIndex].durationYears = parseInt(value as string) || 5;
       }
 
       return updated;
@@ -257,6 +261,7 @@ export default function PlantShowcasePage() {
           newPlant.treePackages.find((pkg) => pkg.treeCount === 10)?.price ||
           15000000,
         duration: newPlant.years,
+        durationYears: newPlant.durationYears,
         returns: newPlant.estimatedReturn,
         plantType: `${newPlant.name} Premium`,
         riskLevel: "Bergantung Alam",
@@ -762,14 +767,43 @@ export default function PlantShowcasePage() {
                   </div>
                 </div>
 
-                {/* 3. Estimasi Return */}
+                {/* 3. Duration Years */}
                 <div>
                   <h4 className="text-lg font-semibold text-[#324D3E] dark:text-white mb-3 font-[family-name:var(--font-poppins)]">
-                    3. Estimasi Return (10 Pohon)
+                    3. Durasi Investasi
                   </h4>
                   <div>
                     <label className="block text-sm font-medium text-[#324D3E] dark:text-gray-300 mb-1">
-                      Total Estimasi Return setelah 5 Tahun
+                      Durasi (dalam tahun)
+                    </label>
+                    <input
+                      type="number"
+                      min="1"
+                      max="20"
+                      value={plant.durationYears || 5}
+                      onChange={(e) =>
+                        handlePriceUpdate(
+                          index,
+                          "durationYears",
+                          e.target.value
+                        )
+                      }
+                      className="w-full px-3 py-2 border border-[#324D3E]/20 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#324D3E]/20 focus:border-[#324D3E] text-[#324D3E] dark:text-white bg-white dark:bg-gray-700"
+                    />
+                    <p className="text-xs text-[#889063] dark:text-gray-400 mt-1">
+                      Durasi investasi akan menentukan jumlah cicilan. Contoh: 5 tahun = 60 bulan cicilan, 8 tahun = 96 bulan cicilan.
+                    </p>
+                  </div>
+                </div>
+
+                {/* 4. Estimasi Return */}
+                <div>
+                  <h4 className="text-lg font-semibold text-[#324D3E] dark:text-white mb-3 font-[family-name:var(--font-poppins)]">
+                    4. Estimasi Return (10 Pohon)
+                  </h4>
+                  <div>
+                    <label className="block text-sm font-medium text-[#324D3E] dark:text-gray-300 mb-1">
+                      Total Estimasi Return setelah {plant.durationYears || 5} Tahun
                     </label>
                     <div className="relative">
                       <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#889063] text-sm">

@@ -63,15 +63,18 @@ export function CicilanModal({
   // Calculate price based on selected package using installmentOptions
   const currentPrice = selectedPackage ? selectedPackage.installmentPrice : 0;
 
-  // Calculate installment count based on period (5 years total)
+  // Get duration years from plan (e.g., 3, 5, 8 years)
+  const durationYears = plan?.investmentPlan?.durationYears || 5; // Default to 5 years if not set
+
+  // Calculate installment count based on period and duration
   const getInstallmentCount = (period: string) => {
     switch (period) {
       case "Per Bulan":
-        return 60; // 60 monthly installments (5 years)
+        return durationYears * 12; // e.g., 5 years = 60 months, 8 years = 96 months
       case "Per Tahun":
-        return 5; // 5 annual installments (5 years)
+        return durationYears; // e.g., 5 years = 5, 8 years = 8
       default:
-        return 60; // fallback to monthly
+        return durationYears * 12; // fallback to monthly
     }
   };
 
@@ -130,6 +133,7 @@ export function CicilanModal({
         paymentTerm: convertPaymentTerm(paymentTermData.period),
         totalInstallments: getInstallmentCount(paymentTermData.period),
         installmentAmount: installmentAmount,
+        durationYears: durationYears, // Pass duration years to contract
         status: "draft",
       };
     } catch (error) {
@@ -156,6 +160,7 @@ export function CicilanModal({
         paymentTerm: convertPaymentTerm(paymentTermData.period),
         totalInstallments: getInstallmentCount(paymentTermData.period),
         installmentAmount: installmentAmount,
+        durationYears: durationYears, // Pass duration years to contract
         status: "draft",
       };
     }
@@ -231,6 +236,7 @@ export function CicilanModal({
           paymentTerm: contractDetails.paymentTerm,
           totalInstallments: contractDetails.totalInstallments,
           installmentAmount: contractDetails.installmentAmount,
+          durationYears: contractDetails.durationYears,
           contractNumber: contractDetails.contractNumber,
           referralCode: referralCode || undefined,
         }),

@@ -234,6 +234,7 @@ export default function StaffPage() {
       email: staff.email,
       role: staff.role === "spv_staff" ? "SPV Staff" :
             staff.role === "admin" ? "Admin" :
+            staff.role === "staff_admin" ? "Staff Admin" :
             staff.role === "finance" ? "Finance" :
             staff.role === "staff_finance" ? "Staff Finance" :
             staff.role === "ketua" ? "Ketua" :
@@ -632,6 +633,8 @@ export default function StaffPage() {
                                     ? "bg-[#4C3D19]/10 text-[#4C3D19] border-[#4C3D19]/20 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-700/50"
                                     : staff.role === "admin"
                                     ? "bg-red-100 text-red-800 border-red-300 dark:bg-red-900/30 dark:text-red-300 dark:border-red-700/50"
+                                    : staff.role === "staff_admin"
+                                    ? "bg-orange-100 text-orange-800 border-orange-300 dark:bg-orange-900/30 dark:text-orange-300 dark:border-orange-700/50"
                                     : staff.role === "finance"
                                     ? "bg-blue-100 text-blue-800 border-blue-300 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-700/50"
                                     : "bg-[#324D3E]/10 text-[#324D3E] border-[#324D3E]/20 dark:bg-gray-700 dark:text-white dark:border-gray-600"
@@ -642,6 +645,7 @@ export default function StaffPage() {
                                  staff.role === "manajer" ? "Manajer" :
                                  staff.role === "spv_staff" ? "SPV Staff" :
                                  staff.role === "admin" ? "Admin" :
+                                 staff.role === "staff_admin" ? "Staff Admin" :
                                  staff.role === "finance" ? "Finance" :
                                  staff.role === "staff_finance" ? "Staff Finance" :
                                  staff.role === "ketua" ? "Ketua" :
@@ -816,7 +820,7 @@ export default function StaffPage() {
                     onChange={(e) =>
                       setFormData((prev) => ({
                         ...prev,
-                        role: e.target.value as "Staff" | "SPV Staff" | "Admin" | "Finance" | "Staff Finance" | "Ketua" | "Marketing" | "Mandor" | "Asisten" | "Manajer",
+                        role: e.target.value as "Staff" | "SPV Staff" | "Admin" | "Staff Admin" | "Finance" | "Staff Finance" | "Ketua" | "Marketing" | "Mandor" | "Asisten" | "Manajer",
                       }))
                     }
                     className="w-full px-3 py-2 border border-[#324D3E]/20 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#324D3E]/20 focus:border-[#324D3E] text-[#324D3E] dark:text-white bg-white dark:bg-gray-700"
@@ -829,6 +833,7 @@ export default function StaffPage() {
                     </optgroup>
                     <optgroup label="Roles Lainnya">
                       <option value="Admin">Admin</option>
+                      <option value="Staff Admin">Staff Admin</option>
                       <option value="Finance">Finance</option>
                       <option value="Staff Finance">Staff Finance</option>
                       <option value="Ketua">Ketua</option>
@@ -973,7 +978,7 @@ export default function StaffPage() {
                     onChange={(e) =>
                       setFormData((prev) => ({
                         ...prev,
-                        role: e.target.value as "Staff" | "SPV Staff" | "Admin" | "Finance" | "Staff Finance" | "Ketua" | "Marketing" | "Mandor" | "Asisten" | "Manajer",
+                        role: e.target.value as "Staff" | "SPV Staff" | "Admin" | "Staff Admin" | "Finance" | "Staff Finance" | "Ketua" | "Marketing" | "Mandor" | "Asisten" | "Manajer",
                       }))
                     }
                     className="w-full px-3 py-2 border border-[#324D3E]/20 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#324D3E]/20 focus:border-[#324D3E] text-[#324D3E] dark:text-white bg-white dark:bg-gray-700"
@@ -986,6 +991,7 @@ export default function StaffPage() {
                     </optgroup>
                     <optgroup label="Roles Lainnya">
                       <option value="Admin">Admin</option>
+                      <option value="Staff Admin">Staff Admin</option>
                       <option value="Finance">Finance</option>
                       <option value="Staff Finance">Staff Finance</option>
                       <option value="Ketua">Ketua</option>

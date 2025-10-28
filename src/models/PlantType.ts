@@ -37,6 +37,7 @@ export interface IInvestmentPlan {
   name: string
   price: number
   duration: string
+  durationYears: number // Duration in years (e.g., 3, 5, 8)
   returns: string
   plantType: string
   riskLevel: string
@@ -102,6 +103,7 @@ const InvestmentPlanSchema = new Schema({
   name: { type: String, required: true },
   price: { type: Number, required: true },
   duration: { type: String, required: true },
+  durationYears: { type: Number, required: true, default: 5, min: 1, max: 20 }, // Investment duration in years
   returns: { type: String, required: true },
   plantType: { type: String, required: true },
   riskLevel: { type: String, required: true },

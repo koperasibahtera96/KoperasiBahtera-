@@ -728,6 +728,7 @@ export async function processInstallmentPayment(
         customerData: payment.customerData,
         referralCode: payment.referralCode, // Preserve referral code for commission tracking
         paymentMethod: payment.paymentMethod, // Preserve payment method from previous installment
+        minConsecutiveTenor: payment.minConsecutiveTenor, // Preserve minConsecutiveTenor for commission calculation
       });
 
       await nextInstallment.save({ session: mongoSession });
@@ -795,31 +796,30 @@ export async function processInstallmentPayment(
         }).session(mongoSession);
 
         if (marketingStaff) {
-          // Get commission rate and minConsecutiveTenor from settings
+          // Get commission rate from settings
           const settings = await Settings.findOne({ type: "system" }).session(mongoSession);
           const commissionRate = settings?.config?.commissionRate ?? 0.02; // Default to 2% if not set
-          const minConsecutiveTenor = settings?.config?.minConsecutiveTenor ?? 10; // Default to 10
+          
+          // Use stored minConsecutiveTenor from payment (locked at creation time)
+          const minConsecutiveTenor = payment.minConsecutiveTenor || 10; // Default to 10 if not stored
 
           // Check if payment term is monthly (minConsecutiveTenor only applies to monthly payments)
           const isMonthlyPayment = payment.paymentTerm === "monthly";
 
-          // Check if this installment triggers bulk commission payout (only for monthly)
-          if (isMonthlyPayment && installmentNumber === minConsecutiveTenor) {
-            // At threshold: Calculate remaining commission (from this tenor onwards)
+          // Check if this installment is within the minConsecutiveTenor period (only for monthly)
+          if (isMonthlyPayment && installmentNumber <= minConsecutiveTenor) {
+            // Within threshold period: Calculate evenly distributed commission
             const totalInstallments = payment.totalInstallments;
             const installmentAmount = payment.installmentAmount;
             
-            // Total contract value
+            // Total contract value and total commission
             const totalContractValue = installmentAmount * totalInstallments;
             const totalCommission = Math.round(totalContractValue * commissionRate);
             
-            // Commission already paid (installments 1 to minConsecutiveTenor - 1)
-            const commissionsPaid = (minConsecutiveTenor - 1) * Math.round(installmentAmount * commissionRate);
-            
-            // Remaining commission to pay in bulk
-            const remainingCommission = totalCommission - commissionsPaid;
+            // Evenly distribute total commission across minConsecutiveTenor installments
+            const commissionPerInstallment = Math.round(totalCommission / minConsecutiveTenor);
 
-            // Create bulk commission record
+            // Create commission record for this installment
             const commissionRecord = new CommissionHistory({
               marketingStaffId: marketingStaff._id,
               marketingStaffName: marketingStaff.fullName,
@@ -831,9 +831,9 @@ export async function processInstallmentPayment(
               customerName: user.fullName,
               customerEmail: user.email,
 
-              contractValue: totalContractValue - (minConsecutiveTenor - 1) * installmentAmount, // Remaining contract value
+              contractValue: totalContractValue / minConsecutiveTenor, // Proportional contract value
               commissionRate,
-              commissionAmount: remainingCommission,
+              commissionAmount: commissionPerInstallment,
 
               paymentType: payment.paymentType,
               earnedAt: payment.adminReviewDate || new Date(),
@@ -850,45 +850,7 @@ export async function processInstallmentPayment(
 
             await commissionRecord.save({ session: mongoSession });
             console.log(
-              `💰 [${txnId}] BULK commission created at tenor ${installmentNumber}: ${remainingCommission} for ${marketingStaff.fullName} (${payment.referralCode})`
-            );
-          } else if (isMonthlyPayment && installmentNumber < minConsecutiveTenor) {
-            // Before threshold: Regular per-installment commission
-            const installmentAmount = payment.amount;
-            const commissionAmount = Math.round(installmentAmount * commissionRate);
-
-            // Create commission record for this specific installment
-            const commissionRecord = new CommissionHistory({
-              marketingStaffId: marketingStaff._id,
-              marketingStaffName: marketingStaff.fullName,
-              referralCodeUsed: payment.referralCode,
-
-              paymentId: payment._id,
-              cicilanOrderId: payment.cicilanOrderId,
-              customerId: user._id,
-              customerName: user.fullName,
-              customerEmail: user.email,
-
-              contractValue: installmentAmount, // This installment's amount only
-              commissionRate,
-              commissionAmount,
-
-              paymentType: payment.paymentType,
-              earnedAt: payment.adminReviewDate || new Date(),
-              calculatedAt: new Date(),
-
-              contractId: cicilanOrderId,
-              productName: payment.productName || "Unknown Product",
-              installmentDetails: {
-                installmentAmount: payment.installmentAmount,
-                totalInstallments: payment.totalInstallments,
-                installmentNumber: payment.installmentNumber,
-              },
-            });
-
-            await commissionRecord.save({ session: mongoSession });
-            console.log(
-              `💰 [${txnId}] Commission created for installment ${installmentNumber}: ${commissionAmount} for ${marketingStaff.fullName} (${payment.referralCode})`
+              `💰 [${txnId}] Commission created for installment ${installmentNumber}/${minConsecutiveTenor}: ${commissionPerInstallment} for ${marketingStaff.fullName} (${payment.referralCode})`
             );
           } else if (isMonthlyPayment && installmentNumber > minConsecutiveTenor) {
             // After threshold: No commission (already paid in bulk) - only for monthly

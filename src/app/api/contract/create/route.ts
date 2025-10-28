@@ -27,6 +27,7 @@ export async function POST(req: NextRequest) {
       paymentTerm,
       totalInstallments,
       installmentAmount,
+      durationYears,
       contractNumber,
       referralCode,
     } = body;
@@ -173,6 +174,7 @@ export async function POST(req: NextRequest) {
         paymentTerm,
         totalInstallments,
         installmentAmount,
+        durationYears,
       }),
       // For full payments, store the Midtrans payment URL
       ...(paymentType === "full" &&

@@ -23,6 +23,7 @@ export interface IContract extends Document {
   paymentTerm?: 'monthly' | 'quarterly' | 'semiannual' | 'annual';
   totalInstallments?: number;
   installmentAmount?: number;
+  durationYears?: number; // Investment duration in years (e.g., 3, 5, 8)
 
   // Signature tracking with retry support
   signatureAttempts: ISignatureAttempt[];
@@ -117,6 +118,11 @@ const ContractSchema: Schema = new Schema({
   installmentAmount: {
     type: Number,
     min: 0
+  },
+  durationYears: {
+    type: Number,
+    min: 1,
+    max: 20
   },
   signatureAttempts: [SignatureAttemptSchema],
   currentAttempt: {

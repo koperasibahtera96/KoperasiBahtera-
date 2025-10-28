@@ -10,7 +10,7 @@ export async function GET() {
   try {
     const session = await getServerSession(authOptions);
     
-    if (!session?.user || !['admin', 'staff'].includes(session.user.role)) {
+    if (!session?.user || !['admin', 'staff_admin', 'staff'].includes(session.user.role)) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
@@ -47,7 +47,7 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     
-    if (!session?.user || !['admin', 'staff'].includes(session.user.role)) {
+    if (!session?.user || !['admin', 'staff_admin', 'staff'].includes(session.user.role)) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }

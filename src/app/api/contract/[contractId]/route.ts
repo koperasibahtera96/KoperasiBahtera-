@@ -183,6 +183,11 @@ export async function POST(
       });
 
       if (!existingFirstInstallment) {
+        // Get minConsecutiveTenor from settings
+        const Settings = (await import("@/models/Settings")).default;
+        const settings = await Settings.findOne({ type: "system" });
+        const minConsecutiveTenor = settings?.config?.minConsecutiveTenor || 10; // Default to 10
+
         // Create only the first installment Payment record
         const firstInstallmentDueDate = new Date();
         // Set due date to one day after today (previously was one month ahead)
@@ -206,6 +211,7 @@ export async function POST(
           installmentAmount: installmentAmount,
           paymentTerm: contract.paymentTerm || "monthly",
           dueDate: firstInstallmentDueDate,
+          minConsecutiveTenor, // Store minConsecutiveTenor at time of payment creation
           adminStatus: "pending",
           productName: contract.productName,
           productId: contract.productId || "",

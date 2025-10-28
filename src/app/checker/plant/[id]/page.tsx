@@ -1441,22 +1441,15 @@ export default function PlantDetail({
                   </p>
                   <div className="flex items-center gap-2 min-w-0">
                     <MapPin className="w-3 h-3 sm:w-4 sm:h-4 text-[#4C3D19] flex-shrink-0" />
-                    {session?.user.role === "admin" ||
-                    session?.user.role === "manajer" ? (
-                      <EditableField
-                        plantId={id}
-                        fieldName="location"
-                        initialValue={plantData.location || "-"}
-                        onUpdate={(newLocation) =>
-                          setPlantData({ ...plantData, location: newLocation })
-                        }
-                        placeholder="Masukkan lokasi tanam..."
-                      />
-                    ) : (
-                      <span className="font-semibold text-[#324D3E] text-sm sm:text-base truncate">
-                        {plantData.location || "-"}
-                      </span>
-                    )}
+                    <EditableField
+                      plantId={id}
+                      fieldName="location"
+                      initialValue={plantData.location || "-"}
+                      onUpdate={(newLocation) =>
+                        setPlantData({ ...plantData, location: newLocation })
+                      }
+                      placeholder="Masukkan lokasi tanam..."
+                    />
                   </div>
                 </div>
 
@@ -1466,22 +1459,15 @@ export default function PlantDetail({
                   </p>
                   <div className="flex items-center gap-2 min-w-0">
                     <MapPin className="w-3 h-3 sm:w-4 sm:h-4 text-[#4C3D19] flex-shrink-0" />
-                    {session?.user.role === "admin" ||
-                    session?.user.role === "manajer" ? (
-                      <EditableField
-                        plantId={id}
-                        fieldName="kavling"
-                        initialValue={plantData.kavling || "-"}
-                        onUpdate={(newKavling) =>
-                          setPlantData({ ...plantData, kavling: newKavling })
-                        }
-                        placeholder="Masukkan kavling..."
-                      />
-                    ) : (
-                      <span className="font-semibold text-[#324D3E] text-sm sm:text-base truncate">
-                        {plantData.kavling || "-"}
-                      </span>
-                    )}
+                    <EditableField
+                      plantId={id}
+                      fieldName="kavling"
+                      initialValue={plantData.kavling || "-"}
+                      onUpdate={(newKavling) =>
+                        setPlantData({ ...plantData, kavling: newKavling })
+                      }
+                      placeholder="Masukkan kavling..."
+                    />
                   </div>
                 </div>
 
@@ -1489,22 +1475,15 @@ export default function PlantDetail({
                   <p className="text-xs sm:text-sm text-[#889063] mb-1">Blok</p>
                   <div className="flex items-center gap-2 min-w-0">
                     <MapPin className="w-3 h-3 sm:w-4 sm:h-4 text-[#4C3D19] flex-shrink-0" />
-                    {session?.user.role === "admin" ||
-                    session?.user.role === "manajer" ? (
-                      <EditableField
-                        plantId={id}
-                        fieldName="blok"
-                        initialValue={plantData.blok || "-"}
-                        onUpdate={(newBlok) =>
-                          setPlantData({ ...plantData, blok: newBlok })
-                        }
-                        placeholder="Masukkan blok..."
-                      />
-                    ) : (
-                      <span className="font-semibold text-[#324D3E] text-sm sm:text-base truncate">
-                        {plantData.blok || "-"}
-                      </span>
-                    )}
+                    <EditableField
+                      plantId={id}
+                      fieldName="blok"
+                      initialValue={plantData.blok || "-"}
+                      onUpdate={(newBlok) =>
+                        setPlantData({ ...plantData, blok: newBlok })
+                      }
+                      placeholder="Masukkan blok..."
+                    />
                   </div>
                 </div>
 

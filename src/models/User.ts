@@ -31,7 +31,7 @@ export interface IUser extends Document {
   faceImageUrl?: string; // Face verification image URL from ImageKit
   profileImageUrl?: string; // Profile image URL from ImageKit
   kartuAnggotaUrl?: string; // Kartu Anggota PDF URL from ImageKit
-  role: 'user' | 'staff' | 'spv_staff' | 'admin' | 'finance' | 'staff_finance' | 'ketua' | 'marketing' | 'marketing_head' | 'mandor' | 'asisten' | 'manajer';
+  role: 'user' | 'staff' | 'spv_staff' | 'admin' | 'staff_admin' | 'finance' | 'staff_finance' | 'ketua' | 'marketing' | 'marketing_head' | 'mandor' | 'asisten' | 'manajer';
   referralCode?: string; // 6-digit alphanumeric code for marketing staff
   isEmailVerified: boolean;
   isPhoneVerified: boolean;
@@ -43,6 +43,10 @@ export interface IUser extends Document {
   verifiedBy?: string; // Admin who verified
   verifiedAt?: Date; // When verification was completed
   canPurchase: boolean; // Whether user can buy products
+  
+  // Password reset fields
+  resetPasswordToken?: string;
+  resetPasswordExpires?: Date;
   
   lastLogin?: Date;
   createdAt: Date;
@@ -195,7 +199,7 @@ const UserSchema: Schema = new Schema({
   },
   role: {
     type: String,
-    enum: ['user', 'staff', 'spv_staff', 'admin', 'finance', 'staff_finance', 'ketua', 'marketing', 'marketing_head', 'mandor', 'asisten', 'manajer'],
+    enum: ['user', 'staff', 'spv_staff', 'admin', 'staff_admin', 'finance', 'staff_finance', 'ketua', 'marketing', 'marketing_head', 'mandor', 'asisten', 'manajer'],
     default: 'user',
     required: [true, 'Role is required'],
   },
@@ -240,6 +244,15 @@ const UserSchema: Schema = new Schema({
   canPurchase: {
     type: Boolean,
     default: false,
+  },
+  
+  // Password reset fields
+  resetPasswordToken: {
+    type: String,
+    trim: true,
+  },
+  resetPasswordExpires: {
+    type: Date,
   },
   
   lastLogin: {

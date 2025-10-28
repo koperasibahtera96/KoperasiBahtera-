@@ -81,6 +81,10 @@ export async function POST(request: NextRequest) {
         prefix = "ADM";
         dbRole = "admin";
         break;
+      case "Staff Admin":
+        prefix = "SAD";
+        dbRole = "staff_admin";
+        break;
       case "Finance":
         prefix = "FIN";
         dbRole = "finance";
@@ -195,6 +199,8 @@ export async function POST(request: NextRequest) {
           ? "SPV Staff"
           : role === "Admin"
           ? "Administrator"
+          : role === "Staff Admin"
+          ? "Staff Administrator"
           : role === "Finance"
           ? "Staff Keuangan"
           : role === "Staff Finance"
@@ -319,6 +325,7 @@ export async function GET(request: NextRequest) {
           "staff",
           "spv_staff",
           "admin",
+          "staff_admin",
           "finance",
           "staff_finance",
           "marketing",
@@ -480,6 +487,11 @@ export async function PUT(request: NextRequest) {
         updateDbRole = "admin";
         updatePrefix = "ADM";
         updateOccupation = "Administrator";
+        break;
+      case "Staff Admin":
+        updateDbRole = "staff_admin";
+        updatePrefix = "SAD";
+        updateOccupation = "Staff Administrator";
         break;
       case "Finance":
         updateDbRole = "finance";

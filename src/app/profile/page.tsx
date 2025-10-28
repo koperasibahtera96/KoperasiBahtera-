@@ -124,7 +124,9 @@ export default function ProfilePage() {
 
   const user = userData;
 
-  const canGenerateKartu = user.verificationStatus === "approved";
+  // Check if user is a staff/non-user role
+  const isStaffRole = user.role !== 'user';
+  const canGenerateKartu = user.verificationStatus === "approved" && user.role === 'user';
 
   // Helper function to get province name from value
   const getProvinceName = (provinceValue: string) => {
@@ -824,48 +826,51 @@ export default function ProfilePage() {
               </p>
             </div>
 
-            <div className="mt-6">
-              <div className="flex flex-col sm:flex-row gap-3">
-                <div className="flex flex-col">
-                  <button
-                    onClick={handleGenerateKartuAnggota}
-                    disabled={isLoading || !canGenerateKartu}
-                    className={`flex items-center gap-2 px-6 py-2 rounded-xl font-semibold transition-all duration-200 hover:scale-[1.02] shadow-lg ${
-                      canGenerateKartu
-                        ? "bg-[#324D3E] text-white hover:bg-[#4C3D19] shadow-[#324D3E]/25"
-                        : "bg-gray-200 text-gray-500 cursor-not-allowed shadow-none"
-                    } ${isLoading ? "disabled:opacity-50" : ""}`}
-                  >
-                    <FileText size={16} />
-                    {canGenerateKartu
-                      ? t("profile.generateKartuAnggota")
-                      : t("profile.kartuNotAvailable")}
-                  </button>
-                  {!canGenerateKartu && (
-                    <p className="mt-2 text-xs text-gray-600">
-                      {t("profile.accountMustBeVerified")}
-                    </p>
-                  )}
+            {!isStaffRole && (
+              <div className="mt-6">
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <div className="flex flex-col">
+                    <button
+                      onClick={handleGenerateKartuAnggota}
+                      disabled={isLoading || !canGenerateKartu}
+                      className={`flex items-center gap-2 px-6 py-2 rounded-xl font-semibold transition-all duration-200 hover:scale-[1.02] shadow-lg ${
+                        canGenerateKartu
+                          ? "bg-[#324D3E] text-white hover:bg-[#4C3D19] shadow-[#324D3E]/25"
+                          : "bg-gray-200 text-gray-500 cursor-not-allowed shadow-none"
+                      } ${isLoading ? "disabled:opacity-50" : ""}`}
+                    >
+                      <FileText size={16} />
+                      {canGenerateKartu
+                        ? t("profile.generateKartuAnggota")
+                        : t("profile.kartuNotAvailable")}
+                    </button>
+                    {!canGenerateKartu && (
+                      <p className="mt-2 text-xs text-gray-600">
+                        {t("profile.accountMustBeVerified")}
+                      </p>
+                    )}
+                  </div>
                 </div>
               </div>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                onChange={handleImageUpload}
-                className="hidden"
-              />
-            </div>
+            )}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleImageUpload}
+              className="hidden"
+            />
           </motion.div>
 
-          {/* User Information */}
-          <motion.div
-            variants={itemVariants}
-            className="bg-white rounded-2xl shadow-lg p-8"
-          >
-            <h2 className="text-2xl font-bold text-gray-900 mb-6">
-              {t("profile.personalInfo")}
-            </h2>
+          {/* User Information - Hidden for staff roles */}
+          {!isStaffRole && (
+            <motion.div
+              variants={itemVariants}
+              className="bg-white rounded-2xl shadow-lg p-8"
+            >
+              <h2 className="text-2xl font-bold text-gray-900 mb-6">
+                {t("profile.personalInfo")}
+              </h2>
             {/* First Row: Full Name and Email */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
               <div>
@@ -1238,6 +1243,7 @@ export default function ProfilePage() {
               </div>
             </div>
           </motion.div>
+          )}
 
           {/* Password Section */}
           <motion.div
