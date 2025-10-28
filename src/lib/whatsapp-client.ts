@@ -41,23 +41,38 @@ interface QRCodeResponse {
 const makeApiCall = async (endpoint: string, options: RequestInit = {}) => {
   const url = `${WHATSAPP_SERVICE_URL}${endpoint}`;
 
-  const response = await fetch(url, {
-    ...options,
-    headers: {
-      Authorization: `Bearer ${WHATSAPP_SERVICE_SECRET}`,
-      "Content-Type": "application/json",
-      ...options.headers,
-    },
-  });
+  // Create AbortController for timeout (30 seconds for far regions)
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 30000);
 
-  if (!response.ok) {
-    const errorData = await response
-      .json()
-      .catch(() => ({ error: "Network error" }));
-    throw new Error(errorData.error || `HTTP ${response.status}`);
+  try {
+    const response = await fetch(url, {
+      ...options,
+      signal: controller.signal,
+      headers: {
+        Authorization: `Bearer ${WHATSAPP_SERVICE_SECRET}`,
+        "Content-Type": "application/json",
+        ...options.headers,
+      },
+    });
+
+    clearTimeout(timeoutId);
+
+    if (!response.ok) {
+      const errorData = await response
+        .json()
+        .catch(() => ({ error: "Network error" }));
+      throw new Error(errorData.error || `HTTP ${response.status}`);
+    }
+
+    return response.json();
+  } catch (error: any) {
+    clearTimeout(timeoutId);
+    if (error.name === 'AbortError') {
+      throw new Error('Request timeout - WhatsApp service took too long to respond');
+    }
+    throw error;
   }
-
-  return response.json();
 };
 
 // Send WhatsApp message via API

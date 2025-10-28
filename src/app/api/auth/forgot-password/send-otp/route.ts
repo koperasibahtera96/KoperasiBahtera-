@@ -9,16 +9,17 @@ const generateOTP = (): string => {
   return Math.floor(100000 + Math.random() * 900000).toString();
 };
 
-// Normalize phone number
+// Normalize phone number to match database format (without + prefix)
 const normalizePhone = (phone: string): string => {
   const normalized = phone.replace(/[^0-9]/g, ''); // Remove non-digits
   
-  if (normalized.startsWith('62')) {
-    return '+' + normalized;
-  } else if (normalized.startsWith('0')) {
-    return '+62' + normalized.substring(1);
+  // Keep the format as stored in DB (starting with 0)
+  if (normalized.startsWith('0')) {
+    return normalized;
+  } else if (normalized.startsWith('62')) {
+    return '0' + normalized.substring(2);
   } else {
-    return '+62' + normalized;
+    return '0' + normalized;
   }
 };
 
@@ -37,9 +38,16 @@ export async function POST(request: NextRequest) {
 
     // Normalize phone number
     const normalizedPhone = normalizePhone(phoneNumber.trim());
+    
+    // Create alternative phone formats to check
+    const phoneFormats = [
+      normalizedPhone, // 082249013283
+      normalizedPhone.startsWith('0') ? '62' + normalizedPhone.substring(1) : normalizedPhone, // 6282249013283
+      normalizedPhone.startsWith('0') ? '+62' + normalizedPhone.substring(1) : '+' + normalizedPhone, // +6282249013283
+    ];
 
-    // Check if user with this phone number exists
-    const user = await User.findOne({ phoneNumber: normalizedPhone });
+    // Check if user with this phone number exists (try multiple formats)
+    const user = await User.findOne({ phoneNumber: { $in: phoneFormats } });
     
     if (!user) {
       // Don't reveal that user doesn't exist for security
@@ -66,9 +74,9 @@ export async function POST(request: NextRequest) {
     const code = generateOTP();
     const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
 
-    // Save OTP to database
+    // Save OTP to database using the format found in DB
     await OTP.create({
-      phoneNumber: normalizedPhone,
+      phoneNumber: user.phoneNumber, // Use the exact format from user document
       code,
       expiresAt,
       isUsed: false,
@@ -88,7 +96,13 @@ Jika Anda tidak meminta reset password, abaikan pesan ini.
 
 _Pesan otomatis - Koperasi Bintang Merah Sejahtera_`;
 
-    const result = await sendWhatsAppMessage(normalizedPhone, message);
+    // Convert phone to WhatsApp format (62xxx without +)
+    const userPhone = user.phoneNumber;
+    const whatsappPhone = userPhone.startsWith('0') 
+      ? '62' + userPhone.substring(1) 
+      : userPhone.replace('+', '');
+    
+    const result = await sendWhatsAppMessage(whatsappPhone, message);
 
     if (!result.success) {
       console.error('Failed to send WhatsApp OTP:', result.error);

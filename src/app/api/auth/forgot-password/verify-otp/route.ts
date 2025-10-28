@@ -32,10 +32,20 @@ export async function POST(request: NextRequest) {
 
     // Normalize phone number
     const normalizedPhone = normalizePhone(phoneNumber.trim());
+    
+    // Create alternative phone formats to check
+    const phoneFormats = [
+      phoneNumber.trim(),
+      normalizedPhone,
+      phoneNumber.trim().replace(/[^0-9]/g, ''),
+      phoneNumber.trim().replace(/[^0-9]/g, '').startsWith('0') 
+        ? '62' + phoneNumber.trim().replace(/[^0-9]/g, '').substring(1)
+        : phoneNumber.trim().replace(/[^0-9]/g, ''),
+    ];
 
-    // Find the most recent unused OTP for this phone number
+    // Find the most recent unused OTP for this phone number (check all formats)
     const otpRecord = await OTP.findOne({
-      phoneNumber: normalizedPhone,
+      phoneNumber: { $in: phoneFormats },
       isUsed: false,
       expiresAt: { $gt: new Date() }, // Not expired
     }).sort({ createdAt: -1 });
@@ -80,9 +90,9 @@ export async function POST(request: NextRequest) {
     const resetToken = crypto.randomBytes(32).toString('hex');
     const resetTokenExpiry = new Date(Date.now() + 15 * 60 * 1000);
 
-    // Store reset token in user document
+    // Store reset token in user document (check all phone formats)
     await User.findOneAndUpdate(
-      { phoneNumber: normalizedPhone },
+      { phoneNumber: { $in: phoneFormats } },
       {
         resetPasswordToken: resetToken,
         resetPasswordExpires: resetTokenExpiry,

@@ -398,7 +398,7 @@ function LoginContent() {
                 setForgotPasswordErrors({});
 
                 try {
-                  const response = await fetch('/api/auth/send-otp', {
+                  const response = await fetch('/api/auth/forgot-password/send-otp', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ phoneNumber: forgotPasswordData.phoneNumber }),
@@ -483,7 +483,7 @@ function LoginContent() {
 
                 try {
                   // First verify OTP
-                  const verifyResponse = await fetch('/api/auth/verify-otp', {
+                  const verifyResponse = await fetch('/api/auth/forgot-password/verify-otp', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
