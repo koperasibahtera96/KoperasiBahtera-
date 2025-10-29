@@ -60,6 +60,12 @@ export async function POST(req: NextRequest) {
     // Use the existing payment's orderId (already has correct invoice format)
     const orderId = payment.orderId;
 
+    // Set payment method to midtrans when user selects Midtrans from the payment modal
+    if (!payment.paymentMethod) {
+      payment.paymentMethod = "midtrans";
+      await payment.save();
+    }
+
     // Create Midtrans transaction
     const transaction = await midtransService.createTransaction({
       orderId,

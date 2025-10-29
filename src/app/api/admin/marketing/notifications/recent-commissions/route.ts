@@ -14,12 +14,12 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Check if user has marketing_head or admin role
+    // Check if user has marketing_head, marketing_admin, or admin role
     const user = await User.findOne({ email: session.user.email });
-    if (!user || (user.role !== "marketing_head" && user.role !== "admin")) {
+    if (!user || (user.role !== "marketing_head" && user.role !== "marketing_admin" && user.role !== "admin")) {
       return NextResponse.json(
         {
-          error: "Access denied. Marketing Head or Admin role required.",
+          error: "Access denied. Marketing Head, Marketing Admin, or Admin role required.",
         },
         { status: 403 }
       );

@@ -30,6 +30,7 @@ export interface ITreePackage {
   description: string
   price: number
   installmentPrice: number
+  estimatedReturn: number
   enabled: boolean
 }
 
@@ -38,6 +39,7 @@ export interface IInvestmentPlan {
   price: number
   duration: string
   durationYears: number // Duration in years (e.g., 3, 5, 8)
+  minConsecutiveTenor?: number // Minimum consecutive installments (1-60) for bulk commission (monthly only)
   returns: string
   plantType: string
   riskLevel: string
@@ -96,6 +98,7 @@ const TreePackageSchema = new Schema({
   description: { type: String, required: true },
   price: { type: Number, required: true, min: 0 },
   installmentPrice: { type: Number, required: true, min: 0 },
+  estimatedReturn: { type: Number, required: true, default: 0, min: 0 },
   enabled: { type: Boolean, required: true, default: true },
 }, { _id: false });
 
@@ -104,6 +107,7 @@ const InvestmentPlanSchema = new Schema({
   price: { type: Number, required: true },
   duration: { type: String, required: true },
   durationYears: { type: Number, required: true, default: 5, min: 1, max: 20 }, // Investment duration in years
+  minConsecutiveTenor: { type: Number, required: false, default: 10, min: 1, max: 60 }, // Minimum consecutive tenor for bulk commission (monthly only)
   returns: { type: String, required: true },
   plantType: { type: String, required: true },
   riskLevel: { type: String, required: true },

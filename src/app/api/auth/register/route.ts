@@ -125,9 +125,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (!/(?=.*[@$!%*?&])/.test(password)) {
+    if (!/(?=.*[@$!%*?&.])/.test(password)) {
       return NextResponse.json(
-        { error: 'Password harus mengandung karakter khusus (@$!%*?&)' },
+        { error: 'Password harus mengandung karakter khusus (@$!%*?&.)' },
         { status: 400 }
       );
     }

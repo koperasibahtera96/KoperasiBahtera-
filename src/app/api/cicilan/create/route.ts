@@ -127,10 +127,39 @@ export async function POST(req: NextRequest) {
       // Use contract ID as base for cicilan order ID
       const cicilanOrderId = contractId;
 
-      // Get minConsecutiveTenor from settings and store it with the payment
+      // Get minConsecutiveTenor from plant type first, fallback to global settings
+      const PlantType = (await import("@/models/PlantType")).default;
       const Settings = (await import("@/models/Settings")).default;
-      const settings = await Settings.findOne({ type: "system" }).session(mongoSession);
-      const minConsecutiveTenor = settings?.config?.minConsecutiveTenor || 10; // Default to 10
+      
+      console.log(`[Cicilan Create] Looking up plant type for productName: "${productName}", productId: "${productId}"`);
+      
+      // Try to find the plant type based on productName
+      // Extract plant name from productName (e.g., "Paket 10 Pohon Aren" -> "Aren")
+      const plantNameMatch = productName.match(/\b(Alpukat|Aren|Gaharu|alpukat|aren|gaharu)\b/i);
+      const extractedPlantName = plantNameMatch ? plantNameMatch[0] : productName.split(" ")[0];
+      
+      console.log(`[Cicilan Create] Extracted plant name: "${extractedPlantName}"`);
+      
+      const plantType = await PlantType.findOne({
+        $or: [
+          { name: { $regex: new RegExp(`^${extractedPlantName}$`, "i") } },
+          { id: productId },
+          { id: extractedPlantName },
+        ],
+      }).session(mongoSession);
+      
+      console.log(`[Cicilan Create] Found plant type: ${plantType?.name}, minConsecutiveTenor: ${plantType?.investmentPlan?.minConsecutiveTenor}`);
+      
+      // Get minConsecutiveTenor from plant type if available, otherwise from global settings
+      let minConsecutiveTenor = 10; // Default fallback
+      if (plantType?.investmentPlan?.minConsecutiveTenor) {
+        minConsecutiveTenor = plantType.investmentPlan.minConsecutiveTenor;
+        console.log(`[Cicilan Create] Using plant-specific minConsecutiveTenor: ${minConsecutiveTenor}`);
+      } else {
+        const settings = await Settings.findOne({ type: "system" }).session(mongoSession);
+        minConsecutiveTenor = settings?.config?.minConsecutiveTenor || 10;
+        console.log(`[Cicilan Create] Using global minConsecutiveTenor: ${minConsecutiveTenor}`);
+      }
 
       // Create only the first installment Payment record (due 24 hours from now)
       const firstInstallmentOrderId = await generateInvoiceNumber({

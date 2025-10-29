@@ -183,10 +183,38 @@ export async function POST(
       });
 
       if (!existingFirstInstallment) {
-        // Get minConsecutiveTenor from settings
+        // Get minConsecutiveTenor from plant type first, fallback to global settings
+        const PlantType = (await import("@/models/PlantType")).default;
         const Settings = (await import("@/models/Settings")).default;
-        const settings = await Settings.findOne({ type: "system" });
-        const minConsecutiveTenor = settings?.config?.minConsecutiveTenor || 10; // Default to 10
+        
+        console.log(`[Contract Sign] Looking up plant type for productName: "${contract.productName}", productId: "${contract.productId}"`);
+        
+        // Extract plant name from productName (e.g., "Paket 10 Pohon Aren" -> "Aren")
+        const plantNameMatch = contract.productName.match(/\b(Alpukat|Aren|Gaharu|alpukat|aren|gaharu)\b/i);
+        const extractedPlantName = plantNameMatch ? plantNameMatch[0] : contract.productName.split(" ")[0];
+        
+        console.log(`[Contract Sign] Extracted plant name: "${extractedPlantName}"`);
+        
+        const plantType = await PlantType.findOne({
+          $or: [
+            { name: { $regex: new RegExp(`^${extractedPlantName}$`, "i") } },
+            { id: contract.productId },
+            { id: extractedPlantName },
+          ],
+        });
+        
+        console.log(`[Contract Sign] Found plant type: ${plantType?.name}, minConsecutiveTenor: ${plantType?.investmentPlan?.minConsecutiveTenor}`);
+        
+        // Get minConsecutiveTenor from plant type if available, otherwise from global settings
+        let minConsecutiveTenor = 10; // Default fallback
+        if (plantType?.investmentPlan?.minConsecutiveTenor) {
+          minConsecutiveTenor = plantType.investmentPlan.minConsecutiveTenor;
+          console.log(`[Contract Sign] Using plant-specific minConsecutiveTenor: ${minConsecutiveTenor}`);
+        } else {
+          const settings = await Settings.findOne({ type: "system" });
+          minConsecutiveTenor = settings?.config?.minConsecutiveTenor || 10;
+          console.log(`[Contract Sign] Using global minConsecutiveTenor: ${minConsecutiveTenor}`);
+        }
 
         // Create only the first installment Payment record
         const firstInstallmentDueDate = new Date();

@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import * as XLSX from "xlsx-js-style";
 import dbConnect from "@/lib/mongodb";
 import CommissionHistory from "@/models/CommissionHistory";
@@ -6,21 +6,47 @@ import PlantInstance from "@/models/PlantInstance";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
     // Check authorization
     const session = await getServerSession(authOptions);
     if (
       !session ||
-      (session.user.role !== "admin" && session.user.role !== "marketing_head" && session.user.role !== "finance"&& session.user.role !== "staff_finance")
+      (session.user.role !== "admin" && 
+       session.user.role !== "marketing_head" && 
+       session.user.role !== "marketing_admin" && 
+       session.user.role !== "finance" && 
+       session.user.role !== "staff_finance")
     ) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     await dbConnect();
 
-    // Get all commission history with populated data
-    const commissions = await CommissionHistory.find({})
+    // Get date filters from query parameters
+    const url = new URL(req.url);
+    const startDate = url.searchParams.get("startDate");
+    const endDate = url.searchParams.get("endDate");
+
+    // Build query with date filters
+    const query: any = {};
+    if (startDate && endDate) {
+      // Set start date to beginning of day (00:00:00.000)
+      const start = new Date(startDate);
+      start.setHours(0, 0, 0, 0);
+      
+      // Set end date to end of day (23:59:59.999)
+      const end = new Date(endDate);
+      end.setHours(23, 59, 59, 999);
+      
+      query.earnedAt = {
+        $gte: start,
+        $lte: end,
+      };
+    }
+
+    // Get commission history with populated data and date filters
+    const commissions = await CommissionHistory.find(query)
       .populate("marketingStaffId", "fullName email referralCode")
       .populate("customerId", "fullName email phoneNumber")
       .populate("paymentId", "orderId contractId")

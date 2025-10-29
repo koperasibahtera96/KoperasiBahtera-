@@ -2282,8 +2282,37 @@ export default function PaymentsPage() {
                                                   )}
                                                 </div>
                                               )
+                                            ) : (group.paymentMethod ||
+                                                installment.paymentMethod) ===
+                                              "midtrans" ? (
+                                              /* Direct Midtrans payment button for pre-selected method */
+                                              <button
+                                                onClick={() => {
+                                                  if (installment._id) {
+                                                    handlePayInstallment(
+                                                      installment._id,
+                                                      installment.installmentNumber
+                                                    );
+                                                  }
+                                                }}
+                                                className="w-full px-3 py-2 bg-gradient-to-r from-[#324D3E] to-[#4C3D19] text-white text-sm rounded-full hover:shadow-lg transition-all duration-300 font-poppins font-medium"
+                                                disabled={
+                                                  uploadingProof ===
+                                                  installment._id
+                                                }
+                                              >
+                                                <span className="flex items-center justify-center gap-2">
+                                                  <CreditCard size={16} />
+                                                  {uploadingProof ===
+                                                  installment._id
+                                                    ? "Membuat Pembayaran..."
+                                                    : t(
+                                                        "payments.buttons.payNow"
+                                                      )}
+                                                </span>
+                                              </button>
                                             ) : (
-                                              /* Show payment method modal for midtrans or no method yet */
+                                              /* Show payment method modal only when no method is set */
                                               <button
                                                 onClick={() =>
                                                   handleInstallmentPaymentClick(

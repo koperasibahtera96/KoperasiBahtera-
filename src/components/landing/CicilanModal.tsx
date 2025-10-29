@@ -644,9 +644,9 @@ export function CicilanModal({
                           {t("cicilan.estimatedReturn")}
                         </span>
                         <span className="font-bold text-emerald-600 text-lg">
-                          {plan?.investmentPlan?.returns
+                          {selectedPackage?.estimatedReturn
                             ? `Rp ${formatIDRCurrency(
-                                plan.investmentPlan.returns
+                                selectedPackage.estimatedReturn
                               )}`
                             : "-"}
                         </span>

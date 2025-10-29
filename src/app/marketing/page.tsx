@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import StaffLayout from "@/components/staff/StaffLayout";
 import { useTheme } from "next-themes";
 import { motion, AnimatePresence } from "framer-motion";
@@ -16,6 +17,7 @@ import {
   X,
   Download,
   Bell,
+  Filter,
   // CheckCircle,
 } from "lucide-react";
 
@@ -61,8 +63,12 @@ interface CommissionData {
 
 export default function MarketingHeadPage() {
   const router = useRouter();
+  const { data: session } = useSession();
   const { theme } = useTheme();
   const [mounted, setMounted] = useState(false);
+  
+  // Check if user is marketing_admin (read-only for referral editing)
+  const isMarketingAdmin = session?.user?.role === "marketing_admin";
 
   const [marketingStaff, setMarketingStaff] = useState<MarketingStaff[]>([]);
   const [commissionData, setCommissionData] = useState<CommissionData | null>(
@@ -74,6 +80,10 @@ export default function MarketingHeadPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [recentCommissions, setRecentCommissions] = useState<any[]>([]);
   const [showNotifications, setShowNotifications] = useState(false);
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
+  const [appliedStartDate, setAppliedStartDate] = useState("");
+  const [appliedEndDate, setAppliedEndDate] = useState("");
 
   useEffect(() => {
     setMounted(true);
@@ -121,7 +131,7 @@ export default function MarketingHeadPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const fetchData = async () => {
+  const fetchData = async (filterStartDate = "", filterEndDate = "") => {
     try {
       setLoading(true);
 
@@ -134,10 +144,14 @@ export default function MarketingHeadPage() {
       const staffData = await staffResponse.json();
       setMarketingStaff(staffData.data);
 
-      // Fetch commission data
-      const commissionResponse = await fetch(
-        "/api/admin/marketing/commissions"
-      );
+      // Fetch commission data with date filters
+      let commissionUrl = "/api/admin/marketing/commissions";
+      const params = new URLSearchParams();
+      if (filterStartDate) params.append("startDate", filterStartDate);
+      if (filterEndDate) params.append("endDate", filterEndDate);
+      if (params.toString()) commissionUrl += `?${params.toString()}`;
+
+      const commissionResponse = await fetch(commissionUrl);
       if (!commissionResponse.ok) {
         const commissionError = await commissionResponse.json();
         throw new Error(
@@ -209,8 +223,8 @@ export default function MarketingHeadPage() {
         throw new Error(errorData.error || "Failed to update referral code");
       }
 
-      // Refresh data
-      await fetchData();
+      // Refresh data with current filters
+      await fetchData(appliedStartDate, appliedEndDate);
 
       setEditModal({
         show: false,
@@ -248,8 +262,8 @@ export default function MarketingHeadPage() {
         throw new Error(errorData.error || "Failed to generate referral code");
       }
 
-      // Refresh data
-      await fetchData();
+      // Refresh data with current filters
+      await fetchData(appliedStartDate, appliedEndDate);
       setError("");
     } catch (error) {
       console.error("Error generating referral code:", error);
@@ -270,9 +284,12 @@ export default function MarketingHeadPage() {
     }));
 
     try {
-      const response = await fetch(
-        `/api/admin/marketing/commissions?staffId=${staff._id}`
-      );
+      // Build URL with date filters if they are applied
+      let commissionUrl = `/api/admin/marketing/commissions?staffId=${staff._id}`;
+      if (appliedStartDate) commissionUrl += `&startDate=${appliedStartDate}`;
+      if (appliedEndDate) commissionUrl += `&endDate=${appliedEndDate}`;
+
+      const response = await fetch(commissionUrl);
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(
@@ -322,7 +339,14 @@ export default function MarketingHeadPage() {
       setIsExporting(true);
       setError("");
 
-      const response = await fetch("/api/admin/marketing/export");
+      // Build export URL with date filters
+      let exportUrl = "/api/admin/marketing/export";
+      const params = new URLSearchParams();
+      if (appliedStartDate) params.append("startDate", appliedStartDate);
+      if (appliedEndDate) params.append("endDate", appliedEndDate);
+      if (params.toString()) exportUrl += `?${params.toString()}`;
+
+      const response = await fetch(exportUrl);
 
       if (!response.ok) {
         const errorData = await response.json();
@@ -334,9 +358,10 @@ export default function MarketingHeadPage() {
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
-      link.download = `laporan-marketing-${
-        new Date().toISOString().split("T")[0]
-      }.xlsx`;
+      const dateRangeText = appliedStartDate && appliedEndDate
+        ? `${appliedStartDate}-to-${appliedEndDate}`
+        : new Date().toISOString().split("T")[0];
+      link.download = `laporan-marketing-${dateRangeText}.xlsx`;
       document.body.appendChild(link);
       link.click();
 
@@ -724,6 +749,108 @@ export default function MarketingHeadPage() {
           </motion.div>
         )}
 
+        {/* Date Filter */}
+        <motion.div
+          className={getThemeClasses(
+            "bg-white/90 dark:bg-gray-800/90 backdrop-blur-lg rounded-2xl shadow-lg border border-gray-200 dark:border-gray-700 p-6 mb-6",
+            "!bg-white/95 !border-[#FFC1CC]/30"
+          )}
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.15, duration: 0.6 }}
+        >
+          <div className="flex items-center gap-2 mb-4">
+            <Filter
+              className={getThemeClasses(
+                "w-5 h-5 text-[#324D3E] dark:text-white",
+                "!text-[#4c1d1d]"
+              )}
+            />
+            <h3
+              className={getThemeClasses(
+                "text-lg font-semibold text-[#324D3E] dark:text-white",
+                "!text-[#4c1d1d]"
+              )}
+            >
+              Filter Laporan
+            </h3>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div>
+              <label
+                className={getThemeClasses(
+                  "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2",
+                  "!text-[#4c1d1d]"
+                )}
+              >
+                Tanggal Awal
+              </label>
+              <input
+                type="date"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                className={getThemeClasses(
+                  "w-full border bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#324D3E] dark:focus:ring-gray-500",
+                  "!bg-white !border-[#FFC1CC]/30 !text-[#4c1d1d] focus:!ring-[#FFC1CC]/50"
+                )}
+              />
+            </div>
+            <div>
+              <label
+                className={getThemeClasses(
+                  "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2",
+                  "!text-[#4c1d1d]"
+                )}
+              >
+                Tanggal Akhir
+              </label>
+              <input
+                type="date"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                className={getThemeClasses(
+                  "w-full border bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#324D3E] dark:focus:ring-gray-500",
+                  "!bg-white !border-[#FFC1CC]/30 !text-[#4c1d1d] focus:!ring-[#FFC1CC]/50"
+                )}
+              />
+            </div>
+            <div className="flex items-end gap-2 md:col-span-2">
+              <motion.button
+                onClick={() => {
+                  setAppliedStartDate(startDate);
+                  setAppliedEndDate(endDate);
+                  fetchData(startDate, endDate);
+                }}
+                className={getThemeClasses(
+                  "flex-1 px-4 py-2 bg-[#324D3E] hover:bg-[#2a4235] text-white rounded-lg transition-colors font-medium",
+                  "!bg-[#4c1d1d] hover:!bg-[#3d1717]"
+                )}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+              >
+                Terapkan
+              </motion.button>
+              <motion.button
+                onClick={() => {
+                  setStartDate("");
+                  setEndDate("");
+                  setAppliedStartDate("");
+                  setAppliedEndDate("");
+                  fetchData("", "");
+                }}
+                className={getThemeClasses(
+                  "flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-600 rounded-lg transition-colors font-medium",
+                  "!bg-white !border-[#FFC1CC]/30 !text-[#4c1d1d] hover:!bg-[#FFC1CC]/20"
+                )}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+              >
+                Reset Filter
+              </motion.button>
+            </div>
+          </div>
+        </motion.div>
+
         {/* Error Display */}
         <AnimatePresence>
           {error && (
@@ -1066,7 +1193,13 @@ export default function MarketingHeadPage() {
                     </td>
                   </tr>
                 ) : (
-                  filteredStaff.map((staff) => (
+                  filteredStaff.map((staff) => {
+                    // Get filtered commission data for this staff from commissionData
+                    const staffCommissionData = commissionData?.staffSummary.find(
+                      (s) => s.staffId.toString() === staff._id.toString()
+                    );
+                    
+                    return (
                     <tr
                       key={staff._id}
                       className={getThemeClasses(
@@ -1135,7 +1268,7 @@ export default function MarketingHeadPage() {
                           )}
                         >
                           {formatCurrency(
-                            staff.commissionSummary.totalCommission
+                            staffCommissionData?.totalCommission || 0
                           )}
                         </p>
                       </td>
@@ -1147,7 +1280,7 @@ export default function MarketingHeadPage() {
                             ""
                           )}
                         >
-                          {staff.commissionSummary.totalReferrals}
+                          {staffCommissionData?.totalReferrals || 0}
                         </p>
                         <div
                           className={getThemeClasses(
@@ -1156,11 +1289,11 @@ export default function MarketingHeadPage() {
                           )}
                         >
                           <span>
-                            Lunas: {staff.commissionSummary.fullInvestments}
+                            Lunas: {staffCommissionData?.byType.fullInvestment || 0}
                           </span>
                           <span>
                             Cicilan:{" "}
-                            {staff.commissionSummary.cicilanInvestments}
+                            {staffCommissionData?.byType.cicilan || 0}
                           </span>
                         </div>
                       </td>
@@ -1182,29 +1315,33 @@ export default function MarketingHeadPage() {
 
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-2">
-                          <button
-                            onClick={() => handleEditReferralCode(staff)}
-                            className={getThemeClasses(
-                              "p-1 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded transition-colors",
-                              "dark:text-blue-300 dark:hover:bg-blue-900/30"
-                            )}
-                            title="Ubah kode referral"
-                          >
-                            <Edit3 className="w-4 h-4" />
-                          </button>
+                          {!isMarketingAdmin && (
+                            <>
+                              <button
+                                onClick={() => handleEditReferralCode(staff)}
+                                className={getThemeClasses(
+                                  "p-1 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded transition-colors",
+                                  "dark:text-blue-300 dark:hover:bg-blue-900/30"
+                                )}
+                                title="Ubah kode referral"
+                              >
+                                <Edit3 className="w-4 h-4" />
+                              </button>
 
-                          <button
-                            onClick={() =>
-                              handleGenerateReferralCode(staff._id)
-                            }
-                            className={getThemeClasses(
-                              "p-1 text-green-600 hover:text-green-800 hover:bg-green-50 rounded transition-colors",
-                              "dark:text-green-300 dark:hover:bg-green-900/30"
-                            )}
-                            title="Buat kode baru"
-                          >
-                            <RefreshCw className="w-4 h-4" />
-                          </button>
+                              <button
+                                onClick={() =>
+                                  handleGenerateReferralCode(staff._id)
+                                }
+                                className={getThemeClasses(
+                                  "p-1 text-green-600 hover:text-green-800 hover:bg-green-50 rounded transition-colors",
+                                  "dark:text-green-300 dark:hover:bg-green-900/30"
+                                )}
+                                title="Buat kode baru"
+                              >
+                                <RefreshCw className="w-4 h-4" />
+                              </button>
+                            </>
+                          )}
 
                           <button
                             onClick={() => handleViewCommissionHistory(staff)}
@@ -1219,7 +1356,8 @@ export default function MarketingHeadPage() {
                         </div>
                       </td>
                     </tr>
-                  ))
+                  );
+                  })
                 )}
               </tbody>
             </table>

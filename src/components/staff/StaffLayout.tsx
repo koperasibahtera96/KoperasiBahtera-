@@ -23,13 +23,13 @@ interface StaffLayoutProps {
 
 const getNavigationForRole = (role: string) => {
   const navigation = [
-    // Marketing head and admin navigation - only /marketing page exists
+    // Marketing head, marketing admin, and admin navigation - only /marketing page exists
     {
       name: "Staff Referral",
       href: "/marketing",
       icon: CheckCircle2Icon,
       color: "text-purple-600",
-      roles: ["marketing_head", "admin"],
+      roles: ["marketing_head", "marketing_admin", "admin"],
     },
 
     {
@@ -46,7 +46,7 @@ const getNavigationForRole = (role: string) => {
       href: "/marketing/staff",
       icon: UserCheck,
       color: "text-orange-600",
-      roles: ["marketing_head"],
+      roles: ["marketing_head", "marketing_admin", "admin"],
     },
 
     // Settings page for all roles
@@ -55,7 +55,7 @@ const getNavigationForRole = (role: string) => {
       href: "/staff/settings",
       icon: Settings,
       color: "text-indigo-600",
-      roles: ["marketing", "marketing_head", "admin"],
+      roles: ["marketing", "marketing_head", "marketing_admin", "admin"],
     },
 
     // Admin specific navigation - back to admin panel (only for admins, below settings)
@@ -133,6 +133,8 @@ export default function StaffLayout({ children }: StaffLayoutProps) {
         return "Marketing Staff";
       case "marketing_head":
         return "Marketing Head";
+      case "marketing_admin":
+        return "Marketing Admin";
       case "admin":
         return "Administrator";
       default:
@@ -315,12 +317,15 @@ export default function StaffLayout({ children }: StaffLayoutProps) {
           )}
           variants={navItemVariants}
         >
-          <motion.div
-            className={getThemeClasses(
-              "flex items-center gap-2 sm:gap-3 p-2 sm:p-3 rounded-xl hover:bg-[#324D3E]/5 dark:hover:bg-gray-700/50 transition-colors mb-1 sm:mb-2",
-              "hover:!bg-[#FFC1CC]/10"
-            )}
-          >
+          <Link href="/profile">
+            <motion.div
+              className={getThemeClasses(
+                "flex items-center gap-2 sm:gap-3 p-2 sm:p-3 rounded-xl hover:bg-[#324D3E]/5 dark:hover:bg-gray-700/50 transition-colors mb-1 sm:mb-2 cursor-pointer",
+                "hover:!bg-[#FFC1CC]/10"
+              )}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+            >
             <motion.div
               className={getThemeClasses(
                 "w-8 h-8 sm:w-10 sm:h-10 rounded-full overflow-hidden flex items-center justify-center flex-shrink-0",
@@ -367,7 +372,8 @@ export default function StaffLayout({ children }: StaffLayoutProps) {
                 {getRoleDisplayName(userRole)}
               </p>
             </div>
-          </motion.div>
+            </motion.div>
+          </Link>
 
           {/* Logout button */}
           <motion.button

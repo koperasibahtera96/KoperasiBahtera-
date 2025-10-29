@@ -7,10 +7,18 @@ import { Percent, RefreshCw, Save } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTheme } from "next-themes";
 
+interface PlantTenor {
+  name: string;
+  id: string;
+  minConsecutiveTenor: number;
+  durationYears: number;
+}
+
 export default function CommissionRatePage() {
   const [commissionRate, setCommissionRate] = useState<number>(0.02);
   const [displayRate, setDisplayRate] = useState<string>("2");
   const [minConsecutiveTenor, setMinConsecutiveTenor] = useState<number>(10);
+  const [plants, setPlants] = useState<PlantTenor[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const { showSuccess, showError, AlertComponent } = useAlert();
@@ -29,20 +37,36 @@ export default function CommissionRatePage() {
     return baseClasses;
   };
 
-  // Fetch commission rate from API
+  // Fetch commission rate and plant data from API
   const fetchCommissionRate = async () => {
     try {
       setLoading(true);
-      const response = await fetch("/api/settings/commission-rate");
-      const result = await response.json();
+      
+      // Fetch commission settings
+      const commissionResponse = await fetch("/api/settings/commission-rate");
+      const commissionResult = await commissionResponse.json();
 
-      if (result.success && result.data?.commissionRate !== undefined) {
-        const rate = result.data.commissionRate;
+      if (commissionResult.success && commissionResult.data?.commissionRate !== undefined) {
+        const rate = commissionResult.data.commissionRate;
         setCommissionRate(rate);
         setDisplayRate((rate * 100).toFixed(2));
-        setMinConsecutiveTenor(result.data.minConsecutiveTenor ?? 10);
+        setMinConsecutiveTenor(commissionResult.data.minConsecutiveTenor ?? 10);
       } else {
         showError("Gagal memuat tarif komisi", "");
+      }
+
+      // Fetch plant data for per-plant tenor settings
+      const plantsResponse = await fetch("/api/admin/plant-showcase");
+      const plantsResult = await plantsResponse.json();
+      
+      if (plantsResult.success && plantsResult.data) {
+        const plantTenors: PlantTenor[] = plantsResult.data.map((plant: any) => ({
+          name: plant.name,
+          id: plant.id || plant._id,
+          minConsecutiveTenor: plant.investmentPlan?.minConsecutiveTenor || 10,
+          durationYears: plant.investmentPlan?.durationYears || 5,
+        }));
+        setPlants(plantTenors);
       }
     } catch (error) {
       console.error("Error fetching commission rate:", error);
@@ -52,11 +76,13 @@ export default function CommissionRatePage() {
     }
   };
 
-  // Save commission rate to API
+  // Save commission rate and plant-specific tenors to API
   const saveCommissionRate = async () => {
     try {
       setSaving(true);
-      const response = await fetch("/api/settings/commission-rate", {
+      
+      // Save global commission settings
+      const commissionResponse = await fetch("/api/settings/commission-rate", {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -64,15 +90,41 @@ export default function CommissionRatePage() {
         body: JSON.stringify({ commissionRate, minConsecutiveTenor }),
       });
 
-      const result = await response.json();
+      const commissionResult = await commissionResponse.json();
 
-      if (result.success) {
-        showSuccess("Berhasil!", "Tarif komisi berhasil diperbarui");
+      if (!commissionResult.success) {
+        showError(
+          "Gagal menyimpan",
+          commissionResult.error || "Gagal menyimpan perubahan"
+        );
+        return;
+      }
+
+      // Save plant-specific tenor settings
+      const plantsResponse = await fetch("/api/admin/plant-showcase", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ 
+          partialUpdate: true, // Flag to indicate partial update
+          plants: plants.map(plant => ({
+            id: plant.id,
+            name: plant.name,
+            minConsecutiveTenor: plant.minConsecutiveTenor,
+          }))
+        }),
+      });
+
+      const plantsResult = await plantsResponse.json();
+
+      if (plantsResult.success) {
+        showSuccess("Berhasil!", "Tarif komisi dan tenor per tanaman berhasil diperbarui");
         fetchCommissionRate(); // Refresh data
       } else {
         showError(
-          "Gagal menyimpan",
-          result.error || "Gagal menyimpan perubahan"
+          "Peringatan",
+          "Tarif komisi berhasil disimpan, tapi gagal menyimpan tenor per tanaman"
         );
       }
     } catch (error) {
@@ -251,6 +303,53 @@ export default function CommissionRatePage() {
                       )}
                     </span>
                   </div>
+                </div>
+              </div>
+
+              {/* Per-Plant Tenor Settings */}
+              <div className="mt-8">
+                <h3 className="text-lg font-semibold text-[#324D3E] mb-4 font-[family-name:var(--font-poppins)]">
+                  Minimum Tenor Per Tanaman
+                </h3>
+                <p className="text-sm text-[#889063] mb-4">
+                  Atur minimum tenor untuk setiap jenis tanaman. Nilai default akan diambil dari setting global di atas.
+                </p>
+                <div className="space-y-3">
+                  {plants.map((plant, index) => (
+                    <div
+                      key={plant.id}
+                      className="flex items-center justify-between p-4 bg-gradient-to-r from-[#324D3E]/5 to-[#4C3D19]/5 rounded-xl border border-[#324D3E]/10"
+                    >
+                      <div className="flex-1">
+                        <p className="font-semibold text-[#324D3E]">{plant.name}</p>
+                        <p className="text-xs text-[#889063] mt-1">
+                          Durasi: {plant.durationYears} tahun ({plant.durationYears * 12} bulan)
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <div>
+                          <input
+                            type="number"
+                            min={1}
+                            max={60}
+                            value={plant.minConsecutiveTenor}
+                            onChange={(e) => {
+                              const value = parseInt(e.target.value);
+                              if (!isNaN(value) && value >= 1 && value <= 60) {
+                                setPlants((prev) => {
+                                  const updated = [...prev];
+                                  updated[index].minConsecutiveTenor = value;
+                                  return updated;
+                                });
+                              }
+                            }}
+                            className="w-20 px-3 py-2 border border-[#324D3E]/20 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#324D3E]/50 text-center text-[#324D3E] font-semibold"
+                          />
+                        </div>
+                        <span className="text-sm text-[#889063] w-16">bulan</span>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
 

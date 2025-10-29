@@ -20,7 +20,35 @@ export async function POST(request: NextRequest) {
     // Validate password strength
     if (newPassword.length < 8) {
       return NextResponse.json(
-        { error: 'Password harus minimal 8 karakter' },
+        { error: 'Password minimal 8 karakter' },
+        { status: 400 }
+      );
+    }
+
+    if (!/(?=.*[a-z])/.test(newPassword)) {
+      return NextResponse.json(
+        { error: 'Password harus mengandung huruf kecil' },
+        { status: 400 }
+      );
+    }
+
+    if (!/(?=.*[A-Z])/.test(newPassword)) {
+      return NextResponse.json(
+        { error: 'Password harus mengandung huruf besar' },
+        { status: 400 }
+      );
+    }
+
+    if (!/(?=.*\d)/.test(newPassword)) {
+      return NextResponse.json(
+        { error: 'Password harus mengandung angka' },
+        { status: 400 }
+      );
+    }
+
+    if (!/(?=.*[@$!%*?&.])/.test(newPassword)) {
+      return NextResponse.json(
+        { error: 'Password harus mengandung karakter khusus (@$!%*?&.)' },
         { status: 400 }
       );
     }
@@ -41,11 +69,14 @@ export async function POST(request: NextRequest) {
     // Hash new password
     const hashedPassword = await bcrypt.hash(newPassword, 10);
 
-    // Update user password and clear reset token fields
-    user.password = hashedPassword;
-    user.resetPasswordToken = undefined;
-    user.resetPasswordExpires = undefined;
-    await user.save();
+    // Update user password and clear reset token fields (using updateOne to bypass validation)
+    await User.updateOne(
+      { _id: user._id },
+      {
+        $set: { password: hashedPassword },
+        $unset: { resetPasswordToken: '', resetPasswordExpires: '' },
+      }
+    );
 
     return NextResponse.json(
       { message: 'Password berhasil direset' },

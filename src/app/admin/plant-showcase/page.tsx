@@ -8,7 +8,7 @@ import {
   parseIDRInput,
 } from "@/lib/utils/currency";
 import { motion } from "framer-motion";
-import { DollarSign, RefreshCw, Save } from "lucide-react";
+import { ChevronDown, DollarSign, RefreshCw, Save } from "lucide-react";
 import { useEffect, useState } from "react";
 
 interface TreePackage {
@@ -17,6 +17,7 @@ interface TreePackage {
   description: string;
   price: number;
   installmentPrice: number;
+  estimatedReturn: number;
   enabled: boolean;
 }
 
@@ -27,15 +28,18 @@ interface Plant {
   location: string;
   description: string;
   durationYears: number; // Investment duration in years (e.g., 3, 5, 8)
-  // Profit projections per tree
+  minConsecutiveTenor?: number; // Minimum consecutive tenor for bulk commission (monthly only)
   pricing: {
+    monthly: string; // Installment payment per month
+    yearly: string; // Installment payment per year
+    fiveYears: string; // Installment payment for 5 years
     profit: {
-      daily: number; // per pohon
-      weekly: number; // per pohon
-      monthly: number; // per pohon
-      yearly: number; // per pohon
+      daily: number; // Profit per pohon
+      weekly: number; // Profit per pohon
+      monthly: number; // Profit per pohon
+      yearly: number; // Profit per pohon
     };
-    sellPrice: number; // per pohon
+    sellPrice: number; // Sell price per pohon
   };
   estimatedReturn: number; // Total return untuk 10 pohon
   treePackages: TreePackage[];
@@ -45,6 +49,7 @@ export default function PlantShowcasePage() {
   const [plants, setPlantsData] = useState<Plant[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [expandedPlants, setExpandedPlants] = useState<Set<number>>(new Set());
   const { showSuccess, showError, AlertComponent } = useAlert();
 
   // Transform old database structure to new simplified structure
@@ -58,6 +63,7 @@ export default function PlantShowcasePage() {
         price: Math.ceil((oldPlant.investmentPlan?.price || 0) / 10),
         installmentPrice:
           oldPlant.investmentPlan?.installmentOptions?.[0]?.perTree || 0,
+        estimatedReturn: Math.ceil((parseInt(oldPlant.investmentPlan?.returns?.toString().replace(/\D/g, "") || "0")) / 10),
         enabled: true,
       },
       {
@@ -67,6 +73,7 @@ export default function PlantShowcasePage() {
         price: oldPlant.investmentPlan?.price || 0,
         installmentPrice:
           oldPlant.investmentPlan?.installmentOptions?.[0]?.amount || 0,
+        estimatedReturn: parseInt(oldPlant.investmentPlan?.returns?.toString().replace(/\D/g, "") || "0"),
         enabled: true,
       },
     ];
@@ -78,7 +85,11 @@ export default function PlantShowcasePage() {
       location: oldPlant.location,
       description: oldPlant.description,
       durationYears: oldPlant.investmentPlan?.durationYears || 5, // Default to 5 years
+      minConsecutiveTenor: oldPlant.investmentPlan?.minConsecutiveTenor || 10, // Default to 10
       pricing: {
+        monthly: oldPlant.pricing?.monthly || "0",
+        yearly: oldPlant.pricing?.yearly || "0",
+        fiveYears: oldPlant.pricing?.fiveYears || "0",
         profit: {
           daily: parseInt(oldPlant.pricing?.profit?.daily || "0"),
           weekly: parseInt(oldPlant.pricing?.profit?.weekly || "0"),
@@ -138,6 +149,7 @@ export default function PlantShowcasePage() {
       if (
         field === "price" ||
         field === "installmentPrice" ||
+        field === "estimatedReturn" ||
         field === "treeCount"
       ) {
         const cleanValue =
@@ -167,6 +179,7 @@ export default function PlantShowcasePage() {
             description: "Paket Medium",
             price: 0,
             installmentPrice: 0,
+            estimatedReturn: 0,
             enabled: true,
           },
         ],
@@ -194,6 +207,9 @@ export default function PlantShowcasePage() {
       // Ensure the plant has the required structure
       if (!updated[plantIndex].pricing) {
         updated[plantIndex].pricing = {
+          monthly: "0",
+          yearly: "0",
+          fiveYears: "0",
           profit: {
             daily: 0,
             weekly: 0,
@@ -221,6 +237,9 @@ export default function PlantShowcasePage() {
           (updated[plantIndex].pricing.profit as any)[child] =
             parseInt(cleanValue) || 0;
         }
+      } else if (field === "monthly" || field === "yearly" || field === "fiveYears") {
+        const cleanValue = parseIDRInput(value as string);
+        (updated[plantIndex].pricing as any)[field] = (parseInt(cleanValue) || 0).toString();
       } else if (field === "estimatedReturn") {
         const cleanValue = parseIDRInput(value as string);
         updated[plantIndex].estimatedReturn = parseInt(cleanValue) || 0;
@@ -229,6 +248,8 @@ export default function PlantShowcasePage() {
         updated[plantIndex].pricing.sellPrice = parseInt(cleanValue) || 0;
       } else if (field === "durationYears") {
         updated[plantIndex].durationYears = parseInt(value as string) || 5;
+      } else if (field === "minConsecutiveTenor") {
+        updated[plantIndex].minConsecutiveTenor = parseInt(value as string) || 10;
       }
 
       return updated;
@@ -244,9 +265,9 @@ export default function PlantShowcasePage() {
       location: newPlant.location,
       description: newPlant.description,
       pricing: {
-        monthly: newPlant.pricing.profit.monthly.toString(),
-        yearly: newPlant.pricing.profit.yearly.toString(),
-        fiveYears: (newPlant.pricing.profit.yearly * 5).toString(),
+        monthly: newPlant.pricing.monthly,
+        yearly: newPlant.pricing.yearly,
+        fiveYears: newPlant.pricing.fiveYears,
         sellPrice: newPlant.pricing.sellPrice.toString(),
         profit: {
           daily: newPlant.pricing.profit.daily.toString(),
@@ -262,6 +283,7 @@ export default function PlantShowcasePage() {
           15000000,
         duration: newPlant.years,
         durationYears: newPlant.durationYears,
+        minConsecutiveTenor: newPlant.minConsecutiveTenor || 10,
         returns: newPlant.estimatedReturn,
         plantType: `${newPlant.name} Premium`,
         riskLevel: "Bergantung Alam",
@@ -402,8 +424,8 @@ export default function PlantShowcasePage() {
           </motion.button>
         </div>
 
-        {/* Plants Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        {/* Plants List - One per row */}
+        <div className="space-y-8">
           {plants.map((plant, index) => (
             <motion.div
               key={plant.name}
@@ -411,16 +433,26 @@ export default function PlantShowcasePage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: index * 0.1 }}
-              whileHover={{
-                scale: 1.02,
-                boxShadow: "0 20px 25px -5px rgba(50, 77, 62, 0.1)",
-              }}
             >
-              <div className="flex items-center gap-4 mb-6">
+              {/* Header */}
+              <button
+                onClick={() => {
+                  setExpandedPlants(prev => {
+                    const newSet = new Set(prev);
+                    if (newSet.has(index)) {
+                      newSet.delete(index);
+                    } else {
+                      newSet.add(index);
+                    }
+                    return newSet;
+                  });
+                }}
+                className="flex items-center gap-4 mb-6 w-full text-left hover:opacity-80 transition-opacity"
+              >
                 <div className="w-16 h-16 rounded-xl bg-gradient-to-r from-[#324D3E] to-[#4C3D19] flex items-center justify-center">
                   <DollarSign className="w-8 h-8 text-white" />
                 </div>
-                <div>
+                <div className="flex-1">
                   <h3 className="text-xl font-bold text-[#324D3E] dark:text-white capitalize font-[family-name:var(--font-poppins)]">
                     Tanaman {plant.name}
                   </h3>
@@ -428,14 +460,200 @@ export default function PlantShowcasePage() {
                     {plant.nameEn}
                   </p>
                 </div>
-              </div>
+                <ChevronDown 
+                  className={`w-6 h-6 text-[#324D3E] dark:text-white transition-transform duration-200 ${
+                    expandedPlants.has(index) ? 'rotate-180' : ''
+                  }`}
+                />
+              </button>
 
-              <div className="space-y-6">
-                {/* 1. Tree Packages Management */}
+              {/* Edit Pricing Section */}
+              {expandedPlants.has(index) && (
+              <div className="space-y-8">
+                {/* Section 1: Mulai Dari (Installment Payments) */}
                 <div>
+                  <h4 className="text-xl font-bold text-[#324D3E] dark:text-white mb-4 font-[family-name:var(--font-poppins)]">
+                    1️⃣ Mulai Dari (Harga Cicilan)
+                  </h4>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">Harga cicilan yang dibayar customer per bulan/tahun</p>
+                  <div className="grid grid-cols-3 gap-4">
+                    <div>
+                      <label className="block text-base font-semibold text-[#324D3E] dark:text-gray-300 mb-2">
+                        Per Bulan (Mulai Dari)
+                      </label>
+                      <div className="relative">
+                        <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 text-base">Rp</span>
+                        <input
+                          type="text"
+                          value={formatIDRCurrency(parseInt(plant.pricing?.monthly || "0"))}
+                          onChange={(e) => {
+                            const formattedValue = formatIDRInput(e.target.value);
+                            e.target.value = formattedValue;
+                            handlePriceUpdate(index, "monthly", formattedValue);
+                          }}
+                          className="w-full pl-11 pr-16 py-3 text-base font-semibold border-2 border-[#324D3E]/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#324D3E]/50 focus:border-[#324D3E] text-[#324D3E] dark:text-white bg-white dark:bg-gray-700"
+                        />
+                        <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-sm text-gray-500">/bulan</span>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-base font-semibold text-[#324D3E] dark:text-gray-300 mb-2">
+                        Per Tahun
+                      </label>
+                      <div className="relative">
+                        <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 text-base">Rp</span>
+                        <input
+                          type="text"
+                          value={formatIDRCurrency(parseInt(plant.pricing?.yearly || "0"))}
+                          onChange={(e) => {
+                            const formattedValue = formatIDRInput(e.target.value);
+                            e.target.value = formattedValue;
+                            handlePriceUpdate(index, "yearly", formattedValue);
+                          }}
+                          className="w-full pl-11 pr-3 py-3 text-base font-semibold border-2 border-[#324D3E]/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#324D3E]/50 focus:border-[#324D3E] text-[#324D3E] dark:text-white bg-white dark:bg-gray-700"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-base font-semibold text-[#324D3E] dark:text-gray-300 mb-2">
+                        Per 5 Tahun
+                      </label>
+                      <div className="relative">
+                        <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 text-base">Rp</span>
+                        <input
+                          type="text"
+                          value={formatIDRCurrency(parseInt(plant.pricing?.fiveYears || "0"))}
+                          onChange={(e) => {
+                            const formattedValue = formatIDRInput(e.target.value);
+                            e.target.value = formattedValue;
+                            handlePriceUpdate(index, "fiveYears", formattedValue);
+                          }}
+                          className="w-full pl-11 pr-3 py-3 text-base font-semibold border-2 border-[#324D3E]/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#324D3E]/50 focus:border-[#324D3E] text-[#324D3E] dark:text-white bg-white dark:bg-gray-700"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Section 2: Lainnya (Other Pricing) */}
+                <div>
+                  <h4 className="text-xl font-bold text-[#324D3E] dark:text-white mb-4 font-[family-name:var(--font-poppins)]">
+                    2️⃣ Lainnya
+                  </h4>
+                  <div className="max-w-xs">
+                    <label className="block text-base font-semibold text-[#324D3E] dark:text-gray-300 mb-2">
+                      Harga Jual Pohon
+                    </label>
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 text-base">Rp</span>
+                      <input
+                        type="text"
+                        value={formatIDRCurrency(plant.pricing?.sellPrice || 0)}
+                        onChange={(e) => {
+                          const formattedValue = formatIDRInput(e.target.value);
+                          e.target.value = formattedValue;
+                          handlePriceUpdate(index, "sellPrice", formattedValue);
+                        }}
+                        className="w-full pl-11 pr-3 py-3 text-base font-semibold border-2 border-[#324D3E]/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#324D3E]/50 focus:border-[#324D3E] text-[#324D3E] dark:text-white bg-white dark:bg-gray-700"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Section 3: Pendapatan / Keuntungan Bersih */}
+                <div>
+                  <h4 className="text-xl font-bold text-[#324D3E] dark:text-white mb-4 font-[family-name:var(--font-poppins)]">
+                    3️⃣ Pendapatan / Keuntungan Bersih
+                  </h4>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">Keuntungan yang didapat investor</p>
+                  <div className="grid grid-cols-3 gap-4">
+                    <div>
+                      <label className="block text-base font-semibold text-[#324D3E] dark:text-gray-300 mb-2">
+                        Bulanan
+                      </label>
+                      <div className="relative">
+                        <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 text-base">Rp</span>
+                        <input
+                          type="text"
+                          value={formatIDRCurrency(plant.pricing?.profit?.monthly || 0)}
+                          onChange={(e) => {
+                            const formattedValue = formatIDRInput(e.target.value);
+                            e.target.value = formattedValue;
+                            handlePriceUpdate(index, "profit.monthly", formattedValue);
+                          }}
+                          className="w-full pl-11 pr-3 py-3 text-base font-semibold border-2 border-[#324D3E]/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#324D3E]/50 focus:border-[#324D3E] text-[#324D3E] dark:text-white bg-white dark:bg-gray-700"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-base font-semibold text-[#324D3E] dark:text-gray-300 mb-2">
+                        Mingguan
+                      </label>
+                      <div className="relative">
+                        <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 text-base">Rp</span>
+                        <input
+                          type="text"
+                          value={formatIDRCurrency(plant.pricing?.profit?.weekly || 0)}
+                          onChange={(e) => {
+                            const formattedValue = formatIDRInput(e.target.value);
+                            e.target.value = formattedValue;
+                            handlePriceUpdate(index, "profit.weekly", formattedValue);
+                          }}
+                          className="w-full pl-11 pr-3 py-3 text-base font-semibold border-2 border-[#324D3E]/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#324D3E]/50 focus:border-[#324D3E] text-[#324D3E] dark:text-white bg-white dark:bg-gray-700"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-base font-semibold text-[#324D3E] dark:text-gray-300 mb-2">
+                        Harian
+                      </label>
+                      <div className="relative">
+                        <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 text-base">Rp</span>
+                        <input
+                          type="text"
+                          value={formatIDRCurrency(plant.pricing?.profit?.daily || 0)}
+                          onChange={(e) => {
+                            const formattedValue = formatIDRInput(e.target.value);
+                            e.target.value = formattedValue;
+                            handlePriceUpdate(index, "profit.daily", formattedValue);
+                          }}
+                          className="w-full pl-11 pr-3 py-3 text-base font-semibold border-2 border-[#324D3E]/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#324D3E]/50 focus:border-[#324D3E] text-[#324D3E] dark:text-white bg-white dark:bg-gray-700"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Duration Field */}
+                <div>
+                  <h4 className="text-xl font-bold text-[#324D3E] dark:text-white mb-4 font-[family-name:var(--font-poppins)]">
+                    ⏱️ Durasi Investasi
+                  </h4>
+                  <div className="max-w-xs">
+                    <label className="block text-base font-semibold text-[#324D3E] dark:text-gray-300 mb-2">
+                      Durasi (tahun)
+                    </label>
+                    <input
+                      type="number"
+                      min="1"
+                      max="20"
+                      value={plant.durationYears || 5}
+                      onChange={(e) => handlePriceUpdate(index, "durationYears", e.target.value)}
+                      className="w-full px-4 py-3 text-base font-semibold border-2 border-[#324D3E]/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#324D3E]/50 focus:border-[#324D3E] text-[#324D3E] dark:text-white bg-white dark:bg-gray-700"
+                    />
+                    <p className="text-sm text-gray-500 mt-2">Menentukan jumlah cicilan</p>
+                  </div>
+                </div>
+
+                {/* Tree Packages Section - Full Width Below */}
+                <div className="mt-6 pt-6 border-t border-[#324D3E]/10">
                   <div className="flex justify-between items-center mb-3">
                     <h4 className="text-lg font-semibold text-[#324D3E] dark:text-white font-[family-name:var(--font-poppins)]">
-                      1. Paket Pohon
+                      Paket Pohon
                     </h4>
                     <motion.button
                       onClick={() => addTreePackage(index)}
@@ -598,6 +816,33 @@ export default function PlantShowcasePage() {
                               />
                             </div>
                           </div>
+                          <div className="col-span-2">
+                            <label className="block text-xs font-medium text-[#324D3E] dark:text-gray-300 mb-1">
+                              Estimasi Return
+                            </label>
+                            <div className="relative">
+                              <span className="absolute left-2 top-1/2 transform -translate-y-1/2 text-[#889063] text-xs">
+                                Rp
+                              </span>
+                              <input
+                                type="text"
+                                value={formatIDRCurrency(pkg.estimatedReturn || 0)}
+                                onChange={(e) => {
+                                  const formattedValue = formatIDRInput(
+                                    e.target.value
+                                  );
+                                  e.target.value = formattedValue;
+                                  handleTreePackageUpdate(
+                                    index,
+                                    pkgIndex,
+                                    "estimatedReturn",
+                                    formattedValue
+                                  );
+                                }}
+                                className="w-full pl-6 pr-2 py-1 text-sm border border-green-300 dark:border-green-600 rounded-lg focus:outline-none focus:ring-1 focus:ring-green-400 text-green-700 dark:text-green-400 bg-white dark:bg-gray-700"
+                              />
+                            </div>
+                          </div>
                         </div>
                       </motion.div>
                     ))}
@@ -617,216 +862,8 @@ export default function PlantShowcasePage() {
                     )}
                   </div>
                 </div>
-
-                {/* 2. Proyeksi Keuntungan per Pohon */}
-                <div>
-                  <h4 className="text-lg font-semibold text-[#324D3E] dark:text-white mb-3 font-[family-name:var(--font-poppins)]">
-                    2. Proyeksi Keuntungan (per pohon)
-                  </h4>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-sm font-medium text-[#324D3E] dark:text-gray-300 mb-1">
-                        Harian
-                      </label>
-                      <div className="relative">
-                        <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#889063] text-sm">
-                          Rp
-                        </span>
-                        <input
-                          type="text"
-                          value={formatIDRCurrency(
-                            plant.pricing?.profit?.daily || 0
-                          )}
-                          onChange={(e) => {
-                            const formattedValue = formatIDRInput(
-                              e.target.value
-                            );
-                            e.target.value = formattedValue;
-                            handlePriceUpdate(
-                              index,
-                              "profit.daily",
-                              formattedValue
-                            );
-                          }}
-                          className="w-full pl-10 pr-3 py-2 border border-[#324D3E]/20 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#324D3E]/20 focus:border-[#324D3E] text-[#324D3E] dark:text-white bg-white dark:bg-gray-700"
-                        />
-                      </div>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-[#324D3E] dark:text-gray-300 mb-1">
-                        Mingguan
-                      </label>
-                      <div className="relative">
-                        <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#889063] text-sm">
-                          Rp
-                        </span>
-                        <input
-                          type="text"
-                          value={formatIDRCurrency(
-                            plant.pricing?.profit?.weekly || 0
-                          )}
-                          onChange={(e) => {
-                            const formattedValue = formatIDRInput(
-                              e.target.value
-                            );
-                            e.target.value = formattedValue;
-                            handlePriceUpdate(
-                              index,
-                              "profit.weekly",
-                              formattedValue
-                            );
-                          }}
-                          className="w-full pl-10 pr-3 py-2 border border-[#324D3E]/20 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#324D3E]/20 focus:border-[#324D3E] text-[#324D3E] dark:text-white bg-white dark:bg-gray-700"
-                        />
-                      </div>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-[#324D3E] dark:text-gray-300 mb-1">
-                        Bulanan
-                      </label>
-                      <div className="relative">
-                        <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#889063] text-sm">
-                          Rp
-                        </span>
-                        <input
-                          type="text"
-                          value={formatIDRCurrency(
-                            plant.pricing?.profit?.monthly || 0
-                          )}
-                          onChange={(e) => {
-                            const formattedValue = formatIDRInput(
-                              e.target.value
-                            );
-                            e.target.value = formattedValue;
-                            handlePriceUpdate(
-                              index,
-                              "profit.monthly",
-                              formattedValue
-                            );
-                          }}
-                          className="w-full pl-10 pr-3 py-2 border border-[#324D3E]/20 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#324D3E]/20 focus:border-[#324D3E] text-[#324D3E] dark:text-white bg-white dark:bg-gray-700"
-                        />
-                      </div>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-[#324D3E] dark:text-gray-300 mb-1">
-                        Tahunan
-                      </label>
-                      <div className="relative">
-                        <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#889063] text-sm">
-                          Rp
-                        </span>
-                        <input
-                          type="text"
-                          value={formatIDRCurrency(
-                            plant.pricing?.profit?.yearly || 0
-                          )}
-                          onChange={(e) => {
-                            const formattedValue = formatIDRInput(
-                              e.target.value
-                            );
-                            e.target.value = formattedValue;
-                            handlePriceUpdate(
-                              index,
-                              "profit.yearly",
-                              formattedValue
-                            );
-                          }}
-                          className="w-full pl-10 pr-3 py-2 border border-[#324D3E]/20 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#324D3E]/20 focus:border-[#324D3E] text-[#324D3E] dark:text-white bg-white dark:bg-gray-700"
-                        />
-                      </div>
-                    </div>
-                  </div>
-                  <div className="mt-3">
-                    <label className="block text-sm font-medium text-[#324D3E] dark:text-gray-300 mb-1">
-                      Harga Jual per Pohon
-                    </label>
-                    <div className="relative">
-                      <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#889063] text-sm">
-                        Rp
-                      </span>
-                      <input
-                        type="text"
-                        value={formatIDRCurrency(
-                          plant.pricing?.sellPrice || 0
-                        )}
-                        onChange={(e) => {
-                          const formattedValue = formatIDRInput(
-                            e.target.value
-                          );
-                          e.target.value = formattedValue;
-                          handlePriceUpdate(
-                            index,
-                            "sellPrice",
-                            formattedValue
-                          );
-                        }}
-                        className="w-full pl-10 pr-3 py-2 border border-[#324D3E]/20 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#324D3E]/20 focus:border-[#324D3E] text-[#324D3E] dark:text-white bg-white dark:bg-gray-700"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                {/* 3. Duration Years */}
-                <div>
-                  <h4 className="text-lg font-semibold text-[#324D3E] dark:text-white mb-3 font-[family-name:var(--font-poppins)]">
-                    3. Durasi Investasi
-                  </h4>
-                  <div>
-                    <label className="block text-sm font-medium text-[#324D3E] dark:text-gray-300 mb-1">
-                      Durasi (dalam tahun)
-                    </label>
-                    <input
-                      type="number"
-                      min="1"
-                      max="20"
-                      value={plant.durationYears || 5}
-                      onChange={(e) =>
-                        handlePriceUpdate(
-                          index,
-                          "durationYears",
-                          e.target.value
-                        )
-                      }
-                      className="w-full px-3 py-2 border border-[#324D3E]/20 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#324D3E]/20 focus:border-[#324D3E] text-[#324D3E] dark:text-white bg-white dark:bg-gray-700"
-                    />
-                    <p className="text-xs text-[#889063] dark:text-gray-400 mt-1">
-                      Durasi investasi akan menentukan jumlah cicilan. Contoh: 5 tahun = 60 bulan cicilan, 8 tahun = 96 bulan cicilan.
-                    </p>
-                  </div>
-                </div>
-
-                {/* 4. Estimasi Return */}
-                <div>
-                  <h4 className="text-lg font-semibold text-[#324D3E] dark:text-white mb-3 font-[family-name:var(--font-poppins)]">
-                    4. Estimasi Return (10 Pohon)
-                  </h4>
-                  <div>
-                    <label className="block text-sm font-medium text-[#324D3E] dark:text-gray-300 mb-1">
-                      Total Estimasi Return setelah {plant.durationYears || 5} Tahun
-                    </label>
-                    <div className="relative">
-                      <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#889063] text-sm">
-                        Rp
-                      </span>
-                      <input
-                        type="text"
-                        value={formatIDRCurrency(plant.estimatedReturn || 0)}
-                        onChange={(e) => {
-                          const formattedValue = formatIDRInput(e.target.value);
-                          e.target.value = formattedValue;
-                          handlePriceUpdate(
-                            index,
-                            "estimatedReturn",
-                            formattedValue
-                          );
-                        }}
-                        className="w-full pl-10 pr-3 py-2 border border-[#324D3E]/20 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#324D3E]/20 focus:border-[#324D3E] text-[#324D3E] dark:text-white bg-white dark:bg-gray-700"
-                      />
-                    </div>
-                  </div>
-                </div>
               </div>
+              )}
             </motion.div>
           ))}
         </div>
