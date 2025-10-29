@@ -15,7 +15,7 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     const body = await request.json();
-    const { fullName, phoneNumber, email, role, password } = body;
+    const { fullName, phoneNumber, email, role, password, ktpImageUrl, faceImageUrl } = body;
 
     if (!fullName || !phoneNumber || !email || !role || !password) {
       return NextResponse.json(
@@ -105,30 +105,62 @@ export async function POST(request: NextRequest) {
         prefix = "MKH";
         dbRole = "marketing_head";
         break;
+      case "Marketing Admin":
+        prefix = "MKA";
+        dbRole = "marketing_admin";
+        break;
       default:
         prefix = "ST";
         dbRole = "staff";
     }
 
-    const lastStaffUser = await User.findOne({
+    // Find all users with same role and prefix to get correct sequential number
+    const existingUsers = await User.find({
       role: dbRole,
       userCode: { $regex: `^${prefix}-${currentYear}-` },
     })
-      .sort({ userCode: -1 })
-      .select("userCode");
+      .select("userCode")
+      .lean();
 
     let sequential = 1;
-    if (lastStaffUser && lastStaffUser.userCode) {
-      const lastSequential = parseInt(lastStaffUser.userCode.split("-")[2]);
-      sequential = lastSequential + 1;
+    if (existingUsers.length > 0) {
+      // Extract all sequential numbers and find the maximum
+      const sequentialNumbers = existingUsers
+        .map((u) => {
+          const parts = u.userCode?.split("-");
+          return parts && parts.length === 3 ? parseInt(parts[2]) : 0;
+        })
+        .filter((n) => !isNaN(n));
+      
+      if (sequentialNumbers.length > 0) {
+        sequential = Math.max(...sequentialNumbers) + 1;
+      }
     }
-    const userCode = `${prefix}-${currentYear}-${sequential
+    
+    let userCode = `${prefix}-${currentYear}-${sequential
       .toString()
       .padStart(3, "0")}`;
+    
+    // Check if userCode already exists (safety check) and increment if needed
+    let existingUserCode = await User.findOne({ userCode });
+    let attempts = 0;
+    while (existingUserCode && attempts < 100) {
+      sequential++;
+      userCode = `${prefix}-${currentYear}-${sequential.toString().padStart(3, "0")}`;
+      existingUserCode = await User.findOne({ userCode });
+      attempts++;
+    }
+    
+    if (existingUserCode) {
+      return NextResponse.json(
+        { error: `Unable to generate unique userCode after multiple attempts. Please try again.` },
+        { status: 409 }
+      );
+    }
 
-    // Generate referral code for marketing staff (both marketing and marketing_head)
+    // Generate referral code only for marketing_head and marketing_admin (NOT regular marketing staff)
     let referralCode;
-    if (dbRole === "marketing" || dbRole === "marketing_head") {
+    if (dbRole === "marketing_head" || dbRole === "marketing_admin") {
       let isUnique = false;
       while (!isUnique) {
         referralCode = generateReferralCode();
@@ -211,6 +243,8 @@ export async function POST(request: NextRequest) {
           ? "Marketing Staff"
           : role === "Marketing Head"
           ? "Marketing Head"
+          : role === "Marketing Admin"
+          ? "Marketing Admin"
           : "Staff Lapangan",
       occupationCode: prefix,
       userCode: userCode,
@@ -221,6 +255,8 @@ export async function POST(request: NextRequest) {
       beneficiaryRelationship: "suami_istri", // Default to spouse
       role: dbRole,
       ...(referralCode && { referralCode }),
+      ...(ktpImageUrl && { ktpImageUrl }),
+      ...(faceImageUrl && { faceImageUrl }),
       isEmailVerified: true,
       isPhoneVerified: true,
       isActive: true,
@@ -330,6 +366,7 @@ export async function GET(request: NextRequest) {
           "staff_finance",
           "marketing",
           "marketing_head",
+          "marketing_admin",
           "mandor",
           "asisten",
           "manajer",
@@ -400,7 +437,7 @@ export async function PUT(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     const body = await request.json();
-    const { id, fullName, phoneNumber, email, role, password } = body;
+    const { id, fullName, phoneNumber, email, role, password, ktpImageUrl, faceImageUrl } = body;
 
     if (!id || !fullName || !phoneNumber || !email || !role) {
       return NextResponse.json(
@@ -513,6 +550,16 @@ export async function PUT(request: NextRequest) {
         updatePrefix = "MKT";
         updateOccupation = "Marketing Staff";
         break;
+      case "Marketing Head":
+        updateDbRole = "marketing_head";
+        updatePrefix = "MKH";
+        updateOccupation = "Marketing Head";
+        break;
+      case "Marketing Admin":
+        updateDbRole = "marketing_admin";
+        updatePrefix = "MKA";
+        updateOccupation = "Marketing Admin";
+        break;
       default:
         updateDbRole = "staff";
         updatePrefix = "ST";
@@ -528,8 +575,16 @@ export async function PUT(request: NextRequest) {
       occupationCode: updatePrefix,
     };
 
-    // Generate referral code if role is changed to marketing and doesn't have one
-    if (updateDbRole === "marketing" && !staffUser.referralCode) {
+    // Add image URLs if provided (and not empty strings)
+    if (ktpImageUrl && ktpImageUrl.trim() !== "") {
+      updateData.ktpImageUrl = ktpImageUrl;
+    }
+    if (faceImageUrl && faceImageUrl.trim() !== "") {
+      updateData.faceImageUrl = faceImageUrl;
+    }
+
+    // Generate referral code if role is changed to marketing_head/marketing_admin and doesn't have one (NOT regular marketing staff)
+    if ((updateDbRole === "marketing_head" || updateDbRole === "marketing_admin") && !staffUser.referralCode) {
       let referralCode;
       let isUnique = false;
       while (!isUnique) {

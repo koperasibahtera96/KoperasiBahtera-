@@ -19,6 +19,8 @@ interface StaffUser {
   isActive: boolean;
   userCode?: string;
   createdAt?: string;
+  ktpImageUrl?: string;
+  faceImageUrl?: string;
 }
 
 export default function MarketingKelolaStaff() {
@@ -30,7 +32,7 @@ export default function MarketingKelolaStaff() {
 
   useEffect(() => setMounted(true), []);
 
-  // role guard: only allow marketing_head
+  // role guard: only allow marketing_head, marketing_admin, and admin
   useEffect(() => {
     if (status === "loading") return;
     if (!session) {
@@ -39,6 +41,7 @@ export default function MarketingKelolaStaff() {
     }
     if (
       session.user?.role !== "marketing_head" &&
+      session.user?.role !== "marketing_admin" &&
       session.user?.role !== "admin"
     ) {
       // unauthorized
@@ -60,15 +63,22 @@ export default function MarketingKelolaStaff() {
   const [totalPages, setTotalPages] = useState(1);
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [showDetailModal, setShowDetailModal] = useState(false);
   const [editingStaff, setEditingStaff] = useState<StaffUser | null>(null);
+  const [viewingStaff, setViewingStaff] = useState<StaffUser | null>(null);
   const [formData, setFormData] = useState({
     fullName: "",
     phoneNumber: "",
     email: "",
     role: "Marketing",
     password: "",
+    confirmPassword: "",
+    ktpImageUrl: "",
+    faceImageUrl: "",
   });
   const [submitting, setSubmitting] = useState(false);
+  const [uploadingKtp, setUploadingKtp] = useState(false);
+  const [uploadingFace, setUploadingFace] = useState(false);
 
   useEffect(() => {
     fetchStaff();
@@ -142,17 +152,54 @@ export default function MarketingKelolaStaff() {
           setSubmitting(false);
           return;
         }
+        // Check if confirmPassword matches
+        if (formData.password !== formData.confirmPassword) {
+          showError(
+            "Password tidak cocok",
+            "Password dan konfirmasi password harus sama"
+          );
+          setSubmitting(false);
+          return;
+        }
       }
+      // Check if KTP and face images are uploaded for new staff only
+      if (!isEditing) {
+        if (!formData.ktpImageUrl) {
+          showError("KTP diperlukan", "Upload foto KTP wajib diisi");
+          setSubmitting(false);
+          return;
+        }
+        if (!formData.faceImageUrl) {
+          showError("Foto wajah diperlukan", "Upload foto wajah wajib diisi");
+          setSubmitting(false);
+          return;
+        }
+      }
+      // For editing, images are optional but if provided should be included
 
       const url = "/api/admin/staff";
       const method = isEditing ? "PUT" : "POST";
       const body = isEditing
         ? JSON.stringify({
-            ...formData,
+            fullName: formData.fullName,
+            phoneNumber: formData.phoneNumber,
+            email: formData.email,
+            password: formData.password,
             id: editingStaff?._id,
-            role: "marketing",
+            role: formData.role, // Use the role from formData to preserve marketing vs marketing_head
+            // Always include image URLs, even if empty, to preserve existing images
+            ktpImageUrl: formData.ktpImageUrl || editingStaff?.ktpImageUrl || "",
+            faceImageUrl: formData.faceImageUrl || editingStaff?.faceImageUrl || "",
           })
-        : JSON.stringify({ ...formData, role: "Marketing" });
+        : JSON.stringify({
+            fullName: formData.fullName,
+            phoneNumber: formData.phoneNumber,
+            email: formData.email,
+            password: formData.password,
+            role: "Marketing",
+            ktpImageUrl: formData.ktpImageUrl,
+            faceImageUrl: formData.faceImageUrl,
+          });
 
       const res = await fetch(url, {
         method,
@@ -173,6 +220,9 @@ export default function MarketingKelolaStaff() {
         email: "",
         role: "Marketing",
         password: "",
+        confirmPassword: "",
+        ktpImageUrl: "",
+        faceImageUrl: "",
       });
       fetchStaff();
     } catch (err: any) {
@@ -189,10 +239,18 @@ export default function MarketingKelolaStaff() {
       fullName: staff.fullName,
       phoneNumber: staff.phoneNumber,
       email: staff.email,
-      role: "Marketing",
+      role: staff.role === "marketing_head" ? "Marketing Head" : "Marketing",
       password: "",
+      confirmPassword: "",
+      ktpImageUrl: staff.ktpImageUrl || "",
+      faceImageUrl: staff.faceImageUrl || "",
     });
     setShowEditModal(true);
+  };
+
+  const handleDetail = (staff: StaffUser) => {
+    setViewingStaff(staff);
+    setShowDetailModal(true);
   };
 
   // Deletion is intentionally disabled on the marketing management page.
@@ -205,6 +263,74 @@ export default function MarketingKelolaStaff() {
     for (let i = 0; i < 12; i++)
       password += chars.charAt(Math.floor(Math.random() * chars.length));
     setFormData((prev) => ({ ...prev, password }));
+  };
+
+  const handleKtpUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      showError("File terlalu besar", "Ukuran file maksimal 5MB");
+      return;
+    }
+
+    setUploadingKtp(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const response = await fetch("/api/upload", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error("Upload failed");
+      }
+
+      const data = await response.json();
+      setFormData((prev) => ({ ...prev, ktpImageUrl: data.imageUrl }));
+      showSuccess("Berhasil", "Foto KTP berhasil diupload");
+    } catch (error) {
+      console.error("KTP upload error:", error);
+      showError("Upload gagal", "Gagal mengupload foto KTP");
+    } finally {
+      setUploadingKtp(false);
+    }
+  };
+
+  const handleFaceUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      showError("File terlalu besar", "Ukuran file maksimal 5MB");
+      return;
+    }
+
+    setUploadingFace(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const response = await fetch("/api/upload", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error("Upload failed");
+      }
+
+      const data = await response.json();
+      setFormData((prev) => ({ ...prev, faceImageUrl: data.imageUrl }));
+      showSuccess("Berhasil", "Foto wajah berhasil diupload");
+    } catch (error) {
+      console.error("Face upload error:", error);
+      showError("Upload gagal", "Gagal mengupload foto wajah");
+    } finally {
+      setUploadingFace(false);
+    }
   };
 
   return (
@@ -391,6 +517,17 @@ export default function MarketingKelolaStaff() {
                       </td>
                       <td className={getThemeClasses("py-3", "")}>
                         <div className="flex gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleDetail(s)}
+                            className={getThemeClasses(
+                              "border-[#324D3E]/20 dark:border-gray-600 text-[#324D3E] dark:text-gray-300 hover:bg-[#324D3E]/10 dark:hover:bg-gray-700 hover:border-[#324D3E] text-xs px-2 py-1",
+                              "!bg-gradient-to-r !from-[#FFF0F3] !to-[#FFF7F9] !text-[#4c1d1d]"
+                            )}
+                          >
+                            Detail
+                          </Button>
                           {/* If current user is marketing_head, disallow editing admin accounts here */}
                           {!(
                             session?.user?.role === "marketing_head" &&
@@ -606,6 +743,200 @@ export default function MarketingKelolaStaff() {
                     </ul>
                   </div>
                 </div>
+                <div>
+                  <label
+                    className={getThemeClasses(
+                      "block text-sm text-gray-700 dark:text-gray-200",
+                      "!text-[#4c1d1d]"
+                    )}
+                  >
+                    Konfirmasi Password{" "}
+                    {showEditModal ? "(kosongkan jika tidak diubah)" : ""}
+                  </label>
+                  <Input
+                    type="password"
+                    value={formData.confirmPassword}
+                    onChange={(e) =>
+                      setFormData((prev) => ({
+                        ...prev,
+                        confirmPassword: e.target.value,
+                      }))
+                    }
+                    className={getThemeClasses(
+                      "border-[#324D3E]/20 dark:border-gray-600 focus:border-[#324D3E] focus:ring-[#324D3E]/20 rounded-xl dark:bg-gray-700 dark:text-white",
+                      "!bg-white !text-[#4c1d1d]"
+                    )}
+                  />
+                </div>
+                {/* KTP Upload - shown for both add and edit */}
+                <>
+                    <div>
+                      <label
+                        className={getThemeClasses(
+                          "block text-sm text-gray-700 dark:text-gray-200 mb-2",
+                          "!text-[#4c1d1d]"
+                        )}
+                      >
+                        Upload Foto KTP {showEditModal ? "(opsional)" : "*"}
+                      </label>
+                      {formData.ktpImageUrl ? (
+                        <div className="space-y-2">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={formData.ktpImageUrl}
+                            alt="KTP Preview"
+                            className="w-full h-32 object-cover rounded-lg border border-gray-300"
+                          />
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setFormData((prev) => ({
+                                ...prev,
+                                ktpImageUrl: "",
+                              }))
+                            }
+                            className={getThemeClasses(
+                              "w-full px-3 py-2 text-sm border-[#324D3E]/20 dark:border-gray-600 text-[#324D3E] dark:text-gray-300 hover:bg-[#324D3E]/10 dark:hover:bg-gray-700 hover:border-[#324D3E] rounded-xl",
+                              "!bg-gradient-to-r !from-[#FFF0F3] !to-[#FFF7F9] !text-[#4c1d1d]"
+                            )}
+                          >
+                            Ganti Foto KTP
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-[#324D3E] transition-colors">
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={handleKtpUpload}
+                            className="hidden"
+                            id="ktp-upload-staff"
+                            disabled={uploadingKtp}
+                          />
+                          <label
+                            htmlFor="ktp-upload-staff"
+                            className="cursor-pointer"
+                          >
+                            <div className="space-y-2">
+                              <div className="mx-auto w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center">
+                                {uploadingKtp ? (
+                                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-[#324D3E]"></div>
+                                ) : (
+                                  <svg
+                                    className="w-6 h-6 text-gray-400"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                  >
+                                    <path
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      strokeWidth={2}
+                                      d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+                                    />
+                                  </svg>
+                                )}
+                              </div>
+                              <div>
+                                <p className="text-sm text-gray-600">
+                                  {uploadingKtp
+                                    ? "Mengupload..."
+                                    : "Klik untuk upload foto KTP"}
+                                </p>
+                                <p className="text-xs text-gray-500">
+                                  PNG, JPG hingga 5MB
+                                </p>
+                              </div>
+                            </div>
+                          </label>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Face Upload */}
+                    <div>
+                      <label
+                        className={getThemeClasses(
+                          "block text-sm text-gray-700 dark:text-gray-200 mb-2",
+                          "!text-[#4c1d1d]"
+                        )}
+                      >
+                        Upload Foto Wajah {showEditModal ? "(opsional)" : "*"}
+                      </label>
+                      {formData.faceImageUrl ? (
+                        <div className="space-y-2">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={formData.faceImageUrl}
+                            alt="Face Preview"
+                            className="w-full h-32 object-cover rounded-lg border border-gray-300"
+                          />
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setFormData((prev) => ({
+                                ...prev,
+                                faceImageUrl: "",
+                              }))
+                            }
+                            className={getThemeClasses(
+                              "w-full px-3 py-2 text-sm border-[#324D3E]/20 dark:border-gray-600 text-[#324D3E] dark:text-gray-300 hover:bg-[#324D3E]/10 dark:hover:bg-gray-700 hover:border-[#324D3E] rounded-xl",
+                              "!bg-gradient-to-r !from-[#FFF0F3] !to-[#FFF7F9] !text-[#4c1d1d]"
+                            )}
+                          >
+                            Ganti Foto Wajah
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-[#324D3E] transition-colors">
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={handleFaceUpload}
+                            className="hidden"
+                            id="face-upload-staff"
+                            disabled={uploadingFace}
+                          />
+                          <label
+                            htmlFor="face-upload-staff"
+                            className="cursor-pointer"
+                          >
+                            <div className="space-y-2">
+                              <div className="mx-auto w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center">
+                                {uploadingFace ? (
+                                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-[#324D3E]"></div>
+                                ) : (
+                                  <svg
+                                    className="w-6 h-6 text-gray-400"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                  >
+                                    <path
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      strokeWidth={2}
+                                      d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+                                    />
+                                  </svg>
+                                )}
+                              </div>
+                              <div>
+                                <p className="text-sm text-gray-600">
+                                  {uploadingFace
+                                    ? "Mengupload..."
+                                    : "Klik untuk upload foto wajah"}
+                                </p>
+                                <p className="text-xs text-gray-500">
+                                  PNG, JPG hingga 5MB
+                                </p>
+                              </div>
+                            </div>
+                          </label>
+                        </div>
+                      )}
+                    </div>
+                  </>
                 <div className="flex gap-2">
                   <Button
                     type="button"
@@ -620,6 +951,9 @@ export default function MarketingKelolaStaff() {
                         email: "",
                         role: "Marketing",
                         password: "",
+                        confirmPassword: "",
+                        ktpImageUrl: "",
+                        faceImageUrl: "",
                       });
                     }}
                     className={getThemeClasses(
@@ -645,6 +979,249 @@ export default function MarketingKelolaStaff() {
                   </Button>
                 </div>
               </form>
+            </div>
+          </div>
+        )}
+
+        {/* Detail Modal */}
+        {showDetailModal && viewingStaff && (
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+            <div
+              className={getThemeClasses(
+                "bg-white rounded-2xl p-6 w-full max-w-2xl dark:bg-gray-800 max-h-[90vh] overflow-y-auto",
+                "!bg-[#FFF7F9] !text-[#4c1d1d]"
+              )}
+            >
+              <div className="flex justify-between items-center mb-4">
+                <h2
+                  className={getThemeClasses(
+                    "text-lg font-bold text-gray-900 dark:text-white",
+                    "!text-[#4c1d1d]"
+                  )}
+                >
+                  Detail Staff - {viewingStaff.fullName}
+                </h2>
+                <button
+                  onClick={() => {
+                    setShowDetailModal(false);
+                    setViewingStaff(null);
+                  }}
+                  className={getThemeClasses(
+                    "text-gray-400 hover:text-gray-600 dark:hover:text-gray-200",
+                    "!text-[#4c1d1d] hover:!text-[#831843]"
+                  )}
+                >
+                  <svg
+                    className="w-6 h-6"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M6 18L18 6M6 6l12 12"
+                    />
+                  </svg>
+                </button>
+              </div>
+
+              <div className="space-y-6">
+                {/* Staff Info */}
+                <div
+                  className={getThemeClasses(
+                    "bg-gray-50 rounded-lg p-4 dark:bg-gray-700",
+                    "!bg-white"
+                  )}
+                >
+                  <h3
+                    className={getThemeClasses(
+                      "text-sm font-semibold text-gray-700 dark:text-gray-200 mb-3",
+                      "!text-[#4c1d1d]"
+                    )}
+                  >
+                    Informasi Staff
+                  </h3>
+                  <div className="grid grid-cols-2 gap-3 text-sm">
+                    <div>
+                      <p
+                        className={getThemeClasses(
+                          "text-gray-500 dark:text-gray-400",
+                          "!text-[#6b7280]"
+                        )}
+                      >
+                        Email
+                      </p>
+                      <p
+                        className={getThemeClasses(
+                          "text-gray-900 dark:text-white font-medium",
+                          "!text-[#4c1d1d]"
+                        )}
+                      >
+                        {viewingStaff.email}
+                      </p>
+                    </div>
+                    <div>
+                      <p
+                        className={getThemeClasses(
+                          "text-gray-500 dark:text-gray-400",
+                          "!text-[#6b7280]"
+                        )}
+                      >
+                        Telepon
+                      </p>
+                      <p
+                        className={getThemeClasses(
+                          "text-gray-900 dark:text-white font-medium",
+                          "!text-[#4c1d1d]"
+                        )}
+                      >
+                        {viewingStaff.phoneNumber}
+                      </p>
+                    </div>
+                    <div>
+                      <p
+                        className={getThemeClasses(
+                          "text-gray-500 dark:text-gray-400",
+                          "!text-[#6b7280]"
+                        )}
+                      >
+                        Kode User
+                      </p>
+                      <p
+                        className={getThemeClasses(
+                          "text-gray-900 dark:text-white font-medium",
+                          "!text-[#4c1d1d]"
+                        )}
+                      >
+                        {viewingStaff.userCode || "-"}
+                      </p>
+                    </div>
+                    <div>
+                      <p
+                        className={getThemeClasses(
+                          "text-gray-500 dark:text-gray-400",
+                          "!text-[#6b7280]"
+                        )}
+                      >
+                        Status
+                      </p>
+                      <p
+                        className={getThemeClasses(
+                          "text-gray-900 dark:text-white font-medium",
+                          "!text-[#4c1d1d]"
+                        )}
+                      >
+                        {viewingStaff.isActive ? "Aktif" : "Nonaktif"}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* KTP Image */}
+                <div>
+                  <h3
+                    className={getThemeClasses(
+                      "text-sm font-semibold text-gray-700 dark:text-gray-200 mb-2",
+                      "!text-[#4c1d1d]"
+                    )}
+                  >
+                    Foto KTP
+                  </h3>
+                  {viewingStaff.ktpImageUrl ? (
+                    <div
+                      className={getThemeClasses(
+                        "bg-gray-50 rounded-lg p-2 dark:bg-gray-700",
+                        "!bg-white"
+                      )}
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={viewingStaff.ktpImageUrl}
+                        alt="KTP"
+                        className="w-full h-auto rounded-lg border border-gray-300"
+                      />
+                    </div>
+                  ) : (
+                    <div
+                      className={getThemeClasses(
+                        "bg-gray-50 rounded-lg p-8 text-center dark:bg-gray-700",
+                        "!bg-white"
+                      )}
+                    >
+                      <p
+                        className={getThemeClasses(
+                          "text-gray-500 dark:text-gray-400",
+                          "!text-[#6b7280]"
+                        )}
+                      >
+                        Foto KTP tidak tersedia
+                      </p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Face Image */}
+                <div>
+                  <h3
+                    className={getThemeClasses(
+                      "text-sm font-semibold text-gray-700 dark:text-gray-200 mb-2",
+                      "!text-[#4c1d1d]"
+                    )}
+                  >
+                    Foto Wajah
+                  </h3>
+                  {viewingStaff.faceImageUrl ? (
+                    <div
+                      className={getThemeClasses(
+                        "bg-gray-50 rounded-lg p-2 dark:bg-gray-700",
+                        "!bg-white"
+                      )}
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={viewingStaff.faceImageUrl}
+                        alt="Face"
+                        className="w-full h-auto rounded-lg border border-gray-300"
+                      />
+                    </div>
+                  ) : (
+                    <div
+                      className={getThemeClasses(
+                        "bg-gray-50 rounded-lg p-8 text-center dark:bg-gray-700",
+                        "!bg-white"
+                      )}
+                    >
+                      <p
+                        className={getThemeClasses(
+                          "text-gray-500 dark:text-gray-400",
+                          "!text-[#6b7280]"
+                        )}
+                      >
+                        Foto wajah tidak tersedia
+                      </p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Close Button */}
+                <div className="flex justify-end">
+                  <Button
+                    type="button"
+                    onClick={() => {
+                      setShowDetailModal(false);
+                      setViewingStaff(null);
+                    }}
+                    className={getThemeClasses(
+                      "bg-gradient-to-r from-[#324D3E] to-[#4C3D19] hover:from-[#4C3D19] hover:to-[#324D3E] text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all duration-300",
+                      "!bg-gradient-to-r !from-[#FFC1CC] !to-[#FFDEE9] !text-[#4c1d1d]"
+                    )}
+                  >
+                    Tutup
+                  </Button>
+                </div>
+              </div>
             </div>
           </div>
         )}

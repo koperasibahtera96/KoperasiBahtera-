@@ -268,12 +268,15 @@ export function FinanceSidebar({ children }: FinanceSidebarProps) {
               )}
               variants={itemVariants}
             >
-              <motion.div
-                className={getThemeClasses(
-                  "flex items-center gap-2 sm:gap-3 p-2 sm:p-3 rounded-xl hover:bg-[#324D3E]/5 dark:hover:bg-gray-700 transition-colors mb-1 sm:mb-2",
-                  "hover:!bg-[#FFDEE9]/30"
-                )}
-              >
+              <Link href="/profile">
+                <motion.div
+                  className={getThemeClasses(
+                    "flex items-center gap-2 sm:gap-3 p-2 sm:p-3 rounded-xl hover:bg-[#324D3E]/5 dark:hover:bg-gray-700 transition-colors mb-1 sm:mb-2 cursor-pointer",
+                    "hover:!bg-[#FFDEE9]/30"
+                  )}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                >
                 <motion.div
                   className={getThemeClasses(
                     "w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-r from-[#324D3E] to-[#4C3D19] rounded-full flex items-center justify-center flex-shrink-0",
@@ -311,7 +314,8 @@ export function FinanceSidebar({ children }: FinanceSidebarProps) {
                     {session?.user?.role}
                   </p>
                 </div>
-              </motion.div>
+                </motion.div>
+              </Link>
 
               {/* Logout button */}
               <motion.button

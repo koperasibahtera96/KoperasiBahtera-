@@ -21,27 +21,50 @@ export async function POST(request: NextRequest) {
   try {
     await dbConnect();
 
-    const { phoneNumber, otp } = await request.json();
+    const { identifier, otp } = await request.json();
 
-    if (!phoneNumber || !otp) {
+    if (!identifier || !otp) {
       return NextResponse.json(
-        { error: 'Nomor telepon dan kode OTP wajib diisi' },
+        { error: 'Email/Nomor telepon dan kode OTP wajib diisi' },
         { status: 400 }
       );
     }
 
-    // Normalize phone number
-    const normalizedPhone = normalizePhone(phoneNumber.trim());
+    const identifierValue = identifier.trim();
+    const isEmail = identifierValue.includes('@');
     
-    // Create alternative phone formats to check
-    const phoneFormats = [
-      phoneNumber.trim(),
-      normalizedPhone,
-      phoneNumber.trim().replace(/[^0-9]/g, ''),
-      phoneNumber.trim().replace(/[^0-9]/g, '').startsWith('0') 
-        ? '62' + phoneNumber.trim().replace(/[^0-9]/g, '').substring(1)
-        : phoneNumber.trim().replace(/[^0-9]/g, ''),
-    ];
+    let user;
+    let phoneFormats: string[] = [];
+    
+    if (isEmail) {
+      // Search by email
+      user = await User.findOne({ email: identifierValue });
+      if (user && user.phoneNumber) {
+        phoneFormats = [user.phoneNumber];
+      }
+    } else {
+      // Search by phone number
+      const normalizedPhone = normalizePhone(identifierValue);
+      
+      // Create alternative phone formats to check
+      phoneFormats = [
+        identifierValue,
+        normalizedPhone,
+        identifierValue.replace(/[^0-9]/g, ''),
+        identifierValue.replace(/[^0-9]/g, '').startsWith('0') 
+          ? '62' + identifierValue.replace(/[^0-9]/g, '').substring(1)
+          : identifierValue.replace(/[^0-9]/g, ''),
+      ];
+      
+      user = await User.findOne({ phoneNumber: { $in: phoneFormats } });
+    }
+    
+    if (!user) {
+      return NextResponse.json(
+        { error: 'Pengguna tidak ditemukan' },
+        { status: 404 }
+      );
+    }
 
     // Find the most recent unused OTP for this phone number (check all formats)
     const otpRecord = await OTP.findOne({

@@ -138,7 +138,7 @@ export default async function middleware(req: NextRequest) {
 
   // === MARKETING ACCESS ===
   if (pathname.startsWith("/marketing")) {
-    const allowedRoles = ["marketing_head", "admin"];
+    const allowedRoles = ["marketing_head", "marketing_admin", "admin"];
     if (allowedRoles.includes(userRole)) {
       console.log(`✅ ${userRole} access granted to ${pathname}`);
       return NextResponse.next();
@@ -150,7 +150,7 @@ export default async function middleware(req: NextRequest) {
 
   // === STAFF ACCESS ===
   if (pathname.startsWith("/staff")) {
-    const allowedRoles = ["marketing", "marketing_head", "admin"];
+    const allowedRoles = ["marketing", "marketing_head", "marketing_admin", "admin"];
     if (allowedRoles.includes(userRole)) {
       console.log(`✅ ${userRole} access granted to ${pathname}`);
       return NextResponse.next();

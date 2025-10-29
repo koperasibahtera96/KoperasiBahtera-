@@ -17,18 +17,19 @@ export async function GET(_req: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Check if user has marketing_head or admin role
+    // Check if user has marketing_head, marketing_admin, or admin role
     const user = await User.findOne({ email: session.user.email });
     if (
       !user ||
       (user.role !== "marketing_head" &&
+        user.role !== "marketing_admin" &&
         user.role !== "admin" &&
         user.role !== "finance" &&
         user.role !== "staff_finance")
     ) {
       return NextResponse.json(
         {
-          error: "Access denied. Marketing Head or Admin role required.",
+          error: "Access denied. Marketing Head, Marketing Admin, or Admin role required.",
         },
         { status: 403 }
       );
@@ -107,12 +108,12 @@ export async function PUT(req: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Check if user has marketing_head or admin role
+    // Check if user has marketing_head or admin role (marketing_admin CANNOT edit referral codes)
     const user = await User.findOne({ email: session.user.email });
     if (!user || (user.role !== "marketing_head" && user.role !== "admin")) {
       return NextResponse.json(
         {
-          error: "Access denied. Marketing Head or Admin role required.",
+          error: "Access denied. Marketing Head or Admin role required to edit referral codes.",
         },
         { status: 403 }
       );
@@ -240,12 +241,12 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Check if user has marketing_head or admin role
+    // Check if user has marketing_head or admin role (marketing_admin CANNOT generate referral codes)
     const user = await User.findOne({ email: session.user.email });
     if (!user || (user.role !== "marketing_head" && user.role !== "admin")) {
       return NextResponse.json(
         {
-          error: "Access denied. Marketing Head or Admin role required.",
+          error: "Access denied. Marketing Head or Admin role required to generate referral codes.",
         },
         { status: 403 }
       );

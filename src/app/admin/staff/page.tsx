@@ -240,6 +240,7 @@ export default function StaffPage() {
             staff.role === "ketua" ? "Ketua" :
             staff.role === "marketing" ? "Marketing" :
             staff.role === "marketing_head" ? "Marketing Head" :
+            staff.role === "marketing_admin" ? "Marketing Admin" :
             staff.role === "mandor" ? "Mandor" :
             staff.role === "asisten" ? "Asisten" :
             staff.role === "manajer" ? "Manajer" : "Staff",
@@ -637,6 +638,8 @@ export default function StaffPage() {
                                     ? "bg-orange-100 text-orange-800 border-orange-300 dark:bg-orange-900/30 dark:text-orange-300 dark:border-orange-700/50"
                                     : staff.role === "finance"
                                     ? "bg-blue-100 text-blue-800 border-blue-300 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-700/50"
+                                    : staff.role === "marketing" || staff.role === "marketing_head" || staff.role === "marketing_admin"
+                                    ? "bg-pink-100 text-pink-800 border-pink-300 dark:bg-pink-900/30 dark:text-pink-300 dark:border-pink-700/50"
                                     : "bg-[#324D3E]/10 text-[#324D3E] border-[#324D3E]/20 dark:bg-gray-700 dark:text-white dark:border-gray-600"
                                 }`}
                               >
@@ -650,7 +653,8 @@ export default function StaffPage() {
                                  staff.role === "staff_finance" ? "Staff Finance" :
                                  staff.role === "ketua" ? "Ketua" :
                                  staff.role === "marketing" ? "Marketing" :
-                                 staff.role === "marketing_head" ? "Marketing Head" : "Staff"}
+                                 staff.role === "marketing_head" ? "Marketing Head" :
+                                 staff.role === "marketing_admin" ? "Marketing Admin" : "Staff"}
                               </Badge>
                             </td>
                             <td className="py-3 px-3 sm:px-4">
@@ -820,7 +824,7 @@ export default function StaffPage() {
                     onChange={(e) =>
                       setFormData((prev) => ({
                         ...prev,
-                        role: e.target.value as "Staff" | "SPV Staff" | "Admin" | "Staff Admin" | "Finance" | "Staff Finance" | "Ketua" | "Marketing" | "Mandor" | "Asisten" | "Manajer",
+                        role: e.target.value as "Staff" | "SPV Staff" | "Admin" | "Staff Admin" | "Finance" | "Staff Finance" | "Ketua" | "Marketing" | "Marketing Head" | "Marketing Admin" | "Mandor" | "Asisten" | "Manajer",
                       }))
                     }
                     className="w-full px-3 py-2 border border-[#324D3E]/20 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#324D3E]/20 focus:border-[#324D3E] text-[#324D3E] dark:text-white bg-white dark:bg-gray-700"
@@ -839,6 +843,7 @@ export default function StaffPage() {
                       <option value="Ketua">Ketua</option>
                       <option value="Marketing">Marketing</option>
                       <option value="Marketing Head">Marketing Head</option>
+                      <option value="Marketing Admin">Marketing Admin</option>
                     </optgroup>
                   </select>
                 </div>
@@ -978,7 +983,7 @@ export default function StaffPage() {
                     onChange={(e) =>
                       setFormData((prev) => ({
                         ...prev,
-                        role: e.target.value as "Staff" | "SPV Staff" | "Admin" | "Staff Admin" | "Finance" | "Staff Finance" | "Ketua" | "Marketing" | "Mandor" | "Asisten" | "Manajer",
+                        role: e.target.value as "Staff" | "SPV Staff" | "Admin" | "Staff Admin" | "Finance" | "Staff Finance" | "Ketua" | "Marketing" | "Marketing Head" | "Marketing Admin" | "Mandor" | "Asisten" | "Manajer",
                       }))
                     }
                     className="w-full px-3 py-2 border border-[#324D3E]/20 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#324D3E]/20 focus:border-[#324D3E] text-[#324D3E] dark:text-white bg-white dark:bg-gray-700"
@@ -997,6 +1002,7 @@ export default function StaffPage() {
                       <option value="Ketua">Ketua</option>
                       <option value="Marketing">Marketing</option>
                       <option value="Marketing Head">Marketing Head</option>
+                      <option value="Marketing Admin">Marketing Admin</option>
                     </optgroup>
                   </select>
                 </div>

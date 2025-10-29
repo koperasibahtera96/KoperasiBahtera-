@@ -1100,7 +1100,7 @@ export default function PlantShowcaseSection() {
                             {t("plants.duration")}
                           </span>
                           <span className="font-bold text-[#324D3E]">
-                            {treeSelectionModal.plant.investmentPlan.duration}
+                            {treeSelectionModal.plant.investmentPlan.durationYears || 5} Tahun
                           </span>
                         </div>
                         <div className="flex justify-between items-center">
@@ -1131,7 +1131,7 @@ export default function PlantShowcaseSection() {
                           <span className="font-bold text-emerald-600">
                             Rp{" "}
                             {formatIDRCurrency(
-                              treeSelectionModal.plant.investmentPlan.returns ||
+                              treeSelectionModal.selectedPackage?.estimatedReturn ||
                                 0
                             )}
                           </span>

@@ -16,18 +16,19 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // Check if user has marketing_head or admin role
+    // Check if user has marketing_head, marketing_admin, or admin role
     const user = await User.findOne({ email: session.user.email });
     if (
       !user ||
       (user.role !== "marketing_head" &&
+        user.role !== "marketing_admin" &&
         user.role !== "admin" &&
         user.role !== "finance" &&
         user.role !== "staff_finance")
     ) {
       return NextResponse.json(
         {
-          error: "Access denied. Marketing Head or Admin role required.",
+          error: "Access denied. Marketing Head, Marketing Admin, or Admin role required.",
         },
         { status: 403 }
       );
@@ -42,9 +43,17 @@ export async function GET(req: NextRequest) {
     const query: any = {};
 
     if (startDate && endDate) {
+      // Set start date to beginning of day (00:00:00.000)
+      const start = new Date(startDate);
+      start.setHours(0, 0, 0, 0);
+      
+      // Set end date to end of day (23:59:59.999)
+      const end = new Date(endDate);
+      end.setHours(23, 59, 59, 999);
+      
       query.earnedAt = {
-        $gte: new Date(startDate),
-        $lte: new Date(endDate),
+        $gte: start,
+        $lte: end,
       };
     }
 

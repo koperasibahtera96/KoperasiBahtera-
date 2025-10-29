@@ -10,7 +10,7 @@ export async function GET() {
     await dbConnect();
 
     const plantTypes = await PlantType.find({
-      name: { $in: ["Alpukat", "Aren"] },
+      name: { $in: ["Alpukat", "Aren", "Gaharu"] },
     }).sort({ name: 1 });
 
     return NextResponse.json({
@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
 
     await dbConnect();
 
-    const { plants } = await request.json();
+    const { plants, partialUpdate } = await request.json();
 
     if (!plants || !Array.isArray(plants)) {
       return NextResponse.json(
@@ -59,9 +59,27 @@ export async function POST(request: NextRequest) {
 
     // First, update all plants in the database
     const updatePromises = plants.map(async (plant) => {
-      const { name, ...updateData } = plant;
+      const { name, id, ...updateData } = plant;
+      
+      // For partial updates (e.g., just minConsecutiveTenor), use different logic
+      if (partialUpdate && updateData.minConsecutiveTenor !== undefined) {
+        // Update only the minConsecutiveTenor field in investmentPlan
+        const result = await PlantType.findOneAndUpdate(
+          { $or: [{ name: name }, { id: id }] },
+          {
+            $set: {
+              "investmentPlan.minConsecutiveTenor": updateData.minConsecutiveTenor,
+            },
+          },
+          {
+            new: true, // Return updated document
+            runValidators: true,
+          }
+        );
+        return result;
+      }
 
-      // Find and update the plant type, or create if it doesn't exist
+      // Full update: Find and update the plant type, or create if it doesn't exist
       const result = await PlantType.findOneAndUpdate(
         { name: name },
         {
