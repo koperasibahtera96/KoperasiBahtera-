@@ -7,6 +7,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
+import { useAlert } from "@/components/ui/Alert";
 
 function LoginContent() {
   const { theme, resolvedTheme, setTheme } = useTheme();
@@ -29,6 +30,8 @@ function LoginContent() {
   });
   const [forgotPasswordErrors, setForgotPasswordErrors] = useState<Record<string, string>>({});
   const [isForgotPasswordLoading, setIsForgotPasswordLoading] = useState(false);
+  const [otpCountdown, setOtpCountdown] = useState(0);
+  const { showSuccess, AlertComponent } = useAlert();
 
   // Force light theme on this page and restore on unmount
   useEffect(() => {
@@ -39,6 +42,16 @@ function LoginContent() {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Countdown timer for OTP resend
+  useEffect(() => {
+    if (otpCountdown > 0) {
+      const timer = setTimeout(() => {
+        setOtpCountdown(otpCountdown - 1);
+      }, 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [otpCountdown]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -364,6 +377,7 @@ function LoginContent() {
                   setForgotPasswordStep('phone');
                   setForgotPasswordData({ phoneNumber: '', otp: '', newPassword: '', confirmPassword: '' });
                   setForgotPasswordErrors({});
+                  setOtpCountdown(0); // Reset countdown
                 }}
                 className="text-gray-400 hover:text-gray-600"
               >
@@ -410,6 +424,7 @@ function LoginContent() {
                     setForgotPasswordErrors({ submit: data.error || 'Gagal mengirim OTP' });
                   } else {
                     setForgotPasswordStep('otp');
+                    setOtpCountdown(60); // Start 60 second countdown
                   }
                 } catch (error) {
                   console.error('Send OTP error:', error);
@@ -465,6 +480,14 @@ function LoginContent() {
                   newErrors.newPassword = 'Password baru wajib diisi';
                 } else if (forgotPasswordData.newPassword.length < 8) {
                   newErrors.newPassword = 'Password minimal 8 karakter';
+                } else if (!/(?=.*[a-z])/.test(forgotPasswordData.newPassword)) {
+                  newErrors.newPassword = 'Password harus mengandung huruf kecil';
+                } else if (!/(?=.*[A-Z])/.test(forgotPasswordData.newPassword)) {
+                  newErrors.newPassword = 'Password harus mengandung huruf besar';
+                } else if (!/(?=.*\d)/.test(forgotPasswordData.newPassword)) {
+                  newErrors.newPassword = 'Password harus mengandung angka';
+                } else if (!/(?=.*[@$!%*?&.])/.test(forgotPasswordData.newPassword)) {
+                  newErrors.newPassword = 'Password harus mengandung karakter khusus (@$!%*?&.)';
                 }
 
                 if (!forgotPasswordData.confirmPassword) {
@@ -515,7 +538,7 @@ function LoginContent() {
                     setForgotPasswordErrors({ submit: resetData.error || 'Gagal mereset password' });
                   } else {
                     // Success - close modal and show success message
-                    alert('Password berhasil direset! Silakan login dengan password baru Anda.');
+                    showSuccess('Berhasil!', 'Password berhasil direset! Silakan login dengan password baru Anda.');
                     setShowForgotPassword(false);
                     setForgotPasswordStep('phone');
                     setForgotPasswordData({ phoneNumber: '', otp: '', newPassword: '', confirmPassword: '' });
@@ -547,6 +570,46 @@ function LoginContent() {
                   />
                 </FormField>
 
+                {/* Resend OTP Button */}
+                <div className="text-center">
+                  {otpCountdown > 0 ? (
+                    <p className="text-sm text-gray-600">
+                      Kirim ulang OTP dalam <span className="font-semibold text-[#364D32]">{otpCountdown}</span> detik
+                    </p>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        setIsForgotPasswordLoading(true);
+                        setForgotPasswordErrors({});
+                        try {
+                          const response = await fetch('/api/auth/forgot-password/send-otp', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ phoneNumber: forgotPasswordData.phoneNumber }),
+                          });
+                          const data = await response.json();
+                          if (!response.ok) {
+                            setForgotPasswordErrors({ submit: data.error || 'Gagal mengirim OTP' });
+                          } else {
+                            showSuccess('Berhasil!', 'Kode OTP baru telah dikirim');
+                            setOtpCountdown(60); // Reset countdown
+                          }
+                        } catch (error) {
+                          console.error('Resend OTP error:', error);
+                          setForgotPasswordErrors({ submit: 'Terjadi kesalahan saat mengirim OTP' });
+                        } finally {
+                          setIsForgotPasswordLoading(false);
+                        }
+                      }}
+                      disabled={isForgotPasswordLoading}
+                      className="text-sm text-[#364D32] hover:text-[#889063] font-semibold underline disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      Kirim Ulang OTP
+                    </button>
+                  )}
+                </div>
+
                 <FormField>
                   <Input
                     label="Password Baru"
@@ -563,6 +626,26 @@ function LoginContent() {
                     error={forgotPasswordErrors.newPassword}
                     required
                   />
+                  <div className="mt-2 text-xs text-gray-600 space-y-1">
+                    <p className="font-semibold">Password harus mengandung:</p>
+                    <ul className="list-disc list-inside space-y-0.5 ml-2">
+                      <li className={forgotPasswordData.newPassword.length >= 8 ? 'text-green-600' : ''}>
+                        Minimal 8 karakter
+                      </li>
+                      <li className={/(?=.*[a-z])/.test(forgotPasswordData.newPassword) ? 'text-green-600' : ''}>
+                        Huruf kecil (a-z)
+                      </li>
+                      <li className={/(?=.*[A-Z])/.test(forgotPasswordData.newPassword) ? 'text-green-600' : ''}>
+                        Huruf besar (A-Z)
+                      </li>
+                      <li className={/(?=.*\d)/.test(forgotPasswordData.newPassword) ? 'text-green-600' : ''}>
+                        Angka (0-9)
+                      </li>
+                      <li className={/(?=.*[@$!%*?&.])/.test(forgotPasswordData.newPassword) ? 'text-green-600' : ''}>
+                        Karakter khusus (@$!%*?&.)
+                      </li>
+                    </ul>
+                  </div>
                 </FormField>
 
                 <FormField>
@@ -596,6 +679,7 @@ function LoginContent() {
                       setForgotPasswordStep('phone');
                       setForgotPasswordData(prev => ({ ...prev, otp: '', newPassword: '', confirmPassword: '' }));
                       setForgotPasswordErrors({});
+                      setOtpCountdown(0); // Reset countdown
                     }}
                     className="flex-1 bg-gray-200 text-gray-700 px-6 py-3 rounded-full font-semibold hover:bg-gray-300 transition-all duration-300"
                   >
@@ -614,6 +698,9 @@ function LoginContent() {
           </div>
         </div>
       )}
+
+      {/* Alert Component */}
+      <AlertComponent />
     </div>
   );
 }

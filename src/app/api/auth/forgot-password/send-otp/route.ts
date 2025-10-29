@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
 import User from '@/models/User';
 import OTP from '@/models/OTP';
-import { sendWhatsAppMessage } from '@/lib/whatsapp';
 
 // Generate 6-digit OTP code
 const generateOTP = (): string => {
@@ -102,10 +101,34 @@ _Pesan otomatis - Koperasi Bintang Merah Sejahtera_`;
       ? '62' + userPhone.substring(1) 
       : userPhone.replace('+', '');
     
-    const result = await sendWhatsAppMessage(whatsappPhone, message);
+    // Call cron service to send WhatsApp message
+    try {
+      const whatsappServiceUrl = process.env.WHATSAPP_SERVICE_URL || 'http://localhost:3010';
+      const whatsappServiceSecret = process.env.WHATSAPP_SERVICE_SECRET || 'default-secret-change-me';
+      
+      const response = await fetch(`${whatsappServiceUrl}/whatsapp/send-message`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${whatsappServiceSecret}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          to: whatsappPhone,
+          message: message,
+        }),
+      });
 
-    if (!result.success) {
-      console.error('Failed to send WhatsApp OTP:', result.error);
+      const result = await response.json();
+
+      if (!response.ok || !result.success) {
+        console.error('Failed to send WhatsApp OTP:', result.error);
+        return NextResponse.json(
+          { error: 'Gagal mengirim kode OTP. Silakan coba lagi.' },
+          { status: 500 }
+        );
+      }
+    } catch (error) {
+      console.error('Error calling WhatsApp service:', error);
       return NextResponse.json(
         { error: 'Gagal mengirim kode OTP. Silakan coba lagi.' },
         { status: 500 }

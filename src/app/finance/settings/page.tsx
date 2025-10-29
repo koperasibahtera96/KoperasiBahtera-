@@ -4,7 +4,7 @@ import { FinanceSidebar } from "@/components/finance/FinanceSidebar";
 import { motion } from "framer-motion";
 import { Heart, Monitor, Moon, Settings, Sun, FileSpreadsheet, Loader2 } from "lucide-react";
 import { useTheme } from "next-themes";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui-finance/button";
 
 /* ================= XLSX dynamic import ================= */

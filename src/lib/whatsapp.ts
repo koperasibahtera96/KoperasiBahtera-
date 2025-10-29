@@ -298,6 +298,10 @@ export const createWhatsAppConnection = async (whatsappNumber: string) => {
       connectTimeoutMs: 60000,
       defaultQueryTimeoutMs: 60000,
       retryRequestDelayMs: 2000,
+      syncFullHistory: false, // Disable full history sync to prevent bad-request errors
+      markOnlineOnConnect: false, // Don't mark online immediately
+      generateHighQualityLinkPreview: false, // Disable link previews
+      getMessage: async () => undefined, // Disable message history fetching
     });
 
     console.log("Socket created successfully, setting up event listeners...");
@@ -306,7 +310,14 @@ export const createWhatsAppConnection = async (whatsappNumber: string) => {
     socket.ev.on(
       "connection.update",
       async (update: Partial<ConnectionState>) => {
-        const { connection, lastDisconnect, qr } = update;
+        const { connection, lastDisconnect, qr, isNewLogin } = update;
+        
+        // Log connection update for debugging
+        console.log(`Connection update for ${whatsappNumber}:`, {
+          connection,
+          isNewLogin,
+          error: lastDisconnect?.error?.message
+        });
 
         if (qr) {
           // Set QR state
@@ -367,6 +378,17 @@ export const createWhatsAppConnection = async (whatsappNumber: string) => {
           }
 
           return;
+        } else if (connection === "close") {
+          const shouldReconnect = (lastDisconnect?.error as Boom)?.output?.statusCode !== DisconnectReason.loggedOut;
+          console.log(`Connection closed for ${whatsappNumber}, should reconnect: ${shouldReconnect}`);
+          
+          connectionStates.set(whatsappNumber, "disconnected");
+          await updateWhatsAppStatus(whatsappNumber, "disconnected");
+          
+          // Only remove socket if logged out
+          if (!shouldReconnect) {
+            whatsappSockets.delete(whatsappNumber);
+          }
         } else if (connection === "open") {
           connectionStates.set(whatsappNumber, "connected");
           // Clear QR code from database
@@ -380,6 +402,7 @@ export const createWhatsAppConnection = async (whatsappNumber: string) => {
           }
 
           await updateWhatsAppStatus(whatsappNumber, "connected");
+          console.log(`WhatsApp ${whatsappNumber} successfully connected`);
         }
       }
     );

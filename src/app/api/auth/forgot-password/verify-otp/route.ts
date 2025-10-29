@@ -21,9 +21,9 @@ export async function POST(request: NextRequest) {
   try {
     await dbConnect();
 
-    const { phoneNumber, code } = await request.json();
+    const { phoneNumber, otp } = await request.json();
 
-    if (!phoneNumber || !code) {
+    if (!phoneNumber || !otp) {
       return NextResponse.json(
         { error: 'Nomor telepon dan kode OTP wajib diisi' },
         { status: 400 }
@@ -67,7 +67,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Verify OTP code
-    if (otpRecord.code !== code.trim()) {
+    if (otpRecord.code !== otp.trim()) {
       // Increment attempts
       await OTP.findByIdAndUpdate(otpRecord._id, { 
         $inc: { attempts: 1 } 
