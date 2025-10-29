@@ -23,6 +23,7 @@ import {
   MapPin,
   Search,
   User,
+  Download,
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -60,6 +61,14 @@ const statusColors: Record<string, string> = {
 
 const PLANTS_PER_PAGE = 6;
 
+/* ===================== XLSX dynamic import (baru, khusus export) ===================== */
+let XLSXMod: any;
+async function getXLSX() {
+  if (XLSXMod) return XLSXMod;
+  XLSXMod = await import("xlsx-js-style");
+  return XLSXMod as any;
+}
+
 /* ===================== Helpers ===================== */
 const parseIDDate = (d: string): Date => {
   // format dd/mm/yyyy
@@ -83,7 +92,6 @@ const getLatestHistoryByDate = (history: PlantHistory[] = []) => {
   })[0];
 };
 
-// cek status "baru" (ada Kontrak Baru < 14 hari)
 // cek status "baru" (ada Pending Contract Approval < 14 hari)
 const isPlantNew = (p: PlantInstance): boolean => {
   const pending = (p.history || []).find((h: any) => {
@@ -152,6 +160,9 @@ export default function StaffDashboard() {
   const [totalAllPlants, setTotalAllPlants] = useState(0);
   const [totalNewPlants, setTotalNewPlants] = useState(0);
   const [totalProblemPlants, setTotalProblemPlants] = useState(0);
+
+  // ======== EXPORT XLS (baru) ========
+  const [exporting, setExporting] = useState(false);
 
   useEffect(() => {
     if (session?.user) {
@@ -469,6 +480,154 @@ export default function StaffDashboard() {
     setCurrentPage(1);
   };
 
+  // ========================= EXPORT XLS: Laporan Staff Lapangan =========================
+  async function handleExportCheckerXLS() {
+    try {
+      setExporting(true);
+      const XLSX = await getXLSX();
+
+      // 1) Fetch all assignments (for mapping Assist/Mandor)
+      const asgRes = await fetch("/api/assignments", { cache: "no-store" });
+      const asgJson = asgRes.ok ? await asgRes.json() : { assignments: [] };
+      const assignments: any[] = Array.isArray(asgJson?.assignments) ? asgJson.assignments : [];
+
+      // Build plantId => names map
+      const asistenMap = new Map<string, Set<string>>();
+      const mandorMap = new Map<string, Set<string>>();
+
+      for (const a of assignments) {
+        const role = String(a?.assignedRole || "").toLowerCase();
+        const assigneeName = a?.assignedTo?.fullName || a?.assignedTo?.name || a?.assignedTo || "-";
+        const list: string[] = Array.isArray(a?.plantInstanceIds) ? a.plantInstanceIds : [];
+        for (const pid of list) {
+          if (role === "asisten") {
+            if (!asistenMap.has(pid)) asistenMap.set(pid, new Set());
+            asistenMap.get(pid)!.add(assigneeName);
+          } else if (role === "mandor") {
+            if (!mandorMap.has(pid)) mandorMap.set(pid, new Set());
+            mandorMap.get(pid)!.add(assigneeName);
+          }
+        }
+      }
+
+      // 2) Fetch ALL plants (no limit)
+      const pRes = await fetch("/api/plants?limit=0", { cache: "no-store" });
+      if (!pRes.ok) throw new Error("Gagal memuat /api/plants untuk export");
+      const plantsAll = await pRes.json();
+      const plantsList: any[] = Array.isArray(plantsAll?.plants) ? plantsAll.plants : (Array.isArray(plantsAll) ? plantsAll : []);
+
+      // 3) Helper get earliest planting date from history
+      function getPlantingDate(p: any): string {
+        const hist: any[] = Array.isArray(p?.history) ? p.history : [];
+        // cari Penanaman / Tanam Bibit
+        const target = hist.find((h) => {
+          const t = String(h?.type || "").toLowerCase();
+          const a = String(h?.action || "").toLowerCase();
+          return t.includes("penanaman") || a.includes("penanaman") || t.includes("tanam bibit") || a.includes("tanam bibit");
+        });
+        const raw = target?.date || p?.plantedAt || p?.plantedDate || p?.date;
+        if (!raw) return "";
+        const d = new Date(raw);
+        return isNaN(+d) ? String(raw) : d.toLocaleDateString("id-ID");
+      }
+
+      // 4) Compose rows
+      type Row = [number, string, string, string, string, string, string, string, string, string];
+      const rows: Row[] = [];
+      let no = 1;
+
+      for (const p of plantsList) {
+        const pid = p?.id || p?._id || p?.plantInstanceId || p?.instanceId || "";
+        const noAnggota = p?.memberNo || p?.memberId || p?.memberCode || "";
+        const nama = p?.ownerName || p?.owner || p?.memberName || p?.name || p?.instanceName || "";
+        const lokasi = p?.location || p?.desa || p?.kecamatan || p?.village || "";
+        const kav = p?.kav || p?.kavling || p?.block || p?.kavBlok || p?.kavlingBlok || "";
+        const kontrak = p?.contractNumber || p?.contractNo || p?.contractId || "";
+        const jenis = p?.plantType || p?.type || "";
+        const asisten = Array.from(asistenMap.get(pid) || []).join(", ");
+        const mandor = Array.from(mandorMap.get(pid) || []).join(", ");
+        const tgl = getPlantingDate(p);
+
+        rows.push([no++, String(noAnggota), String(nama), String(lokasi), String(kav), String(kontrak), String(jenis), String(asisten), String(mandor), String(tgl)]);
+      }
+
+      // 5) Build sheet with styling
+      const wb = XLSX.utils.book_new();
+      const ws: any = {};
+
+      // Styles
+      const BORDER = {
+        top: { style: "thin", color: { rgb: "000000" } },
+        left: { style: "thin", color: { rgb: "000000" } },
+        bottom: { style: "thin", color: { rgb: "000000" } },
+        right: { style: "thin", color: { rgb: "000000" } },
+      };
+      const styleTitle = { font: { bold: true }, alignment: { horizontal: "left" } };
+      const styleHeader = {
+        font: { bold: true, color: { rgb: "000000" } },
+        fill: { fgColor: { rgb: "D9D9D9" } },
+        border: BORDER,
+        alignment: { horizontal: "center", vertical: "center" },
+      };
+      const styleCell = { border: BORDER, alignment: { vertical: "top" } };
+
+      // Helpers
+      function A1(c: number, r: number) {
+        let n = c + 1, s = "";
+        while (n > 0) { const m = (n - 1) % 26; s = String.fromCharCode(65 + m) + s; n = Math.floor((n - 1) / 26); }
+        return `${s}${r + 1}`;
+      }
+      function setCell(c: number, r: number, v: any, s?: any) {
+        ws[A1(c, r)] = { v, t: typeof v === "number" ? "n" : "s", s };
+      }
+      function endRef(maxC: number, maxR: number) { ws["!ref"] = `A1:${A1(maxC, maxR)}`; }
+
+      // Header Kop
+      let r = 0;
+      setCell(0, r++, "KOPERASI BINTANG MERAH SEJAHTERA", styleTitle);
+      setCell(0, r++, "Bintaro Business Center Jl RC Veteran Raya No 1i, Bintaro - Kec Pesanggrahan Kota Jakarta Selatan DKI Jakarta 12330", styleTitle);
+      setCell(0, r++, "Tel: +62 81118893679 | Email: bintangmerahsejahtera@gmail.com", styleTitle);
+      r++; // empty
+      setCell(0, r++, "Laporan Staff Lapangan", styleTitle);
+      setCell(0, r++, `Dibuat pada: ${new Date().toLocaleDateString("id-ID")}`, styleTitle);
+      r++; // empty
+
+      // Tabel header
+      const headers = ["No.", "No Anggota", "Nama Lengkap", "Lokasi", "Kav / Blok", "No Kontrak", "Jenis Tanaman", "Assist", "Mandor", "Tanggal Ditanam"];
+      headers.forEach((h, i) => setCell(i, r, h, styleHeader));
+      r++;
+
+      // Rows
+      rows.forEach((arr) => {
+        arr.forEach((v, i) => setCell(i, r, v, styleCell));
+        r++;
+      });
+
+      // Widths
+      ws["!cols"] = [
+        { wch: 5 },   // No
+        { wch: 14 },  // No Anggota
+        { wch: 24 },  // Nama
+        { wch: 18 },  // Lokasi
+        { wch: 14 },  // Kav/Blok
+        { wch: 20 },  // No Kontrak
+        { wch: 16 },  // Jenis
+        { wch: 18 },  // Assist
+        { wch: 18 },  // Mandor
+        { wch: 16 },  // Tgl
+      ];
+
+      endRef(9, Math.max(r, 12));
+      XLSX.utils.book_append_sheet(wb, ws, "Laporan Staff Lapangan");
+      XLSX.writeFile(wb, `Laporan_Staff_Lapangan_${new Date().toISOString().slice(0,10)}.xlsx`);
+    } catch (e:any) {
+      console.error(e);
+      alert("Gagal membuat file XLS.\n" + (e?.message || e));
+    } finally {
+      setExporting(false);
+    }
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-emerald-50 font-[family-name:var(--font-poppins)]">
@@ -712,10 +871,10 @@ export default function StaffDashboard() {
 
             {/* Main Content Area */}
             <div className="flex-1 space-y-6">
-              {/* Results Summary */}
+              {/* Results Summary + EXPORT BUTTON (baru) */}
               <div className="bg-white/80 backdrop-blur-lg rounded-2xl border border-[#324D3E]/10 p-4">
-                <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 text-center lg:text-left">
-                  <p className="text-[#324D3E] font-medium">
+                <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                  <p className="text-[#324D3E] font-medium text-center lg:text-left">
                     Menampilkan{" "}
                     {totalPlants === 0
                       ? 0
@@ -723,9 +882,22 @@ export default function StaffDashboard() {
                     -{Math.min(currentPage * PLANTS_PER_PAGE, totalPlants)} dari{" "}
                     {totalPlants} tanaman
                   </p>
-                  <p className="text-[#889063]">
-                    Halaman {currentPage} dari {Math.max(totalPages, 1)}
-                  </p>
+                  <div className="flex items-center justify-center gap-3">
+                    <p className="text-[#889063]">
+                      Halaman {currentPage} dari {Math.max(totalPages, 1)}
+                    </p>
+                    <Button
+                      onClick={handleExportCheckerXLS}
+                      disabled={exporting}
+                      className="rounded-xl bg-gradient-to-r from-[#324D3E] to-[#4C3D19] text-white"
+                      title="Export Laporan Staff Lapangan (XLS)"
+                    >
+                      <div className="flex items-center gap-2">
+                        <Download className="w-4 h-4" />
+                        <span>{exporting ? "Menyusun..." : "Export XLS"}</span>
+                      </div>
+                    </Button>
+                  </div>
                 </div>
               </div>
 
@@ -892,60 +1064,53 @@ export default function StaffDashboard() {
               )}
 
               {/* Pagination */}
-              {totalPages > 1 && (
-                <div className="bg-white/90 backdrop-blur-lg rounded-2xl shadow-lg border border-[#324D3E]/10 p-6 mt-8">
-                  <div className="flex flex-wrap items-center justify-center gap-2">
-                    <Button
-                      variant="outline"
-                      onClick={() =>
-                        setCurrentPage((prev) => Math.max(prev - 1, 1))
-                      }
-                      disabled={currentPage === 1}
-                      className="px-4 py-2 rounded-xl border border-[#324D3E]/30 text-[#324D3E] hover:bg-[#324D3E]/10 hover:border-[#324D3E] disabled:opacity-50 transition-all duration-300"
-                    >
-                      <div className="flex items-center gap-1">
-                        <ChevronLeft className="w-4 h-4" />
-                        <span>Sebelumnya</span>
-                      </div>
-                    </Button>
+{totalPages > 1 && (
+  <div className="bg-white/90 backdrop-blur-lg rounded-2xl shadow-lg border border-[#324D3E]/10 p-6 mt-8">
+    <div className="flex flex-wrap items-center justify-center gap-2">
+      <Button
+        variant="outline"
+        onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+        disabled={currentPage === 1}
+        className="px-4 py-2 rounded-xl border border-[#324D3E]/30 text-[#324D3E] hover:bg-[#324D3E]/10 hover:border-[#324D3E] disabled:opacity-50 transition-all duration-300"
+      >
+        <div className="flex items-center gap-1">
+          <ChevronLeft className="w-4 h-4" />
+          <span>Sebelumnya</span>
+        </div>
+      </Button>
 
-                    <div className="flex gap-1">
-                      {Array.from({ length: totalPages }, (_, i) => i + 1).map(
-                        (page) => (
-                          <Button
-                            key={page}
-                            variant={
-                              currentPage === page ? "default" : "outline"
-                            }
-                            onClick={() => setCurrentPage(page)}
-                            className={`w-10 h-10 rounded-xl font-medium transition-all duration-300 ${
-                              currentPage === page
-                                ? "bg-gradient-to-r from-[#324D3E] to-[#4C3D19] text-white shadow-lg"
-                                : "border border-[#324D3E]/30 text-[#324D3E] hover:bg-[#324D3E]/10 hover:border-[#324D3E]"
-                            }`}
-                          >
-                            {page}
-                          </Button>
-                        )
-                      )}
-                    </div>
+      <div className="flex gap-1">
+        {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+          <Button
+            key={page}
+            variant={currentPage === page ? "default" : "outline"}
+            onClick={() => setCurrentPage(page)}
+            className={`w-10 h-10 rounded-xl font-medium transition-all duration-300 ${
+              currentPage === page
+                ? "bg-gradient-to-r from-[#324D3E] to-[#4C3D19] text-white shadow-lg"
+                : "border border-[#324D3E]/30 text-[#324D3E] hover:bg-[#324D3E]/10 hover:border-[#324D3E]"
+            }`}
+          >
+            {page}
+          </Button>
+        ))}
+      </div>
 
-                    <Button
-                      variant="outline"
-                      onClick={() =>
-                        setCurrentPage((prev) => Math.min(prev + 1, totalPages))
-                      }
-                      disabled={currentPage === totalPages}
-                      className="px-4 py-2 rounded-xl border border-[#324D3E]/30 text-[#324D3E] hover:bg-[#324D3E]/10 hover:border-[#324D3E] disabled:opacity-50 transition-all duration-300"
-                    >
-                      <div className="flex items-center gap-1">
-                        <span>Selanjutnya</span>
-                        <ChevronRight className="w-4 h-4" />
-                      </div>
-                    </Button>
-                  </div>
-                </div>
-              )}
+      <Button
+        variant="outline"
+        onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+        disabled={currentPage === totalPages}
+        className="px-4 py-2 rounded-xl border border-[#324D3E]/30 text-[#324D3E] hover:bg-[#324D3E]/10 hover:border-[#324D3E] disabled:opacity-50 transition-all duration-300"
+      >
+        <div className="flex items-center gap-1">
+          <span>Selanjutnya</span>
+          <ChevronRight className="w-4 h-4" />
+        </div>
+      </Button>
+    </div>
+  </div>
+)}
+
             </div>
           </div>
         </div>
