@@ -9,7 +9,7 @@ function PengurusAvatar({ name }: { name: string }) {
   const [errored, setErrored] = useState(false);
 
   // The images in public/pengurus use the exact name + extension
-  const filename = `${name}.jpg`;
+  const filename = `${name}.png`;
   const src = `/pengurus/${encodeURIComponent(filename)}`;
 
   const initials = name
@@ -82,9 +82,10 @@ export default function AboutSection() {
 
   return (
     <motion.section
-      className="bg-cover bg-center bg-no-repeat relative"
+      className="bg-center bg-no-repeat relative"
       style={{
-        backgroundImage: "url(/landing/tentang-kami.webp)",
+        backgroundImage: "url(/landing/tentang-kami.jpg)",
+        backgroundSize: "40%",
       }}
       initial="hidden"
       whileInView="visible"
@@ -210,7 +211,7 @@ export default function AboutSection() {
                   transition: { duration: 0.3 },
                 }}
               >
-                <PengurusAvatar name="Rika Ariyanti, S.E." />
+                <PengurusAvatar name="Rika Aryanti, S.E." />
                 <h4 className="text-xs sm:text-sm lg:text-base font-bold text-[#2D3B30] mb-1 whitespace-nowrap">
                   Rika Aryanti, S.E.
                 </h4>

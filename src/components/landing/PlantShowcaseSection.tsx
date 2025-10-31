@@ -668,7 +668,7 @@ export default function PlantShowcaseSection() {
                           whileTap={{ scale: 0.95 }}
                         >
                           <Image
-                            src={`/landing/${plant.name.toLowerCase()}.png`}
+                            src={`/landing/${plant.name}.jpg`}
                             alt={`Tanaman ${plant.name}`}
                             width={250}
                             height={350}

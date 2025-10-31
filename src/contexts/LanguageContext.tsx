@@ -480,6 +480,10 @@ const translations = {
     "payments.approval.contractApproved": "Kontrak Telah Disetujui Admin",
     "payments.approval.approvedOn": "Disetujui pada:",
     "payments.willBeDetermined": "Akan ditentukan",
+    "payments.contract.notSigned": "Kontrak Belum Ditandatangani",
+    "payments.contract.notSignedMessage":
+      "Silakan tandatangani kontrak sebelum melakukan pembayaran",
+    "payments.contract.signHere": "Tandatangani Kontrak",
 
     // Profile Page
     "profile.title": "Informasi Profil",
@@ -1058,6 +1062,10 @@ const translations = {
     "payments.approval.contractApproved": "Contract Approved by Admin",
     "payments.approval.approvedOn": "Approved on:",
     "payments.willBeDetermined": "Will be determined",
+    "payments.contract.notSigned": "Contract Not Signed",
+    "payments.contract.notSignedMessage":
+      "Please sign the contract before making payment",
+    "payments.contract.signHere": "Sign Contract",
 
     // Profile Page
     "profile.title": "Profile Information",

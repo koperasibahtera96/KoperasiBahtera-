@@ -49,7 +49,7 @@ export async function GET(req: NextRequest) {
     const commissions = await CommissionHistory.find(query)
       .populate("marketingStaffId", "fullName email referralCode")
       .populate("customerId", "fullName email phoneNumber")
-      .populate("paymentId", "orderId contractId")
+      .populate("paymentId", "orderId contractId paymentTerm")
       .sort({ earnedAt: -1 });
 
     // Get PlantInstance data for blok and kavling information
@@ -114,6 +114,17 @@ export async function GET(req: NextRequest) {
         tenor = "Lunas";
       }
 
+      // Format jenis cicilan (payment term)
+      let jenisCicilan = "-";
+      if (commission.paymentType === "cicilan-installment" && commission.paymentId?.paymentTerm) {
+        const paymentTerm = commission.paymentId.paymentTerm;
+        if (paymentTerm === "monthly") {
+          jenisCicilan = "Bulanan";
+        } else if (paymentTerm === "annual") {
+          jenisCicilan = "Tahunan";
+        }
+      }
+
       // Format join date
       const tanggalBergabung = new Date(commission.earnedAt).toLocaleDateString(
         "id-ID",
@@ -145,6 +156,7 @@ export async function GET(req: NextRequest) {
         commission.productName,
         pembayaran,
         tenor,
+        jenisCicilan,
         tanggalBergabung,
         totalKomisi,
         totalReferrals,
@@ -186,6 +198,7 @@ export async function GET(req: NextRequest) {
         "Paket Investasi",
         "Pembayaran",
         "Tenor",
+        "Jenis Cicilan",
         "Tanggal Bergabung",
         "Total Komisi",
         "Total Referal",
@@ -271,20 +284,20 @@ export async function GET(req: NextRequest) {
     try {
       worksheet["!merges"] = worksheet["!merges"] || [];
 
-      // Merge company header rows (0..4) across all 13 columns
+      // Merge company header rows (0..4) across all 14 columns
       for (let r = 0; r <= 4; r++) {
-        worksheet["!merges"].push({ s: { r, c: 0 }, e: { r, c: 12 } });
+        worksheet["!merges"].push({ s: { r, c: 0 }, e: { r, c: 13 } });
       }
       // Merge empty rows (5..6)
       for (let r = 5; r <= 6; r++) {
-        worksheet["!merges"].push({ s: { r, c: 0 }, e: { r, c: 12 } });
+        worksheet["!merges"].push({ s: { r, c: 0 }, e: { r, c: 13 } });
       }
-      // Merge "DAFTAR MARKETING" across all 13 columns
-      worksheet["!merges"].push({ s: { r: 7, c: 0 }, e: { r: 7, c: 12 } });
+      // Merge "DAFTAR MARKETING" across all 14 columns
+      worksheet["!merges"].push({ s: { r: 7, c: 0 }, e: { r: 7, c: 13 } });
 
       // Ensure merged cells are created
       for (let r = 0; r <= 7; r++) {
-        for (let c = 0; c <= 12; c++) {
+        for (let c = 0; c <= 13; c++) {
           const cellRef = XLSX.utils.encode_cell({ r, c });
           if (!worksheet[cellRef]) {
             const val = (worksheetData[r] && worksheetData[r][c]) || "";
@@ -302,7 +315,7 @@ export async function GET(req: NextRequest) {
                   ? { style: "thin", color: { rgb: "000000" } }
                   : undefined,
               right:
-                c === 12
+                c === 13
                   ? { style: "thin", color: { rgb: "000000" } }
                   : undefined,
             };

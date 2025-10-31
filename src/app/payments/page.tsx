@@ -1994,12 +1994,13 @@ export default function PaymentsPage() {
                       )}
 
                       {/* Individual Installment Cards */}
-                      <div className="space-y-4">
-                        <h3 className="text-lg font-semibold text-[#324D3E] mb-4 font-poppins">
-                          {t("payments.installments.scheduleTitle", {
-                            count: group.installments.length.toString(),
-                          })}
-                        </h3>
+                      {group.hasEverSigned && (
+                        <div className="space-y-4">
+                          <h3 className="text-lg font-semibold text-[#324D3E] mb-4 font-poppins">
+                            {t("payments.installments.scheduleTitle", {
+                              count: group.installments.length.toString(),
+                            })}
+                          </h3>
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                           {(() => {
                             // Filter installments first
@@ -2504,7 +2505,8 @@ export default function PaymentsPage() {
                             );
                           })()}
                         </div>
-                      </div>
+                        </div>
+                      )}
                     </div>
                   );
                 } else {

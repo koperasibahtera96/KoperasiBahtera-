@@ -13,7 +13,7 @@ export function AboutUs() {
       image: "/api/placeholder/200/250"
     },
     {
-      name: "Rika Ariyanti, S.E.",
+      name: "Rika Aryanti, S.E.",
       position: "Bendahara",
       image: "/api/placeholder/200/250"
     },

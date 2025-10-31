@@ -146,7 +146,7 @@ export async function downloadInvoiceImage(
   // Full & REG sama-sama tanpa "Pembayaran" & "Jangka Wkt"
   const hideTenorAndPeriod = isFullInvestment || isRegistration;
 
-  const INVOICE_BG = "/invoice.jpg";
+  const INVOICE_BG = "/invoice_adjusted.jpg";
   const WATERMARK = opts?.watermarkUrl ?? "/assets/watermark-bg.png";
 
   const W = 720;
@@ -242,7 +242,7 @@ export async function downloadInvoiceImage(
     if (isRegistration) {
       tbl.innerHTML = `
         <thead>
-          <tr style="background:transparent; color:#fff; font-weight:700; font-size:14px; transform:translateY(25px);">
+          <tr style="background:transparent; color:#fff; font-weight:700; font-size:14px; transform:translateY(12px);">
             ${td(
               "No",
               "width:52px; text-align:center; background:transparent; color:#fff;"
@@ -255,7 +255,7 @@ export async function downloadInvoiceImage(
           </tr>
         </thead>
         <tbody>
-          <tr style="background:transparent; transform:translateY(18px);">
+          <tr style="background:transparent; transform:translateY(5px);">
             ${td("1", "text-align:center; background:transparent; color:#000;")}
             ${td(tableDesc, "background:transparent; color:#000;")}
             ${td(
@@ -268,7 +268,7 @@ export async function downloadInvoiceImage(
     } else {
       tbl.innerHTML = `
         <thead>
-          <tr style="background:transparent; color:#fff; font-weight:700; font-size:14px; transform:translateY(3px);">
+          <tr style="background:transparent; color:#fff; font-weight:700; font-size:14px; transform:translateY(-10px);">
             ${td(
               "No",
               "width:52px; text-align:center; background:transparent; color:#fff;"
@@ -281,7 +281,7 @@ export async function downloadInvoiceImage(
           </tr>
         </thead>
         <tbody>
-          <tr style="background:transparent; transform:translateY(-5px);">
+          <tr style="background:transparent; transform:translateY(-18px);">
             ${td("1", "text-align:center; background:transparent; color:#000;")}
             ${td(tableDesc, "background:transparent; color:#000;")}
             ${td(
