@@ -20,7 +20,8 @@ const EMATERAI_CONFIG = {
 };
 
 // Use staging for development, production for production
-const ENV = process.env.NODE_ENV === "production" ? "production" : "staging";
+// const ENV = process.env.NODE_ENV === "production" ? "production" : "staging";
+const ENV = "staging";
 const CONFIG = EMATERAI_CONFIG[ENV];
 
 interface StampCoordinates {
@@ -90,15 +91,27 @@ export async function stampContract(
       body: formData,
     });
 
+    // Get response text first to check if it's valid JSON
+    const responseText = await response.text();
+
     if (!response.ok) {
-      const errorText = await response.text();
-      console.error(`[E-Materai] API error:`, errorText);
+      console.error(`[E-Materai] API error (${response.status}):`, responseText);
       throw new Error(
-        `E-Materai API failed: ${response.status} ${response.statusText}`
+        `E-Materai API failed: ${response.status} ${response.statusText} - ${responseText.substring(0, 200)}`
       );
     }
 
-    const result: StampDocumentResponse = await response.json();
+    // Try to parse as JSON
+    let result: StampDocumentResponse;
+    try {
+      result = JSON.parse(responseText);
+    } catch (parseError) {
+      console.error(`[E-Materai] API response parsing error:`, parseError);
+      console.error(`[E-Materai] Failed to parse response as JSON:`, responseText.substring(0, 500));
+      throw new Error(
+        `E-Materai API returned non-JSON response: ${responseText.substring(0, 200)}`
+      );
+    }
 
     console.log(
       `[E-Materai] Success! UUID: ${result.data.uuid}, File: ${result.data.file_stamp}`
