@@ -64,10 +64,20 @@ export async function GET(
     );
 
     // Fetch the stamped document from MeteraIku with API key
-    const apiKey =
-      process.env.NODE_ENV === "production"
-        ? "p8z0A3OZze1vgFKdUExCavuqppUPoWDX6qLs7fh52sHsNn2YCNR8f3MjAOn2SdEEpReCNXdww8YE7z0r6Whd21cFtPjC2m9dltseNC4gw8Z8k1COnygQK60IIUZ1FUfD"
-        : "t803k0iIhsv0KV3Vrp0HbKIUCOIIuNBRifpXVNciVjGyMjZkV4wFaGuC6reTOl2XDgk0gyWLWNC8FCrwUDl2sMl3xHQMfsCWmFkgdJCaAACFxw0Sx3HNyCsdqAKL1tCp";
+    const apiKey = process.env.STAMPED_API_KEY!;
+
+    if (!apiKey) {
+      console.error(
+        "[Download Stamped] No MeteraIku API key found. Please set STAMPED_API_KEY environment variable."
+      );
+      return NextResponse.json(
+        {
+          success: false,
+          error: "MeteraIku API key not found",
+        },
+        { status: 500 }
+      );
+    }
 
     const emateraiResponse = await fetch(contract.emateraiStampedUrl, {
       headers: {

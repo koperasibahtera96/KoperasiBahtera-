@@ -6,21 +6,19 @@
 const EMATERAI_CONFIG = {
   staging: {
     stampUrl:
-      "https://staging-event.meteraiku.co.id/api/document-upload/file-stamp",
-    baseUrl: "https://staging-event.meteraiku.co.id/api/document-upload",
+      process.env.STAMP_URL || "",
+    baseUrl: process.env.STAMP_BASE_URL || "",
     apiKey:
-      "t803k0iIhsv0KV3Vrp0HbKIUCOIIuNBRifpXVNciVjGyMjZkV4wFaGuC6reTOl2XDgk0gyWLWNC8FCrwUDl2sMl3xHQMfsCWmFkgdJCaAACFxw0Sx3HNyCsdqAKL1tCp",
+      process.env.STAMP_API_KEY || "",
   },
   production: {
-    stampUrl: "https://event.meteraiku.co.id/api/document-upload/file-stamp",
-    baseUrl: "https://event.meteraiku.co.id/api/document-upload",
+    stampUrl: process.env.PROD_STAMP_URL || "",
+    baseUrl: process.env.PROD_STAMP_BASE_URL || "",
     apiKey:
-      "p8z0A3OZze1vgFKdUExCavuqppUPoWDX6qLs7fh52sHsNn2YCNR8f3MjAOn2SdEEpReCNXdww8YE7z0r6Whd21cFtPjC2m9dltseNC4gw8Z8k1COnygQK60IIUZ1FUfD",
+      process.env.PROD_STAMP_API_KEY || "",
   },
 };
 
-// Use staging for development, production for production
-// const ENV = process.env.NODE_ENV === "production" ? "production" : "staging";
 const ENV = "staging";
 const CONFIG = EMATERAI_CONFIG[ENV];
 
