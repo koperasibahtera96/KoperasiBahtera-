@@ -64,7 +64,7 @@ export async function GET(
     );
 
     // Fetch the stamped document from MeteraIku with API key
-    const apiKey = process.env.STAMPED_API_KEY!;
+    const apiKey = process.env.STAMP_API_KEY!;
 
     if (!apiKey) {
       console.error(
