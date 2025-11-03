@@ -1,6 +1,7 @@
 import { authOptions } from "@/lib/auth";
 import dbConnect from "@/lib/mongodb";
 import Settings from "@/models/Settings";
+import PlantType from "@/models/PlantType";
 import { getServerSession } from "next-auth";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -95,11 +96,18 @@ export async function PUT(request: NextRequest) {
         );
       }
 
-      if (minConsecutiveTenor < 1 || minConsecutiveTenor > 60) {
+      // Get max duration from all plants to validate tenor
+      const plants = await PlantType.find();
+      const maxTenor = Math.max(
+        ...plants.map(p => (p.investmentPlan?.durationYears || 5) * 12),
+        60 // Fallback to 60 if no plants exist
+      );
+
+      if (minConsecutiveTenor < 1 || minConsecutiveTenor > maxTenor) {
         return NextResponse.json(
           {
             success: false,
-            error: "Minimum consecutive tenor must be between 1 and 60",
+            error: `Minimum consecutive tenor must be between 1 and ${maxTenor}`,
           },
           { status: 400 }
         );

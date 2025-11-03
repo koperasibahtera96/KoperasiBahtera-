@@ -130,7 +130,6 @@ const PaymentSchema: Schema = new Schema(
     paymentMethod: {
       type: String,
       enum: ["midtrans", "manual-bca"],
-      default: "midtrans",
     },
 
     // For Midtrans payments

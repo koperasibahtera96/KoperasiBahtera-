@@ -21,10 +21,11 @@ function PengurusAvatar({ name }: { name: string }) {
 
   // Some photos need to be shifted up so we see the top of the subject.
   const shouldShiftUp = /Halim Perdana|Meidi Asri/.test(name);
+  const shouldShiftDown = /Rika Aryanti|Bobot Sudoyo/.test(name);
 
   return (
     <div className="relative mb-3 sm:mb-4">
-      <div className="w-20 h-20 sm:w-24 sm:h-24 lg:w-28 lg:h-28 mx-auto rounded-full overflow-hidden flex items-center justify-center shadow-lg bg-gray-100">
+      <div className="w-20 h-20 sm:w-24 sm:h-24 lg:w-28 lg:h-28 mx-auto rounded-full overflow-hidden flex items-center justify-center shadow-lg bg-gray-100 border-4 border-[#2D3B30]">
         {!errored ? (
           <Image
             src={src}
@@ -34,7 +35,7 @@ function PengurusAvatar({ name }: { name: string }) {
             className="w-full h-full"
             style={{
               objectFit: "cover",
-              objectPosition: shouldShiftUp ? "50% 25%" : "50% 50%",
+              objectPosition: shouldShiftUp ? "50% 25%" : shouldShiftDown ? "50% 15%" : "50% 50%",
             }}
             onError={() => setErrored(true)}
             unoptimized
@@ -98,7 +99,7 @@ export default function AboutSection() {
       >
         {/* Top 75% height with white transparent background for text */}
         <motion.div
-          className="h-3/4 bg-white/75 p-4 sm:p-6 md:p-8 lg:p-10 xl:p-12 w-full"
+          className="h-3/4 bg-white/75 backdrop-blur-[2px] p-4 sm:p-6 md:p-8 lg:p-10 xl:p-12 w-full"
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 1, ease: "easeOut" }}
@@ -145,9 +146,78 @@ export default function AboutSection() {
             </motion.p>
           </motion.div>
 
+          {/* Vision and Mission */}
+          <motion.div
+            className="flex flex-col items-center text-center gap-8 sm:gap-12 md:gap-16"
+            variants={containerVariants}
+          >
+            {/* Vision */}
+            <motion.div
+              className="relative max-w-4xl"
+              variants={fadeInUp}
+              whileHover={{
+                scale: 1.02,
+                transition: { duration: 0.3 },
+              }}
+            >
+              <motion.h3
+                className="text-2xl sm:text-3xl lg:text-4xl font-black text-[#2D3B30] mb-3 sm:mb-4 lg:mb-6 font-[family-name:var(--font-poppins)] drop-shadow-sm"
+                whileHover={{
+                  color: "#1F2937",
+                  scale: 1.05,
+                  transition: { duration: 0.2 },
+                }}
+              >
+                {t('about.vision.title')}
+              </motion.h3>
+              <motion.p
+                className="text-sm sm:text-base lg:text-lg xl:text-xl leading-relaxed text-gray-900 font-medium"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.5, duration: 0.6 }}
+              >
+                {t('about.vision.content')}
+              </motion.p>
+            </motion.div>
+
+            {/* Mission */}
+            <motion.div
+              className="relative max-w-4xl"
+              variants={fadeInUp}
+              whileHover={{
+                scale: 1.02,
+                transition: { duration: 0.3 },
+              }}
+            >
+              <motion.h3
+                className="text-2xl sm:text-3xl lg:text-4xl font-black text-[#2D3B30] mb-3 sm:mb-4 lg:mb-6 font-[family-name:var(--font-poppins)] drop-shadow-sm text-center"
+                whileHover={{
+                  color: "#1F2937",
+                  scale: 1.05,
+                  transition: { duration: 0.2 },
+                }}
+              >
+                {t('about.mission.title')}
+              </motion.h3>
+              <motion.p
+                className="text-sm sm:text-base lg:text-lg xl:text-xl leading-relaxed text-gray-900 font-medium text-left"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.7, duration: 0.6 }}
+              >
+                {t('about.mission.content').split('\n').map((line, index) => (
+                  <span key={index}>
+                    {line}
+                    {index < t('about.mission.content').split('\n').length - 1 && <br />}
+                  </span>
+                ))}
+              </motion.p>
+            </motion.div>
+          </motion.div>
+
           {/* Management Team Section */}
           <motion.div
-            className="mb-8 sm:mb-12 md:mb-16"
+            className="mb-8 sm:mb-12 md:mb-16 mt-8 sm:mt-12 md:mt-16"
             variants={containerVariants}
           >
             <motion.h3
@@ -237,75 +307,6 @@ export default function AboutSection() {
                   {t('about.roles.director')}
                 </p>
               </motion.div>
-            </motion.div>
-          </motion.div>
-
-          {/* Vision and Mission */}
-          <motion.div
-            className="flex flex-col items-center text-center gap-8 sm:gap-12 md:gap-16"
-            variants={containerVariants}
-          >
-            {/* Vision */}
-            <motion.div
-              className="relative max-w-4xl"
-              variants={fadeInUp}
-              whileHover={{
-                scale: 1.02,
-                transition: { duration: 0.3 },
-              }}
-            >
-              <motion.h3
-                className="text-2xl sm:text-3xl lg:text-4xl font-black text-[#2D3B30] mb-3 sm:mb-4 lg:mb-6 font-[family-name:var(--font-poppins)] drop-shadow-sm"
-                whileHover={{
-                  color: "#1F2937",
-                  scale: 1.05,
-                  transition: { duration: 0.2 },
-                }}
-              >
-                {t('about.vision.title')}
-              </motion.h3>
-              <motion.p
-                className="text-sm sm:text-base lg:text-lg xl:text-xl leading-relaxed text-gray-900 font-medium"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.5, duration: 0.6 }}
-              >
-                {t('about.vision.content')}
-              </motion.p>
-            </motion.div>
-
-            {/* Mission */}
-            <motion.div
-              className="relative max-w-4xl"
-              variants={fadeInUp}
-              whileHover={{
-                scale: 1.02,
-                transition: { duration: 0.3 },
-              }}
-            >
-              <motion.h3
-                className="text-2xl sm:text-3xl lg:text-4xl font-black text-[#2D3B30] mb-3 sm:mb-4 lg:mb-6 font-[family-name:var(--font-poppins)] drop-shadow-sm"
-                whileHover={{
-                  color: "#1F2937",
-                  scale: 1.05,
-                  transition: { duration: 0.2 },
-                }}
-              >
-                {t('about.mission.title')}
-              </motion.h3>
-              <motion.p
-                className="text-sm sm:text-base lg:text-lg xl:text-xl leading-relaxed text-gray-900 font-medium"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.7, duration: 0.6 }}
-              >
-                {t('about.mission.content').split('\n').map((line, index) => (
-                  <span key={index}>
-                    {line}
-                    {index < t('about.mission.content').split('\n').length - 1 && <br />}
-                  </span>
-                ))}
-              </motion.p>
             </motion.div>
           </motion.div>
         </motion.div>

@@ -19,8 +19,8 @@ const EMATERAI_CONFIG = {
   },
 };
 
-const ENV = "staging";
-const CONFIG = EMATERAI_CONFIG[ENV];
+const ENV = "production";
+export const CONFIG = EMATERAI_CONFIG[ENV];
 
 interface StampCoordinates {
   x: number; // x1 coordinate

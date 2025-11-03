@@ -2312,8 +2312,38 @@ export default function PaymentsPage() {
                                                       )}
                                                 </span>
                                               </button>
+                                            ) : !group.paymentMethod &&
+                                              !installment.paymentMethod ? (
+                                              /* Redirect to payment-method page if no method selected */
+                                              <button
+                                                onClick={() => {
+                                                  const contractId =
+                                                    group.contractId ||
+                                                    group.cicilanOrderId;
+                                                  if (contractId) {
+                                                    router.push(
+                                                      `/contract/${contractId}/payment-method`
+                                                    );
+                                                  }
+                                                }}
+                                                className="w-full px-3 py-2 bg-gradient-to-r from-[#324D3E] to-[#4C3D19] text-white text-sm rounded-full hover:shadow-lg transition-all duration-300 font-poppins font-medium"
+                                                disabled={
+                                                  uploadingProof ===
+                                                  installment._id
+                                                }
+                                              >
+                                                <span className="flex items-center justify-center gap-2">
+                                                  <CreditCard size={16} />
+                                                  {uploadingProof ===
+                                                  installment._id
+                                                    ? "Membuat Pembayaran..."
+                                                    : t(
+                                                        "payments.buttons.selectPaymentMethod"
+                                                      )}
+                                                </span>
+                                              </button>
                                             ) : (
-                                              /* Show payment method modal only when no method is set */
+                                              /* Show payment method modal as fallback */
                                               <button
                                                 onClick={() =>
                                                   handleInstallmentPaymentClick(
@@ -3041,8 +3071,36 @@ export default function PaymentsPage() {
                                           {t("payments.proof.paymentApproved")}
                                         </div>
                                       )
+                                    ) : !contract.paymentMethod ? (
+                                      /* Redirect to payment-method page if no method selected */
+                                      <button
+                                        onClick={() =>
+                                          router.push(
+                                            `/contract/${contract.contractId}/payment-method`
+                                          )
+                                        }
+                                        className="w-full px-3 py-2 bg-gradient-to-r from-[#324D3E] to-[#4C3D19] text-white text-sm rounded-full hover:shadow-lg transition-all duration-300 font-poppins font-medium"
+                                      >
+                                        <span className="flex items-center justify-center gap-2">
+                                          <CreditCard size={16} />
+                                          {t("payments.buttons.selectPaymentMethod")}
+                                        </span>
+                                      </button>
+                                    ) : contract.paymentMethod === "midtrans" ? (
+                                      /* Direct Midtrans payment if method is pre-selected */
+                                      <button
+                                        onClick={() =>
+                                          handleFullPayment(contract)
+                                        }
+                                        className="w-full px-3 py-2 bg-gradient-to-r from-[#324D3E] to-[#4C3D19] text-white text-sm rounded-full hover:shadow-lg transition-all duration-300 font-poppins font-medium"
+                                      >
+                                        <span className="flex items-center justify-center gap-2">
+                                          <CreditCard size={16} />
+                                          {t("payments.buttons.payNow")}
+                                        </span>
+                                      </button>
                                     ) : (
-                                      /* Show Pay Now button if payment method is midtrans or not set */
+                                      /* Show payment method modal as fallback */
                                       <button
                                         onClick={() =>
                                           handleFullPaymentClick(contract)

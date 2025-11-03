@@ -160,6 +160,7 @@ export async function POST(req: NextRequest) {
       faceImageUrl: "",
     };
     existingPayment.midtransResponse = transaction;
+    existingPayment.paymentMethod = "midtrans"; // Save payment method selection
     existingPayment.isProcessed = false;
     existingPayment.status = "pending";
     existingPayment.transactionStatus = "pending";

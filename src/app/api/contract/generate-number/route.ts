@@ -51,9 +51,35 @@ export async function POST(req: NextRequest) {
     });
     const memberNumber = userIndex.toString().padStart(4, "0");
 
-    // Get global contract sequence
-    const contractCount = await Contract.countDocuments({});
-    const sequenceNumber = (contractCount + 1).toString().padStart(4, "0");
+    // Get global contract sequence by finding the highest existing sequence number
+    // This prevents race conditions and handles deleted contracts properly
+    const allContracts = await Contract.find({}, { contractNumber: 1 })
+      .sort({ contractNumber: -1 })
+      .limit(100); // Get last 100 contracts to parse
+
+    let maxSequence = 0;
+    
+    // Parse existing contract numbers to find the highest sequence
+    for (const contract of allContracts) {
+      if (contract.contractNumber) {
+        // Format: PKS/BMS-MRU/PRODUCT/LGL/MM/YYYY/MEMBER-SEQUENCE
+        // Extract SEQUENCE from "MEMBER-SEQUENCE" at the end
+        const parts = contract.contractNumber.split("/");
+        if (parts.length >= 7) {
+          const memberSeqPart = parts[6]; // "0001-0123" format
+          const seqStr = memberSeqPart.split("-")[1]; // Get "0123"
+          if (seqStr) {
+            const seq = parseInt(seqStr, 10);
+            if (!isNaN(seq) && seq > maxSequence) {
+              maxSequence = seq;
+            }
+          }
+        }
+      }
+    }
+
+    // Increment to get next sequence number
+    const sequenceNumber = (maxSequence + 1).toString().padStart(4, "0");
 
     // Map product name to code
     const productCode = getProductCode(productName);

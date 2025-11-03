@@ -86,6 +86,11 @@ export async function stampContractAfterPayment(
         postalCode: user.postalCode,
       },
       signatureDataURL: approvedSignature.signatureData,
+      // Payment terms for PASAL IV
+      paymentType: contract.paymentType,
+      paymentTerm: contract.paymentTerm,
+      totalInstallments: contract.totalInstallments,
+      durationYears: contract.durationYears,
     };
 
     // Generate contract PDF
@@ -104,7 +109,7 @@ export async function stampContractAfterPayment(
         xr: 385 * 0.9, // 20mm width
         y: 220, // At signature height (297 - 85 = 212mm from bottom)
         yr: 365 * 0.9, // 20mm height
-        page: 5, // Signature is on page 5
+        page: 6, // Signature is on page 5
       }
     );
 

@@ -121,7 +121,7 @@ export default function LaporanPage() {
       [
         "Bintaro Business Center\nJl RC Veteran Raya No 1i, Bintaro - Kec Pesanggrahan Kota Jakarta Selatan DKI Jakarta 12330",
       ],
-      ["Tel: 081118893679 | Email: koperasibintangmerahsejahtera@gmail.com"],
+      ["Tel: 081118893679 | Email: bintangmerahsejahtera@gmail.com"],
       [""],
       ["LAPORAN ADMIN - SEMUA INVESTOR"],
       [
@@ -518,7 +518,7 @@ export default function LaporanPage() {
       [
         "Bintaro Business Center\nJl RC Veteran Raya No 1i, Bintaro - Kec Pesanggrahan Kota Jakarta Selatan DKI Jakarta 12330",
       ],
-      ["Tel: 081118893679 | Email: koperasibintangmerahsejahtera@gmail.com"],
+      ["Tel: 081118893679 | Email: bintangmerahsejahtera@gmail.com"],
       [""],
       [`LAPORAN INVESTOR - ${firstReport.investor.name.toUpperCase()}`],
       [
@@ -1134,7 +1134,7 @@ export default function LaporanPage() {
       38
     );
     doc.text(
-      "Tel: 081118893679 | Email: koperasibintangmerahsejahtera@gmail.com",
+      "Tel: 081118893679 | Email: bintangmerahsejahtera@gmail.com",
       55,
       44
     );

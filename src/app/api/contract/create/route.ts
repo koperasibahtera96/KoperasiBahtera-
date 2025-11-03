@@ -161,6 +161,36 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    // Check if contractNumber already exists (prevent race condition)
+    const existingContractByNumber = await Contract.findOne({ contractNumber });
+    if (existingContractByNumber) {
+      console.error(
+        `Contract number ${contractNumber} already exists. This should not happen with the new generation logic.`
+      );
+      return NextResponse.json(
+        {
+          error:
+            "Nomor kontrak sudah digunakan. Silakan coba lagi dalam beberapa detik.",
+        },
+        { status: 409 }
+      );
+    }
+
+    // Check if contractId already exists (should be rare with invoice number format)
+    const existingContractById = await Contract.findOne({ contractId });
+    if (existingContractById) {
+      console.error(
+        `Contract ID ${contractId} already exists. This should be very rare.`
+      );
+      return NextResponse.json(
+        {
+          error:
+            "ID kontrak sudah digunakan. Silakan coba lagi dalam beberapa detik.",
+        },
+        { status: 409 }
+      );
+    }
+
     // Create new contract
     const contract = new Contract({
       contractId,

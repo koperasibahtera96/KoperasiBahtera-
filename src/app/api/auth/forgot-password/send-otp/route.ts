@@ -54,9 +54,9 @@ export async function POST(request: NextRequest) {
       
       // Create alternative phone formats to check
       const phoneFormats = [
-        normalizedPhone, // 082249013283
-        normalizedPhone.startsWith('0') ? '62' + normalizedPhone.substring(1) : normalizedPhone, // 6282249013283
-        normalizedPhone.startsWith('0') ? '+62' + normalizedPhone.substring(1) : '+' + normalizedPhone, // +6282249013283
+        normalizedPhone, // 081118893679
+        normalizedPhone.startsWith('0') ? '62' + normalizedPhone.substring(1) : normalizedPhone, // 6281118893679
+        normalizedPhone.startsWith('0') ? '+62' + normalizedPhone.substring(1) : '+' + normalizedPhone, // +6281118893679
       ];
 
       user = await User.findOne({ phoneNumber: { $in: phoneFormats } });

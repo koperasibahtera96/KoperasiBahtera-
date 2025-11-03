@@ -290,7 +290,7 @@ export default function PaymentMethodPage() {
                   </p>
                   <div className="flex items-center gap-2">
                     <p className="text-2xl font-bold text-blue-600 font-mono tracking-wider">
-                      1234567890
+                      501-0497908
                     </p>
                   </div>
                 </div>

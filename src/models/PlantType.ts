@@ -107,7 +107,13 @@ const InvestmentPlanSchema = new Schema({
   price: { type: Number, required: true },
   duration: { type: String, required: true },
   durationYears: { type: Number, required: true, default: 5, min: 1, max: 20 }, // Investment duration in years
-  minConsecutiveTenor: { type: Number, required: false, default: 10, min: 1, max: 60 }, // Minimum consecutive tenor for bulk commission (monthly only)
+  minConsecutiveTenor: { 
+    type: Number, 
+    required: false, 
+    default: 10, 
+    min: 1
+    // Removed max validation - validated dynamically in application layer
+  }, // Minimum consecutive tenor for bulk commission (monthly only)
   returns: { type: String, required: true },
   plantType: { type: String, required: true },
   riskLevel: { type: String, required: true },

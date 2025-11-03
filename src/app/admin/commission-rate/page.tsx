@@ -17,7 +17,6 @@ interface PlantTenor {
 export default function CommissionRatePage() {
   const [commissionRate, setCommissionRate] = useState<number>(0.02);
   const [displayRate, setDisplayRate] = useState<string>("2");
-  const [minConsecutiveTenor, setMinConsecutiveTenor] = useState<number>(10);
   const [plants, setPlants] = useState<PlantTenor[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -50,13 +49,12 @@ export default function CommissionRatePage() {
         const rate = commissionResult.data.commissionRate;
         setCommissionRate(rate);
         setDisplayRate((rate * 100).toFixed(2));
-        setMinConsecutiveTenor(commissionResult.data.minConsecutiveTenor ?? 10);
       } else {
         showError("Gagal memuat tarif komisi", "");
       }
 
       // Fetch plant data for per-plant tenor settings
-      const plantsResponse = await fetch("/api/admin/plant-showcase");
+      const plantsResponse = await fetch("/api/admin/plant-showcase?plants=Aren,Alpukat,Gaharu");
       const plantsResult = await plantsResponse.json();
       
       if (plantsResult.success && plantsResult.data) {
@@ -87,7 +85,7 @@ export default function CommissionRatePage() {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ commissionRate, minConsecutiveTenor }),
+        body: JSON.stringify({ commissionRate }),
       });
 
       const commissionResult = await commissionResponse.json();
@@ -250,33 +248,6 @@ export default function CommissionRatePage() {
                 </p>
               </div>
 
-              <div>
-                <label
-                  htmlFor="minConsecutiveTenor"
-                  className="block text-sm font-medium text-[#324D3E] mb-2 font-[family-name:var(--font-poppins)]"
-                >
-                  Minimum Tenor untuk Komisi Penuh (Cicilan)
-                </label>
-                <input
-                  type="number"
-                  id="minConsecutiveTenor"
-                  value={minConsecutiveTenor}
-                  onChange={(e) => {
-                    const value = parseInt(e.target.value);
-                    if (!isNaN(value) && value >= 1 && value <= 60) {
-                      setMinConsecutiveTenor(value);
-                    }
-                  }}
-                  min={1}
-                  max={60}
-                  className="w-full px-4 py-3 border border-[#324D3E]/20 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#324D3E]/50 text-lg font-semibold text-[#324D3E]"
-                  placeholder="10"
-                />
-                <p className="mt-2 text-xs text-[#889063]">
-                  Setelah tenor ke-{minConsecutiveTenor} dibayar, marketing akan menerima sisa komisi sekaligus. <strong>Berlaku hanya untuk cicilan bulanan (monthly)</strong>, tidak untuk tahunan (yearly). Nilai 1-60.
-                </p>
-              </div>
-
               {/* Example Calculation */}
               <div className="p-4 bg-blue-50 rounded-xl border border-blue-200">
                 <p className="text-sm font-medium text-blue-900 mb-2">
@@ -331,11 +302,12 @@ export default function CommissionRatePage() {
                           <input
                             type="number"
                             min={1}
-                            max={60}
+                            max={plant.durationYears * 12}
                             value={plant.minConsecutiveTenor}
                             onChange={(e) => {
                               const value = parseInt(e.target.value);
-                              if (!isNaN(value) && value >= 1 && value <= 60) {
+                              const maxTenor = plant.durationYears * 12;
+                              if (!isNaN(value) && value >= 1 && value <= maxTenor) {
                                 setPlants((prev) => {
                                   const updated = [...prev];
                                   updated[index].minConsecutiveTenor = value;

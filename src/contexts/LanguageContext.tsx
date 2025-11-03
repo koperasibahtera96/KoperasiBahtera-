@@ -157,7 +157,7 @@ const translations = {
     "plants.treeCount": "Jumlah Pohon:",
     "plants.trees": "Pohon",
     "plants.totalPrice": "Total Harga:",
-    "plants.estimatedReturn": "Estimasi Return:",
+    "plants.estimatedReturn": "Estimasi Keuntungan Per Bulan:",
     "plants.riskLevel": "Risk Level:",
     "plants.continuePayment": "Lanjutkan Pembayaran",
     "plants.processing2": "Memproses...",
@@ -458,6 +458,7 @@ const translations = {
     "payments.success.contractResubmitted":
       "Kontrak berhasil diajukan ulang dan sedang menunggu review admin",
     "payments.buttons.payNow": "Bayar Sekarang",
+    "payments.buttons.selectPaymentMethod": "Pilih Metode Pembayaran",
     "payments.buttons.uploadProof": "Upload Bukti Bayar",
     "payments.buttons.changeProof": "Ganti Bukti Bayar",
     "payments.buttons.uploading": "Mengunggah...",
@@ -551,7 +552,7 @@ const translations = {
     "cicilan.treeCount": "Jumlah Pohon:",
     "cicilan.trees": "Pohon",
     "cicilan.totalInvestment": "Total Investasi:",
-    "cicilan.estimatedReturn": "Estimasi Return:",
+    "cicilan.estimatedReturn": "Estimasi Keuntungan Per Bulan:",
     "cicilan.chooseInstallmentPeriod": "Pilih Jangka Waktu Cicilan",
     "cicilan.timesPayment": "kali bayar",
     "cicilan.perInstallment": "per angsuran",
@@ -1039,6 +1040,7 @@ const translations = {
     "payments.success.contractResubmitted":
       "Contract successfully resubmitted and pending admin review",
     "payments.buttons.payNow": "Pay Now",
+    "payments.buttons.selectPaymentMethod": "Select Payment Method",
     "payments.buttons.uploadProof": "Upload Payment Proof",
     "payments.buttons.changeProof": "Change Payment Proof",
     "payments.buttons.uploading": "Uploading...",

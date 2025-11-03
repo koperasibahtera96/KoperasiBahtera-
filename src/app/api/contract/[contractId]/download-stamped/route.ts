@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import dbConnect from "@/lib/mongodb";
 import Contract from "@/models/Contract";
+import { CONFIG } from "@/lib/ematerai-service";
 
 export async function GET(
   req: NextRequest,
@@ -64,7 +65,8 @@ export async function GET(
     );
 
     // Fetch the stamped document from MeteraIku with API key
-    const apiKey = process.env.STAMP_API_KEY!;
+  
+    const apiKey = CONFIG.apiKey;
 
     if (!apiKey) {
       console.error(

@@ -5,13 +5,22 @@ import PlantType from "@/models/PlantType";
 import { getServerSession } from "next-auth/next";
 import { NextRequest, NextResponse } from "next/server";
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
     await dbConnect();
 
-    const plantTypes = await PlantType.find({
-      name: { $in: ["Alpukat", "Aren", "Gaharu"] },
-    }).sort({ name: 1 });
+    const { searchParams } = new URL(request.url);
+    const plantsParam = searchParams.get("plants");
+    let plantTypes;
+
+    if (plantsParam) {
+      const plantNames = plantsParam.split(",").map((name) => name.trim());
+      plantTypes = await PlantType.find({ name: { $in: plantNames } }).sort({
+        name: 1,
+      });
+    } else {
+      plantTypes = await PlantType.find().sort({ name: 1 });
+    }
 
     return NextResponse.json({
       success: true,

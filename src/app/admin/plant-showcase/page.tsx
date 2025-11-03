@@ -568,7 +568,26 @@ export default function PlantShowcasePage() {
                     3️⃣ Pendapatan / Keuntungan Bersih
                   </h4>
                   <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">Keuntungan yang didapat investor</p>
-                  <div className="grid grid-cols-3 gap-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-base font-semibold text-[#324D3E] dark:text-gray-300 mb-2">
+                        Tahunan
+                      </label>
+                      <div className="relative">
+                        <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 text-base">Rp</span>
+                        <input
+                          type="text"
+                          value={formatIDRCurrency(plant.pricing?.profit?.yearly || 0)}
+                          onChange={(e) => {
+                            const formattedValue = formatIDRInput(e.target.value);
+                            e.target.value = formattedValue;
+                            handlePriceUpdate(index, "profit.yearly", formattedValue);
+                          }}
+                          className="w-full pl-11 pr-3 py-3 text-base font-semibold border-2 border-[#324D3E]/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#324D3E]/50 focus:border-[#324D3E] text-[#324D3E] dark:text-white bg-white dark:bg-gray-700"
+                        />
+                      </div>
+                    </div>
+
                     <div>
                       <label className="block text-base font-semibold text-[#324D3E] dark:text-gray-300 mb-2">
                         Bulanan

@@ -655,7 +655,7 @@ export default function PlantShowcaseSection() {
                         </motion.div>
                       </motion.div>
                       <motion.div
-                        className="flex justify-center items-center h-full xl:col-span-1 order-first xl:order-none"
+                        className="flex justify-center items-center xl:col-span-1 order-first xl:order-none self-center"
                         variants={scaleIn}
                       >
                         <motion.div
@@ -668,11 +668,17 @@ export default function PlantShowcaseSection() {
                           whileTap={{ scale: 0.95 }}
                         >
                           <Image
-                            src={`/landing/${plant.name}.jpg`}
+                            src={`/landing/plants/${plant.name}.jpg`}
                             alt={`Tanaman ${plant.name}`}
                             width={250}
-                            height={350}
-                            className="object-contain max-h-[250px] sm:max-h-[300px] lg:max-h-[400px] w-auto drop-shadow-2xl"
+                            height={plant.name === "Aren" ? 350 : 2000}
+                            className={`object-contain object-center w-auto drop-shadow-2xl ${
+                              plant.name === "Aren"
+                                ? "h-[250px] sm:h-[300px] lg:h-[400px]"
+                                : plant.name === "Jengkol"
+                                ? "h-[400px] sm:h-[500px] lg:h-[600px]"
+                                : "h-[350px] sm:h-[450px] lg:h-[550px]"
+                            }`}
                             loading="lazy"
                           />
                         </motion.div>
@@ -1134,14 +1140,6 @@ export default function PlantShowcaseSection() {
                               treeSelectionModal.selectedPackage?.estimatedReturn ||
                                 0
                             )}
-                          </span>
-                        </div>
-                        <div className="flex justify-between items-center">
-                          <span className="text-[#324D3E]/80 font-medium">
-                            {t("plants.riskLevel")}
-                          </span>
-                          <span className="font-bold text-orange-600">
-                            {treeSelectionModal.plant.investmentPlan.riskLevel}
                           </span>
                         </div>
                       </div>

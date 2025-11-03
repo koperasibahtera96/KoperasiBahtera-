@@ -4,8 +4,9 @@ import LandingHeader from "@/components/landing/LandingHeader";
 import { useAlert } from "@/components/ui/Alert";
 import { provinceOptions } from "@/constant/PROVINCE";
 import { motion } from "framer-motion";
-import { Check, Edit2, X, FileText, Camera } from "lucide-react";
+import { Check, Edit2, X, FileText, Camera, ArrowLeft } from "lucide-react";
 import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 import { toPng } from "html-to-image";
@@ -37,6 +38,7 @@ const itemVariants: any = {
 
 export default function ProfilePage() {
   const { data: session, status, update } = useSession();
+  const router = useRouter();
   const { showSuccess, showError, AlertComponent } = useAlert();
   const { t } = useLanguage();
   const [isLoading, setIsLoading] = useState(false);
@@ -758,6 +760,15 @@ export default function ProfilePage() {
 
       {/* Content */}
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12 pt-24">
+        {/* Back Button */}
+        <button
+          onClick={() => router.back()}
+          className="flex items-center gap-2 text-[#324D3E] hover:text-[#4C3D19] mb-6 transition-all duration-200 hover:scale-110 hover:-translate-x-1"
+        >
+          <ArrowLeft size={20} />
+          <span className="font-medium">Back</span>
+        </button>
+
         <motion.div
           variants={containerVariants}
           initial="hidden"
