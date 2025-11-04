@@ -94,6 +94,7 @@ export default function DailyIncomingInvestorPage() {
   });
 
   const [page, setPage] = useState<number>(1);
+  const [sortOrder, setSortOrder] = useState<'newest' | 'oldest'>('newest');
 
   const { showError, AlertComponent } = useAlert();
   const { theme, systemTheme } = useTheme();
@@ -308,11 +309,13 @@ export default function DailyIncomingInvestorPage() {
   // ===== Pagination =====
   const totalPages = Math.max(1, Math.ceil(rows.length / PER_PAGE));
   const paged = rows
-    .slice((page - 1) * PER_PAGE, page * PER_PAGE)
-    .sort(
-      (a, b) =>
-        new Date(b.date || 0).getTime() - new Date(a.date || 0).getTime()
-    );
+    .sort((a, b) => {
+      const dateA = new Date(a.date || 0).getTime();
+      const dateB = new Date(b.date || 0).getTime(); 
+      // Sort by created date descending (-1)
+      return sortOrder === 'newest' ? dateB - dateA : dateA - dateB;
+    })
+    .slice((page - 1) * PER_PAGE, page * PER_PAGE);
 
   const goPrev = () => setPage((p) => Math.max(1, p - 1));
   const goNext = () => setPage((p) => Math.min(totalPages, p + 1));
@@ -1009,6 +1012,21 @@ export default function DailyIncomingInvestorPage() {
           </CardHeader>
 
           <CardContent>
+            <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between mb-4">
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => setSortOrder(sortOrder === 'newest' ? 'oldest' : 'newest')}
+                  className={getThemeClasses(
+                    "",
+                    "!bg-white/90 !border-[#FFC1CC]/30 !text-[#4c1d1d] hover:!bg-[#FFC1CC]/20"
+                  )}
+                >
+                  {sortOrder === 'newest' ? 'Terbaru ⬇️' : 'Terlama ⬆️'}
+                </Button>
+              </div>
+            </div>
+
             {rows.length > 0 ? (
               <>
                 <div className="overflow-x-auto">

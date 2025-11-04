@@ -76,6 +76,7 @@ type AnyRecord = {
 };
 
 export default function LaporanPengeluaranPage() {
+  const [currentPage, setCurrentPage] = useState(1);
   const [plantInstances, setPlantInstances] = useState<PlantInstance[]>([]);
   const [plantTypes, setPlantTypes] = useState<PlantType[]>([]);
   const [selectedPlant, setSelectedPlant] = useState<string>("all");
@@ -788,6 +789,59 @@ export default function LaporanPengeluaranPage() {
     : isIncome
     ? "Analisis dan manajemen pendapatan per tanaman"
     : "Analisis gabungan pendapatan dan pengeluaran Tanaman";
+
+  const itemsPerPage = 10; // Definisikan sebagai konstanta
+
+  // Calculate pagination
+  const indexOfLastItem = currentPage * itemsPerPage;
+  const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+  const currentItems = listPrimary.slice(indexOfFirstItem, indexOfLastItem);
+  const totalPages = Math.ceil(listPrimary.length / itemsPerPage);
+
+  // Add Pagination Controls component
+  const PaginationControls = () => {
+    return (
+      <div className="flex items-center justify-between px-4 py-3 border-t border-gray-200">
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setCurrentPage(1)}
+            disabled={currentPage === 1}
+            className="px-3 py-1 rounded-lg text-sm font-medium bg-white border border-gray-300 disabled:opacity-50"
+          >
+            First
+          </button>
+          <button
+            onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+            disabled={currentPage === 1}
+            className="px-3 py-1 rounded-lg text-sm font-medium bg-white border border-gray-300 disabled:opacity-50"
+          >
+            Previous
+          </button>
+        </div>
+
+        <span className="text-sm font-medium">
+          Page {currentPage} of {totalPages}
+        </span>
+
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+            disabled={currentPage === totalPages}
+            className="px-3 py-1 rounded-lg text-sm font-medium bg-white border border-gray-300 disabled:opacity-50"
+          >
+            Next
+          </button>
+          <button
+            onClick={() => setCurrentPage(totalPages)} 
+            disabled={currentPage === totalPages}
+            className="px-3 py-1 rounded-lg text-sm font-medium bg-white border border-gray-300 disabled:opacity-50"
+          >
+            Last
+          </button>
+        </div>
+      </div>
+    );
+  };
 
   return (
     <FinanceSidebar>
@@ -1617,75 +1671,32 @@ export default function LaporanPengeluaranPage() {
                         </th>
                       </tr>
                     </thead>
-                    <tbody>
-                      {listPrimary
-                        .sort(
-                          (a, b) =>
-                            new Date(b.date).getTime() -
-                            new Date(a.date).getTime()
-                        )
-                        .map((row, index) => {
-                          const rowIsExpense = row._kind
-                            ? row._kind === "expense"
-                            : isExpense;
-                          return (
-                            <tr
-                              key={index}
-                              className={getThemeClasses(
-                                `border-b border-[#324D3E]/5 dark:border-gray-700 ${
-                                  index % 2 === 0
-                                    ? "bg-white/40 dark:bg-gray-800/40"
-                                    : "bg-[#324D3E]/5 dark:bg-gray-700/50"
-                                } hover:bg-[#324D3E]/10 dark:hover:bg-gray-700 transition-colors duration-200`,
-                                `!border-[#FFC1CC]/20 ${
-                                  index % 2 === 0
-                                    ? "!bg-white/60"
-                                    : "!bg-[#FFC1CC]/10"
-                                } hover:!bg-[#FFC1CC]/20`
-                              )}
-                            >
-                              <td
-                                className={getThemeClasses(
-                                  "py-3 px-4 text-[#324D3E] dark:text-white transition-colors duration-300",
-                                  "!text-[#4c1d1d]"
-                                )}
-                              >
-                                {new Date(row.date).toLocaleDateString("id-ID")}
-                              </td>
-                              <td
-                                className={getThemeClasses(
-                                  "py-3 px-4 text-[#324D3E] dark:text-white transition-colors duration-300",
-                                  "!text-[#4c1d1d]"
-                                )}
-                              >
-                                {row.description}
-                              </td>
-                              <td
-                                className={getThemeClasses(
-                                  `py-3 px-4 text-right font-medium transition-colors duration-300 ${
-                                    rowIsExpense
-                                      ? "text-red-600 dark:text-red-400"
-                                      : "text-green-600 dark:text-emerald-400"
-                                  }`,
-                                  rowIsExpense
-                                    ? "!text-[#dc2626]"
-                                    : "!text-[#059669]"
-                                )}
-                              >
-                                {formatCurrency((row as AnyRecord).amount || 0)}
-                              </td>
-                              <td
-                                className={getThemeClasses(
-                                  "py-3 px-4 text-[#889063] dark:text-gray-200 transition-colors duration-300",
-                                  "!text-[#6b7280]"
-                                )}
-                              >
-                                {(row as AnyRecord).addedBy || ""}
-                              </td>
-                            </tr>
-                          );
-                        })}
-                    </tbody>
+<tbody>
+  {currentItems.map((row: any, index: number) => (
+    <tr
+      key={index}
+      className={getThemeClasses(
+        "border-b border-[#324D3E]/10 dark:border-gray-600 transition-colors duration-300",
+        "!border-[#FFC1CC]/30"
+      )}
+    >
+      <td className="py-3 px-4">
+        {new Date(row.date).toLocaleDateString("id-ID")}
+      </td>
+      <td className="py-3 px-4">
+        {row.description || "-"}
+      </td>
+      <td className={`py-3 px-4 text-right ${
+        isAll ? (row._kind === "expense" ? "text-red-600" : "text-green-600") : ""
+      }`}>
+        {formatCurrency(row.amount)}
+      </td>
+      <td className="py-3 px-4">
+        {row.addedBy || "-"}
+      </td>
+    </tr>
+  ))}
+</tbody>
                   </table>
                 </div>
               ) : (
@@ -1722,6 +1733,9 @@ export default function LaporanPengeluaranPage() {
             </CardContent>
           </Card>
         </motion.div>
+
+        {/* Pagination Controls */}
+        {listPrimary.length > 0 && <PaginationControls />}
       </div>
     </FinanceSidebar>
   );
