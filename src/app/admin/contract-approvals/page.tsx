@@ -120,17 +120,17 @@ export default function ContractApprovalsPage() {
       );
 
       if (response.ok) {
-        showSuccess("Success", "Kontrak Berhasil Disetujui");
+        showSuccess("Berhasil", "Kontrak Berhasil Disetujui");
         setSelectedContract(null);
         setAdminNotes("");
         fetchContracts();
       } else {
         const error = await response.json();
-        showError("Error", error.error || "Failed to approve contract");
+        showError("Error", error.error || "Gagal menyetujui kontrak");
       }
     } catch (error) {
       console.error("Error approving contract:", error);
-      showError("Error", "Failed to approve contract");
+      showError("Error", "Gagal menyetujui kontrak");
     } finally {
       setActionLoading(false);
     }
@@ -138,7 +138,7 @@ export default function ContractApprovalsPage() {
 
   const handleRejection = async (contractId: string) => {
     if (!rejectionReason.trim()) {
-      showError("Error", "Rejection reason is required");
+      showError("Error", "Alasan penolakan wajib diisi");
       return;
     }
 
@@ -161,9 +161,9 @@ export default function ContractApprovalsPage() {
       if (response.ok) {
         const result = await response.json();
         showSuccess(
-          "Success",
+          "Berhasil",
           result.data.isPermanentRejection
-            ? "Kontrak permanently ditolak (maksimal percobaan pengajuan ulang tercapai)"
+            ? "Kontrak ditolak permanen (maksimal percobaan tercapai)"
             : "Kontrak ditolak - pengguna dapat mencoba lagi"
         );
         setSelectedContract(null);
@@ -172,11 +172,11 @@ export default function ContractApprovalsPage() {
         fetchContracts();
       } else {
         const error = await response.json();
-        showError("Error", error.error || "Failed to reject contract");
+        showError("Error", error.error || "Gagal menolak kontrak");
       }
     } catch (error) {
       console.error("Error rejecting contract:", error);
-      showError("Error", "Failed to reject contract");
+      showError("Error", "Gagal menolak kontrak");
     } finally {
       setActionLoading(false);
     }
@@ -203,10 +203,10 @@ export default function ContractApprovalsPage() {
       window.URL.revokeObjectURL(url);
       document.body.removeChild(a);
 
-      showSuccess("Success", "Data exported successfully");
+      showSuccess("Berhasil", "Data berhasil diekspor");
     } catch (error) {
       console.error("Export error:", error);
-      showError("Error", "Failed to export data");
+      showError("Error", "Gagal mengekspor data");
     } finally {
       setExportLoading(false);
     }
@@ -339,7 +339,7 @@ export default function ContractApprovalsPage() {
                   className={`w-4 h-4 ${exportLoading ? "animate-pulse" : ""}`}
                 />
                 <span className="hidden sm:inline">
-                  {exportLoading ? "Exporting..." : "Export XLSX"}
+                  {exportLoading ? "Mengekspor..." : "Export XLSX"}
                 </span>
               </button>
               <button
@@ -380,10 +380,128 @@ export default function ContractApprovalsPage() {
           </select>
         </div>
 
-        {/* Contracts Table */}
+        {/* Mobile Card View */}
+        <div className="block md:hidden space-y-4">
+          {contracts.map((contract) => (
+            <motion.div
+              key={contract.contractId}
+              variants={itemVariants}
+              className={getThemeClasses(
+                "bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 p-4 transition-colors duration-300",
+                "!bg-white/95 !border-[#FFC1CC]/30"
+              )}
+            >
+              {/* Card Header */}
+              <div className="flex justify-between items-start mb-3">
+                <div className="flex-1">
+                  <div className="text-sm font-semibold text-gray-900 dark:text-white">
+                    {contract.contractNumber}
+                  </div>
+                  <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    {contract.productName}
+                  </div>
+                </div>
+                <span
+                  className={getThemeClasses(
+                    `inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusBadgeColor(
+                      contract.adminApprovalStatus
+                    )}`,
+                    "!text-[#4c1d1d]"
+                  )}
+                >
+                  {contract.adminApprovalStatus
+                    .replace("_", " ")
+                    .toUpperCase()}
+                </span>
+              </div>
+
+              {/* User Info */}
+              <div className="mb-3 space-y-1">
+                <div className="text-sm text-gray-700 dark:text-gray-300">
+                  <span className="font-medium">User:</span> {contract.user.fullName}
+                </div>
+                <div className="text-xs text-gray-500 dark:text-gray-400">
+                  {contract.user.email}
+                </div>
+                {contract.user.userCode && (
+                  <div className="text-xs text-gray-500 dark:text-gray-400">
+                    No Anggota: {contract.user.userCode}
+                  </div>
+                )}
+              </div>
+
+              {/* Contract Details */}
+              <div className="mb-3 space-y-1">
+                <div className="text-xs text-gray-600 dark:text-gray-400">
+                  Rp {contract.totalAmount.toLocaleString("id-ID")} ({contract.paymentType})
+                </div>
+                <div className="text-xs text-gray-500 dark:text-gray-400">
+                  Percobaan {contract.currentAttempt} dari {contract.maxAttempts}
+                </div>
+                {contract.lastSignature && (
+                  <div className="text-xs text-gray-500 dark:text-gray-400">
+                    Diajukan: {new Date(contract.lastSignature.submittedAt).toLocaleDateString("id-ID")}
+                  </div>
+                )}
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex flex-col gap-2">
+                {contract.adminApprovalStatus === "pending" && (
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() =>
+                        setSelectedContract({
+                          contract,
+                          action: "approve",
+                        })
+                      }
+                      className={getThemeClasses(
+                        "flex-1 inline-flex items-center justify-center px-3 py-2 border border-transparent text-xs font-medium rounded-lg text-white bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 transition-all duration-200 shadow-sm",
+                        "!bg-gradient-to-r !from-[#B5EAD7] !to-[#E6FFF0] !text-[#4c1d1d] !shadow-md"
+                      )}
+                    >
+                      <Check className="w-3 h-3 mr-1" />
+                      Setujui
+                    </button>
+                    <button
+                      onClick={() =>
+                        setSelectedContract({
+                          contract,
+                          action: "reject",
+                        })
+                      }
+                      className={getThemeClasses(
+                        "flex-1 inline-flex items-center justify-center px-3 py-2 border border-transparent text-xs font-medium rounded-lg text-white bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 transition-all duration-200 shadow-sm",
+                        "!bg-gradient-to-r !from-[#FFC1CC] !to-[#FFE4E8] !text-[#4c1d1d] !shadow-md"
+                      )}
+                    >
+                      <X className="w-3 h-3 mr-1" />
+                      Tolak
+                    </button>
+                  </div>
+                )}
+                <button
+                  onClick={() =>
+                    setSelectedContract({ contract, action: "approve" })
+                  }
+                  className={getThemeClasses(
+                    "w-full inline-flex items-center justify-center px-3 py-2 border border-transparent text-xs font-medium rounded-lg text-white bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 transition-all duration-200 shadow-sm",
+                    "!bg-gradient-to-r !from-[#C7CEEA] !to-[#EAF0FF] !text-[#4c1d1d] !shadow-md"
+                  )}
+                >
+                  <Eye className="w-3 h-3 mr-1" />
+                  Lihat Detail
+                </button>
+              </div>
+            </motion.div>
+          ))}
+        </div>
+
+        {/* Desktop Table View */}
         <div
           className={getThemeClasses(
-            "bg-white dark:bg-gray-800 shadow-lg rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700 transition-colors duration-300",
+            "hidden md:block bg-white dark:bg-gray-800 shadow-lg rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700 transition-colors duration-300",
             "!bg-white/95 !border-[#FFC1CC]/30"
           )}
         >
@@ -392,22 +510,22 @@ export default function ContractApprovalsPage() {
               <thead className="bg-gray-50 dark:bg-gray-900">
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    Contract Details
+                    Detail Kontrak
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    User Information
+                    Informasi User
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     No Anggota
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    Signature Status
+                    Status Tanda Tangan
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     Status
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    Actions
+                    Aksi
                   </th>
                 </tr>
               </thead>
@@ -464,12 +582,12 @@ export default function ContractApprovalsPage() {
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div>
                         <div className="text-sm text-gray-900 dark:text-white">
-                          Attempt {contract.currentAttempt} of{" "}
+                          Percobaan {contract.currentAttempt} dari{" "}
                           {contract.maxAttempts}
                         </div>
                         {contract.lastSignature && (
                           <div className="text-xs text-gray-500 dark:text-gray-400">
-                            Submitted:{" "}
+                            Diajukan:{" "}
                             {new Date(
                               contract.lastSignature.submittedAt
                             ).toLocaleDateString("id-ID")}
@@ -508,7 +626,7 @@ export default function ContractApprovalsPage() {
                               )}
                             >
                               <Check className="w-3 h-3 mr-1" />
-                              Approve
+                              Setujui
                             </button>
                             <button
                               onClick={() =>
@@ -523,7 +641,7 @@ export default function ContractApprovalsPage() {
                               )}
                             >
                               <X className="w-3 h-3 mr-1" />
-                              Reject
+                              Tolak
                             </button>
                           </>
                         )}
@@ -537,7 +655,7 @@ export default function ContractApprovalsPage() {
                           )}
                         >
                           <Eye className="w-3 h-3 mr-1" />
-                          View Details
+                          Lihat Detail
                         </button>
                       </div>
                     </td>
@@ -550,7 +668,7 @@ export default function ContractApprovalsPage() {
           {contracts.length === 0 && (
             <div className="text-center py-12">
               <div className="text-gray-500 dark:text-gray-400">
-                No contracts found for the selected filter.
+                Tidak ada kontrak yang ditemukan untuk filter yang dipilih.
               </div>
             </div>
           )}
@@ -611,7 +729,7 @@ export default function ContractApprovalsPage() {
                     "!text-[#4c1d1d]"
                   )}
                 >
-                  Contract Review - {selectedContract.contract.contractNumber}
+                  Review Kontrak - {selectedContract.contract.contractNumber}
                 </h2>
                 <button
                   onClick={() => setSelectedContract(null)}
@@ -633,26 +751,26 @@ export default function ContractApprovalsPage() {
                 <div className="space-y-4">
                   <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg border border-gray-200 dark:border-gray-600">
                     <h3 className="font-semibold text-gray-900 dark:text-white mb-2">
-                      Contract Information
+                      Informasi Kontrak
                     </h3>
                     <div className="space-y-1 text-sm text-gray-700 dark:text-gray-300">
                       <div>
-                        <strong>Product:</strong>{" "}
+                        <strong>Produk:</strong>{" "}
                         {selectedContract.contract.productName}
                       </div>
                       <div>
-                        <strong>Amount:</strong> Rp{" "}
+                        <strong>Jumlah:</strong> Rp{" "}
                         {selectedContract.contract.totalAmount.toLocaleString(
                           "id-ID"
                         )}
                       </div>
                       <div>
-                        <strong>Payment Type:</strong>{" "}
+                        <strong>Tipe Pembayaran:</strong>{" "}
                         {selectedContract.contract.paymentType.toUpperCase()}
                       </div>
                       <div>
-                        <strong>Attempt:</strong>{" "}
-                        {selectedContract.contract.currentAttempt} of{" "}
+                        <strong>Percobaan:</strong>{" "}
+                        {selectedContract.contract.currentAttempt} dari{" "}
                         {selectedContract.contract.maxAttempts}
                       </div>
                     </div>
@@ -660,11 +778,11 @@ export default function ContractApprovalsPage() {
 
                   <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg border border-gray-200 dark:border-gray-600">
                     <h3 className="font-semibold text-gray-900 dark:text-white mb-2">
-                      User Information
+                      Informasi User
                     </h3>
                     <div className="space-y-1 text-sm text-gray-700 dark:text-gray-300">
                       <div>
-                        <strong>Name:</strong>{" "}
+                        <strong>Nama:</strong>{" "}
                         {selectedContract.contract.user.fullName}
                       </div>
                       <div>
@@ -677,7 +795,7 @@ export default function ContractApprovalsPage() {
                       </div>
                       {selectedContract.contract.user.phoneNumber && (
                         <div>
-                          <strong>Phone:</strong>{" "}
+                          <strong>Telepon:</strong>{" "}
                           {selectedContract.contract.user.phoneNumber}
                         </div>
                       )}
@@ -688,7 +806,7 @@ export default function ContractApprovalsPage() {
                   {selectedContract.contract.user.ktpImageUrl && (
                     <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
                       <h3 className="font-semibold text-gray-900 dark:text-white mb-2">
-                        KTP Image
+                        Gambar KTP
                       </h3>
                       <div className="border rounded-lg overflow-hidden bg-white dark:bg-gray-800 max-h-96">
                         <div className="p-2">
@@ -708,7 +826,7 @@ export default function ContractApprovalsPage() {
                         </div>
                       </div>
                       <p className="text-xs text-gray-500 dark:text-gray-400 mt-2 text-center">
-                        Click image to view full size
+                        Klik gambar untuk melihat ukuran penuh
                       </p>
                     </div>
                   )}
@@ -719,7 +837,7 @@ export default function ContractApprovalsPage() {
                   {selectedContract.contract.lastSignature && (
                     <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
                       <h3 className="font-semibold text-gray-900 dark:text-white mb-2">
-                        User Signature
+                        Tanda Tangan User
                       </h3>
                       <div className="border rounded-lg bg-white dark:bg-gray-800 max-h-80 overflow-hidden">
                         <div className="p-4">
@@ -744,13 +862,13 @@ export default function ContractApprovalsPage() {
                       </div>
                       <div className="mt-2 text-sm text-gray-600 dark:text-gray-300">
                         <div>
-                          Submitted:{" "}
+                          Diajukan:{" "}
                           {new Date(
                             selectedContract.contract.lastSignature.submittedAt
                           ).toLocaleString("id-ID")}
                         </div>
                         <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                          Click signature to view full size
+                          Klik tanda tangan untuk melihat ukuran penuh
                         </div>
                       </div>
                     </div>
@@ -760,11 +878,11 @@ export default function ContractApprovalsPage() {
                   {selectedContract.contract.lastSignature?.rejectionReason && (
                     <div className="bg-red-50 dark:bg-red-900/20 p-4 rounded-lg border border-red-200 dark:border-red-800">
                       <h3 className="font-semibold text-red-900 dark:text-red-100 mb-2">
-                        Previous Rejection
+                        Penolakan Sebelumnya
                       </h3>
                       <div className="text-sm text-red-800 dark:text-red-200 space-y-2">
                         <div>
-                          <strong>Reason:</strong>{" "}
+                          <strong>Alasan:</strong>{" "}
                           {
                             selectedContract.contract.lastSignature
                               .rejectionReason
@@ -772,7 +890,7 @@ export default function ContractApprovalsPage() {
                         </div>
                         {selectedContract.contract.lastSignature.adminNotes && (
                           <div>
-                            <strong>Notes:</strong>{" "}
+                            <strong>Catatan:</strong>{" "}
                             {selectedContract.contract.lastSignature.adminNotes}
                           </div>
                         )}
@@ -786,15 +904,15 @@ export default function ContractApprovalsPage() {
                     <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg p-4">
                       <h3 className="font-semibold text-gray-900 dark:text-white mb-4">
                         {selectedContract.action === "approve"
-                          ? "Approve Contract"
-                          : "Reject Contract"}
+                          ? "Setujui Kontrak"
+                          : "Tolak Kontrak"}
                       </h3>
 
                       {selectedContract.action === "reject" && (
                         <div className="space-y-4">
                           <div>
                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                              Rejection Reason *
+                              Alasan Penolakan *
                             </label>
                             <select
                               value={rejectionReason}
@@ -804,21 +922,21 @@ export default function ContractApprovalsPage() {
                               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-[#324D3E] focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                               required
                             >
-                              <option value="">Select reason...</option>
-                              <option value="Signature does not match KTP">
-                                Signature does not match KTP
+                              <option value="">Pilih alasan...</option>
+                              <option value="Tanda tangan tidak sesuai KTP">
+                                Tanda tangan tidak sesuai KTP
                               </option>
-                              <option value="Signature too unclear">
-                                Signature too unclear
+                              <option value="Tanda tangan terlalu tidak jelas">
+                                Tanda tangan terlalu tidak jelas
                               </option>
-                              <option value="Invalid signature format">
-                                Invalid signature format
+                              <option value="Format tanda tangan tidak valid">
+                                Format tanda tangan tidak valid
                               </option>
-                              <option value="KTP image quality too poor">
-                                KTP image quality too poor
+                              <option value="Kualitas gambar KTP terlalu buruk">
+                                Kualitas gambar KTP terlalu buruk
                               </option>
-                              <option value="Other documentation issues">
-                                Other documentation issues
+                              <option value="Masalah dokumentasi lainnya">
+                                Masalah dokumentasi lainnya
                               </option>
                             </select>
                           </div>
@@ -827,12 +945,12 @@ export default function ContractApprovalsPage() {
 
                       <div className="mt-4">
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                          Admin Notes (Optional)
+                          Catatan Admin (Opsional)
                         </label>
                         <textarea
                           value={adminNotes}
                           onChange={(e) => setAdminNotes(e.target.value)}
-                          placeholder="Additional notes for the user..."
+                          placeholder="Catatan tambahan untuk user..."
                           rows={3}
                           className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-[#324D3E] focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
                         />
@@ -868,10 +986,10 @@ export default function ContractApprovalsPage() {
                           )}
                         >
                           {actionLoading
-                            ? "Processing..."
+                            ? "Memproses..."
                             : selectedContract.action === "approve"
-                            ? "Approve Contract"
-                            : "Reject Contract"}
+                            ? "Setujui Kontrak"
+                            : "Tolak Kontrak"}
                         </button>
                         <button
                           onClick={() => setSelectedContract(null)}
@@ -880,7 +998,7 @@ export default function ContractApprovalsPage() {
                             "!border-[#FFC1CC]/30 !text-[#4c1d1d] hover:!bg-[#FFDEE9]/30"
                           )}
                         >
-                          Cancel
+                          Batal
                         </button>
                       </div>
                     </div>

@@ -794,7 +794,8 @@ export default function InvestasiPage() {
                             <div className="space-y-2 max-h-24 overflow-hidden">
                               {investment.plantInstance.history
                                 .filter((h: any) => !h.approvalStatus || h.approvalStatus === "approved_by_manajer")
-                                .slice(-2)
+                                .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+                                .slice(0, 2)
                                 .map((historyItem, index) => (
                                   <div
                                     key={index}

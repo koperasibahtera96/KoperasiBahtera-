@@ -16,6 +16,7 @@ export default function FinancePaymentsPage() {
     status: "",
     search: "",
     page: 1,
+    sortBy: "pending-review", // Default to sorting by pending review
   });
   const [mounted, setMounted] = useState(false);
   const { AlertComponent } = useAlert();
@@ -39,6 +40,7 @@ export default function FinancePaymentsPage() {
       const params = new URLSearchParams();
       if (filters.status) params.append("status", filters.status);
       if (filters.search) params.append("search", filters.search);
+      if (filters.sortBy) params.append("sortBy", filters.sortBy);
       params.append("page", filters.page.toString());
       params.append("limit", "10");
 
@@ -171,9 +173,36 @@ export default function FinancePaymentsPage() {
                 <option value="overdue">Terlambat</option>
               </select>
             </div>
+            <div className="flex flex-col gap-2">
+              <label
+                className={getThemeClasses(
+                  "block text-sm font-medium text-[#324D3E] dark:text-white font-[family-name:var(--font-poppins)]",
+                  "!text-[#4c1d1d]"
+                )}
+              >
+                Urutkan
+              </label>
+              <select
+                value={filters.sortBy}
+                onChange={(e) =>
+                  setFilters((prev) => ({
+                    ...prev,
+                    sortBy: e.target.value,
+                    page: 1,
+                  }))
+                }
+                className={getThemeClasses(
+                  "w-full border border-[#324D3E]/20 dark:border-gray-600 rounded-xl p-3 bg-white dark:bg-gray-700 focus:border-[#324D3E] dark:focus:border-blue-400 focus:ring-2 focus:ring-[#324D3E]/20 dark:focus:ring-blue-400/20 text-[#324D3E] dark:text-white transition-all duration-300 text-sm sm:text-base",
+                  "!bg-white !border-[#FFC1CC]/40 !text-[#4c1d1d] focus:!border-[#FFC1CC] focus:!ring-[#FFC1CC]/30"
+                )}
+              >
+                <option value="pending-review">Perlu Review (Terbaru)</option>
+                <option value="">Default</option>
+              </select>
+            </div>
             <div className="flex items-end">
               <button
-                onClick={() => setFilters({ status: "", search: "", page: 1 })}
+                onClick={() => setFilters({ status: "", search: "", page: 1, sortBy: "pending-review" })}
                 className={getThemeClasses(
                   "w-full px-4 py-3 bg-[#324D3E]/10 dark:bg-gray-700 text-[#324D3E] dark:text-white rounded-xl hover:bg-[#324D3E]/20 dark:hover:bg-gray-600 transition-all duration-300 font-medium font-[family-name:var(--font-poppins)] text-sm sm:text-base",
                   "!bg-[#FFC1CC]/30 !text-[#4c1d1d] hover:!bg-[#FFC1CC]/50"
@@ -416,7 +445,7 @@ export default function FinancePaymentsPage() {
                           </div>
                         </div>
 
-                        <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+                        <div className="mt-4 grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
                           <div className={getThemeClasses(
                             "bg-gradient-to-r from-[#324D3E]/5 to-[#324D3E]/10 dark:from-blue-500/10 dark:to-blue-600/10 p-3 sm:p-4 rounded-xl border border-[#324D3E]/10 dark:border-blue-500/20",
                             "!from-[#FFC1CC]/20 !to-[#FFC1CC]/30 !border-[#FFC1CC]/40"
@@ -425,7 +454,7 @@ export default function FinancePaymentsPage() {
                               "text-xs sm:text-sm text-[#889063] dark:text-gray-300 font-[family-name:var(--font-poppins)]",
                               "!text-[#7d4b4b]"
                             )}>
-                              Total Investasi
+                              Jumlah Paket
                             </div>
                             <div className={getThemeClasses(
                               "text-base sm:text-lg font-semibold text-[#324D3E] dark:text-white",
@@ -442,7 +471,7 @@ export default function FinancePaymentsPage() {
                               "text-xs sm:text-sm text-[#889063] dark:text-gray-300 font-[family-name:var(--font-poppins)]",
                               "!text-[#6b6227]"
                             )}>
-                              Nilai Investasi
+                              Total Nilai
                             </div>
                             <div className={getThemeClasses(
                               "text-base sm:text-lg font-semibold text-[#4C3D19] dark:text-yellow-400 truncate",
@@ -459,13 +488,30 @@ export default function FinancePaymentsPage() {
                               "text-xs sm:text-sm text-[#889063] dark:text-gray-300 font-[family-name:var(--font-poppins)]",
                               "!text-[#4c6058]"
                             )}>
-                              Sudah Dibayar
+                              Disetujui
                             </div>
                             <div className={getThemeClasses(
                               "text-base sm:text-lg font-semibold text-[#889063] dark:text-green-400 truncate",
                               "!text-[#2d5a4e]"
                             )}>
                               Rp {investor.totalPaid.toLocaleString("id-ID")}
+                            </div>
+                          </div>
+                          <div className={getThemeClasses(
+                            "bg-gradient-to-r from-yellow-50 to-yellow-100 dark:from-yellow-500/10 dark:to-yellow-600/10 p-3 sm:p-4 rounded-xl border border-yellow-200 dark:border-yellow-500/20",
+                            "!from-[#FFF5BA]/30 !to-[#FFF5BA]/40 !border-[#FFF5BA]/50"
+                          )}>
+                            <div className={getThemeClasses(
+                              "text-xs sm:text-sm text-yellow-700 dark:text-yellow-400 font-[family-name:var(--font-poppins)]",
+                              "!text-[#6b6227]"
+                            )}>
+                              Pending Review
+                            </div>
+                            <div className={getThemeClasses(
+                              "text-base sm:text-lg font-semibold text-yellow-600 dark:text-yellow-400",
+                              "!text-[#6b6227]"
+                            )}>
+                              {investor.pendingReviews || 0}
                             </div>
                           </div>
                           <div className={getThemeClasses(

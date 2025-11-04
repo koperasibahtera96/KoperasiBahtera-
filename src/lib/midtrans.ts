@@ -6,31 +6,35 @@ import midtransClient, {
   TransactionStatus,
 } from "midtrans-client";
 
-// Check for required environment variables
-if (!process.env.MIDTRANS_SERVER_KEY_SB) {
-  console.error("❌ MIDTRANS_SERVER_KEY is not set in environment variables");
-}
-if (!process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY_SB) {
-  console.error(
-    "❌ NEXT_PUBLIC_MIDTRANS_CLIENT_KEY is not set in environment variables"
-  );
+const midtransKey =  {
+  sandbox: {
+    serverKey: process.env.MIDTRANS_SERVER_KEY_SB!,
+    clientKey: process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY_SB!,
+  },
+  production: {
+    serverKey: process.env.MIDTRANS_SERVER_KEY!,
+    clientKey: process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY!,
+  }
 }
 
-// TODO: Change this to true when ready for production
-const shouldBeProd = false;
+const ENV = process.env.IS_MIDTRANS_PRODUCTION === "true" ? "production" : "sandbox";
+
+const MIDTRANS_CONFIG = midtransKey[ENV];
+
+const shouldBeProd = ENV === "production";
 
 // Initialize Midtrans Snap
 const snap = new midtransClient.Snap({
   isProduction: shouldBeProd,
-  serverKey: process.env.MIDTRANS_SERVER_KEY_SB!,
-  clientKey: process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY_SB!,
+  serverKey: MIDTRANS_CONFIG.serverKey,
+  clientKey: MIDTRANS_CONFIG.clientKey,
 });
 
 // Initialize Midtrans Core API
 const coreApi = new midtransClient.CoreApi({
   isProduction: shouldBeProd,
-  serverKey: process.env.MIDTRANS_SERVER_KEY_SB!,
-  clientKey: process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY_SB!,
+  serverKey: MIDTRANS_CONFIG.serverKey,
+  clientKey: MIDTRANS_CONFIG.clientKey,
 });
 
 export interface PaymentRequest {

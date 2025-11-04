@@ -39,6 +39,11 @@ interface DashboardData {
     inactive: number;
     total: number;
   };
+  treeStatistics: {
+    active: number;
+    inactive: number;
+    total: number;
+  };
 }
 
 export default function AdminDashboard() {
@@ -334,15 +339,15 @@ export default function AdminDashboard() {
               <div className={getThemeClasses("mt-6 p-4 bg-gradient-to-r from-[#F8FAF9] to-[#E8F5E8] dark:from-gray-700 dark:to-gray-600 rounded-xl transition-colors duration-300", "!bg-gradient-to-r !from-[#FFEEF0] !to-[#FFF5F5]")}>                <div className="grid grid-cols-3 gap-4 text-center">
                   <div>
                     <p className={getThemeClasses("text-sm text-[#889063] dark:text-gray-400 transition-colors duration-300", "!text-[#6b7280] dark:!text-gray-300")}>Aktif</p>
-                    <p className={getThemeClasses("text-lg font-bold text-[#4C3D19] dark:text-green-400 transition-colors duration-300", "!text-[#4c1d1d] dark:!text-green-400")}>{dashboardData.investorStats.active}</p>
+                    <p className={getThemeClasses("text-lg font-bold text-[#4C3D19] dark:text-green-400 transition-colors duration-300", "!text-[#4c1d1d] dark:!text-green-400")}>{dashboardData.treeStatistics?.active || 0}</p>
                   </div>
                   <div>
                     <p className={getThemeClasses("text-sm text-[#889063] dark:text-gray-400 transition-colors duration-300", "!text-[#6b7280] dark:!text-gray-300")}>Tidak Aktif</p>
-                    <p className={getThemeClasses("text-lg font-bold text-red-600 dark:text-red-400 transition-colors duration-300", "!text-[#FF6B9D] dark:!text-red-400")}>{dashboardData.investorStats.inactive}</p>
+                    <p className={getThemeClasses("text-lg font-bold text-red-600 dark:text-red-400 transition-colors duration-300", "!text-[#FF6B9D] dark:!text-red-400")}>{dashboardData.treeStatistics?.inactive || 0}</p>
                   </div>
                   <div>
                     <p className={getThemeClasses("text-sm text-[#889063] dark:text-gray-400 transition-colors duration-300", "!text-[#6b7280] dark:!text-gray-300")}>Total</p>
-                    <p className={getThemeClasses("text-lg font-bold text-[#324D3E] dark:text-white transition-colors duration-300", "!text-[#4c1d1d] dark:!text-white")}>{dashboardData.investorStats.total}</p>
+                    <p className={getThemeClasses("text-lg font-bold text-[#324D3E] dark:text-white transition-colors duration-300", "!text-[#4c1d1d] dark:!text-white")}>{dashboardData.treeStatistics?.total || 0}</p>
                   </div>
                 </div>
               </div>

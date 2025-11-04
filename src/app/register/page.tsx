@@ -1373,17 +1373,13 @@ export default function RegisterPage() {
                                 formValues.email
                               );
 
-                              window.open(paymentUrl, "_blank");
+                              // Redirect to payment in the same tab
+                              window.location.href = paymentUrl;
                             }}
                             className="w-full bg-gradient-to-r from-[#364D32] to-[#889063] text-white px-8 py-3 rounded-full font-semibold hover:from-[#889063] hover:to-[#364D32] transition-all duration-300 shadow-lg font-[family-name:var(--font-poppins)]"
                           >
                             Bayar Sekarang
                           </button>
-
-                          <p className="text-xs text-gray-500">
-                            Klik &quot;Lanjutkan&quot; di bawah setelah
-                            menyelesaikan pembayaran
-                          </p>
                         </div>
                       ) : (
                         <div className="space-y-4">
@@ -1469,51 +1465,46 @@ export default function RegisterPage() {
               )}
 
               {/* Navigation Buttons */}
-              <FormActions align="center">
-                <div className="flex gap-4 w-full">
-                  {currentStep > 1 && (
+              {currentStep !== 4 && (
+                <FormActions align="center">
+                  <div className="flex gap-4 w-full">
+                    {currentStep > 1 && (
+                      <button
+                        type="button"
+                        onClick={handlePrevStep}
+                        className="flex-1 py-3 text-base font-semibold border-2 border-[#324D3E] text-[#324D3E] rounded-full hover:bg-[#324D3E] hover:text-white transition-all duration-300 font-[family-name:var(--font-poppins)]"
+                      >
+                        Kembali
+                      </button>
+                    )}
                     <button
-                      type="button"
-                      onClick={handlePrevStep}
-                      className="flex-1 py-3 text-base font-semibold border-2 border-[#324D3E] text-[#324D3E] rounded-full hover:bg-[#324D3E] hover:text-white transition-all duration-300 font-[family-name:var(--font-poppins)]"
+                      type="submit"
+                      disabled={
+                        (currentStep === 1 && isCheckingAvailability) ||
+                        (currentStep === 2 && !ktpImageUrl) ||
+                        (currentStep === 3 && !faceImageUrl) ||
+                        uploadingKtp ||
+                        uploadingFace ||
+                        isCheckingAvailability ||
+                        isLoading
+                      }
+                      className={`${
+                        currentStep === 1 ? "w-full" : "flex-1"
+                      } py-3 text-base font-semibold bg-gradient-to-r from-[#364D32] to-[#889063] text-white rounded-full hover:from-[#889063] hover:to-[#364D32] transition-all duration-300 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed font-[family-name:var(--font-poppins)]`}
                     >
-                      Kembali
+                      {isLoading
+                        ? "Sedang mendaftar..."
+                        : isCheckingAvailability
+                        ? "Memeriksa ketersediaan..."
+                        : uploadingFace
+                        ? "Mengupload foto..."
+                        : uploadingKtp
+                        ? "Mengupload KTP..."
+                        : "Lanjutkan"}
                     </button>
-                  )}
-                  <button
-                    type="submit"
-                    disabled={
-                      (currentStep === 1 && isCheckingAvailability) ||
-                      (currentStep === 2 && !ktpImageUrl) ||
-                      (currentStep === 3 && !faceImageUrl) ||
-                      (currentStep === 4 &&
-                        (!paymentUrl || isProcessingPayment)) ||
-                      uploadingKtp ||
-                      uploadingFace ||
-                      isProcessingPayment ||
-                      isCheckingAvailability ||
-                      isLoading
-                    }
-                    className={`${
-                      currentStep === 1 ? "w-full" : "flex-1"
-                    } py-3 text-base font-semibold bg-gradient-to-r from-[#364D32] to-[#889063] text-white rounded-full hover:from-[#889063] hover:to-[#364D32] transition-all duration-300 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed font-[family-name:var(--font-poppins)]`}
-                  >
-                    {isLoading
-                      ? "Sedang mendaftar..."
-                      : isProcessingPayment
-                      ? "Membuat Pembayaran..."
-                      : isCheckingAvailability
-                      ? "Memeriksa ketersediaan..."
-                      : uploadingFace
-                      ? "Mengupload foto..."
-                      : uploadingKtp
-                      ? "Mengupload KTP..."
-                      : currentStep === 4
-                      ? "Bayar Sekarang"
-                      : "Lanjutkan"}
-                  </button>
-                </div>
-              </FormActions>
+                  </div>
+                </FormActions>
+              )}
             </form>
           </div>
         </div>

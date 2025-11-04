@@ -21,6 +21,7 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get("limit") || "10");
     const search = searchParams.get("search") || "";
     const status = searchParams.get("status") || "";
+    const sortBy = searchParams.get("sortBy") || ""; // "pending-review" for sorting by most recent proof upload
 
     await dbConnect();
 
@@ -190,6 +191,19 @@ export async function GET(request: NextRequest) {
           };
         });
 
+        // Count unique cicilan orders from pending payments not yet in investor record
+        const uniquePendingOrders = new Set(
+          userPayments
+            .filter((p: any) => 
+              p.paymentType === "cicilan-installment" && 
+              p.cicilanOrderId &&
+              !investor.investments.some((inv: any) => inv.investmentId === p.cicilanOrderId)
+            )
+            .map((p: any) => p.cicilanOrderId)
+        );
+        
+        const totalInvestmentCount = investor.investments.length + uniquePendingOrders.size;
+
         return {
           userId: user._id.toString(),
           userInfo: {
@@ -199,7 +213,7 @@ export async function GET(request: NextRequest) {
             phoneNumber: user.phoneNumber,
             userCode: user.userCode,
           },
-          totalInvestments: investor.investments.length,
+          totalInvestments: totalInvestmentCount,
           totalAmount: investor.totalInvestasi,
           totalPaid: investor.totalPaid,
           latePayments: latePaymentsCount,
@@ -209,27 +223,49 @@ export async function GET(request: NextRequest) {
         };
       } else {
         // User has pending manual BCA payments but no investor record yet
+        console.log(`Processing user ${user._id} with ${userPayments.length} payments`);
         const cicilanOrderGroups = new Map();
+        const fullPaymentGroups = new Map();
+        
         userPayments.forEach((payment: any) => {
-          if (
-            payment.cicilanOrderId &&
-            !cicilanOrderGroups.has(payment.cicilanOrderId)
-          ) {
-            cicilanOrderGroups.set(payment.cicilanOrderId, {
-              cicilanOrderId: payment.cicilanOrderId,
-              productName: payment.productName,
-              productId: payment.productId || "unknown",
-              totalAmount:
-                payment.installmentAmount * payment.totalInstallments,
-              installmentCount: payment.totalInstallments,
-              paidCount: 0,
-              status: "active" as const,
-              latestActivity: payment.createdAt.toISOString(),
-            });
+          console.log(`Payment type: ${payment.paymentType}, cicilanOrderId: ${payment.cicilanOrderId}, orderId: ${payment.orderId}`);
+          if (payment.paymentType === "cicilan-installment" && payment.cicilanOrderId) {
+            if (!cicilanOrderGroups.has(payment.cicilanOrderId)) {
+              cicilanOrderGroups.set(payment.cicilanOrderId, {
+                cicilanOrderId: payment.cicilanOrderId,
+                productName: payment.productName,
+                productId: payment.productId || "unknown",
+                totalAmount:
+                  payment.installmentAmount * payment.totalInstallments,
+                installmentCount: payment.totalInstallments,
+                paidCount: 0,
+                status: "active" as const,
+                latestActivity: payment.createdAt.toISOString(),
+              });
+            }
+          } else if (payment.paymentType === "full-investment") {
+            if (!fullPaymentGroups.has(payment.orderId)) {
+              fullPaymentGroups.set(payment.orderId, {
+                cicilanOrderId: payment.orderId,
+                productName: payment.productName,
+                productId: payment.productId || "unknown",
+                totalAmount: payment.amount,
+                installmentCount: 1,
+                paidCount: 0,
+                status: "active" as const,
+                latestActivity: payment.createdAt.toISOString(),
+              });
+            }
           }
         });
 
-        const virtualInvestments = Array.from(cicilanOrderGroups.values());
+        const virtualInvestments = [
+          ...Array.from(cicilanOrderGroups.values()),
+          ...Array.from(fullPaymentGroups.values())
+        ];
+        
+        console.log(`Created ${virtualInvestments.length} virtual investments:`, virtualInvestments.map(v => v.cicilanOrderId));
+        
         const totalAmount = virtualInvestments.reduce(
           (sum, inv) => sum + inv.totalAmount,
           0
@@ -244,6 +280,10 @@ export async function GET(request: NextRequest) {
             !p.proofImageUrl
         ).length;
 
+        // Count unique packages - use virtualInvestments length which already counts unique orders
+        const totalUniqueInvestments = virtualInvestments.length;
+        console.log(`Total unique investments: ${totalUniqueInvestments}, pendingReviews: ${pendingReviews}`);
+
         return {
           userId: user._id.toString(),
           userInfo: {
@@ -253,7 +293,7 @@ export async function GET(request: NextRequest) {
             phoneNumber: user.phoneNumber,
             userCode: user.userCode,
           },
-          totalInvestments: virtualInvestments.length,
+          totalInvestments: totalUniqueInvestments,
           totalAmount: totalAmount,
           totalPaid: 0,
           latePayments: latePaymentsCount,
@@ -284,6 +324,37 @@ export async function GET(request: NextRequest) {
           default:
             return true;
         }
+      });
+    }
+
+    // Apply sorting if requested
+    if (sortBy === "pending-review") {
+      filteredInvestors.sort((a: any, b: any) => {
+        // Get the most recent pending proof upload date for each investor
+        const aPayments = paymentsMap.get(a.userId) || [];
+        const bPayments = paymentsMap.get(b.userId) || [];
+        
+        const aPendingPayments = aPayments.filter(
+          (p: any) => p.adminStatus === "pending" && p.proofImageUrl
+        );
+        const bPendingPayments = bPayments.filter(
+          (p: any) => p.adminStatus === "pending" && p.proofImageUrl
+        );
+        
+        // Get the most recent proof upload date (use updatedAt)
+        const aLatestDate = aPendingPayments.length > 0
+          ? Math.max(...aPendingPayments.map((p: any) => new Date(p.updatedAt).getTime()))
+          : 0;
+        const bLatestDate = bPendingPayments.length > 0
+          ? Math.max(...bPendingPayments.map((p: any) => new Date(p.updatedAt).getTime()))
+          : 0;
+        
+        // Sort descending (most recent first)
+        // Investors with pending reviews come first, sorted by most recent
+        if (aLatestDate === 0 && bLatestDate === 0) return 0;
+        if (aLatestDate === 0) return 1; // b comes first
+        if (bLatestDate === 0) return -1; // a comes first
+        return bLatestDate - aLatestDate; // most recent first
       });
     }
 

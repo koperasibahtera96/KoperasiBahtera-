@@ -405,7 +405,7 @@ export default function FinanceInvestorDetailPage({
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
             <div
               className={getThemeClasses(
                 "bg-gradient-to-r from-[#324D3E]/5 to-[#324D3E]/10 dark:from-blue-500/10 dark:to-blue-600/10 p-3 sm:p-4 rounded-xl border border-[#324D3E]/10 dark:border-blue-500/20",
@@ -420,7 +420,7 @@ export default function FinanceInvestorDetailPage({
                       "!text-[#7d4b4b]"
                     )}
                   >
-                    Total Investasi
+                    Jumlah Paket
                   </div>
                   <div
                     className={getThemeClasses(
@@ -453,7 +453,7 @@ export default function FinanceInvestorDetailPage({
                       "!text-[#6b6227]"
                     )}
                   >
-                    Nilai Investasi
+                    Total Nilai
                   </div>
                   <div
                     className={getThemeClasses(
@@ -486,7 +486,7 @@ export default function FinanceInvestorDetailPage({
                       "!text-[#4c6058]"
                     )}
                   >
-                    Sudah Dibayar
+                    Disetujui
                   </div>
                   <div
                     className={getThemeClasses(
@@ -527,6 +527,39 @@ export default function FinanceInvestorDetailPage({
             </div>
             <div
               className={getThemeClasses(
+                "bg-gradient-to-r from-yellow-50 to-yellow-100 dark:from-yellow-500/10 dark:to-yellow-600/10 p-3 sm:p-4 rounded-xl border border-yellow-200 dark:border-yellow-500/20",
+                "!from-[#FFF5BA]/30 !to-[#FFF5BA]/40 !border-[#FFF5BA]/50"
+              )}
+            >
+              <div className="flex items-center justify-between">
+                <div>
+                  <div
+                    className={getThemeClasses(
+                      "text-xs sm:text-sm text-yellow-700 dark:text-yellow-400 font-[family-name:var(--font-poppins)]",
+                      "!text-[#6b6227]"
+                    )}
+                  >
+                    Pending Review
+                  </div>
+                  <div
+                    className={getThemeClasses(
+                      "text-xl sm:text-2xl font-bold text-yellow-600 dark:text-yellow-400",
+                      "!text-[#6b6227]"
+                    )}
+                  >
+                    {investorDetail.pendingReviews || 0}
+                  </div>
+                </div>
+                <Clock
+                  className={getThemeClasses(
+                    "text-yellow-600 dark:text-yellow-400 w-6 h-6",
+                    "!text-[#6b6227]"
+                  )}
+                />
+              </div>
+            </div>
+            <div
+              className={getThemeClasses(
                 "bg-gradient-to-r from-orange-50 to-orange-100 dark:from-red-500/10 dark:to-red-600/10 p-3 sm:p-4 rounded-xl border border-orange-200 dark:border-red-500/20",
                 "!from-[#FFB3C6]/30 !to-[#FFB3C6]/40 !border-[#FFB3C6]/50"
               )}
@@ -539,7 +572,7 @@ export default function FinanceInvestorDetailPage({
                       "!text-[#7d3d4e]"
                     )}
                   >
-                    Pembayaran Terlambat
+                    Terlambat
                   </div>
                   <div
                     className={getThemeClasses(

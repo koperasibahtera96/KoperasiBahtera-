@@ -76,8 +76,9 @@ const UserSchema: Schema = new Schema({
   },
   nik: {
     type: String,
-    required: [true, 'NIK is required'],
+    required: false, // Optional - only required for investors
     unique: true,
+    sparse: true, // Allows multiple null values
     trim: true,
     match: [/^[0-9]{16}$/, 'NIK must be 16 digits'],
   },
@@ -163,22 +164,22 @@ const UserSchema: Schema = new Schema({
   // Beneficiary Information
   beneficiaryName: {
     type: String,
-    required: [true, 'Beneficiary name is required'],
+    required: false, // Optional - only required for investors
     trim: true,
   },
   beneficiaryNik: {
     type: String,
-    required: [true, 'Beneficiary NIK is required'],
+    required: false, // Optional - only required for investors
     trim: true,
     match: [/^[0-9]{16}$/, 'Beneficiary NIK must be 16 digits'],
   },
   beneficiaryDateOfBirth: {
     type: Date,
-    required: [true, 'Beneficiary date of birth is required'],
+    required: false, // Optional - only required for investors
   },
   beneficiaryRelationship: {
     type: String,
-    required: [true, 'Beneficiary relationship is required'],
+    required: false, // Optional - only required for investors
     enum: ['orangtua', 'suami_istri', 'anak_kandung', 'saudara_kandung'],
   },
   ktpImageUrl: {

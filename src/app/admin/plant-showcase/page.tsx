@@ -516,7 +516,7 @@ export default function PlantShowcasePage() {
                       </div>
                     </div>
 
-                    <div>
+                    {/* <div>
                       <label className="block text-base font-semibold text-[#324D3E] dark:text-gray-300 mb-2">
                         Per 5 Tahun
                       </label>
@@ -533,7 +533,7 @@ export default function PlantShowcasePage() {
                           className="w-full pl-11 pr-3 py-3 text-base font-semibold border-2 border-[#324D3E]/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#324D3E]/50 focus:border-[#324D3E] text-[#324D3E] dark:text-white bg-white dark:bg-gray-700"
                         />
                       </div>
-                    </div>
+                    </div> */}
                   </div>
                 </div>
 

@@ -72,6 +72,21 @@ export async function POST(request: NextRequest) {
       
       // For partial updates (e.g., just minConsecutiveTenor), use different logic
       if (partialUpdate && updateData.minConsecutiveTenor !== undefined) {
+        // Fetch the plant first to validate against its durationYears
+        const existingPlant = await PlantType.findOne({ $or: [{ name: name }, { id: id }] });
+        
+        if (!existingPlant) {
+          throw new Error(`Plant ${name} not found`);
+        }
+        
+        // Validate minConsecutiveTenor against durationYears
+        const maxTenor = (existingPlant.investmentPlan?.durationYears || 5) * 12;
+        if (updateData.minConsecutiveTenor > maxTenor) {
+          throw new Error(
+            `Plant ${name}: minConsecutiveTenor (${updateData.minConsecutiveTenor}) exceeds maximum allowed (${maxTenor} months based on ${existingPlant.investmentPlan?.durationYears || 5} years duration)`
+          );
+        }
+        
         // Update only the minConsecutiveTenor field in investmentPlan
         const result = await PlantType.findOneAndUpdate(
           { $or: [{ name: name }, { id: id }] },

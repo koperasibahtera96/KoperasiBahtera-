@@ -125,7 +125,7 @@ export default function StaffDashboard() {
   const { data: session, status: sessionStatus } = useSession();
   const [plants, setPlants] = useState<PlantInstance[]>([]);
   // For grouping
-  const [assignmentGroups, setAssignmentGroups] = useState<AssignmentGroup[]>(
+  const [_assignmentGroups, setAssignmentGroups] = useState<AssignmentGroup[]>(
     []
   );
   const [loading, setLoading] = useState(true);
@@ -340,19 +340,14 @@ export default function StaffDashboard() {
         params.append("statusFilter", statsFilter);
       }
 
-      // Sidebar filter by asisten/mandor
-      if (sidebarFilter.role && sidebarFilter.role !== "no-group") {
+      // Sidebar filter by asisten/mandor/no-group
+      if (sidebarFilter.role === "no-group") {
+        // For "no-group", tell server to exclude all assigned plants
+        params.append("excludeAssigned", "true");
+      } else if (sidebarFilter.role && sidebarFilter.userId) {
+        // For specific asisten/mandor, filter by role and user ID
         params.append("filterByRole", sidebarFilter.role);
-        if (sidebarFilter.userId) {
-          params.append("filterByUserId", sidebarFilter.userId);
-        }
-      } else if (sidebarFilter.role === "no-group") {
-        // For "no-group", we'll fetch all and filter on client
-        // since we need to exclude assigned plants
-        params.append(
-          "statusFilter",
-          statsFilter === "all" ? "all" : statsFilter
-        );
+        params.append("filterByUserId", sidebarFilter.userId);
       }
 
       const res = await fetch(`/api/plants?${params.toString()}`, {
@@ -390,21 +385,8 @@ export default function StaffDashboard() {
         history: Array.isArray(p.history) ? p.history : [],
       }));
 
-      // Handle "no-group" filter on client side
-      if (sidebarFilter.role === "no-group") {
-        // Get all assigned plant IDs
-        const allAssignedPlantIds = assignmentGroups.flatMap((g) => g.plantIds);
-        // Filter out assigned plants
-        const unassignedPlants = normalized.filter(
-          (p: any) => !allAssignedPlantIds.includes(p.id)
-        );
-        setPlants(unassignedPlants);
-        // Update pagination info for no-group filtering
-        setTotalPlants(unassignedPlants.length);
-        setTotalPages(Math.ceil(unassignedPlants.length / PLANTS_PER_PAGE));
-      } else {
-        setPlants(normalized);
-      }
+      // All filtering is now done server-side
+      setPlants(normalized);
     } catch (err) {
       console.error("Error fetching plants:", err);
       setPlants([]);

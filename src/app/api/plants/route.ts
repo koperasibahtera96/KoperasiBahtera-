@@ -17,6 +17,7 @@ export async function GET(req: NextRequest) {
     const statusFilter = searchParams.get("statusFilter"); // "new" | "problem" | "all"
     const filterByRole = searchParams.get("filterByRole"); // "asisten" | "mandor"
     const filterByUserId = searchParams.get("filterByUserId"); // User ID to filter by
+    const excludeAssigned = searchParams.get("excludeAssigned") === "true"; // For "no-group" filter
     const page = Number.parseInt(searchParams.get("page") || "1", 10);
     const limit = Number.parseInt(searchParams.get("limit") || "0", 10);
 
@@ -55,15 +56,23 @@ export async function GET(req: NextRequest) {
 
     // Apply filter by specific asisten/mandor (for sidebar filtering)
     if (filterByRole && filterByUserId) {
+      console.log('\n=== ROLE/USER FILTER DEBUG ===');
+      console.log(`Filtering by role: ${filterByRole}, userId: ${filterByUserId}`);
+      
       const filterAssignment = await PlantAssignment.findOne({
         assignedTo: filterByUserId,
         assignedRole: filterByRole,
         isActive: true,
       });
+      console.log(`Found assignment:`, filterAssignment ? 'Yes' : 'No');
 
       const filteredPlantIds = filterAssignment?.plantInstanceIds || [];
+      console.log(`Plants assigned to this user: ${filteredPlantIds.length}`);
+      console.log('Plant IDs:', filteredPlantIds);
 
       if (filteredPlantIds.length === 0) {
+        console.log('No plants assigned to this user - returning empty');
+        console.log('=== END ROLE/USER FILTER ===\n');
         return NextResponse.json({
           plants: [],
           pagination: { total: 0, page, limit, totalPages: 0 },
@@ -72,12 +81,50 @@ export async function GET(req: NextRequest) {
 
       // Intersect with accessible plants if applicable
       if (query.id?.$in) {
+        console.log('Intersecting with existing $in filter');
         query.id.$in = query.id.$in.filter((id: string) =>
           filteredPlantIds.includes(id)
         );
       } else {
+        console.log('Setting $in filter to only show assigned plants');
         query.id = { $in: filteredPlantIds };
       }
+      console.log('=== END ROLE/USER FILTER ===\n');
+    }
+
+    // Apply "no-group" filter (exclude all assigned plants)
+    if (excludeAssigned) {
+      console.log('\n=== NO-GROUP FILTER DEBUG ===');
+      // Get all assigned plant IDs from all assignments
+      const allAssignments = await PlantAssignment.find({ isActive: true }).lean();
+      console.log(`Found ${allAssignments.length} active assignments`);
+      
+      const allAssignedPlantIds = allAssignments.flatMap(
+        (a: any) => a.plantInstanceIds || []
+      );
+      console.log(`Total plant ID entries (with duplicates): ${allAssignedPlantIds.length}`);
+      console.log('All assigned plant IDs:', allAssignedPlantIds);
+
+      if (allAssignedPlantIds.length > 0) {
+        // Remove duplicates - a plant can be assigned to multiple people
+        const uniqueIds = [...new Set(allAssignedPlantIds)];
+        console.log(`Unique assigned plant IDs: ${uniqueIds.length}`);
+        console.log('Unique plant IDs:', uniqueIds);
+        
+        // Exclude assigned plants
+        if (query.id?.$in) {
+          console.log('Using $in intersection (rare case)');
+          // If there's already an $in filter, intersect with non-assigned plants
+          query.id.$in = query.id.$in.filter(
+            (id: string) => !uniqueIds.includes(id)
+          );
+        } else {
+          console.log('Using $nin to exclude assigned plants');
+          // Exclude assigned plants using $nin
+          query.id = { $nin: uniqueIds };
+        }
+      }
+      console.log('=== END NO-GROUP FILTER ===\n');
     }
 
     // Filter by plantType (EXACT SAME as client)
@@ -95,18 +142,43 @@ export async function GET(req: NextRequest) {
       ];
     }
 
-    // Execute query
-    const total = await PlantInstance.countDocuments(query);
-
-    let plantsQuery = PlantInstance.find(query).lean();
-
-    // Apply pagination if limit > 0
-    if (limit > 0) {
-      const skip = (page - 1) * limit;
-      plantsQuery = plantsQuery.skip(skip).limit(limit);
+    // Execute query to get all matching plants
+    if (excludeAssigned) {
+      console.log('MongoDB query for no-group:', JSON.stringify(query, null, 2));
     }
-
-    let plants = await plantsQuery;
+    if (filterByRole && filterByUserId) {
+      console.log('MongoDB query for role/user filter:', JSON.stringify(query, null, 2));
+    }
+    
+    let plants = await PlantInstance.find(query).lean();
+    
+    if (excludeAssigned) {
+      console.log(`MongoDB returned ${plants.length} plants (should be unassigned only)`);
+      console.log('First few plant IDs returned:', plants.slice(0, 5).map((p: any) => p.id));
+      
+      // Verify that none of the returned plants are in the assigned list
+      const query$nin = (query.id as any)?.$nin || [];
+      const hasAssignedPlant = plants.some((p: any) => query$nin.includes(p.id));
+      if (hasAssignedPlant) {
+        console.error('❌ ERROR: Found assigned plant in results!');
+      } else {
+        console.log('✅ Verified: No assigned plants in results');
+      }
+    }
+    
+    if (filterByRole && filterByUserId) {
+      console.log(`MongoDB returned ${plants.length} plants for this ${filterByRole}`);
+      console.log('Plant IDs returned:', plants.map((p: any) => p.id));
+      
+      // Verify all returned plants are in the allowed list
+      const allowedIds = (query.id as any)?.$in || [];
+      const hasUnauthorizedPlant = plants.some((p: any) => !allowedIds.includes(p.id));
+      if (hasUnauthorizedPlant) {
+        console.error('❌ ERROR: Found unauthorized plant in results!');
+      } else {
+        console.log('✅ Verified: All plants belong to this user');
+      }
+    }
 
     // Apply status filters (EXACT SAME logic as client)
     if (statusFilter === "new") {
@@ -115,11 +187,16 @@ export async function GET(req: NextRequest) {
       plants = plants.filter((plant: any) => isPlantProblem(plant));
     }
 
-    // Return with pagination if limit specified
+    // Calculate total AFTER status filtering
+    const total = plants.length;
+
+    // Apply pagination if limit > 0
     if (limit > 0) {
+      const skip = (page - 1) * limit;
+      const paginatedPlants = plants.slice(skip, skip + limit);
       const totalPages = Math.ceil(total / limit);
       return NextResponse.json({
-        plants,
+        plants: paginatedPlants,
         pagination: { total, page, limit, totalPages },
       });
     }

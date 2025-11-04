@@ -98,6 +98,49 @@ export async function GET(_request: NextRequest) {
       ).length,
     };
 
+    // Helper function to determine tree status based on history
+    const getTreeStatus = (instance: any) => {
+      const history = instance.history || [];
+
+      // Check for "Panen" status (case insensitive)
+      const hasPanen = history.some(
+        (historyItem: any) =>
+          (historyItem.action || historyItem.type || "").toLowerCase() ===
+          "panen"
+      );
+      if (hasPanen) return "panen";
+
+      // Count non-pending/non-kontrak-baru entries
+      const nonInitialEntries = history.filter((historyItem: any) => {
+        const action = (
+          historyItem.action ||
+          historyItem.type ||
+          ""
+        ).toLowerCase();
+        return action !== "pending contract" && action !== "kontrak baru";
+      });
+
+      if (nonInitialEntries.length === 0) return "menunggu-tanam";
+      if (nonInitialEntries.length === 1) return "sudah-ditanam";
+      return "tumbuh";
+    };
+
+    // Filter approved plant instances only
+    const approvedPlantInstances = plantInstances.filter(
+      (p) => p.approvalStatus === "approved"
+    );
+
+    // Calculate tree statistics based on approval status
+    const treeStatistics = {
+      active: approvedPlantInstances.filter(
+        (instance) => getTreeStatus(instance) === "sudah-ditanam" || getTreeStatus(instance) === "tumbuh"
+      ).length,
+      inactive: approvedPlantInstances.filter(
+        (instance) => getTreeStatus(instance) === "menunggu-tanam"
+      ).length,
+      total: approvedPlantInstances.length,
+    };
+
     // Group plants by type (get top 3)
     const plantsByType = plantInstances.reduce(
       (acc: Record<string, number>, plant) => {
@@ -248,6 +291,7 @@ export async function GET(_request: NextRequest) {
         inactive: inactiveInvestors,
         total: totalInvestors,
       },
+      treeStatistics,
       treeConditionStats: plantsByStatus,
       summary: {
         totalInvestors,

@@ -205,33 +205,93 @@ function InvoicePageContent() {
         }).format(d);
   };
 
-  // --- Status badge (hanya cicilan pending → Belum Dibayar; lainnya Lunas) ---
+  // --- Status badge with proof upload detection ---
   const renderStatus = (p: PaymentData) => {
     const t = (p.paymentType || "").toLowerCase();
-    const st = (p.adminStatus || p.status || "").toLowerCase();
-    if (
-      (t.includes("cicilan") || t.includes("installment")) &&
-      st === "pending"
-    ) {
+    const adminStatus = (p.adminStatus || "").toLowerCase();
+    const generalStatus = (p.status || "").toLowerCase();
+    const hasProof = !!(p as any).proofImageUrl;
+
+    // For cicilan/installment payments
+    if (t.includes("cicilan") || t.includes("installment")) {
+      // Check admin status first (more specific)
+      if (adminStatus === "approved" || generalStatus === "completed") {
+        return (
+          <span
+            className={getThemeClasses(
+              "inline-flex rounded-full bg-green-100 text-green-700 px-2 py-1 text-xs font-semibold",
+              "!bg-[#B5EAD7]/50 !text-[#059669]"
+            )}
+          >
+            Lunas
+          </span>
+        );
+      }
+      
+      if (adminStatus === "rejected" || generalStatus === "rejected") {
+        return (
+          <span
+            className={getThemeClasses(
+              "inline-flex rounded-full bg-red-100 text-red-700 px-2 py-1 text-xs font-semibold",
+              "!bg-[#FFDEE9]/50 !text-[#dc2626]"
+            )}
+          >
+            Ditolak
+          </span>
+        );
+      }
+
+      // If pending, check if proof has been uploaded
+      if (adminStatus === "pending" || generalStatus === "pending") {
+        if (hasProof) {
+          return (
+            <span
+              className={getThemeClasses(
+                "inline-flex rounded-full bg-yellow-100 text-yellow-700 px-2 py-1 text-xs font-semibold",
+                "!bg-[#FFF4E6]/50 !text-[#d97706]"
+              )}
+            >
+              Menunggu Persetujuan
+            </span>
+          );
+        } else {
+          return (
+            <span
+              className={getThemeClasses(
+                "inline-flex rounded-full bg-red-100 text-red-700 px-2 py-1 text-xs font-semibold",
+                "!bg-[#FFDEE9]/50 !text-[#dc2626]"
+              )}
+            >
+              Belum Dibayar
+            </span>
+          );
+        }
+      }
+    }
+
+    // For non-cicilan payments (full, registration) - fallback
+    if (adminStatus === "approved" || generalStatus === "approved" || generalStatus === "completed") {
       return (
         <span
           className={getThemeClasses(
-            "inline-flex rounded-full bg-red-100 text-red-700 px-2 py-1 text-xs font-semibold",
-            "!bg-[#FFDEE9]/50 !text-[#dc2626]"
+            "inline-flex rounded-full bg-green-100 text-green-700 px-2 py-1 text-xs font-semibold",
+            "!bg-[#B5EAD7]/50 !text-[#059669]"
           )}
         >
-          Belum Dibayar
+          Lunas
         </span>
       );
     }
+
+    // Default fallback
     return (
       <span
         className={getThemeClasses(
-          "inline-flex rounded-full bg-green-100 text-green-700 px-2 py-1 text-xs font-semibold",
-          "!bg-[#B5EAD7]/50 !text-[#059669]"
+          "inline-flex rounded-full bg-gray-100 text-gray-700 px-2 py-1 text-xs font-semibold",
+          "!bg-gray-100 !text-gray-700"
         )}
       >
-        Lunas
+        Pending
       </span>
     );
   };

@@ -132,7 +132,13 @@ export default function PlantShowcaseSection() {
               investmentPlan: plant.investmentPlan,
               treePackages: plant.treePackages || [],
             }));
-            setPlantsData(transformedData);
+            // Sort to ensure "Aren" is always first
+            const sortedData = transformedData.sort((a: any, b: any) => {
+              if (a.name === "Aren") return -1;
+              if (b.name === "Aren") return 1;
+              return 0;
+            });
+            setPlantsData(sortedData);
             console.log(
               "✅ Loaded plant data from database:",
               transformedData.length,
@@ -803,7 +809,7 @@ export default function PlantShowcaseSection() {
                                     Rp {Number(plant.pricing.yearly) === 0 ? "XXXX" : formatIDRCurrency(plant.pricing.yearly)}
                                   </span>
                                 </motion.div>
-                                <motion.div
+                                {/* <motion.div
                                   className="flex justify-between"
                                   variants={fadeInUp}
                                   whileHover={{
@@ -818,7 +824,7 @@ export default function PlantShowcaseSection() {
                                     Rp{" "}
                                     {Number(plant.pricing.fiveYears) === 0 ? "XXXX" : formatIDRCurrency(plant.pricing.fiveYears)}
                                   </span>
-                                </motion.div>
+                                </motion.div> */}
                                 <motion.div
                                   className="flex justify-between border-t pt-2"
                                   variants={fadeInUp}
