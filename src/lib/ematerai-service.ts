@@ -19,7 +19,7 @@ const EMATERAI_CONFIG = {
   },
 };
 
-const ENV = "production";
+const ENV = process.env.IS_EMATERAI_PRODUCTION === "true" ? "production" : "staging";
 export const CONFIG = EMATERAI_CONFIG[ENV];
 
 interface StampCoordinates {
@@ -111,6 +111,9 @@ export async function stampContract(
       );
     }
 
+    // Log the full API response
+    console.log('[E-Materai] Full stampContract API Response:', JSON.stringify(result, null, 2));
+    
     console.log(
       `[E-Materai] Success! UUID: ${result.data.uuid}, File: ${result.data.file_stamp}`
     );
@@ -145,7 +148,15 @@ export async function getStampedDocument(uuid: string): Promise<Buffer> {
       );
     }
 
+    // Log response headers for debugging
+    console.log('[E-Materai] getStampedDocument Response Headers:', {
+      contentType: response.headers.get('content-type'),
+      contentLength: response.headers.get('content-length'),
+      status: response.status
+    });
+
     const arrayBuffer = await response.arrayBuffer();
+    console.log(`[E-Materai] Downloaded stamped document, size: ${arrayBuffer.byteLength} bytes`);
     return Buffer.from(arrayBuffer);
   } catch (error) {
     console.error("[E-Materai] Error fetching stamped document:", error);
@@ -178,6 +189,10 @@ export async function retryStamp(uuid: string): Promise<StampDocumentResponse> {
     }
 
     const result: StampDocumentResponse = await response.json();
+    
+    // Log the full API response
+    console.log('[E-Materai] Full retryStamp API Response:', JSON.stringify(result, null, 2));
+    
     console.log(`[E-Materai] Retry success! UUID: ${result.data.uuid}`);
 
     return result;
