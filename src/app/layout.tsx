@@ -25,6 +25,9 @@ export const metadata: Metadata = {
   title: "Investasi Pertanian Berkelanjutan | Koperasi Banteng Merah Sejahtera",
   description:
     "Solusi tepat bagi Anda yang ingin meraih keuntungan sekaligus memberikan dampak positif bagi lingkungan dan masyarakat.",
+  icons: {
+    icon: "/images/koperasi-logo-kartu-anggota.png",
+  },
 };
 
 export const viewport = {
