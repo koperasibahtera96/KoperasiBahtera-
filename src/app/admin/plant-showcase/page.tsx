@@ -470,16 +470,44 @@ export default function PlantShowcasePage() {
               {/* Edit Pricing Section */}
               {expandedPlants.has(index) && (
               <div className="space-y-8">
-                {/* Section 1: Mulai Dari (Installment Payments) */}
+                {/* Section 1: Beli Sekarang */}
                 <div>
                   <h4 className="text-xl font-bold text-[#324D3E] dark:text-white mb-4 font-[family-name:var(--font-poppins)]">
-                    1️⃣ Mulai Dari (Harga Cicilan)
+                    1️⃣ Beli Sekarang (Harga Paket)
                   </h4>
-                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">Harga cicilan yang dibayar customer per bulan/tahun</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">Harga paket yang dibayar customer secara penuh</p>
+                  <div className="max-w-xs">
+                    <div>
+                      <label className="block text-base font-semibold text-[#324D3E] dark:text-gray-300 mb-2">
+                        Harga Paket
+                      </label>
+                      <div className="relative">
+                        <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 text-base">Rp</span>
+                        <input
+                          type="text"
+                          value={formatIDRCurrency(parseInt(plant.pricing?.fiveYears || "0"))}
+                          onChange={(e) => {
+                            const formattedValue = formatIDRInput(e.target.value);
+                            e.target.value = formattedValue;
+                            handlePriceUpdate(index, "fiveYears", formattedValue);
+                          }}
+                          className="w-full pl-11 pr-3 py-3 text-base font-semibold border-2 border-[#324D3E]/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#324D3E]/50 focus:border-[#324D3E] text-[#324D3E] dark:text-white bg-white dark:bg-gray-700"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Section 2: Lainnya (Other Pricing) */}
+                <div>
+                  <h4 className="text-xl font-bold text-[#324D3E] dark:text-white mb-4 font-[family-name:var(--font-poppins)]">
+                    2️⃣ Lainnya
+                  </h4>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-3">Harga cicilan dan harga jual pohon</p>
                   <div className="grid grid-cols-3 gap-4">
                     <div>
                       <label className="block text-base font-semibold text-[#324D3E] dark:text-gray-300 mb-2">
-                        Per Bulan (Mulai Dari)
+                        Per Bulan
                       </label>
                       <div className="relative">
                         <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 text-base">Rp</span>
@@ -491,9 +519,8 @@ export default function PlantShowcasePage() {
                             e.target.value = formattedValue;
                             handlePriceUpdate(index, "monthly", formattedValue);
                           }}
-                          className="w-full pl-11 pr-16 py-3 text-base font-semibold border-2 border-[#324D3E]/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#324D3E]/50 focus:border-[#324D3E] text-[#324D3E] dark:text-white bg-white dark:bg-gray-700"
+                          className="w-full pl-11 pr-3 py-3 text-base font-semibold border-2 border-[#324D3E]/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#324D3E]/50 focus:border-[#324D3E] text-[#324D3E] dark:text-white bg-white dark:bg-gray-700"
                         />
-                        <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-sm text-gray-500">/bulan</span>
                       </div>
                     </div>
 
@@ -516,48 +543,23 @@ export default function PlantShowcasePage() {
                       </div>
                     </div>
 
-                    {/* <div>
+                    <div>
                       <label className="block text-base font-semibold text-[#324D3E] dark:text-gray-300 mb-2">
-                        Per 5 Tahun
+                        Harga Jual Pohon
                       </label>
                       <div className="relative">
                         <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 text-base">Rp</span>
                         <input
                           type="text"
-                          value={formatIDRCurrency(parseInt(plant.pricing?.fiveYears || "0"))}
+                          value={formatIDRCurrency(plant.pricing?.sellPrice || 0)}
                           onChange={(e) => {
                             const formattedValue = formatIDRInput(e.target.value);
                             e.target.value = formattedValue;
-                            handlePriceUpdate(index, "fiveYears", formattedValue);
+                            handlePriceUpdate(index, "sellPrice", formattedValue);
                           }}
                           className="w-full pl-11 pr-3 py-3 text-base font-semibold border-2 border-[#324D3E]/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#324D3E]/50 focus:border-[#324D3E] text-[#324D3E] dark:text-white bg-white dark:bg-gray-700"
                         />
                       </div>
-                    </div> */}
-                  </div>
-                </div>
-
-                {/* Section 2: Lainnya (Other Pricing) */}
-                <div>
-                  <h4 className="text-xl font-bold text-[#324D3E] dark:text-white mb-4 font-[family-name:var(--font-poppins)]">
-                    2️⃣ Lainnya
-                  </h4>
-                  <div className="max-w-xs">
-                    <label className="block text-base font-semibold text-[#324D3E] dark:text-gray-300 mb-2">
-                      Harga Jual Pohon
-                    </label>
-                    <div className="relative">
-                      <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 text-base">Rp</span>
-                      <input
-                        type="text"
-                        value={formatIDRCurrency(plant.pricing?.sellPrice || 0)}
-                        onChange={(e) => {
-                          const formattedValue = formatIDRInput(e.target.value);
-                          e.target.value = formattedValue;
-                          handlePriceUpdate(index, "sellPrice", formattedValue);
-                        }}
-                        className="w-full pl-11 pr-3 py-3 text-base font-semibold border-2 border-[#324D3E]/30 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#324D3E]/50 focus:border-[#324D3E] text-[#324D3E] dark:text-white bg-white dark:bg-gray-700"
-                      />
                     </div>
                   </div>
                 </div>

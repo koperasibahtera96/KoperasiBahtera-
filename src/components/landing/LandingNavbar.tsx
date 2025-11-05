@@ -99,6 +99,7 @@ export default function LandingNavbar({
   const [resubmitMessage, setResubmitMessage] = useState<string | null>(null);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
+  const [showMobileNav, setShowMobileNav] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const { data: session, status, update } = useSession();
   const { language, setLanguage, t } = useLanguage();
@@ -113,6 +114,9 @@ export default function LandingNavbar({
       }
       if (!target.closest(".mobile-menu")) {
         setShowMobileMenu(false);
+      }
+      if (!target.closest(".mobile-nav-menu")) {
+        setShowMobileNav(false);
       }
     };
 
@@ -1068,6 +1072,78 @@ export default function LandingNavbar({
           </motion.div>
         </div>
       </motion.nav>
+      
+      {/* Floating Hamburger Navigation Menu for Mobile - Bottom Left */}
+      {!hideNavigation && (
+        <div className="xl:hidden mobile-nav-menu">
+          {/* Hamburger Button - Fixed Bottom Left */}
+          <motion.button
+            onClick={() => setShowMobileNav(!showMobileNav)}
+            className="fixed bottom-8 left-8 z-50 bg-[#324D3E] text-white p-4 rounded-full shadow-lg hover:bg-[#4C3D19] transition-colors duration-300"
+            whileTap={{ scale: 0.95 }}
+            initial={{ scale: 0, rotate: -180 }}
+            animate={{ scale: 1, rotate: 0 }}
+            transition={{ type: "spring", stiffness: 200, damping: 20 }}
+          >
+            <motion.svg
+              className="w-8 h-8"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              animate={{ rotate: showMobileNav ? 90 : 0 }}
+              transition={{ duration: 0.3 }}
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M4 6h16M4 12h16M4 18h16"
+              />
+            </motion.svg>
+          </motion.button>
+
+          {/* Navigation Menu */}
+          <AnimatePresence>
+            {showMobileNav && (
+              <motion.div
+                className="fixed bottom-24 left-8 z-50 w-56 bg-white rounded-2xl shadow-2xl border border-gray-200 py-3 overflow-hidden"
+                initial={{ opacity: 0, scale: 0.8, y: 20 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.8, y: 20 }}
+                transition={{ type: "spring", stiffness: 300, damping: 25 }}
+              >
+                {[
+                  { key: "nav.beranda", id: "beranda" },
+                  { key: "nav.program", id: "program" },
+                  { key: "nav.produk", id: "produk" },
+                  { key: "nav.review", id: "review" },
+                  { key: "nav.tentangKami", id: "tentang-kami" },
+                  { key: "nav.faq", id: "faq" },
+                ].map((item, index) => (
+                  <motion.button
+                    key={item.key}
+                    onClick={() => {
+                      handleNavigationClick(item.id);
+                      setShowMobileNav(false);
+                    }}
+                    className="w-full px-4 py-3 text-left text-gray-700 hover:bg-gray-50 transition-colors font-medium cursor-pointer"
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: index * 0.05 }}
+                    whileHover={{ backgroundColor: "#324D3E", color: "#ffffff", x: 5 }}
+                    whileTap={{ scale: 0.98 }}
+                  >
+                    <div className="flex items-center space-x-3">
+                      <span className="text-sm">{t(item.key)}</span>
+                    </div>
+                  </motion.button>
+                ))}
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      )}
+      
       {/* Modal rendered outside the nav to avoid layout constraints */}
       <AnimatePresence>
         {showResubmitModal && session?.user && (

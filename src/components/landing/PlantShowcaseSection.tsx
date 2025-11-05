@@ -192,6 +192,7 @@ export default function PlantShowcaseSection() {
       router.push("/login");
       return;
     }
+    // User is logged in and verified
     setTreeSelectionModal({
       isOpen: true,
       plant: plant,
@@ -384,6 +385,7 @@ export default function PlantShowcaseSection() {
       router.push("/login");
       return;
     }
+    // User is logged in and verified
     setCicilanModal({ isOpen: true, plant: plant });
   };
 
@@ -552,11 +554,7 @@ export default function PlantShowcaseSection() {
                 >
                   <div className="flex flex-col">
                     <motion.div
-                      className={`w-full grid grid-cols-1 ${
-                        session?.user?.verificationStatus === "approved"
-                          ? "xl:grid-cols-[500px_1fr_350px]"
-                          : "xl:grid-cols-[500px_1fr]"
-                      } gap-4 sm:gap-6 lg:gap-8 items-start`}
+                      className="w-full grid grid-cols-1 xl:grid-cols-[500px_1fr_350px] gap-4 sm:gap-6 lg:gap-8 items-start"
                       variants={containerVariants}
                     >
                       <motion.div
@@ -607,11 +605,11 @@ export default function PlantShowcaseSection() {
                           </motion.span>
                         </motion.div>
                         <motion.div
-                          className="hidden md:block"
+                          className="block"
                           variants={fadeInUp}
                         >
                           <motion.p
-                            className="text-sm md:text-base lg:text-lg leading-relaxed text-gray-700 font-medium"
+                            className="text-xs sm:text-sm md:text-base lg:text-lg leading-relaxed text-gray-700 font-medium"
                             initial={{ opacity: 0 }}
                             animate={{ opacity: 1 }}
                             transition={{ delay: 0.8, duration: 0.8 }}
@@ -620,11 +618,11 @@ export default function PlantShowcaseSection() {
                           </motion.p>
                         </motion.div>
                         <motion.div
-                          className="hidden xl:block"
+                          className="block"
                           variants={fadeInUp}
                         >
                           <motion.h4
-                            className="text-base md:text-lg lg:text-xl font-bold text-[#4A5C57] mb-3 font-[family-name:var(--font-poppins)]"
+                            className="text-sm sm:text-base md:text-lg lg:text-xl font-bold text-[#4A5C57] mb-3 font-[family-name:var(--font-poppins)]"
                             whileHover={{ scale: 1.05 }}
                           >
                             {t("plants.processingProducts", {
@@ -632,7 +630,7 @@ export default function PlantShowcaseSection() {
                             })}
                           </motion.h4>
                           <motion.ul
-                            className="space-y-2 text-xs md:text-sm lg:text-base"
+                            className="space-y-2 text-xs sm:text-sm md:text-sm lg:text-base"
                             variants={containerVariants}
                           >
                             {plant.productOlahan.map(
@@ -689,7 +687,7 @@ export default function PlantShowcaseSection() {
                           />
                         </motion.div>
                       </motion.div>
-                      {session?.user?.verificationStatus === "approved" && (
+                      {(
                         <motion.div
                           className="space-y-3 sm:space-y-4 flex flex-col justify-start xl:col-span-1"
                           variants={slideInFromRight}
@@ -711,18 +709,10 @@ export default function PlantShowcaseSection() {
                               animate={{ opacity: 1, y: 0 }}
                               transition={{ delay: 0.6, duration: 0.5 }}
                             >
-                              {t("plants.simulationTitle")}
+                              {t("plants.buyNow")}
                             </motion.h4>
-                            <motion.p
-                              className="text-xs sm:text-sm md:text-base mb-2"
-                              initial={{ opacity: 0 }}
-                              animate={{ opacity: 1 }}
-                              transition={{ delay: 0.8, duration: 0.5 }}
-                            >
-                              {t("plants.startingFrom")}
-                            </motion.p>
                             <motion.div
-                              className="text-xl sm:text-2xl md:text-3xl font-bold mb-3 sm:mb-4"
+                              className="text-xl sm:text-2xl md:text-3xl font-bold mb-2"
                               initial={{ opacity: 0, scale: 0.5 }}
                               animate={{ opacity: 1, scale: 1 }}
                               transition={{
@@ -731,17 +721,26 @@ export default function PlantShowcaseSection() {
                                 type: "spring",
                               }}
                             >
-                              Rp {Number(plant.pricing.monthly) === 0 ? "XXXX" : formatIDRCurrency(plant.pricing.monthly)}{" "}
+                              Rp {Number(plant.pricing.fiveYears) === 0 ? "XXXX" : formatIDRCurrency(plant.pricing.fiveYears)}{" "}
                               <span className="text-xs sm:text-sm font-normal">
-                                {t("plants.perMonth")}
+                                {t("plants.perPackage")}
                               </span>
                             </motion.div>
+                            <motion.p
+                              className="text-xs text-white/80 mb-3 sm:mb-4"
+                              initial={{ opacity: 0 }}
+                              animate={{ opacity: 1 }}
+                              transition={{ delay: 0.8, duration: 0.5 }}
+                            >
+                              *{t("plants.packageInfo")}
+                            </motion.p>
                             <motion.button
                               className="w-full bg-white text-[#4A5C57] py-2 px-4 rounded-full font-bold text-xs sm:text-sm md:text-base hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-gray-300 disabled:text-gray-500"
                               onClick={() => handleInvestment(plant)}
                               disabled={
-                                isLoading === plant.name ||
-                                Number(plant.pricing.monthly) === 0
+                                Boolean(isLoading === plant.name) ||
+                                Number(plant.pricing.monthly) === 0 ||
+                                Boolean(session && session?.user?.verificationStatus !== "approved")
                               }
                               whileHover={{
                                 scale:
@@ -803,10 +802,10 @@ export default function PlantShowcaseSection() {
                                   }}
                                 >
                                   <span className="text-gray-700">
-                                    {t("plants.perYear")}
+                                    {t("plants.perMonth")}
                                   </span>
                                   <span className="font-bold text-gray-900">
-                                    Rp {Number(plant.pricing.yearly) === 0 ? "XXXX" : formatIDRCurrency(plant.pricing.yearly)}
+                                    Rp {Number(plant.pricing.monthly) === 0 ? "XXXX" : formatIDRCurrency(plant.pricing.monthly)}
                                   </span>
                                 </motion.div>
                                 {/* <motion.div
@@ -842,12 +841,23 @@ export default function PlantShowcaseSection() {
                                   </span>
                                 </motion.div>
                               </motion.div>
+                              <motion.p
+                                className="text-xs text-gray-500 mt-3 mb-2 text-center"
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                transition={{ delay: 1.6, duration: 0.5 }}
+                              >
+                                {t("plants.installmentDuration", {
+                                  years: String(plant.investmentPlan?.durationYears || 7),
+                                })}
+                              </motion.p>
                               <motion.button
-                                className="w-full mt-3 bg-[#324D3E] text-white py-2 px-4 rounded-full font-bold text-xs sm:text-sm hover:bg-[#4C3D19] transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-gray-400 disabled:text-gray-600"
+                                className="w-full bg-[#324D3E] text-white py-2 px-4 rounded-full font-bold text-xs sm:text-sm hover:bg-[#4C3D19] transition-colors disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-gray-400 disabled:text-gray-600"
                                 onClick={() => handleCicilanSelect(plant)}
                                 disabled={
-                                  isLoading === plant.name ||
-                                  Number(plant.pricing.monthly) === 0
+                                  Boolean(isLoading === plant.name) ||
+                                  Number(plant.pricing.monthly) === 0 ||
+                                  Boolean(session && session?.user?.verificationStatus !== "approved")
                                 }
                                 whileHover={{
                                   scale:
