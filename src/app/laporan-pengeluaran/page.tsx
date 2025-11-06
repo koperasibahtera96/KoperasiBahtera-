@@ -87,6 +87,8 @@ export default function LaporanPengeluaranPage() {
 
   const [loading, setLoading] = useState(true);
   const { showError, AlertComponent } = useAlert();
+  const [totalIncomingPaid, setTotalIncomingPaid] = useState(0);
+  const [totalPendaftaran, setTotalPendaftaran] = useState(0);
   const { theme, systemTheme } = useTheme();
   const isDark = (theme === "system" ? systemTheme : theme) === "dark";
   const [mounted, setMounted] = React.useState(false);
@@ -113,6 +115,113 @@ export default function LaporanPengeluaranPage() {
   useEffect(() => {
     loadData();
   }, []);
+
+  // Load total amountPaid from daily-incoming-investor (use summary if provided, fallback sum rows)
+  async function loadTotalIncomingPaid() {
+    try {
+      const qs = new URLSearchParams();
+      if (startDate) qs.set("startDate", startDate);
+      if (endDate) qs.set("endDate", endDate);
+
+      // jangan kirim perPage/page — biarkan backend yang meng-handle pagination / summary
+      const url = `/api/daily-incoming-investor${
+        qs.toString() ? "?" + qs.toString() : ""
+      }`;
+      const res = await fetch(url, { cache: "no-store" });
+      if (!res.ok) throw new Error("Failed to fetch daily incoming");
+      const json = await res.json();
+
+      let total = 0;
+      // prioritas: gunakan summary jika disediakan backend
+      if (json?.summary && typeof json.summary.totalSudahDibayar === "number") {
+        total = json.summary.totalSudahDibayar;
+      } else if (Array.isArray(json.rows) && json.rows.length) {
+        total = json.rows.reduce(
+          (s: number, r: any) => s + (Number(r?.amountPaid ?? 0) || 0),
+          0
+        );
+      } else if (Array.isArray(json) && json.length) {
+        total = json.reduce(
+          (s: number, r: any) => s + (Number(r?.amountPaid ?? 0) || 0),
+          0
+        );
+      } else {
+        // fallback: jika backend mengembalikan object dengan data prop
+        const list = json?.data || json?.items || json?.rows || [];
+        if (Array.isArray(list) && list.length) {
+          total = list.reduce(
+            (s: number, r: any) => s + (Number(r?.amountPaid ?? 0) || 0),
+            0
+          );
+        }
+      }
+
+      setTotalIncomingPaid(Math.round(total));
+    } catch (e) {
+      console.error("loadTotalIncomingPaid:", e);
+      setTotalIncomingPaid(0);
+    }
+  }
+
+  // Load total biaya pendaftaran (registration fees) — prefer summary, fallback sum payments.amount
+  async function loadTotalPendaftaran() {
+    try {
+      const qs = new URLSearchParams();
+      if (startDate) qs.set("startDate", startDate);
+      if (endDate) qs.set("endDate", endDate);
+      const url = `/api/pendaftaran${qs.toString() ? "?" + qs.toString() : ""}`;
+      const res = await fetch(url, { cache: "no-store" });
+      if (!res.ok) throw new Error("Failed to fetch pendaftaran");
+      const json = await res.json();
+
+      // prefer explicit summary from backend if available
+      if (json?.summary) {
+        const sum =
+          (json.summary as any).totalRegistration ??
+          (json.summary as any).totalAmount ??
+          (json.summary as any).total ??
+          null;
+        if (typeof sum === "number") {
+          setTotalPendaftaran(Math.round(sum));
+          return;
+        }
+      }
+
+      // normalize list: check payments (invoice proxy), rows, array, data/items
+      const list = Array.isArray((json as any).payments)
+        ? (json as any).payments
+        : Array.isArray((json as any).rows)
+        ? (json as any).rows
+        : Array.isArray(json)
+        ? json
+        : json?.data || json?.items || [];
+
+      const total = (list as any[]).reduce((s: number, r: any) => {
+        // prioritaskan amount (sesuai DB) lalu fallback ke gross/total/amountPaid
+        const v = Number(
+          r?.amount ??
+            r?.gross_amount ??
+            r?.totalAmount ??
+            r?.total ??
+            r?.amountPaid ??
+            0
+        );
+        return s + (isFinite(v) ? v : 0);
+      }, 0);
+
+      setTotalPendaftaran(Math.round(total));
+    } catch (e) {
+      console.error("loadTotalPendaftaran:", e);
+      setTotalPendaftaran(0);
+    }
+  }
+
+  useEffect(() => {
+    // load both totals when date filters change
+    loadTotalIncomingPaid();
+    loadTotalPendaftaran();
+    // reload when filter range changes
+  }, [startDate, endDate]);
 
   const loadData = async () => {
     try {
@@ -825,14 +934,16 @@ export default function LaporanPengeluaranPage() {
 
         <div className="flex items-center gap-2">
           <button
-            onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+            onClick={() =>
+              setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+            }
             disabled={currentPage === totalPages}
             className="px-3 py-1 rounded-lg text-sm font-medium bg-white border border-gray-300 disabled:opacity-50"
           >
             Next
           </button>
           <button
-            onClick={() => setCurrentPage(totalPages)} 
+            onClick={() => setCurrentPage(totalPages)}
             disabled={currentPage === totalPages}
             className="px-3 py-1 rounded-lg text-sm font-medium bg-white border border-gray-300 disabled:opacity-50"
           >
@@ -931,7 +1042,9 @@ export default function LaporanPengeluaranPage() {
                 <button
                   className={getThemeClasses(
                     `px-3 py-1 text-xs font-bold transition-colors duration-300 ${
-                      isAll ? "bg-[#E9FFEF] text-[#324D3E] dark:bg-emerald-500/30 dark:text-white" : "bg-white text-[#324D3E] dark:bg-gray-700 dark:text-white"
+                      isAll
+                        ? "bg-[#E9FFEF] text-[#324D3E] dark:bg-emerald-500/30 dark:text-white"
+                        : "bg-white text-[#324D3E] dark:bg-gray-700 dark:text-white"
                     }`,
                     isAll
                       ? "!bg-[#FFDEE9] !text-[#4c1d1d]"
@@ -945,7 +1058,9 @@ export default function LaporanPengeluaranPage() {
                 <button
                   className={getThemeClasses(
                     `px-3 py-1 text-xs font-bold transition-colors duration-300 ${
-                      isExpense ? "bg-[#FFEAA7] text-[#324D3E] dark:bg-red-500/30 dark:text-white" : "bg-white text-[#324D3E] dark:bg-gray-700 dark:text-white"
+                      isExpense
+                        ? "bg-[#FFEAA7] text-[#324D3E] dark:bg-red-500/30 dark:text-white"
+                        : "bg-white text-[#324D3E] dark:bg-gray-700 dark:text-white"
                     }`,
                     isExpense
                       ? "!bg-[#FFDEE9] !text-[#4c1d1d]"
@@ -959,7 +1074,9 @@ export default function LaporanPengeluaranPage() {
                 <button
                   className={getThemeClasses(
                     `px-3 py-1 text-xs font-bold transition-colors duration-300 ${
-                      isIncome ? "bg-[#C2F5C0] text-[#324D3E] dark:bg-green-500/30 dark:text-white" : "bg-white text-[#324D3E] dark:bg-gray-700 dark:text-white"
+                      isIncome
+                        ? "bg-[#C2F5C0] text-[#324D3E] dark:bg-green-500/30 dark:text-white"
+                        : "bg-white text-[#324D3E] dark:bg-gray-700 dark:text-white"
                     }`,
                     isIncome
                       ? "!bg-[#B5EAD7] !text-[#4c1d1d]"
@@ -979,8 +1096,7 @@ export default function LaporanPengeluaranPage() {
                     <button
                       className={getThemeClasses(
                         "px-4 py-2 text-sm font-semibold rounded-2xl border transition-colors duration-200",
-                        "bg-white hover:bg-gray-100 text-[#324D3E] border-gray-300",
-                        // "!bg-[#FFF5BA] !text-[#4c1d1d] hover:!bg-[#FFEAA7]"
+                        "bg-white hover:bg-gray-100 text-[#324D3E] border-gray-300"
                       )}
                     >
                       Laporan ▼
@@ -1385,7 +1501,7 @@ export default function LaporanPengeluaranPage() {
                 "!bg-white/95 !border-[#FFC1CC]/30"
               )}
             >
-              <CardContent className="p-6">
+              <CardContent>
                 <div className="flex items-center justify-between mb-4">
                   <div
                     className={getThemeClasses(
@@ -1415,6 +1531,65 @@ export default function LaporanPengeluaranPage() {
               </CardContent>
             </Card>
           </motion.div>
+
+          {/* Total Pendapatan New – hanya tampil kalau ALL */}
+          {isAll && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.55 }}
+            >
+              <Card
+                className={getThemeClasses(
+                  "bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl border-[#324D3E]/10 dark:border-gray-700 shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300",
+                  "!bg-white/95 !border-[#FFC1CC]/30"
+                )}
+              >
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <div
+                      className={getThemeClasses(
+                        "text-sm text-[#889063] dark:text-gray-200",
+                        "!text-[#6b7280]"
+                      )}
+                    >
+                      Total Pendapatan , Pendaftaran , Daily Pemasukan Investor 
+                    </div>
+                    <div
+                      className={getThemeClasses(
+                        "flex h-10 w-10 items-center justify-center rounded-2xl bg-green-500/10 text-green-600",
+                        "!bg-[#B5EAD7]/50 !text-[#059669]"
+                      )}
+                    >
+                      <DollarSign className="h-5 w-5" />
+                    </div>
+                  </div>
+                  <div
+                    className={getThemeClasses(
+                      "text-2xl font-bold text-green-600 dark:text-emerald-400 transition-colors duration-300",
+                      "!text-[#059669]"
+                    )}
+                  >
+                    {formatCurrency(
+                      totalIncome + totalIncomingPaid + totalPendaftaran
+                    )}
+                  </div>
+                  {/* <div className="mt-2 text-xs text-gray-500">
+                    <div>Pendapatan Tanaman: {formatCurrency(totalIncome)}</div>
+                    <div>
+                      Total amountPaid (daily-incoming):{" "}
+                      {formatCurrency(totalIncomingPaid)}
+                    </div>
+                    <div>
+                      Total Biaya Pendaftaran:{" "}
+                      {formatCurrency(totalPendaftaran)}
+                    </div>
+                  </div> */}
+                </CardContent>
+              </Card>
+            </motion.div>
+          )}
+          {/* end Total Pendapatan New */}
         </div>
 
         {/* CHARTS */}
@@ -1483,7 +1658,8 @@ export default function LaporanPengeluaranPage() {
                           borderRadius: "8px",
                           color: isDark ? "#ffffff" : "#000000",
                           fontWeight: "bold",
-                          boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
+                          boxShadow:
+                            "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
                         }}
                       />
                     </PieChart>
@@ -1555,7 +1731,8 @@ export default function LaporanPengeluaranPage() {
                           borderRadius: "8px",
                           color: isDark ? "#ffffff" : "#000000",
                           fontWeight: "bold",
-                          boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
+                          boxShadow:
+                            "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
                         }}
                       />
                       <Line
@@ -1671,32 +1848,38 @@ export default function LaporanPengeluaranPage() {
                         </th>
                       </tr>
                     </thead>
-<tbody>
-  {currentItems.map((row: any, index: number) => (
-    <tr
-      key={index}
-      className={getThemeClasses(
-        "border-b border-[#324D3E]/10 dark:border-gray-600 transition-colors duration-300",
-        "!border-[#FFC1CC]/30"
-      )}
-    >
-      <td className="py-3 px-4">
-        {new Date(row.date).toLocaleDateString("id-ID")}
-      </td>
-      <td className="py-3 px-4">
-        {row.description || "-"}
-      </td>
-      <td className={`py-3 px-4 text-right ${
-        isAll ? (row._kind === "expense" ? "text-red-600" : "text-green-600") : ""
-      }`}>
-        {formatCurrency(row.amount)}
-      </td>
-      <td className="py-3 px-4">
-        {row.addedBy || "-"}
-      </td>
-    </tr>
-  ))}
-</tbody>
+                    <tbody>
+                      {currentItems.map((row: any, index: number) => (
+                        <tr
+                          key={index}
+                          className={getThemeClasses(
+                            "border-b border-[#324D3E]/10 dark:border-gray-600 transition-colors duration-300",
+                            "!border-[#FFC1CC]/30"
+                          )}
+                        >
+                          <td className="py-3 px-4">
+                            {new Date(row.date).toLocaleDateString("id-ID")}
+                          </td>
+                          <td className="py-3 px-4">
+                            {row.description || "-"}
+                          </td>
+                          <td
+                            className={`py-3 px-4 text-right ${
+                              isAll
+                                ? row._kind === "expense"
+                                  ? "text-red-600"
+                                  : "text-green-600"
+                                : ""
+                            }`}
+                          >
+                            {formatCurrency(row.amount)}
+                          </td>
+                          <td className="py-3 px-4">
+                            {row.addedBy || "-"}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
                   </table>
                 </div>
               ) : (
