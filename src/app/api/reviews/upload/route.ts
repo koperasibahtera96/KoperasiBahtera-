@@ -1,6 +1,4 @@
-import { mkdir, writeFile } from 'fs/promises';
 import { NextRequest, NextResponse } from 'next/server';
-import path from 'path';
 
 export async function POST(request: NextRequest) {
   try {
@@ -32,33 +30,44 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Create uploads directory if it doesn't exist
-    const uploadsDir = path.join(process.cwd(), 'public', 'uploads', 'reviews');
-    try {
-      await mkdir(uploadsDir, { recursive: true });
-    } catch (error) {
-      console.error('Error creating uploads directory:', error);
-      // Directory might already exist
-    }
-
-    // Generate unique filename
+    // Convert file to buffer
     const bytes = await file.arrayBuffer();
     const buffer = Buffer.from(bytes);
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+
+    // Generate unique filename
+    const timestamp = Date.now();
+    const uniqueSuffix = timestamp + '-' + Math.round(Math.random() * 1E9);
     const filename = `review-${uniqueSuffix}.${file.name.split('.').pop()}`;
-    const filepath = path.join(uploadsDir, filename);
 
-    // Save file
-    await writeFile(filepath, buffer);
+    // Upload to ImageKit using REST API
+    const uploadFormData = new FormData();
+    uploadFormData.append('file', new Blob([buffer], { type: file.type }), filename);
+    uploadFormData.append('fileName', filename);
+    uploadFormData.append('folder', '/reviews');
+    uploadFormData.append('tags', 'review,testimonial');
 
-    // Return the URL path
-    const fileUrl = `/uploads/reviews/${filename}`;
+    const privateKey = process.env.IMAGEKIT_PRIVATE_KEY!;
+    const response = await fetch('https://upload.imagekit.io/api/v1/files/upload', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Basic ${Buffer.from(`${privateKey}:`).toString('base64')}`,
+      },
+      body: uploadFormData,
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('ImageKit API error:', response.status, errorText);
+      throw new Error(`ImageKit API error: ${response.status}`);
+    }
+
+    const result = await response.json();
 
     return NextResponse.json({
       success: true,
       data: {
-        url: fileUrl,
-        filename: filename
+        url: result.url,
+        filename: result.name
       }
     });
   } catch (error) {

@@ -52,14 +52,6 @@ const socialIconVariants = {
 export default function LandingFooter() {
   const { t } = useLanguage();
 
-  const navigationLinks = [
-    { key: 'footer.navigation.home', href: '#beranda' },
-    { key: 'footer.navigation.program', href: '#program' },
-    { key: 'footer.navigation.aboutUs', href: '#tentang-kami' },
-    { key: 'footer.navigation.products', href: '#produk' },
-    { key: 'footer.navigation.faq', href: '#faq' }
-  ];
-
   const footerLinks = [
     { key: 'footer.links.privacy', href: '#' },
     { key: 'footer.links.terms', href: '#' },
@@ -74,35 +66,35 @@ export default function LandingFooter() {
       viewport={{ once: true, amount: 0.2 }}
       variants={containerVariants}
     >
-      <div className="max-w-7xl mx-auto">
+      <div className="max-w-[1400px] mx-auto">
         <motion.div 
-          className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8 md:gap-10 lg:gap-12"
+          className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-3 gap-8 md:gap-10 lg:gap-20"
           variants={containerVariants}
         >
           {/* Company Info */}
           <motion.div 
-            className="sm:col-span-2 lg:col-span-2"
             variants={itemVariants as any}
           >
             <motion.div 
-              className="flex items-center mb-4"
-              whileHover={{ scale: 1.05 }}
+              className="flex items-start gap-4 mb-4"
+              whileHover={{ scale: 1.02 }}
             >
               <motion.div
                 whileHover={{ rotate: 360 }}
                 transition={{ duration: 0.6 }}
+                className="flex-shrink-0"
               >
                 <Image
                   src="/images/koperasi-logo.webp"
                   alt="Koperasi Logo"
                   width={60}
                   height={60}
-                  className="rounded-full mr-4"
+                  className="rounded-full"
                 />
               </motion.div>
-              <div>
+              <div className="flex-1">
                 <motion.h3 
-                  className="text-lg md:text-xl lg:text-2xl font-bold font-[family-name:var(--font-poppins)]"
+                  className="text-lg md:text-xl lg:text-2xl font-bold font-[family-name:var(--font-poppins)] mb-1 leading-tight"
                   whileHover={{ color: "#E5D7C4" }}
                 >
                   {t('footer.company.name')}
@@ -111,7 +103,7 @@ export default function LandingFooter() {
               </div>
             </motion.div>
             <motion.p 
-              className="text-sm md:text-base text-gray-300 leading-relaxed mb-6 max-w-md lg:max-w-lg"
+              className="text-sm md:text-base text-gray-300 leading-relaxed mb-6"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               transition={{ delay: 0.3, duration: 0.6 }}
@@ -145,58 +137,27 @@ export default function LandingFooter() {
                   </svg>
                 </motion.a>
               ))}
-              
-              {/* SPR Foundation Logo */}
-              <motion.div
-                variants={socialIconVariants as any}
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.95 }}
-                className="-ml-4 mt-1"
-              >
-                <Image
-                  src="/landing/SPR_FOUNDATION.png"
-                  alt="SPR Foundation"
-                  width={60}
-                  height={60}
-                  className="rounded"
-                />
-              </motion.div>
             </motion.div>
           </motion.div>
 
-          {/* Quick Links */}
+          {/* SPR Foundation Logo */}
           <motion.div
             variants={itemVariants}
+            className="flex justify-center items-start -mt-12"
           >
-            <motion.h4 
-              className="text-lg font-bold mb-4 font-[family-name:var(--font-poppins)]"
-              whileHover={{ color: "#E5D7C4" }}
+            <motion.div
+              whileHover={{ rotate: 360, scale: 1.1 }}
+              transition={{ duration: 0.6 }}
+              className="mt-0"
             >
-              {t('footer.navigation.title')}
-            </motion.h4>
-            <motion.ul 
-              className="space-y-2 text-gray-300"
-              variants={containerVariants}
-            >
-              {navigationLinks.map((link, index) => (
-                <motion.li
-                  key={index}
-                  variants={itemVariants}
-                >
-                  <motion.a
-                    href={link.href}
-                    className="hover:text-white transition-colors"
-                    whileHover={{
-                      x: 5,
-                      color: "#E5D7C4",
-                      transition: { duration: 0.2 }
-                    }}
-                  >
-                    {t(link.key)}
-                  </motion.a>
-                </motion.li>
-              ))}
-            </motion.ul>
+              <Image
+                src="/landing/SPR_FOUNDATION_2.png"
+                alt="SPR Foundation"
+                width={250}
+                height={250}
+                className=""
+              />
+            </motion.div>
           </motion.div>
 
           {/* Contact Info */}
