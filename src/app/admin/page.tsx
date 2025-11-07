@@ -2,7 +2,7 @@
 
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import { motion } from 'framer-motion';
-import { RefreshCw, Users, TreePine, DollarSign, TrendingUp, Sprout, CreditCard, Percent, CheckCircle, UserCog } from 'lucide-react';
+import { RefreshCw, Users, TreePine, DollarSign, TrendingUp, Sprout, CreditCard, Percent, CheckCircle, UserCog, Stamp } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useTheme } from 'next-themes';
 
@@ -51,6 +51,9 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true);
   const { theme } = useTheme();
   const [mounted, setMounted] = useState(false);
+  const [showSaldoModal, setShowSaldoModal] = useState(false);
+  const [saldoData, setSaldoData] = useState<any>(null);
+  const [saldoLoading, setSaldoLoading] = useState(false);
 
   useEffect(() => {
     setMounted(true);
@@ -80,6 +83,28 @@ export default function AdminDashboard() {
       console.error('Error fetching dashboard data:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Fetch saldo data
+  const fetchSaldo = async () => {
+    try {
+      setSaldoLoading(true);
+      const response = await fetch('/api/admin/materai/check-saldo');
+
+      if (response.ok) {
+        const result = await response.json();
+        setSaldoData(result.data);
+        setShowSaldoModal(true);
+      } else {
+        console.error('Failed to fetch saldo');
+        alert('Gagal mengambil data saldo materai');
+      }
+    } catch (error) {
+      console.error('Error fetching saldo:', error);
+      alert('Gagal mengambil data saldo materai');
+    } finally {
+      setSaldoLoading(false);
     }
   };
 
@@ -400,6 +425,21 @@ export default function AdminDashboard() {
                 <p className={getThemeClasses("text-sm text-[#889063] dark:text-gray-300", "!text-[#6b7280] dark:!text-gray-300")}>Atur persentase komisi marketing</p>
               </div>
             </button>
+            <button
+              onClick={fetchSaldo}
+              disabled={saldoLoading}
+              className={getThemeClasses("flex items-center gap-3 p-4 border-2 border-dashed border-blue-500/20 rounded-xl hover:border-blue-500 hover:bg-blue-500/5 transition-all group disabled:opacity-50", "!border-[#C7CEEA]/30 hover:!border-[#C7CEEA] hover:!bg-[#C7CEEA]/10")}
+            >
+              <div className={getThemeClasses("w-10 h-10 bg-blue-500/10 group-hover:bg-blue-500/20 rounded-xl flex items-center justify-center transition-colors", "!bg-[#C7CEEA]/20 group-hover:!bg-[#C7CEEA]/30")}>
+                <Stamp className={getThemeClasses("w-5 h-5 text-blue-600", "!text-[#4c1d1d]")} />
+              </div>
+              <div className="text-left">
+                <p className={getThemeClasses("font-medium text-[#324D3E] dark:text-white", "!text-[#4c1d1d] dark:!text-white")}>
+                  {saldoLoading ? 'Memuat...' : 'Cek Saldo Materai'}
+                </p>
+                <p className={getThemeClasses("text-sm text-[#889063] dark:text-gray-300", "!text-[#6b7280] dark:!text-gray-300")}>Lihat stok materai tersedia</p>
+              </div>
+            </button>
           </div>
         </motion.div>
 
@@ -473,6 +513,104 @@ export default function AdminDashboard() {
           </div>
         </motion.div>
       </motion.div>
+
+      {/* Saldo Materai Modal */}
+      {showSaldoModal && saldoData && (
+        <motion.div
+          className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          onClick={() => setShowSaldoModal(false)}
+        >
+          <motion.div
+            className={getThemeClasses(
+              "bg-white dark:bg-gray-800 rounded-2xl max-w-md w-full p-6 transition-colors duration-300 border border-gray-200 dark:border-gray-700",
+              "!bg-white/95 !border-[#FFC1CC]/30"
+            )}
+            initial={{ scale: 0.9, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0.9, opacity: 0 }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex justify-between items-center mb-4">
+              <h2
+                className={getThemeClasses(
+                  "text-2xl font-bold text-gray-900 dark:text-white",
+                  "!text-[#4c1d1d]"
+                )}
+              >
+                Informasi Saldo Materai
+              </h2>
+              <button
+                onClick={() => setShowSaldoModal(false)}
+                className={getThemeClasses(
+                  "text-gray-400 hover:text-gray-600 dark:text-gray-300 dark:hover:text-gray-100 transition-colors",
+                  "!text-[#6b7280] hover:!text-[#4c1d1d]"
+                )}
+              >
+                <span className="text-2xl">&times;</span>
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              {/* Saldo Display */}
+              <div className={getThemeClasses(
+                "bg-gradient-to-r from-blue-50 to-blue-100 dark:from-blue-900/20 dark:to-blue-800/20 p-6 rounded-xl border border-blue-200 dark:border-blue-700",
+                "!bg-gradient-to-r !from-[#C7CEEA]/20 !to-[#EAF0FF]/30 !border-[#C7CEEA]/50"
+              )}>
+                <p className={getThemeClasses(
+                  "text-sm text-gray-600 dark:text-gray-400 mb-2",
+                  "!text-[#6b7280]"
+                )}>
+                  Stok Materai Tersedia
+                </p>
+                <p className={getThemeClasses(
+                  "text-4xl font-bold text-blue-600 dark:text-blue-400",
+                  "!text-[#4c1d1d]"
+                )}>
+                  {saldoData.saldo}
+                </p>
+              </div>
+
+              {/* User Info */}
+              <div className={getThemeClasses(
+                "bg-gray-50 dark:bg-gray-700 p-4 rounded-lg",
+                "!bg-[#FFEEF0]"
+              )}>
+                <h3 className={getThemeClasses(
+                  "font-semibold text-gray-900 dark:text-white mb-2",
+                  "!text-[#4c1d1d]"
+                )}>
+                  Informasi Akun
+                </h3>
+                <div className="space-y-1 text-sm text-gray-700 dark:text-gray-300">
+                  <div>
+                    <strong>Nama:</strong> {saldoData.user.name}
+                  </div>
+                  <div>
+                    <strong>Email:</strong> {saldoData.user.email}
+                  </div>
+                  <div>
+                    <strong>Terdaftar:</strong>{" "}
+                    {new Date(saldoData.user.created_at).toLocaleDateString('id-ID')}
+                  </div>
+                </div>
+              </div>
+
+              <button
+                onClick={() => setShowSaldoModal(false)}
+                className={getThemeClasses(
+                  "w-full py-2 px-4 rounded-lg bg-[#324D3E] hover:bg-[#4C3D19] text-white font-medium transition-colors",
+                  "!bg-gradient-to-r !from-[#FFC1CC] !to-[#FFE4E8] !text-[#4c1d1d] hover:!from-[#FFB3C6] hover:!to-[#FFDEE9]"
+                )}
+              >
+                Tutup
+              </button>
+            </div>
+          </motion.div>
+        </motion.div>
+      )}
     </AdminLayout>
   );
 }

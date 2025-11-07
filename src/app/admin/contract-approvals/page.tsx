@@ -75,6 +75,8 @@ export default function ContractApprovalsPage() {
   const [adminNotes, setAdminNotes] = useState("");
   const [exportLoading, setExportLoading] = useState(false);
   const { showSuccess, showError, AlertComponent } = useAlert();
+  const [saldo, setSaldo] = useState<number | null>(null);
+  const [saldoLoading, setSaldoLoading] = useState(false);
 
   const fetchContracts = async () => {
     try {
@@ -98,8 +100,27 @@ export default function ContractApprovalsPage() {
     }
   };
 
+  const fetchSaldo = async () => {
+    try {
+      setSaldoLoading(true);
+      const response = await fetch('/api/admin/materai/check-saldo');
+
+      if (response.ok) {
+        const result = await response.json();
+        setSaldo(result.data.saldo);
+      } else {
+        console.error('Failed to fetch saldo');
+      }
+    } catch (error) {
+      console.error('Error fetching saldo:', error);
+    } finally {
+      setSaldoLoading(false);
+    }
+  };
+
   useEffect(() => {
     fetchContracts();
+    fetchSaldo();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentPage, statusFilter]);
 
@@ -325,6 +346,39 @@ export default function ContractApprovalsPage() {
               <p className="text-[#889063] dark:text-gray-200 mt-1 sm:mt-2 text-sm sm:text-base transition-colors duration-300">
                 Review dan setujui tanda tangan kontrak user
               </p>
+              {/* Stok Materai Display */}
+              <div className="mt-3 flex items-center gap-2">
+                <span className={getThemeClasses(
+                  "text-sm font-medium text-gray-700 dark:text-gray-300",
+                  "!text-[#6b7280]"
+                )}>
+                  Stok Materai:
+                </span>
+                {saldoLoading ? (
+                  <span className="text-sm text-gray-500 dark:text-gray-400">Memuat...</span>
+                ) : saldo !== null ? (
+                  <span
+                    className={getThemeClasses(
+                      `text-sm font-bold px-3 py-1 rounded-full ${
+                        saldo <= 0
+                          ? 'bg-red-100 dark:bg-red-900/20 text-red-800 dark:text-red-300'
+                          : saldo <= 10
+                          ? 'bg-yellow-100 dark:bg-yellow-900/20 text-yellow-800 dark:text-yellow-300'
+                          : 'bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-300'
+                      }`,
+                      saldo <= 0
+                        ? '!bg-red-100 !text-red-800'
+                        : saldo <= 10
+                        ? '!bg-yellow-100 !text-yellow-800'
+                        : '!bg-green-100 !text-green-800'
+                    )}
+                  >
+                    {saldo}
+                  </span>
+                ) : (
+                  <span className="text-sm text-gray-500 dark:text-gray-400">-</span>
+                )}
+              </div>
             </div>
             <div className="flex gap-2">
               <button
@@ -456,8 +510,9 @@ export default function ContractApprovalsPage() {
                           action: "approve",
                         })
                       }
+                      disabled={saldo !== null && saldo <= 0}
                       className={getThemeClasses(
-                        "flex-1 inline-flex items-center justify-center px-3 py-2 border border-transparent text-xs font-medium rounded-lg text-white bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 transition-all duration-200 shadow-sm",
+                        "flex-1 inline-flex items-center justify-center px-3 py-2 border border-transparent text-xs font-medium rounded-lg text-white bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 transition-all duration-200 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed",
                         "!bg-gradient-to-r !from-[#B5EAD7] !to-[#E6FFF0] !text-[#4c1d1d] !shadow-md"
                       )}
                     >
@@ -471,8 +526,9 @@ export default function ContractApprovalsPage() {
                           action: "reject",
                         })
                       }
+                      disabled={saldo !== null && saldo <= 0}
                       className={getThemeClasses(
-                        "flex-1 inline-flex items-center justify-center px-3 py-2 border border-transparent text-xs font-medium rounded-lg text-white bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 transition-all duration-200 shadow-sm",
+                        "flex-1 inline-flex items-center justify-center px-3 py-2 border border-transparent text-xs font-medium rounded-lg text-white bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 transition-all duration-200 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed",
                         "!bg-gradient-to-r !from-[#FFC1CC] !to-[#FFE4E8] !text-[#4c1d1d] !shadow-md"
                       )}
                     >
@@ -620,8 +676,9 @@ export default function ContractApprovalsPage() {
                                   action: "approve",
                                 })
                               }
+                              disabled={saldo !== null && saldo <= 0}
                               className={getThemeClasses(
-                                "inline-flex items-center justify-center px-3 py-2 border border-transparent text-xs font-medium rounded-lg text-white bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 dark:focus:ring-offset-gray-800 transition-all duration-200 shadow-sm hover:shadow-md",
+                                "inline-flex items-center justify-center px-3 py-2 border border-transparent text-xs font-medium rounded-lg text-white bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 dark:focus:ring-offset-gray-800 transition-all duration-200 shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed",
                                 "!bg-gradient-to-r !from-[#B5EAD7] !to-[#E6FFF0] !text-[#4c1d1d] !shadow-md"
                               )}
                             >
@@ -635,8 +692,9 @@ export default function ContractApprovalsPage() {
                                   action: "reject",
                                 })
                               }
+                              disabled={saldo !== null && saldo <= 0}
                               className={getThemeClasses(
-                                "inline-flex items-center justify-center px-3 py-2 border border-transparent text-xs font-medium rounded-lg text-white bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 dark:focus:ring-offset-gray-800 transition-all duration-200 shadow-sm hover:shadow-md",
+                                "inline-flex items-center justify-center px-3 py-2 border border-transparent text-xs font-medium rounded-lg text-white bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 dark:focus:ring-offset-gray-800 transition-all duration-200 shadow-sm hover:shadow-md disabled:opacity-50 disabled:cursor-not-allowed",
                                 "!bg-gradient-to-r !from-[#FFC1CC] !to-[#FFE4E8] !text-[#4c1d1d] !shadow-md"
                               )}
                             >
@@ -972,7 +1030,8 @@ export default function ContractApprovalsPage() {
                           disabled={
                             actionLoading ||
                             (selectedContract.action === "reject" &&
-                              !rejectionReason)
+                              !rejectionReason) ||
+                            (saldo !== null && saldo <= 0)
                           }
                           className={getThemeClasses(
                             `flex-1 py-2 px-4 rounded-md font-medium disabled:opacity-50 disabled:cursor-not-allowed ${
