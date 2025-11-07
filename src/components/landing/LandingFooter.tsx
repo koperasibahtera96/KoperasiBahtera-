@@ -145,11 +145,7 @@ export default function LandingFooter() {
             variants={itemVariants}
             className="flex justify-center items-start -mt-12"
           >
-            <motion.div
-              whileHover={{ rotate: 360, scale: 1.1 }}
-              transition={{ duration: 0.6 }}
-              className="mt-0"
-            >
+            <div className="mt-0">
               <Image
                 src="/landing/SPR_FOUNDATION_2.png"
                 alt="SPR Foundation"
@@ -157,7 +153,7 @@ export default function LandingFooter() {
                 height={250}
                 className=""
               />
-            </motion.div>
+            </div>
           </motion.div>
 
           {/* Contact Info */}
