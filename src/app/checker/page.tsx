@@ -30,6 +30,7 @@ import Link from "next/link";
 import type React from "react";
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
+import ApprovalNotificationBar from "@/components/checker/ApprovalNotificationBar";
 
 const statusColors: Record<string, string> = {
   // === General ===
@@ -777,6 +778,11 @@ export default function StaffDashboard() {
               </div>
             </button>
           </div>
+
+          {/* Approval Notification Bar - only for asisten and manajer */}
+          {(userRole === "asisten" || userRole === "manajer") && (
+            <ApprovalNotificationBar userRole={userRole} />
+          )}
 
           {/* Filters and Search */}
           <div className="bg-white/90 backdrop-blur-xl rounded-3xl shadow-xl border border-[#324D3E]/10 p-8 mb-8">
