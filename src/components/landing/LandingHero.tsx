@@ -110,22 +110,24 @@ export default function LandingHero() {
             variants={containerVariants}
           >
             <motion.span
-              className="block text-[#4C3D19]"
+              className="block text-[#0D4710] font-black"
+              style={{ textShadow: '2px 2px 4px rgba(0, 0, 0, 0.3)' }}
               variants={slideInFromLeft}
               whileHover={{
                 scale: 1.05,
-                color: "#364D32",
+                color: "#1B5E20",
                 transition: { duration: 0.3 },
               }}
             >
               {t("hero.title.line1")}
             </motion.span>
             <motion.span
-              className="block text-[#4C3D19]"
+              className="block text-[#1B5E20] font-black"
+              style={{ textShadow: '2px 2px 4px rgba(0, 0, 0, 0.3)' }}
               variants={slideInFromLeft}
               whileHover={{
                 scale: 1.05,
-                color: "#364D32",
+                color: "#2E7D32",
                 transition: { duration: 0.3 },
               }}
             >

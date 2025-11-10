@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import * as XLSX from "xlsx-js-style";
 import dbConnect from "@/lib/mongodb";
 import CommissionHistory from "@/models/CommissionHistory";
+import CommissionWithdrawal from "@/models/CommissionWithdrawal";
 import PlantInstance from "@/models/PlantInstance";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
@@ -51,6 +52,46 @@ export async function GET(req: NextRequest) {
       .populate("customerId", "fullName email phoneNumber")
       .populate("paymentId", "orderId contractId paymentTerm")
       .sort({ earnedAt: -1 });
+
+    // Get all commission withdrawals to calculate paid amounts per staff
+    const allWithdrawals = await CommissionWithdrawal.find({});
+    const withdrawalsByStaff = new Map();
+    allWithdrawals.forEach((withdrawal: any) => {
+      const staffId = withdrawal.marketingStaffId.toString();
+      if (!withdrawalsByStaff.has(staffId)) {
+        withdrawalsByStaff.set(staffId, 0);
+      }
+      withdrawalsByStaff.set(
+        staffId,
+        withdrawalsByStaff.get(staffId) + withdrawal.amount
+      );
+    });
+
+    // Calculate total commissions per staff
+    const commissionsByStaff = new Map();
+    commissions.forEach((commission: any) => {
+      const staffId = commission.marketingStaffId._id.toString();
+      if (!commissionsByStaff.has(staffId)) {
+        commissionsByStaff.set(staffId, 0);
+      }
+      commissionsByStaff.set(
+        staffId,
+        commissionsByStaff.get(staffId) + commission.commissionAmount
+      );
+    });
+
+    // Calculate total referrals per staff (count of commissions)
+    const referralsByStaff = new Map();
+    commissions.forEach((commission: any) => {
+      const staffId = commission.marketingStaffId._id.toString();
+      if (!referralsByStaff.has(staffId)) {
+        referralsByStaff.set(staffId, 0);
+      }
+      referralsByStaff.set(
+        staffId,
+        referralsByStaff.get(staffId) + 1
+      );
+    });
 
     // Get PlantInstance data for blok and kavling information
     const contractNumbers = commissions
@@ -140,11 +181,20 @@ export async function GET(req: NextRequest) {
         "id-ID"
       )}`;
 
-      // Each row represents one referral
-      const totalReferrals = 1;
-
       // Determine status (always "Aktif" for commission records)
       const status = "Aktif";
+
+      // Get paid and unpaid commission for this staff
+      const staffId = commission.marketingStaffId._id.toString();
+      const totalStaffCommission = commissionsByStaff.get(staffId) || 0;
+      const totalPaidCommission = withdrawalsByStaff.get(staffId) || 0;
+      const totalUnpaidCommission = totalStaffCommission - totalPaidCommission;
+
+      const komisiTerbayar = `Rp. ${totalPaidCommission.toLocaleString("id-ID")}`;
+      const komisiBelumTerbayar = `Rp. ${totalUnpaidCommission.toLocaleString("id-ID")}`;
+
+      // Get total referrals for this staff
+      const totalReferralsForStaff = referralsByStaff.get(staffId) || 0;
 
       marketingData.push([
         rowNumber,
@@ -159,7 +209,9 @@ export async function GET(req: NextRequest) {
         jenisCicilan,
         tanggalBergabung,
         totalKomisi,
-        totalReferrals,
+        komisiTerbayar,
+        komisiBelumTerbayar,
+        totalReferralsForStaff,
         status,
       ]);
 
@@ -201,6 +253,8 @@ export async function GET(req: NextRequest) {
         "Jenis Cicilan",
         "Tanggal Bergabung",
         "Total Komisi",
+        "Komisi Terbayar",
+        "Komisi Belum Terbayar",
         "Total Referal",
         "Status",
       ],
@@ -284,20 +338,20 @@ export async function GET(req: NextRequest) {
     try {
       worksheet["!merges"] = worksheet["!merges"] || [];
 
-      // Merge company header rows (0..4) across all 14 columns
+      // Merge company header rows (0..4) across all 16 columns (added 2 new commission columns)
       for (let r = 0; r <= 4; r++) {
-        worksheet["!merges"].push({ s: { r, c: 0 }, e: { r, c: 13 } });
+        worksheet["!merges"].push({ s: { r, c: 0 }, e: { r, c: 15 } });
       }
       // Merge empty rows (5..6)
       for (let r = 5; r <= 6; r++) {
-        worksheet["!merges"].push({ s: { r, c: 0 }, e: { r, c: 13 } });
+        worksheet["!merges"].push({ s: { r, c: 0 }, e: { r, c: 15 } });
       }
-      // Merge "DAFTAR MARKETING" across all 14 columns
-      worksheet["!merges"].push({ s: { r: 7, c: 0 }, e: { r: 7, c: 13 } });
+      // Merge "DAFTAR MARKETING" across all 16 columns
+      worksheet["!merges"].push({ s: { r: 7, c: 0 }, e: { r: 7, c: 15 } });
 
       // Ensure merged cells are created
       for (let r = 0; r <= 7; r++) {
-        for (let c = 0; c <= 13; c++) {
+        for (let c = 0; c <= 15; c++) {
           const cellRef = XLSX.utils.encode_cell({ r, c });
           if (!worksheet[cellRef]) {
             const val = (worksheetData[r] && worksheetData[r][c]) || "";
@@ -315,7 +369,7 @@ export async function GET(req: NextRequest) {
                   ? { style: "thin", color: { rgb: "000000" } }
                   : undefined,
               right:
-                c === 13
+                c === 15
                   ? { style: "thin", color: { rgb: "000000" } }
                   : undefined,
             };

@@ -83,6 +83,7 @@ export const authOptions: NextAuthOptions = {
             name: user.fullName,
             role: user.role,
             isVerified: user.isEmailVerified,
+            isActive: user.isActive,
             userCode: user.userCode,
             occupationCode: user.occupationCode,
             phoneNumber: user.phoneNumber,
@@ -113,6 +114,7 @@ export const authOptions: NextAuthOptions = {
         token.name = user.name; // Store fullName from user
         token.role = user.role;
         token.isVerified = user.isVerified;
+        token.isActive = (user as any).isActive; // Add isActive to token
         token.userCode = user.userCode;
         token.occupationCode = user.occupationCode;
         token.phoneNumber = user.phoneNumber;
@@ -136,6 +138,7 @@ export const authOptions: NextAuthOptions = {
             token.name = dbUser.fullName;
             token.role = dbUser.role;
             token.isVerified = dbUser.isEmailVerified;
+            token.isActive = dbUser.isActive; // Update isActive in token
             token.userCode = dbUser.userCode;
             token.occupationCode = dbUser.occupationCode;
             token.phoneNumber = dbUser.phoneNumber;
@@ -151,6 +154,24 @@ export const authOptions: NextAuthOptions = {
         }
       }
 
+      // IMPORTANT: Always refresh isActive status from DB on every JWT callback
+      // This ensures deactivated users are logged out quickly without waiting for token expiry
+      if (token.sub) {
+        try {
+          await dbConnect();
+          const dbUser = await User.findById(token.sub).select("isActive");
+          if (dbUser) {
+            token.isActive = dbUser.isActive;
+          } else {
+            // User was deleted, mark as inactive
+            token.isActive = false;
+          }
+        } catch (error) {
+          console.error("Error checking user isActive status:", error);
+          // Keep existing isActive value on error
+        }
+      }
+
       return token;
     },
     async session({ session, token }) {
@@ -159,6 +180,7 @@ export const authOptions: NextAuthOptions = {
         session.user.name = token.name as string; // Map fullName to session
         session.user.role = token.role as string;
         session.user.isVerified = token.isVerified as boolean;
+        session.user.isActive = token.isActive as boolean;
         session.user.userCode = token.userCode as string;
         session.user.occupationCode = token.occupationCode as string;
         session.user.phoneNumber = token.phoneNumber as string;
@@ -172,18 +194,28 @@ export const authOptions: NextAuthOptions = {
           session.user.email = token.email as string;
         }
       }
-      // Safety net: fetch the latest email and name to avoid stale session after admin changes
+      // Safety net: fetch the latest email, name, and isActive to avoid stale session after admin changes
       try {
         if (token.sub) {
           await dbConnect();
-          const dbUser = await User.findById(token.sub).select("email fullName");
+          const dbUser = await User.findById(token.sub).select("email fullName isActive");
           if (dbUser && session.user) {
             session.user.email = dbUser.email;
             session.user.name = dbUser.fullName;
+            
+            // Force logout if user is deactivated
+            if (!dbUser.isActive) {
+              throw new Error("User account has been deactivated");
+            }
+          } else if (!dbUser) {
+            // User was deleted
+            throw new Error("User account not found");
           }
         }
       } catch (error) {
-        console.error("Error ensuring latest email and name in session:", error);
+        console.error("Error verifying user session:", error);
+        // Return null session to force logout
+        throw error;
       }
       return session;
     },

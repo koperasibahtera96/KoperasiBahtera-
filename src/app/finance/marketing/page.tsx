@@ -13,6 +13,11 @@ import {
   AlertTriangle,
   X,
   Download,
+  Wallet,
+  Ban,
+  CheckCircle,
+  Copy,
+  Check,
 } from "lucide-react";
 import { FinanceSidebar } from "@/components/finance/FinanceSidebar";
 
@@ -29,6 +34,8 @@ interface MarketingStaff {
     totalReferrals: number;
     fullInvestments: number;
     cicilanInvestments: number;
+    totalPaidCommission: number;
+    totalUnpaidCommission: number;
   };
 }
 
@@ -69,6 +76,36 @@ export default function MarketingHeadPage() {
   const [error, setError] = useState("");
   const [isExporting, setIsExporting] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+
+  // Withdrawal modal state
+  const [withdrawalModal, setWithdrawalModal] = useState<{
+    show: boolean;
+    staff: MarketingStaff | null;
+    amount: string;
+    notes: string;
+    loading: boolean;
+  }>({
+    show: false,
+    staff: null,
+    amount: "",
+    notes: "",
+    loading: false,
+  });
+
+  // Toggle status modal state
+  const [toggleStatusModal, setToggleStatusModal] = useState<{
+    show: boolean;
+    staff: MarketingStaff | null;
+    loading: boolean;
+    newPassword: string | null;
+    copied: boolean;
+  }>({
+    show: false,
+    staff: null,
+    loading: false,
+    newPassword: null,
+    copied: false,
+  });
 
   useEffect(() => {
     setMounted(true);
@@ -287,6 +324,146 @@ export default function MarketingHeadPage() {
     });
   };
 
+  const handleToggleStatus = async () => {
+    if (!toggleStatusModal.staff) {
+      return;
+    }
+
+    setToggleStatusModal((prev) => ({ ...prev, loading: true }));
+
+    try {
+      const response = await fetch("/api/admin/marketing/toggle-status", {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          staffId: toggleStatusModal.staff._id,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(
+          errorData.error || "Gagal mengubah status staff"
+        );
+      }
+
+      const result = await response.json();
+
+      // If staff was deactivated, show the new password
+      if (result.data.newPassword) {
+        setToggleStatusModal((prev) => ({
+          ...prev,
+          newPassword: result.data.newPassword,
+          loading: false,
+        }));
+      } else {
+        // If staff was activated, just close modal and refresh
+        setToggleStatusModal({
+          show: false,
+          staff: null,
+          loading: false,
+          newPassword: null,
+          copied: false,
+        });
+        await fetchData();
+      }
+
+      setError("");
+    } catch (error) {
+      console.error("Error toggling status:", error);
+      setError(
+        error instanceof Error
+          ? error.message
+          : "Gagal mengubah status staff"
+      );
+      setToggleStatusModal((prev) => ({ ...prev, loading: false }));
+    }
+  };
+
+  const handleCopyPassword = async () => {
+    if (toggleStatusModal.newPassword) {
+      try {
+        await navigator.clipboard.writeText(toggleStatusModal.newPassword);
+        setToggleStatusModal((prev) => ({ ...prev, copied: true }));
+        setTimeout(() => {
+          setToggleStatusModal((prev) => ({ ...prev, copied: false }));
+        }, 2000);
+      } catch (error) {
+        console.error("Failed to copy password:", error);
+      }
+    }
+  };
+
+  const handleCloseToggleModal = async () => {
+    setToggleStatusModal({
+      show: false,
+      staff: null,
+      loading: false,
+      newPassword: null,
+      copied: false,
+    });
+    // Refresh data after closing
+    await fetchData();
+  };
+
+  const handleWithdrawalSubmit = async () => {
+    if (!withdrawalModal.staff || !withdrawalModal.amount.trim()) {
+      setError("Mohon masukkan jumlah penarikan");
+      return;
+    }
+
+    const amount = parseFloat(withdrawalModal.amount);
+    if (isNaN(amount) || amount <= 0) {
+      setError("Jumlah penarikan harus lebih dari 0");
+      return;
+    }
+
+    setWithdrawalModal((prev) => ({ ...prev, loading: true }));
+
+    try {
+      const response = await fetch("/api/admin/marketing/withdrawal", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          staffId: withdrawalModal.staff._id,
+          amount: amount,
+          notes: withdrawalModal.notes.trim(),
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Gagal mencatat penarikan komisi");
+      }
+
+      // Refresh data
+      await fetchData();
+
+      setWithdrawalModal({
+        show: false,
+        staff: null,
+        amount: "",
+        notes: "",
+        loading: false,
+      });
+
+      setError("");
+    } catch (error) {
+      console.error("Error recording withdrawal:", error);
+      setError(
+        error instanceof Error
+          ? error.message
+          : "Gagal mencatat penarikan komisi"
+      );
+    } finally {
+      setWithdrawalModal((prev) => ({ ...prev, loading: false }));
+    }
+  };
+
   const handleExport = async () => {
     try {
       setIsExporting(true);
@@ -406,8 +583,22 @@ export default function MarketingHeadPage() {
               </p>
             </div>
 
-            {/* Export Button */}
+            {/* Action Buttons */}
             <div className="flex items-center gap-3">
+              <motion.button
+                onClick={() => fetchData()}
+                className={getThemeClasses(
+                  "inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl transition-colors shadow-lg",
+                  "!bg-[#C7CEEA] hover:!bg-[#B5C2EA] !text-[#4c1d1d]"
+                )}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                title="Refresh data"
+              >
+                <RefreshCw className="w-4 h-4" />
+                <span className="text-sm font-medium">Refresh</span>
+              </motion.button>
+
               <motion.button
                 onClick={handleExport}
                 disabled={isExporting}
@@ -725,6 +916,22 @@ export default function MarketingHeadPage() {
                       ""
                     )}
                   >
+                    Komisi Terbayar
+                  </th>
+                  <th
+                    className={getThemeClasses(
+                      "px-6 py-4 text-left text-sm font-medium text-gray-700 dark:text-gray-200",
+                      ""
+                    )}
+                  >
+                    Komisi Belum Terbayar
+                  </th>
+                  <th
+                    className={getThemeClasses(
+                      "px-6 py-4 text-left text-sm font-medium text-gray-700 dark:text-gray-200",
+                      ""
+                    )}
+                  >
                     Referral
                   </th>
 
@@ -754,7 +961,7 @@ export default function MarketingHeadPage() {
               >
                 {filteredStaff.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="px-6 py-12 text-center">
+                    <td colSpan={8} className="px-6 py-12 text-center">
                       <div className="flex flex-col items-center gap-3">
                         <Users
                           className={getThemeClasses(
@@ -853,6 +1060,32 @@ export default function MarketingHeadPage() {
                       <td className="px-6 py-4">
                         <p
                           className={getThemeClasses(
+                            "font-semibold text-green-600 dark:text-green-400",
+                            "!text-[#2a4235]"
+                          )}
+                        >
+                          {formatCurrency(
+                            staff.commissionSummary.totalPaidCommission || 0
+                          )}
+                        </p>
+                      </td>
+
+                      <td className="px-6 py-4">
+                        <p
+                          className={getThemeClasses(
+                            "font-semibold text-orange-600 dark:text-orange-400",
+                            "!text-[#4c1d1d]"
+                          )}
+                        >
+                          {formatCurrency(
+                            staff.commissionSummary.totalUnpaidCommission || 0
+                          )}
+                        </p>
+                      </td>
+
+                      <td className="px-6 py-4">
+                        <p
+                          className={getThemeClasses(
                             "font-semibold text-gray-900 dark:text-white",
                             ""
                           )}
@@ -894,11 +1127,60 @@ export default function MarketingHeadPage() {
                         <div className="flex items-center gap-2">
                           <button
                             onClick={() =>
+                              setWithdrawalModal({
+                                show: true,
+                                staff: staff,
+                                amount: "",
+                                notes: "",
+                                loading: false,
+                              })
+                            }
+                            className={getThemeClasses(
+                              "p-1 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded transition-colors",
+                              "dark:text-blue-300 dark:hover:bg-blue-900/30"
+                            )}
+                            title="Catat penarikan komisi"
+                            disabled={!staff.commissionSummary.totalUnpaidCommission || staff.commissionSummary.totalUnpaidCommission <= 0}
+                          >
+                            <Wallet className="w-4 h-4" />
+                          </button>
+
+                          <button
+                            onClick={() =>
+                              setToggleStatusModal({
+                                show: true,
+                                staff: staff,
+                                loading: false,
+                                newPassword: null,
+                                copied: false,
+                              })
+                            }
+                            className={getThemeClasses(
+                              staff.isActive
+                                ? "p-1 text-red-600 hover:text-red-800 hover:bg-red-50 rounded transition-colors dark:text-red-300 dark:hover:bg-red-900/30"
+                                : "p-1 text-green-600 hover:text-green-800 hover:bg-green-50 rounded transition-colors dark:text-green-300 dark:hover:bg-green-900/30",
+                              ""
+                            )}
+                            title={
+                              staff.isActive
+                                ? "Nonaktifkan staff"
+                                : "Aktifkan staff"
+                            }
+                          >
+                            {staff.isActive ? (
+                              <Ban className="w-4 h-4" />
+                            ) : (
+                              <CheckCircle className="w-4 h-4" />
+                            )}
+                          </button>
+
+                          <button
+                            onClick={() =>
                               handleGenerateReferralCode(staff._id)
                             }
                             className={getThemeClasses(
-                              "p-1 text-green-600 hover:text-green-800 hover:bg-green-50 rounded transition-colors",
-                              "dark:text-green-300 dark:hover:bg-green-900/30"
+                              "p-1 text-purple-600 hover:text-purple-800 hover:bg-purple-50 rounded transition-colors",
+                              "dark:text-purple-300 dark:hover:bg-purple-900/30"
                             )}
                             title="Buat kode baru"
                           >
@@ -1035,6 +1317,558 @@ export default function MarketingHeadPage() {
                 </div>
               </div>
             </div>
+          </div>
+        )}
+
+        {/* Toggle Status Modal */}
+        {toggleStatusModal.show && toggleStatusModal.staff && (
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+            <motion.div
+              className={getThemeClasses(
+                "bg-white dark:bg-gray-800 rounded-2xl max-w-md w-full shadow-2xl",
+                "!bg-white"
+              )}
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+            >
+              <div
+                className={getThemeClasses(
+                  "p-6 border-b border-gray-200 dark:border-gray-700",
+                  "!border-[#FFC1CC]/30"
+                )}
+              >
+                <div className="flex items-center justify-between">
+                  <h3
+                    className={getThemeClasses(
+                      "text-lg font-semibold text-gray-900 dark:text-white",
+                      "!text-[#4c1d1d]"
+                    )}
+                  >
+                    {toggleStatusModal.staff.isActive
+                      ? "Nonaktifkan Staff"
+                      : "Aktifkan Staff"}
+                  </h3>
+                  <button
+                    onClick={handleCloseToggleModal}
+                    className={getThemeClasses(
+                      "p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors",
+                      "hover:!bg-[#FFC1CC]/20"
+                    )}
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+                <p
+                  className={getThemeClasses(
+                    "text-sm text-gray-600 dark:text-gray-400 mt-2",
+                    "!text-[#6b7280]"
+                  )}
+                >
+                  Staff: <span className="font-semibold">{toggleStatusModal.staff.fullName}</span>
+                </p>
+              </div>
+
+              {toggleStatusModal.newPassword ? (
+                // Show password after deactivation
+                <div className="p-6 space-y-4">
+                  <div
+                    className={getThemeClasses(
+                      "bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl p-4",
+                      "!bg-[#B5EAD7]/20 !border-[#B5EAD7]/50"
+                    )}
+                  >
+                    <div className="flex items-center gap-2 mb-2">
+                      <CheckCircle
+                        className={getThemeClasses(
+                          "w-5 h-5 text-green-600 dark:text-green-400",
+                          "!text-[#2a4235]"
+                        )}
+                      />
+                      <p
+                        className={getThemeClasses(
+                          "font-semibold text-green-800 dark:text-green-200",
+                          "!text-[#2a4235]"
+                        )}
+                      >
+                        Staff berhasil dinonaktifkan
+                      </p>
+                    </div>
+                    <p
+                      className={getThemeClasses(
+                        "text-sm text-green-700 dark:text-green-300",
+                        "!text-[#4c1d1d]"
+                      )}
+                    >
+                      Password telah direset dan user telah logout otomatis.
+                    </p>
+                  </div>
+
+                  <div>
+                    <label
+                      className={getThemeClasses(
+                        "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2",
+                        "!text-[#4c1d1d]"
+                      )}
+                    >
+                      Password Baru
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="text"
+                        value={toggleStatusModal.newPassword}
+                        readOnly
+                        className={getThemeClasses(
+                          "w-full px-3 py-2 pr-10 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 font-mono text-sm",
+                          "!border-[#FFC1CC]/30 !bg-[#FFF7F9] !text-[#4c1d1d]"
+                        )}
+                      />
+                      <button
+                        onClick={handleCopyPassword}
+                        className={getThemeClasses(
+                          "absolute right-2 top-1/2 -translate-y-1/2 p-2 text-gray-600 hover:text-gray-800 hover:bg-gray-200 dark:hover:bg-gray-600 rounded transition-colors",
+                          "hover:!bg-[#FFC1CC]/30 !text-[#4c1d1d]"
+                        )}
+                        title="Salin password"
+                      >
+                        {toggleStatusModal.copied ? (
+                          <Check className="w-4 h-4" />
+                        ) : (
+                          <Copy className="w-4 h-4" />
+                        )}
+                      </button>
+                    </div>
+                    <p
+                      className={getThemeClasses(
+                        "text-xs text-gray-500 dark:text-gray-400 mt-2",
+                        "!text-[#6b7280]"
+                      )}
+                    >
+                      ⚠️ Simpan password ini dengan aman. Password tidak dapat
+                      dilihat lagi setelah modal ditutup.
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                // Show confirmation before toggling
+                <div className="p-6 space-y-4">
+                  <div
+                    className={getThemeClasses(
+                      toggleStatusModal.staff.isActive
+                        ? "bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-4"
+                        : "bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-4",
+                      toggleStatusModal.staff.isActive
+                        ? "!bg-[#FFB3C6]/20 !border-[#FFB3C6]/50"
+                        : "!bg-[#C7CEEA]/20 !border-[#C7CEEA]/50"
+                    )}
+                  >
+                    <div className="flex items-start gap-3">
+                      <AlertTriangle
+                        className={getThemeClasses(
+                          toggleStatusModal.staff.isActive
+                            ? "w-5 h-5 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5"
+                            : "w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5",
+                          toggleStatusModal.staff.isActive
+                            ? "!text-[#4c1d1d]"
+                            : "!text-[#4c1d1d]"
+                        )}
+                      />
+                      <div>
+                        <p
+                          className={getThemeClasses(
+                            toggleStatusModal.staff.isActive
+                              ? "font-semibold text-red-800 dark:text-red-200 mb-2"
+                              : "font-semibold text-blue-800 dark:text-blue-200 mb-2",
+                            "!text-[#4c1d1d]"
+                          )}
+                        >
+                          {toggleStatusModal.staff.isActive
+                            ? "Konfirmasi Nonaktifkan Staff"
+                            : "Konfirmasi Aktifkan Staff"}
+                        </p>
+                        <p
+                          className={getThemeClasses(
+                            toggleStatusModal.staff.isActive
+                              ? "text-sm text-red-700 dark:text-red-300"
+                              : "text-sm text-blue-700 dark:text-blue-300",
+                            "!text-[#4c1d1d]"
+                          )}
+                        >
+                          {toggleStatusModal.staff.isActive ? (
+                            <>
+                              Staff akan <strong>logout otomatis</strong> dan{" "}
+                              <strong>password akan direset</strong>. Staff tidak
+                              akan bisa login hingga diaktifkan kembali.
+                            </>
+                          ) : (
+                            <>
+                              Staff akan <strong>diaktifkan kembali</strong> dan
+                              dapat login menggunakan password yang telah direset
+                              sebelumnya.
+                            </>
+                          )}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div
+                    className={getThemeClasses(
+                      "bg-gray-50 dark:bg-gray-900/20 rounded-xl p-4",
+                      "!bg-[#FFF7F9]"
+                    )}
+                  >
+                    <p
+                      className={getThemeClasses(
+                        "text-sm text-gray-600 dark:text-gray-400",
+                        "!text-[#6b7280]"
+                      )}
+                    >
+                      Email: <span className="font-semibold">{toggleStatusModal.staff.email}</span>
+                    </p>
+                    <p
+                      className={getThemeClasses(
+                        "text-sm text-gray-600 dark:text-gray-400",
+                        "!text-[#6b7280]"
+                      )}
+                    >
+                      Telepon: <span className="font-semibold">{toggleStatusModal.staff.phoneNumber}</span>
+                    </p>
+                    {toggleStatusModal.staff.referralCode && (
+                      <p
+                        className={getThemeClasses(
+                          "text-sm text-gray-600 dark:text-gray-400",
+                          "!text-[#6b7280]"
+                        )}
+                      >
+                        Kode Referral:{" "}
+                        <code
+                          className={getThemeClasses(
+                            "bg-gray-200 dark:bg-gray-800 px-2 py-1 rounded font-semibold",
+                            "!bg-white !text-[#4c1d1d]"
+                          )}
+                        >
+                          {toggleStatusModal.staff.referralCode}
+                        </code>
+                      </p>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              <div
+                className={getThemeClasses(
+                  "p-6 border-t border-gray-200 dark:border-gray-700 flex gap-3",
+                  "!border-[#FFC1CC]/30"
+                )}
+              >
+                {toggleStatusModal.newPassword ? (
+                  // After password is shown, just show close button
+                  <button
+                    onClick={handleCloseToggleModal}
+                    className={getThemeClasses(
+                      "flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl transition-colors",
+                      "!bg-[#4c1d1d] hover:!bg-[#3d1717]"
+                    )}
+                  >
+                    Tutup
+                  </button>
+                ) : (
+                  // Before toggling, show cancel and confirm
+                  <>
+                    <button
+                      onClick={handleCloseToggleModal}
+                      disabled={toggleStatusModal.loading}
+                      className={getThemeClasses(
+                        "flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50",
+                        "!border-[#FFC1CC]/30 hover:!bg-[#FFC1CC]/10 !text-[#4c1d1d]"
+                      )}
+                    >
+                      Batal
+                    </button>
+
+                    <button
+                      onClick={handleToggleStatus}
+                      disabled={toggleStatusModal.loading}
+                      className={getThemeClasses(
+                        toggleStatusModal.staff.isActive
+                          ? "flex-1 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                          : "flex-1 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-xl transition-colors disabled:opacity-50 flex items-center justify-center gap-2",
+                        toggleStatusModal.staff.isActive
+                          ? "!bg-[#4c1d1d] hover:!bg-[#3d1717]"
+                          : "!bg-[#2a4235] hover:!bg-[#1f3329]"
+                      )}
+                    >
+                      {toggleStatusModal.loading && (
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                      )}
+                      {toggleStatusModal.staff.isActive
+                        ? "Nonaktifkan"
+                        : "Aktifkan"}
+                    </button>
+                  </>
+                )}
+              </div>
+            </motion.div>
+          </div>
+        )}
+
+        {/* Withdrawal Modal */}
+        {withdrawalModal.show && withdrawalModal.staff && (
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+            <motion.div
+              className={getThemeClasses(
+                "bg-white dark:bg-gray-800 rounded-2xl max-w-md w-full shadow-2xl",
+                "!bg-white"
+              )}
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+            >
+              <div
+                className={getThemeClasses(
+                  "p-6 border-b border-gray-200 dark:border-gray-700",
+                  "!border-[#FFC1CC]/30"
+                )}
+              >
+                <div className="flex items-center justify-between">
+                  <h3
+                    className={getThemeClasses(
+                      "text-lg font-semibold text-gray-900 dark:text-white",
+                      "!text-[#4c1d1d]"
+                    )}
+                  >
+                    Catat Penarikan Komisi
+                  </h3>
+                  <button
+                    onClick={() =>
+                      setWithdrawalModal({
+                        show: false,
+                        staff: null,
+                        amount: "",
+                        notes: "",
+                        loading: false,
+                      })
+                    }
+                    className={getThemeClasses(
+                      "p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors",
+                      "hover:!bg-[#FFC1CC]/20"
+                    )}
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+                <p
+                  className={getThemeClasses(
+                    "text-sm text-gray-600 dark:text-gray-400 mt-2",
+                    "!text-[#6b7280]"
+                  )}
+                >
+                  Staff: <span className="font-semibold">{withdrawalModal.staff.fullName}</span>
+                </p>
+                <p
+                  className={getThemeClasses(
+                    "text-sm text-gray-600 dark:text-gray-400",
+                    "!text-[#6b7280]"
+                  )}
+                >
+                  Kode Referral:{" "}
+                  <code
+                    className={getThemeClasses(
+                      "bg-gray-100 dark:bg-gray-900/30 px-2 py-1 rounded font-semibold",
+                      "!bg-[#FFF7F9] !text-[#4c1d1d]"
+                    )}
+                  >
+                    {withdrawalModal.staff.referralCode}
+                  </code>
+                </p>
+              </div>
+
+              <div className="p-6 space-y-4">
+                <div
+                  className={getThemeClasses(
+                    "bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-4",
+                    "!bg-[#C7CEEA]/20 !border-[#C7CEEA]/50"
+                  )}
+                >
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <p
+                        className={getThemeClasses(
+                          "text-gray-600 dark:text-gray-400",
+                          "!text-[#6b7280]"
+                        )}
+                      >
+                        Total Komisi
+                      </p>
+                      <p
+                        className={getThemeClasses(
+                          "font-bold text-gray-900 dark:text-white",
+                          "!text-[#4c1d1d]"
+                        )}
+                      >
+                        {formatCurrency(
+                          withdrawalModal.staff.commissionSummary.totalCommission
+                        )}
+                      </p>
+                    </div>
+                    <div>
+                      <p
+                        className={getThemeClasses(
+                          "text-gray-600 dark:text-gray-400",
+                          "!text-[#6b7280]"
+                        )}
+                      >
+                        Sudah Terbayar
+                      </p>
+                      <p
+                        className={getThemeClasses(
+                          "font-bold text-green-600 dark:text-green-400",
+                          "!text-[#2a4235]"
+                        )}
+                      >
+                        {formatCurrency(
+                          withdrawalModal.staff.commissionSummary
+                            .totalPaidCommission || 0
+                        )}
+                      </p>
+                    </div>
+                    <div className="col-span-2">
+                      <p
+                        className={getThemeClasses(
+                          "text-gray-600 dark:text-gray-400",
+                          "!text-[#6b7280]"
+                        )}
+                      >
+                        Belum Terbayar
+                      </p>
+                      <p
+                        className={getThemeClasses(
+                          "font-bold text-orange-600 dark:text-orange-400 text-lg",
+                          "!text-[#4c1d1d]"
+                        )}
+                      >
+                        {formatCurrency(
+                          withdrawalModal.staff.commissionSummary
+                            .totalUnpaidCommission || 0
+                        )}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <label
+                    className={getThemeClasses(
+                      "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2",
+                      "!text-[#4c1d1d]"
+                    )}
+                  >
+                    Jumlah Penarikan *
+                  </label>
+                  <input
+                    type="number"
+                    value={withdrawalModal.amount}
+                    onChange={(e) =>
+                      setWithdrawalModal((prev) => ({
+                        ...prev,
+                        amount: e.target.value,
+                      }))
+                    }
+                    placeholder="Masukkan jumlah penarikan"
+                    className={getThemeClasses(
+                      "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white",
+                      "!border-[#FFC1CC]/30 focus:!ring-[#FFC1CC]/50 !text-[#4c1d1d]"
+                    )}
+                    min="0"
+                    step="1000"
+                  />
+                  <p
+                    className={getThemeClasses(
+                      "text-xs text-gray-500 dark:text-gray-400 mt-1",
+                      "!text-[#6b7280]"
+                    )}
+                  >
+                    Maksimal:{" "}
+                    {formatCurrency(
+                      withdrawalModal.staff.commissionSummary
+                        .totalUnpaidCommission || 0
+                    )}
+                  </p>
+                </div>
+
+                <div>
+                  <label
+                    className={getThemeClasses(
+                      "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2",
+                      "!text-[#4c1d1d]"
+                    )}
+                  >
+                    Catatan (Opsional)
+                  </label>
+                  <textarea
+                    value={withdrawalModal.notes}
+                    onChange={(e) =>
+                      setWithdrawalModal((prev) => ({
+                        ...prev,
+                        notes: e.target.value,
+                      }))
+                    }
+                    placeholder="Tambahkan catatan jika diperlukan..."
+                    rows={3}
+                    className={getThemeClasses(
+                      "w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white resize-none",
+                      "!border-[#FFC1CC]/30 focus:!ring-[#FFC1CC]/50 !text-[#4c1d1d]"
+                    )}
+                    maxLength={500}
+                  />
+                </div>
+              </div>
+
+              <div
+                className={getThemeClasses(
+                  "p-6 border-t border-gray-200 dark:border-gray-700 flex gap-3",
+                  "!border-[#FFC1CC]/30"
+                )}
+              >
+                <button
+                  onClick={() =>
+                    setWithdrawalModal({
+                      show: false,
+                      staff: null,
+                      amount: "",
+                      notes: "",
+                      loading: false,
+                    })
+                  }
+                  disabled={withdrawalModal.loading}
+                  className={getThemeClasses(
+                    "flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50",
+                    "!border-[#FFC1CC]/30 hover:!bg-[#FFC1CC]/10 !text-[#4c1d1d]"
+                  )}
+                >
+                  Batal
+                </button>
+
+                <button
+                  onClick={handleWithdrawalSubmit}
+                  disabled={
+                    withdrawalModal.loading ||
+                    !withdrawalModal.amount.trim() ||
+                    parseFloat(withdrawalModal.amount) <= 0
+                  }
+                  className={getThemeClasses(
+                    "flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl transition-colors disabled:opacity-50 flex items-center justify-center gap-2",
+                    "!bg-[#4c1d1d] hover:!bg-[#3d1717]"
+                  )}
+                >
+                  {withdrawalModal.loading && (
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                  )}
+                  Catat Penarikan
+                </button>
+              </div>
+            </motion.div>
           </div>
         )}
 

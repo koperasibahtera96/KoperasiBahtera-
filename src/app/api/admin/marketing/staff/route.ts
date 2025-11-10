@@ -2,6 +2,7 @@ import dbConnect from "@/lib/mongodb";
 import User from "@/models/User";
 import Payment from "@/models/Payment";
 import CommissionHistory from "@/models/CommissionHistory";
+import CommissionWithdrawal from "@/models/CommissionWithdrawal";
 import { generateReferralCode, validateReferralCode } from "@/lib/referral";
 import { getServerSession } from "next-auth/next";
 import { NextRequest, NextResponse } from "next/server";
@@ -68,6 +69,17 @@ export async function GET(_req: NextRequest) {
           },
         ]);
 
+        // Get total paid commission from withdrawals
+        const withdrawalSummary = await CommissionWithdrawal.aggregate([
+          { $match: { marketingStaffId: staff._id } },
+          {
+            $group: {
+              _id: null,
+              totalPaidCommission: { $sum: "$amount" },
+            },
+          },
+        ]);
+
         const summary = commissionSummary[0] || {
           totalCommission: 0,
           totalReferrals: 0,
@@ -75,9 +87,20 @@ export async function GET(_req: NextRequest) {
           cicilanInvestments: 0,
         };
 
+        const totalPaidCommission =
+          withdrawalSummary.length > 0
+            ? withdrawalSummary[0].totalPaidCommission
+            : 0;
+        const totalUnpaidCommission =
+          summary.totalCommission - totalPaidCommission;
+
         return {
           ...staff.toObject(),
-          commissionSummary: summary,
+          commissionSummary: {
+            ...summary,
+            totalPaidCommission,
+            totalUnpaidCommission,
+          },
         };
       })
     );

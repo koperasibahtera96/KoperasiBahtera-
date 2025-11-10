@@ -168,8 +168,7 @@ export default function FinancePaymentsPage() {
                 )}
               >
                 <option value="">Semua Status</option>
-                <option value="active">Aktif</option>
-                <option value="completed">Selesai</option>
+                <option value="needs-review">Perlu Review</option>
                 <option value="overdue">Terlambat</option>
               </select>
             </div>

@@ -20,6 +20,12 @@ export default async function middleware(req: NextRequest) {
     );
   }
 
+  // Check if user is active (from JWT token)
+  if (token.isActive === false) {
+    console.log(`❌ User ${token.email} is inactive - forcing logout`);
+    return NextResponse.redirect(new URL("/login", req.url));
+  }
+
   const userRole = token.role as string;
 
   // === PROFILE ACCESS ===

@@ -86,13 +86,10 @@ export async function GET(request: NextRequest) {
       ];
     }
 
-    // Get users with pagination
-    const totalCount = await User.countDocuments(userQuery);
+    // Get all matching users first (we'll apply pagination after filtering)
     const users = await User.find(userQuery)
       .select("fullName email phoneNumber userCode")
-      .sort({ updatedAt: -1 })
-      .skip((page - 1) * limit)
-      .limit(limit);
+      .sort({ updatedAt: -1 });
 
     const userIds = users.map((user) => user._id);
 
@@ -105,7 +102,6 @@ export async function GET(request: NextRequest) {
     // Get manual BCA payments (cicilan and full) for these users
     const payments = await Payment.find({
       userId: { $in: userIds },
-      paymentType: { $in: ["cicilan-installment", "full-investment"] },
       paymentMethod: "manual-bca",
     });
 
@@ -307,20 +303,33 @@ export async function GET(request: NextRequest) {
     // Apply status filter after processing
     let filteredInvestors = investorGroups;
     if (status) {
+      const now = new Date();
       filteredInvestors = investorGroups.filter((investor: any) => {
-        const approvedCount = investor.investments.filter(
-          (inv: any) => inv.status === "completed"
-        ).length;
-        const totalCount = investor.investments.length;
-        const hasOverdue = investor.overdueCount > 0;
+        // Get payments for this investor
+        const userPayments = paymentsMap.get(investor.userId) || [];
+        
+        // Check if investor has payments that need review (adminStatus: pending AND has proofImageUrl)
+        const hasPaymentsNeedingReview = userPayments.some((payment: any) => {
+          return payment.adminStatus === "pending" && payment.proofImageUrl;
+        });
+        
+        // Check if investor has any overdue payments (dueDate < today AND not settled)
+        const hasOverduePayments = userPayments.some((payment: any) => {
+          const dueDate = new Date(payment.dueDate);
+          return (
+            dueDate < now &&
+            dueDate.toDateString() !== now.toDateString() &&
+            payment.transactionStatus !== "settlement"
+          );
+        });
 
         switch (status) {
-          case "completed":
-            return approvedCount === totalCount;
+          case "needs-review":
+            // Has at least one payment that needs review
+            return hasPaymentsNeedingReview;
           case "overdue":
-            return hasOverdue;
-          case "active":
-            return approvedCount < totalCount && !hasOverdue;
+            // Has at least one overdue payment
+            return hasOverduePayments;
           default:
             return true;
         }
@@ -358,14 +367,19 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    const totalPages = Math.ceil(totalCount / limit);
+    // Apply pagination after filtering
+    const totalFilteredCount = filteredInvestors.length;
+    const totalPages = Math.ceil(totalFilteredCount / limit);
+    const startIndex = (page - 1) * limit;
+    const endIndex = startIndex + limit;
+    const paginatedInvestors = filteredInvestors.slice(startIndex, endIndex);
 
     return NextResponse.json({
-      investors: filteredInvestors,
+      investors: paginatedInvestors,
       pagination: {
         page,
         limit,
-        totalCount,
+        totalCount: totalFilteredCount,
         totalPages,
         hasNext: page < totalPages,
         hasPrev: page > 1,
