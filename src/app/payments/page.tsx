@@ -20,6 +20,7 @@ import {
   Edit3,
   X,
   Download,
+  AlertTriangle,
 } from "lucide-react";
 import { useSession } from "next-auth/react";
 import Image from "next/image";
@@ -1321,9 +1322,10 @@ export default function PaymentsPage() {
       return false;
     }
 
-    // Only allow payment for pending installments that exist
+    // Allow payment for pending OR rejected installments that exist
     return (
-      installment.status === "pending" && (installment as any).exists !== false
+      (installment.status === "pending" || installment.status === "rejected") && 
+      (installment as any).exists !== false
     );
   };
 
@@ -1368,6 +1370,26 @@ export default function PaymentsPage() {
       month: "long",
       day: "numeric",
     });
+  };
+
+  // Helper function to translate rejection reasons
+  const translateRejectionReason = (reason: string) => {
+    // Map Indonesian rejection reasons to translation keys
+    const reasonMap: Record<string, string> = {
+      "Bukti Tidak Jelas Silahkan Unggah Kembali Bukti Pembayaran Yang Benar/Valid": "payments.rejection.proofUnclear",
+      "Nominal Transfer Tidak Sesuai Dengan Jumlah Yang Ditagihkan": "payments.rejection.amountMismatch",
+      "Bukti Pembayaran Tidak Valid atau tidak dapat di verifikasi": "payments.rejection.invalidProof",
+      "Dana Belum Tercatat Pada Sistem Bank Saat Proses Verifikasi": "payments.rejection.fundsNotRecorded",
+    };
+
+    // If the reason matches one of our predefined reasons, translate it
+    const translationKey = reasonMap[reason];
+    if (translationKey) {
+      return t(translationKey);
+    }
+    
+    // Otherwise, return the original reason (for custom admin notes)
+    return reason;
   };
 
   // Calculate portfolio statistics
@@ -2109,7 +2131,8 @@ export default function PaymentsPage() {
                                   // If proof is uploaded but not reviewed, show as submitted
                                   if (
                                     installment.proofImageUrl &&
-                                    installment.adminStatus === "pending"
+                                    installment.adminStatus === "pending" &&
+                                    installment.status !== "rejected"
                                   ) {
                                     effectiveStatus = "submitted";
                                   }
@@ -2194,16 +2217,25 @@ export default function PaymentsPage() {
                                           </div>
                                         )}
 
-                                      {installment.adminNotes &&
-                                        installment.orderId &&
-                                        installment.orderId.startsWith(
-                                          "CIC-CONTRACT-"
-                                        ) && (
-                                          <div className="bg-yellow-50/80 p-2 rounded-lg text-xs text-yellow-800 mb-3 font-poppins">
-                                            <strong>
-                                              {t("payments.ui.adminNote")}
-                                            </strong>{" "}
-                                            {installment.adminNotes}
+                                      {installment.adminNotes && (
+                                          <div className={`p-3 rounded-lg text-sm mb-3 font-poppins ${
+                                            installment.status === "rejected"
+                                              ? "bg-red-50 text-red-800 border border-red-200"
+                                              : "bg-yellow-50 text-yellow-800 border border-yellow-200"
+                                          }`}>
+                                            <strong className="flex items-center gap-2 mb-1">
+                                              {installment.status === "rejected" ? (
+                                                <>
+                                                  <AlertTriangle size={16} className="flex-shrink-0" />
+                                                  {t("payments.ui.rejectionReason")}
+                                                </>
+                                              ) : (
+                                                t("payments.ui.adminNote")
+                                              )}
+                                            </strong>
+                                            <span className="whitespace-pre-wrap break-words">
+                                              {translateRejectionReason(installment.adminNotes)}
+                                            </span>
                                           </div>
                                         )}
 
@@ -2440,19 +2472,6 @@ export default function PaymentsPage() {
                                                   )
                                                 }
                                               />
-                                              {/* Show rejection reason if rejected - compact */}
-                                              {installment.adminStatus ===
-                                                "rejected" &&
-                                                installment.adminNotes && (
-                                                  <div className="flex-1 min-w-0 overflow-hidden">
-                                                    <p className="text-xs font-semibold text-red-800 truncate">
-                                                      {t(
-                                                        "payments.proof.rejected"
-                                                      )}{" "}
-                                                      {installment.adminNotes}
-                                                    </p>
-                                                  </div>
-                                                )}
                                             </div>
                                           ) : (
                                             <div className="text-xs text-gray-400 font-poppins italic h-full flex items-center">
@@ -2986,16 +3005,6 @@ export default function PaymentsPage() {
                                         )
                                       }
                                     />
-                                    {/* Show rejection reason if rejected - compact */}
-                                    {contract.adminStatus === "rejected" &&
-                                      contract.adminNotes && (
-                                        <div className="flex-1 min-w-0 overflow-hidden">
-                                          <p className="text-xs font-semibold text-red-800 truncate">
-                                            {t("payments.proof.rejected")}{" "}
-                                            {contract.adminNotes}
-                                          </p>
-                                        </div>
-                                      )}
                                   </div>
                                 ) : (
                                   <div className="text-xs text-gray-400 font-poppins italic h-full flex items-center">

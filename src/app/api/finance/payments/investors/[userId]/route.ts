@@ -160,8 +160,7 @@ export async function GET(
           installmentNumber: payment.installmentNumber,
           amount: payment.installmentAmount,
           dueDate: payment.dueDate,
-          status:
-            payment.transactionStatus === "settlement" ? "approved" : "pending",
+          status: payment.status || (payment.transactionStatus === "settlement" ? "approved" : "pending"),
           adminStatus: payment.adminStatus || "pending",
           proofImageUrl: payment.proofImageUrl || null,
           proofDescription: payment.proofDescription || null,
@@ -204,8 +203,7 @@ export async function GET(
           amount: payment.amount,
           // prefer explicit dueDate on the payment, fall back to createdAt
           dueDate: payment.dueDate || payment.createdAt,
-          status:
-            payment.transactionStatus === "settlement" ? "approved" : "pending",
+          status: payment.status || (payment.transactionStatus === "settlement" ? "approved" : "pending"),
           // keep adminStatus consistent with cicilan (default to pending)
           adminStatus: payment.adminStatus || "pending",
           proofImageUrl: payment.proofImageUrl || null,

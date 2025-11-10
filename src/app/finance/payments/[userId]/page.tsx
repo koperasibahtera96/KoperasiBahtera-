@@ -1006,7 +1006,7 @@ function ReviewModal({
       <div
         className={getThemeClasses(
           "bg-[#FFFCE3] dark:bg-gray-800 rounded-2xl sm:rounded-3xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto border-2 border-[#324D3E]/20 dark:border-gray-600",
-          "!bg-[#FFC1CC]/20 !border-[#FFC1CC]/40"
+          "!bg-[#FFE5F0] !border-[#FFC1CC]"
         )}
       >
         <div className="p-4 sm:p-6">
@@ -1196,18 +1196,31 @@ function ReviewModal({
                 "!text-[#4c1d1d]"
               )}
             >
-              Catatan Admin untuk User
+              Alasan Penolakan
             </label>
-            <textarea
+            <select
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               className={getThemeClasses(
-                "w-full border border-gray-300 dark:border-gray-600 rounded-xl p-2 sm:p-3 h-20 sm:h-24 font-poppins focus:border-[#324D3E] dark:focus:border-blue-400 focus:ring-1 focus:ring-[#324D3E]/20 dark:focus:ring-blue-400/20 bg-white dark:bg-gray-700 text-sm sm:text-base text-gray-800 dark:text-white placeholder-gray-500 dark:placeholder-gray-400",
-                "!bg-white !border-[#FFC1CC]/40 !text-[#4c1d1d] !placeholder-[#7d4b4b]/60 focus:!border-[#FFC1CC] focus:!ring-[#FFC1CC]/30"
+                "w-full border border-gray-300 dark:border-gray-600 rounded-xl p-2 sm:p-3 font-poppins focus:border-[#324D3E] dark:focus:border-blue-400 focus:ring-1 focus:ring-[#324D3E]/20 dark:focus:ring-blue-400/20 bg-white dark:bg-gray-700 text-sm sm:text-base text-gray-800 dark:text-white",
+                "!bg-white !border-[#FFC1CC]/40 !text-[#4c1d1d] focus:!border-[#FFC1CC] focus:!ring-[#FFC1CC]/30"
               )}
-              placeholder="Tambahkan catatan untuk pengguna (opsional)..."
               disabled={isReviewing}
-            />
+            >
+              <option value="">Pilih alasan penolakan (opsional)</option>
+              <option value="Bukti Tidak Jelas Silahkan Unggah Kembali Bukti Pembayaran Yang Benar/Valid">
+                Bukti Tidak Jelas Silahkan Unggah Kembali Bukti Pembayaran Yang Benar/Valid
+              </option>
+              <option value="Nominal Transfer Tidak Sesuai Dengan Jumlah Yang Ditagihkan">
+                Nominal Transfer Tidak Sesuai Dengan Jumlah Yang Ditagihkan
+              </option>
+              <option value="Bukti Pembayaran Tidak Valid atau tidak dapat di verifikasi">
+                Bukti Pembayaran Tidak Valid atau tidak dapat di verifikasi
+              </option>
+              <option value="Dana Belum Tercatat Pada Sistem Bank Saat Proses Verifikasi">
+                Dana Belum Tercatat Pada Sistem Bank Saat Proses Verifikasi
+              </option>
+            </select>
           </div>
 
           {/* Action Buttons */}
@@ -1229,8 +1242,8 @@ function ReviewModal({
               }}
               disabled={isReviewing}
               className={getThemeClasses(
-                "flex-1 px-3 sm:px-4 py-2 bg-gradient-to-r from-gray-400 to-gray-500 text-white rounded-full hover:shadow-lg hover:from-red-400 hover:to-red-500 disabled:opacity-50 font-poppins font-medium transition-all duration-300 text-sm sm:text-base",
-                "!from-[#FFB3C6] !to-[#FFB3C6]/80 !text-[#a02040] hover:!from-[#FFB3C6]/80 hover:!to-[#FFB3C6]"
+                "flex-1 px-3 sm:px-4 py-2 bg-gradient-to-r from-red-500 to-red-600 dark:from-red-600 dark:to-red-700 text-white rounded-full hover:shadow-lg hover:from-red-600 hover:to-red-700 dark:hover:from-red-700 dark:hover:to-red-800 disabled:opacity-50 font-poppins font-semibold transition-all duration-300 text-sm sm:text-base",
+                "!from-[#FF6B9D] !to-[#FF4577] !text-white hover:!from-[#FF4577] hover:!to-[#FF2557] hover:shadow-[0_0_20px_rgba(255,107,157,0.5)]"
               )}
             >
               {isReviewing && action === "reject" ? "Memproses..." : "Tolak"}
