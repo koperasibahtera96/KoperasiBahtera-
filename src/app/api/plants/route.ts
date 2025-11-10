@@ -92,38 +92,66 @@ export async function GET(req: NextRequest) {
       console.log('=== END ROLE/USER FILTER ===\n');
     }
 
-    // Apply "no-group" filter (exclude all assigned plants)
+    // Apply "no-group" filter
     if (excludeAssigned) {
       console.log('\n=== NO-GROUP FILTER DEBUG ===');
-      // Get all assigned plant IDs from all assignments
-      const allAssignments = await PlantAssignment.find({ isActive: true }).lean();
-      console.log(`Found ${allAssignments.length} active assignments`);
+      console.log(`User role: ${userRole}`);
       
-      const allAssignedPlantIds = allAssignments.flatMap(
-        (a: any) => a.plantInstanceIds || []
-      );
-      console.log(`Total plant ID entries (with duplicates): ${allAssignedPlantIds.length}`);
-      console.log('All assigned plant IDs:', allAssignedPlantIds);
-
-      if (allAssignedPlantIds.length > 0) {
-        // Remove duplicates - a plant can be assigned to multiple people
-        const uniqueIds = [...new Set(allAssignedPlantIds)];
-        console.log(`Unique assigned plant IDs: ${uniqueIds.length}`);
-        console.log('Unique plant IDs:', uniqueIds);
+      if (userRole === "asisten") {
+        // For asisten: "no-group" means plants assigned to them but NOT assigned to any mandor
+        console.log('Asisten no-group: showing plants NOT assigned to mandor');
         
-        // Exclude assigned plants
-        if (query.id?.$in) {
-          console.log('Using $in intersection (rare case)');
-          // If there's already an $in filter, intersect with non-assigned plants
+        // Get all mandor assignments created by this asisten
+        const mandorAssignments = await PlantAssignment.find({
+          assignedBy: userId,
+          assignedRole: "mandor",
+          isActive: true,
+        }).lean();
+        
+        const plantsAssignedToMandor = mandorAssignments.flatMap(
+          (a: any) => a.plantInstanceIds || []
+        );
+        const uniqueMandorPlantIds = [...new Set(plantsAssignedToMandor)];
+        console.log(`Plants assigned to mandor: ${uniqueMandorPlantIds.length}`);
+        console.log('Mandor plant IDs:', uniqueMandorPlantIds);
+        
+        // Filter to show only plants NOT assigned to mandor
+        if (uniqueMandorPlantIds.length > 0 && query.id?.$in) {
           query.id.$in = query.id.$in.filter(
-            (id: string) => !uniqueIds.includes(id)
+            (id: string) => !uniqueMandorPlantIds.includes(id)
           );
-        } else {
-          console.log('Using $nin to exclude assigned plants');
-          // Exclude assigned plants using $nin
-          query.id = { $nin: uniqueIds };
+          console.log(`Filtered to ${query.id.$in.length} plants not assigned to mandor`);
+        }
+      } else if (userRole === "manajer") {
+        // For manajer: "no-group" means plants not assigned to anyone
+        console.log('Manajer no-group: showing plants NOT assigned to anyone');
+        const allAssignments = await PlantAssignment.find({ isActive: true }).lean();
+        console.log(`Found ${allAssignments.length} active assignments`);
+        
+        const allAssignedPlantIds = allAssignments.flatMap(
+          (a: any) => a.plantInstanceIds || []
+        );
+        console.log(`Total plant ID entries (with duplicates): ${allAssignedPlantIds.length}`);
+        console.log('All assigned plant IDs:', allAssignedPlantIds);
+
+        if (allAssignedPlantIds.length > 0) {
+          const uniqueIds = [...new Set(allAssignedPlantIds)];
+          console.log(`Unique assigned plant IDs: ${uniqueIds.length}`);
+          console.log('Unique plant IDs:', uniqueIds);
+          
+          // Exclude assigned plants
+          if (query.id?.$in) {
+            console.log('Using $in intersection (rare case)');
+            query.id.$in = query.id.$in.filter(
+              (id: string) => !uniqueIds.includes(id)
+            );
+          } else {
+            console.log('Using $nin to exclude assigned plants');
+            query.id = { $nin: uniqueIds };
+          }
         }
       }
+      // For mandor: no-group doesn't make sense, they just see their assigned plants
       console.log('=== END NO-GROUP FILTER ===\n');
     }
 

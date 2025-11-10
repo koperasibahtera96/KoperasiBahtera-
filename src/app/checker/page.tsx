@@ -133,6 +133,7 @@ export default function StaffDashboard() {
   const [assignmentsLoaded, setAssignmentsLoaded] = useState(false);
 
   // Sidebar filter state
+  // Default to "no-group" for manajer and asisten, null for mandor (they don't have no-group option)
   const [sidebarFilter, setSidebarFilter] = useState<{
     role: "asisten" | "mandor" | "no-group" | null;
     userId: string | null;
@@ -167,10 +168,21 @@ export default function StaffDashboard() {
   useEffect(() => {
     if (session?.user) {
       fetchAssignmentsAndGroups();
-      // Fetch total stats for manajer
+      // Fetch total stats for all roles (unfiltered)
       const userRole = (session?.user as any)?.role;
       if (userRole === "manajer") {
         fetchManajerTotalStats();
+      } else if (userRole === "asisten" || userRole === "mandor") {
+        fetchAsistenMandorTotalStats();
+      }
+      
+      // Set default filter based on role
+      if (userRole === "mandor") {
+        // Mandor has no "no-group" option, show all their assigned plants
+        setSidebarFilter({ role: null, userId: null });
+      } else {
+        // Manajer and asisten default to "no-group"
+        setSidebarFilter({ role: "no-group", userId: null });
       }
     } else if (sessionStatus === "unauthenticated") {
       setAssignmentsLoaded(true);
@@ -221,6 +233,31 @@ export default function StaffDashboard() {
       }
     } catch (error) {
       console.error("Error fetching manajer stats:", error);
+    }
+  };
+
+  // Fetch total stats for asisten/mandor (all their assigned plants regardless of sidebar filters)
+  const fetchAsistenMandorTotalStats = async () => {
+    try {
+      // Fetch without sidebar filters (no excludeAssigned, no filterByRole)
+      // This gets ALL plants assigned to the user
+      const res = await fetch("/api/plants?limit=0", {
+        cache: "no-store",
+      });
+      if (res.ok) {
+        const allPlants = await res.json();
+        const plantsList = Array.isArray(allPlants) ? allPlants : [];
+        
+        setTotalAllPlants(plantsList.length);
+        setTotalNewPlants(
+          plantsList.filter((p: any) => isPlantNew(p)).length
+        );
+        setTotalProblemPlants(
+          plantsList.filter((p: any) => isPlantProblem(p)).length
+        );
+      }
+    } catch (error) {
+      console.error("Error fetching asisten/mandor stats:", error);
     }
   };
 
@@ -423,20 +460,15 @@ export default function StaffDashboard() {
   };
 
   // ====== KARTU STAT: perhitungan ======
-  // For manajer: use total counts from all plants
-  // For asisten/mandor: use filtered counts
-  const totalPaket = userRole === "manajer" ? totalAllPlants : totalPlants;
-  const paketAktif = userRole === "manajer" ? totalAllPlants : totalPlants;
-  const paketBaru = userRole === "manajer" ? totalNewPlants : plants.reduce(
-    (acc, p) => (isPlantNew(p) ? acc + 1 : acc),
-    0
-  );
-  const paketBermasalah = userRole === "manajer" ? totalProblemPlants : plants.reduce(
-    (acc, p) => (isPlantProblem(p) ? acc + 1 : acc),
-    0
-  );
+  // For all roles: use total counts (unfiltered by sidebar)
+  // Manajer sees all plants, asisten/mandor see all their assigned plants
+  const totalPaket = totalAllPlants;
+  const paketAktif = totalAllPlants;
+  const paketBaru = totalNewPlants;
+  const paketBermasalah = totalProblemPlants;
 
   // ====== Handlers klik kartu (jadi filter) ======
+  // Keep current sidebar filter, only change the stats filter
   const clickTotal = () => {
     setStatsFilter("all");
     setActiveFilter("Semua Tanaman");

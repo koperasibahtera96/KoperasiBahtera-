@@ -124,22 +124,24 @@ export default function FilterSidebar({
     <div className="w-64 bg-white/90 backdrop-blur-lg rounded-3xl shadow-xl border border-[#324D3E]/10 p-6 sticky top-24 max-h-[calc(100vh-120px)] overflow-y-auto">
       <h3 className="text-lg font-bold text-[#324D3E] mb-4">Filter Data</h3>
 
-      {/* No Group Option */}
-      <div className="mb-6">
-        <label className="flex items-center space-x-3 p-3 rounded-lg hover:bg-[#324D3E]/5 cursor-pointer transition-colors">
-          <input
-            type="checkbox"
-            checked={selectedFilter.role === "no-group"}
-            onChange={() => handleCheckboxChange("no-group", null)}
-            className="w-4 h-4 text-[#324D3E] border-[#324D3E]/30 rounded focus:ring-[#324D3E] focus:ring-2"
-          />
-          <span className="text-sm font-medium text-[#324D3E]">
-            {userRole === "manajer"
-              ? "Belum Ditetapkan"
-              : "Belum Ditetapkan Mandor"}
-          </span>
-        </label>
-      </div>
+      {/* No Group Option - Only for manajer and asisten */}
+      {(userRole === "manajer" || userRole === "asisten") && (
+        <div className="mb-6">
+          <label className="flex items-center space-x-3 p-3 rounded-lg hover:bg-[#324D3E]/5 cursor-pointer transition-colors">
+            <input
+              type="checkbox"
+              checked={selectedFilter.role === "no-group"}
+              onChange={() => handleCheckboxChange("no-group", null)}
+              className="w-4 h-4 text-[#324D3E] border-[#324D3E]/30 rounded focus:ring-[#324D3E] focus:ring-2"
+            />
+            <span className="text-sm font-medium text-[#324D3E]">
+              {userRole === "manajer"
+                ? "Belum Ditetapkan"
+                : "Belum Ditetapkan Mandor"}
+            </span>
+          </label>
+        </div>
+      )}
 
       {/* Asisten Section (Manajer only) */}
       {userRole === "manajer" && asistenList.length > 0 && (
