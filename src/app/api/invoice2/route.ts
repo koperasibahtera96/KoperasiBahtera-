@@ -116,7 +116,7 @@ export async function GET(request: NextRequest) {
     // ===== support startDate / endDate range filtering =====
     const startDateParam = searchParams.get("startDate");
     const endDateParam = searchParams.get("endDate");
-    let parsedRange: { start?: Date; end?: Date } = {};
+    const parsedRange: { start?: Date; end?: Date } = {};
     if (startDateParam || endDateParam) {
       if (startDateParam) {
         const p = parseDateFromQuery(startDateParam);
