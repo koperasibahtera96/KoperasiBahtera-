@@ -18,6 +18,7 @@ import {
   Download,
   Bell,
   Filter,
+  Wallet,
   // CheckCircle,
 } from "lucide-react";
 
@@ -34,6 +35,8 @@ interface MarketingStaff {
     totalReferrals: number;
     fullInvestments: number;
     cicilanInvestments: number;
+    totalPaidCommission?: number;
+    totalUnpaidCommission?: number;
   };
 }
 
@@ -887,7 +890,7 @@ export default function MarketingHeadPage() {
         {/* Overall Summary Cards */}
         {commissionData && (
           <motion.div
-            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-6 sm:mb-8"
+            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 sm:gap-6 mb-6 sm:mb-8"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2, duration: 0.6 }}
@@ -900,7 +903,23 @@ export default function MarketingHeadPage() {
               whileHover={{ scale: 1.02, y: -5 }}
               transition={{ duration: 0.2 }}
             >
-              <div className="flex items-center gap-3">
+              <div className="flex flex-col items-center text-center space-y-3">
+                <p
+                  className={getThemeClasses(
+                    "text-sm text-[#889063] dark:text-gray-400",
+                    "!text-[#6b7280]"
+                  )}
+                >
+                  Total Staff
+                </p>
+                <p
+                  className={getThemeClasses(
+                    "text-2xl font-bold text-[#324D3E] dark:text-white",
+                    "!text-[#4c1d1d]"
+                  )}
+                >
+                  {commissionData.overallSummary.totalStaff}
+                </p>
                 <div
                   className={getThemeClasses(
                     "p-3 bg-blue-100 dark:bg-blue-900/30 rounded-xl",
@@ -914,24 +933,6 @@ export default function MarketingHeadPage() {
                     )}
                   />
                 </div>
-                <div>
-                  <p
-                    className={getThemeClasses(
-                      "text-sm text-[#889063] dark:text-gray-400 mb-1",
-                      "!text-[#6b7280]"
-                    )}
-                  >
-                    Total Staff
-                  </p>
-                  <p
-                    className={getThemeClasses(
-                      "text-2xl font-bold text-[#324D3E] dark:text-white",
-                      "!text-[#4c1d1d]"
-                    )}
-                  >
-                    {commissionData.overallSummary.totalStaff}
-                  </p>
-                </div>
               </div>
             </motion.div>
 
@@ -943,7 +944,25 @@ export default function MarketingHeadPage() {
               whileHover={{ scale: 1.02, y: -5 }}
               transition={{ duration: 0.2 }}
             >
-              <div className="flex items-center gap-3">
+              <div className="flex flex-col items-center text-center space-y-3">
+                <p
+                  className={getThemeClasses(
+                    "text-sm text-[#889063] dark:text-gray-400",
+                    "!text-[#6b7280]"
+                  )}
+                >
+                  Total Komisi
+                </p>
+                <p
+                  className={getThemeClasses(
+                    "text-lg font-bold text-[#324D3E] dark:text-white",
+                    "!text-[#4c1d1d]"
+                  )}
+                >
+                  {formatCurrency(
+                    commissionData.overallSummary.totalCommissions
+                  )}
+                </p>
                 <div
                   className={getThemeClasses(
                     "p-3 bg-green-100 dark:bg-green-900/30 rounded-xl",
@@ -957,26 +976,6 @@ export default function MarketingHeadPage() {
                     )}
                   />
                 </div>
-                <div>
-                  <p
-                    className={getThemeClasses(
-                      "text-sm text-[#889063] dark:text-gray-400 mb-1",
-                      "!text-[#6b7280]"
-                    )}
-                  >
-                    Total Komisi
-                  </p>
-                  <p
-                    className={getThemeClasses(
-                      "text-lg font-bold text-[#324D3E] dark:text-white",
-                      "!text-[#4c1d1d]"
-                    )}
-                  >
-                    {formatCurrency(
-                      commissionData.overallSummary.totalCommissions
-                    )}
-                  </p>
-                </div>
               </div>
             </motion.div>
 
@@ -988,7 +987,23 @@ export default function MarketingHeadPage() {
               whileHover={{ scale: 1.02, y: -5 }}
               transition={{ duration: 0.2 }}
             >
-              <div className="flex items-center gap-3">
+              <div className="flex flex-col items-center text-center space-y-3">
+                <p
+                  className={getThemeClasses(
+                    "text-sm text-[#889063] dark:text-gray-400",
+                    "!text-[#6b7280]"
+                  )}
+                >
+                  Total Referrals
+                </p>
+                <p
+                  className={getThemeClasses(
+                    "text-2xl font-bold text-[#324D3E] dark:text-white",
+                    "!text-[#4c1d1d]"
+                  )}
+                >
+                  {commissionData.overallSummary.totalReferrals}
+                </p>
                 <div
                   className={getThemeClasses(
                     "p-3 bg-purple-100 dark:bg-purple-900/30 rounded-xl",
@@ -1002,23 +1017,52 @@ export default function MarketingHeadPage() {
                     )}
                   />
                 </div>
-                <div>
-                  <p
+              </div>
+            </motion.div>
+
+            <motion.div
+              className={getThemeClasses(
+                "bg-white/95 dark:bg-gray-800/95 backdrop-blur-lg rounded-2xl shadow-lg border border-[#324D3E]/10 dark:border-gray-700 p-4 sm:p-6",
+                "!bg-white/95 !border-[#FFC1CC]/30"
+              )}
+              whileHover={{ scale: 1.02, y: -5 }}
+              transition={{ duration: 0.2 }}
+            >
+              <div className="flex flex-col items-center text-center space-y-3">
+                <p
+                  className={getThemeClasses(
+                    "text-sm text-[#889063] dark:text-gray-400",
+                    "!text-[#6b7280]"
+                  )}
+                >
+                  Total Sudah Dibayar
+                </p>
+                <p
+                  className={getThemeClasses(
+                    "text-lg font-bold text-[#324D3E] dark:text-white",
+                    "!text-[#4c1d1d]"
+                  )}
+                >
+                  {formatCurrency(
+                    marketingStaff.reduce(
+                      (sum, staff) =>
+                        sum + (staff.commissionSummary.totalPaidCommission || 0),
+                      0
+                    )
+                  )}
+                </p>
+                <div
+                  className={getThemeClasses(
+                    "p-3 bg-emerald-100 dark:bg-emerald-900/30 rounded-xl",
+                    "!bg-[#B5EAD7]/40"
+                  )}
+                >
+                  <Wallet
                     className={getThemeClasses(
-                      "text-sm text-[#889063] dark:text-gray-400 mb-1",
-                      "!text-[#6b7280]"
-                    )}
-                  >
-                    Total Referrals
-                  </p>
-                  <p
-                    className={getThemeClasses(
-                      "text-2xl font-bold text-[#324D3E] dark:text-white",
+                      "w-6 h-6 text-emerald-600 dark:text-emerald-400",
                       "!text-[#4c1d1d]"
                     )}
-                  >
-                    {commissionData.overallSummary.totalReferrals}
-                  </p>
+                  />
                 </div>
               </div>
             </motion.div>
@@ -1142,6 +1186,22 @@ export default function MarketingHeadPage() {
                       ""
                     )}
                   >
+                    Komisi Terbayar
+                  </th>
+                  <th
+                    className={getThemeClasses(
+                      "px-6 py-4 text-left text-sm font-medium text-gray-700 dark:text-gray-200",
+                      ""
+                    )}
+                  >
+                    Komisi Belum Terbayar
+                  </th>
+                  <th
+                    className={getThemeClasses(
+                      "px-6 py-4 text-left text-sm font-medium text-gray-700 dark:text-gray-200",
+                      ""
+                    )}
+                  >
                     Referral
                   </th>
 
@@ -1171,7 +1231,7 @@ export default function MarketingHeadPage() {
               >
                 {filteredStaff.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="px-6 py-12 text-center">
+                    <td colSpan={8} className="px-6 py-12 text-center">
                       <div className="flex flex-col items-center gap-3">
                         <Users
                           className={getThemeClasses(
@@ -1269,6 +1329,32 @@ export default function MarketingHeadPage() {
                         >
                           {formatCurrency(
                             staffCommissionData?.totalCommission || 0
+                          )}
+                        </p>
+                      </td>
+
+                      <td className="px-6 py-4">
+                        <p
+                          className={getThemeClasses(
+                            "font-semibold text-green-600 dark:text-green-400",
+                            "!text-[#2a4235]"
+                          )}
+                        >
+                          {formatCurrency(
+                            staff.commissionSummary.totalPaidCommission || 0
+                          )}
+                        </p>
+                      </td>
+
+                      <td className="px-6 py-4">
+                        <p
+                          className={getThemeClasses(
+                            "font-semibold text-orange-600 dark:text-orange-400",
+                            "!text-[#4c1d1d]"
+                          )}
+                        >
+                          {formatCurrency(
+                            staff.commissionSummary.totalUnpaidCommission || 0
                           )}
                         </p>
                       </td>

@@ -1,5 +1,6 @@
 import dbConnect from "@/lib/mongodb";
 import CommissionHistory from "@/models/CommissionHistory";
+import CommissionWithdrawal from "@/models/CommissionWithdrawal";
 import User from "@/models/User";
 import { getServerSession } from "next-auth/next";
 import { NextRequest, NextResponse } from "next/server";
@@ -136,6 +137,21 @@ export async function GET(req: NextRequest) {
       0
     );
 
+    // Get total paid commission from withdrawals
+    const withdrawalSummary = await CommissionWithdrawal.aggregate([
+      { $match: { marketingStaffId: user._id } },
+      {
+        $group: {
+          _id: null,
+          totalPaidCommission: { $sum: "$amount" },
+        },
+      },
+    ]);
+
+    const totalPaidCommission =
+      withdrawalSummary.length > 0 ? withdrawalSummary[0].totalPaidCommission : 0;
+    const totalUnpaidCommission = totalCommission - totalPaidCommission;
+
     // Map commission records to referral format
     const referrals = commissionRecords.map((record) => {
       const payment = record.paymentId as any;
@@ -182,6 +198,8 @@ export async function GET(req: NextRequest) {
         staffEmail: user.email,
         referrals,
         totalCommission,
+        totalPaidCommission,
+        totalUnpaidCommission,
         totalReferrals: totalCount,
         summary: {
           fullPayments: allFullPayments.length,

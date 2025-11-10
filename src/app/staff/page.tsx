@@ -27,6 +27,7 @@ interface ReferralData {
   staffName: string;
   staffEmail: string;
   referrals: Array<{
+    commissionId: string;
     paymentId: string;
     orderId: string;
     customerName: string;
@@ -41,6 +42,8 @@ interface ReferralData {
     createdAt: string;
   }>;
   totalCommission: number;
+  totalPaidCommission?: number;
+  totalUnpaidCommission?: number;
   totalReferrals: number;
   summary: {
     fullPayments: number;
@@ -618,7 +621,7 @@ export default function StaffPage() {
 
         {/* Stats Cards */}
         <motion.div
-          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6"
+          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 sm:gap-6"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3, duration: 0.6 }}
@@ -663,14 +666,6 @@ export default function StaffPage() {
               >
                 {formatCurrency(data?.totalCommission || 0)}
               </div>
-              <p
-                className={getThemeClasses(
-                  "text-xs text-[#889063] dark:text-gray-400 font-medium",
-                  "!text-[#6b7280]"
-                )}
-              >
-                2% dari total investasi yang dirujuk
-              </p>
             </div>
           </motion.div>
 
@@ -823,6 +818,57 @@ export default function StaffPage() {
                 )}
               >
                 Pembayaran cicilan
+              </p>
+            </div>
+          </motion.div>
+
+          <motion.div
+            className={getThemeClasses(
+              "bg-white/95 dark:bg-gray-800/95 backdrop-blur-lg rounded-2xl shadow-lg border border-[#324D3E]/10 dark:border-gray-700 p-4 sm:p-6",
+              "!bg-white/95 !border-[#FFC1CC]/30"
+            )}
+            whileHover={{ scale: 1.02, y: -5 }}
+            transition={{ duration: 0.2 }}
+          >
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <h3
+                  className={getThemeClasses(
+                    "text-sm font-semibold text-[#889063] dark:text-gray-400",
+                    "!text-[#6b7280]"
+                  )}
+                >
+                  Total Sudah Dibayar
+                </h3>
+                <div
+                  className={getThemeClasses(
+                    "p-2 bg-emerald-100 dark:bg-emerald-900/30 rounded-xl",
+                    "!bg-[#B5EAD7]/40"
+                  )}
+                >
+                  <DollarSign
+                    className={getThemeClasses(
+                      "h-4 w-4 sm:h-5 sm:w-5 text-emerald-600 dark:text-emerald-400",
+                      "!text-[#4c1d1d]"
+                    )}
+                  />
+                </div>
+              </div>
+              <div
+                className={getThemeClasses(
+                  "text-xl sm:text-2xl font-bold text-[#324D3E] dark:text-white",
+                  "!text-[#4c1d1d]"
+                )}
+              >
+                {formatCurrency(data?.totalPaidCommission || 0)}
+              </div>
+              <p
+                className={getThemeClasses(
+                  "text-xs text-[#889063] dark:text-gray-400 font-medium",
+                  "!text-[#6b7280]"
+                )}
+              >
+                Komisi yang telah ditarik
               </p>
             </div>
           </motion.div>
@@ -994,7 +1040,7 @@ export default function StaffPage() {
                     <tbody>
                       {paginatedReferrals.map((referral) => (
                         <tr
-                          key={referral.paymentId}
+                          key={referral.commissionId}
                           className={getThemeClasses(
                             "border-b border-[#324D3E]/10 dark:border-gray-700 hover:bg-[#324D3E]/5 dark:hover:bg-gray-700/30 transition-colors duration-200",
                             "!border-[#FFC1CC]/20 hover:!bg-[#FFC1CC]/5"
