@@ -169,7 +169,7 @@ export default function LaporanPengeluaranPage() {
       const qs = new URLSearchParams();
       if (startDate) qs.set("startDate", startDate);
       if (endDate) qs.set("endDate", endDate);
-      const url = `/api/pendaftaran${qs.toString() ? "?" + qs.toString() : ""}`;
+      const url = `/api/pendaftaran2${qs.toString() ? "?" + qs.toString() : ""}`;
       const res = await fetch(url, { cache: "no-store" });
       if (!res.ok) throw new Error("Failed to fetch pendaftaran");
       const json = await res.json();
@@ -1276,7 +1276,7 @@ export default function LaporanPengeluaranPage() {
                           "!text-[#6b7280]"
                         )}
                       >
-                        Total Pendapatan
+                        Total Pendapatan Tanaman
                       </div>
                       <div
                         className={getThemeClasses(
@@ -1319,7 +1319,7 @@ export default function LaporanPengeluaranPage() {
                           "!text-[#6b7280]"
                         )}
                       >
-                        Total Pengeluaran
+                        Total Biaya Operasional Tanaman
                       </div>
                       <div
                         className={getThemeClasses(
@@ -1363,7 +1363,7 @@ export default function LaporanPengeluaranPage() {
                         "!text-[#6b7280]"
                       )}
                     >
-                      {isExpense ? "Total Pengeluaran" : "Total Pendapatan"}
+                      {isExpense ? "Total Biaya Operasional Tanaman " : "Total Pendapatan Tanaman"}
                     </div>
                     <div
                       className={getThemeClasses(
