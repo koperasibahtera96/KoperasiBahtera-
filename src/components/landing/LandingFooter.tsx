@@ -147,7 +147,7 @@ export default function LandingFooter() {
           >
             <div className="mt-0">
               <Image
-                src="/landing/SPR_FOUNDATION_2.png"
+                src="/landing/SPR_FOUNDATION_4.png"
                 alt="SPR Foundation"
                 width={250}
                 height={250}
