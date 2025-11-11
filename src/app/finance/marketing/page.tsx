@@ -706,6 +706,46 @@ export default function MarketingHeadPage() {
                 </div>
               </div>
             </motion.div>
+          <motion.div
+            className={getThemeClasses(
+              "bg-white/95 dark:bg-gray-800/95 backdrop-blur-lg rounded-2xl shadow-lg border border-[#324D3E]/10 dark:border-gray-700 p-4 sm:p-6",
+              "!bg-white/95 !border-[#FFC1CC]/30"
+            )}
+            whileHover={{ scale: 1.02, y: -5 }}
+            transition={{ duration: 0.2 }}
+          >
+            <div className="flex flex-col items-center text-center space-y-3">
+              <p
+                className={getThemeClasses(
+                  "text-sm text-[#889063] dark:text-gray-400",
+                  "!text-[#6b7280]"
+                )}
+              >
+                Total Referrals
+              </p>
+              <p
+                className={getThemeClasses(
+                  "text-2xl font-bold text-[#324D3E] dark:text-white",
+                  "!text-[#4c1d1d]"
+                )}
+              >
+                {commissionData.overallSummary.totalReferrals}
+              </p>
+              <div
+                className={getThemeClasses(
+                  "p-3 bg-purple-100 dark:bg-purple-900/30 rounded-xl",
+                  "!bg-[#C7CEEA]/40"
+                )}
+              >
+                <TrendingUp
+                  className={getThemeClasses(
+                    "w-6 h-6 text-purple-600 dark:text-purple-400",
+                    "!text-[#4c1d1d]"
+                  )}
+                />
+              </div>
+            </div>
+          </motion.div>
 
             <motion.div
               className={getThemeClasses(
@@ -750,46 +790,7 @@ export default function MarketingHeadPage() {
               </div>
             </motion.div>
 
-          <motion.div
-            className={getThemeClasses(
-              "bg-white/95 dark:bg-gray-800/95 backdrop-blur-lg rounded-2xl shadow-lg border border-[#324D3E]/10 dark:border-gray-700 p-4 sm:p-6",
-              "!bg-white/95 !border-[#FFC1CC]/30"
-            )}
-            whileHover={{ scale: 1.02, y: -5 }}
-            transition={{ duration: 0.2 }}
-          >
-            <div className="flex flex-col items-center text-center space-y-3">
-              <p
-                className={getThemeClasses(
-                  "text-sm text-[#889063] dark:text-gray-400",
-                  "!text-[#6b7280]"
-                )}
-              >
-                Total Referrals
-              </p>
-              <p
-                className={getThemeClasses(
-                  "text-2xl font-bold text-[#324D3E] dark:text-white",
-                  "!text-[#4c1d1d]"
-                )}
-              >
-                {commissionData.overallSummary.totalReferrals}
-              </p>
-              <div
-                className={getThemeClasses(
-                  "p-3 bg-purple-100 dark:bg-purple-900/30 rounded-xl",
-                  "!bg-[#C7CEEA]/40"
-                )}
-              >
-                <TrendingUp
-                  className={getThemeClasses(
-                    "w-6 h-6 text-purple-600 dark:text-purple-400",
-                    "!text-[#4c1d1d]"
-                  )}
-                />
-              </div>
-            </div>
-          </motion.div>
+
 
           <motion.div
             className={getThemeClasses(
@@ -832,6 +833,60 @@ export default function MarketingHeadPage() {
                   className={getThemeClasses(
                     "w-6 h-6 text-emerald-600 dark:text-emerald-400",
                     "!text-[#4c1d1d]"
+                  )}
+                />
+              </div>
+            </div>
+          </motion.div>
+
+          <motion.div
+            className={getThemeClasses(
+              "bg-white/95 dark:bg-gray-800/95 backdrop-blur-lg rounded-2xl shadow-lg border border-[#324D3E]/10 dark:border-gray-700 p-4 sm:p-6",
+              "!bg-white/95 !border-[#FFC1CC]/30"
+            )}
+            whileHover={{ scale: 1.02, y: -5 }}
+            transition={{ duration: 0.2 }}
+          >
+            <div className="flex flex-col items-center text-center space-y-3">
+              <p
+                className={getThemeClasses(
+                  "text-sm text-[#889063] dark:text-gray-400",
+                  "!text-[#6b7280]"
+                )}
+              >
+                Total Belum Dibayar
+              </p>
+              <p
+                className={getThemeClasses(
+                  "text-lg font-bold text-[#324D3E] dark:text-white",
+                  "!text-[#4c1d1d]"
+                )}
+              >
+                {formatCurrency(
+                  // total belum dibayar = total komisi (summary) - total sudah dibayar (sum per staff)
+                  Math.max(
+                    0,
+                    (commissionData?.overallSummary?.totalCommissions || 0) -
+                      marketingStaff.reduce(
+                        (sum, staff) =>
+                          sum + (staff.commissionSummary.totalPaidCommission || 0),
+                        0
+                      )
+                  )
+                )}
+              </p>
+              <div
+                className={getThemeClasses(
+                  // gunakan warna berbeda untuk membedakan dari kartu "Sudah Dibayar"
+                  "p-3 bg-yellow-100 dark:bg-yellow-900/30 rounded-xl",
+                  "!bg-[#FFF4E5]/40"
+                )}
+              >
+                {/* ikon berbeda dari yang sudah dibayar (Wallet) */}
+                <AlertTriangle
+                  className={getThemeClasses(
+                    "w-6 h-6 text-yellow-600 dark:text-yellow-400",
+                    "!text-[#8a5a00]"
                   )}
                 />
               </div>
@@ -1186,7 +1241,7 @@ export default function MarketingHeadPage() {
                             <Wallet className="w-4 h-4" />
                           </button>
 
-                          <button
+                          {/* <button
                             onClick={() =>
                               setToggleStatusModal({
                                 show: true,
@@ -1213,9 +1268,9 @@ export default function MarketingHeadPage() {
                             ) : (
                               <CheckCircle className="w-4 h-4" />
                             )}
-                          </button>
+                          </button> */}
 
-                          <button
+                          {/* <button
                             onClick={() =>
                               handleGenerateReferralCode(staff._id)
                             }
@@ -1226,7 +1281,7 @@ export default function MarketingHeadPage() {
                             title="Buat kode baru"
                           >
                             <RefreshCw className="w-4 h-4" />
-                          </button>
+                          </button> */}
 
                           <button
                             onClick={() => handleViewCommissionHistory(staff)}
