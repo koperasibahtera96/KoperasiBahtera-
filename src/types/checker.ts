@@ -5,6 +5,12 @@ export interface PlantHistory {
   description: string;
   hasImage: boolean;
   imageUrl?: string;
+  approvalStatus?: "pending" | "approved_by_asisten" | "approved_by_manajer" | "approved" | "rejected";
+  rejectionReason?: string;
+  addedBy?: string;
+  addedAt?: string;
+  approvedByAsisten?: string;
+  approvedByManajer?: string;
 }
 
 export type OperationalCost = {

@@ -982,11 +982,15 @@ function ReviewModal({
   getThemeClasses,
 }: ReviewModalProps) {
   const [notes, setNotes] = useState("");
+  const [customNotes, setCustomNotes] = useState("");
   const [action, setAction] = useState<"approve" | "reject" | null>(null);
 
   const handleSubmit = async (submitAction: "approve" | "reject") => {
-    await onReview(submitAction, notes);
+    // Use custom notes if "Lainnya" is selected, otherwise use dropdown value
+    const finalNotes = notes === "Lainnya" ? customNotes : notes;
+    await onReview(submitAction, finalNotes);
     setNotes("");
+    setCustomNotes("");
     setAction(null);
   };
 
@@ -1220,7 +1224,27 @@ function ReviewModal({
               <option value="Dana Belum Tercatat Pada Sistem Bank Saat Proses Verifikasi">
                 Dana Belum Tercatat Pada Sistem Bank Saat Proses Verifikasi
               </option>
+              <option value="Lainnya">
+                Lainnya (Tulis alasan sendiri)
+              </option>
             </select>
+
+            {/* Custom Notes Input - Show when "Lainnya" is selected */}
+            {notes === "Lainnya" && (
+              <div className="mt-3">
+                <textarea
+                  value={customNotes}
+                  onChange={(e) => setCustomNotes(e.target.value)}
+                  placeholder="Tulis alasan penolakan..."
+                  className={getThemeClasses(
+                    "w-full border border-gray-300 dark:border-gray-600 rounded-xl p-2 sm:p-3 font-poppins focus:border-[#324D3E] dark:focus:border-blue-400 focus:ring-1 focus:ring-[#324D3E]/20 dark:focus:ring-blue-400/20 bg-white dark:bg-gray-700 text-sm sm:text-base text-gray-800 dark:text-white resize-none",
+                    "!bg-white !border-[#FFC1CC]/40 !text-[#4c1d1d] focus:!border-[#FFC1CC] focus:!ring-[#FFC1CC]/30"
+                  )}
+                  rows={4}
+                  disabled={isReviewing}
+                />
+              </div>
+            )}
           </div>
 
           {/* Action Buttons */}

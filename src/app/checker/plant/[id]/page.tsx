@@ -297,10 +297,9 @@ export default function PlantDetail({
   });
   const [submittingRequest, setSubmittingRequest] = useState(false);
   const [pendingRequests, setPendingRequests] = useState<{
-    deletePlant?: boolean;
     updates: Record<string, boolean>;
     deletes: Record<string, boolean>;
-  }>({ deletePlant: false, updates: {}, deletes: {} });
+  }>({ updates: {}, deletes: {} });
   const [fullPendingRequests, setFullPendingRequests] = useState<any[]>([]);
   const { showError, showSuccess, showConfirmation, AlertComponent } =
     useAlert();
@@ -348,12 +347,8 @@ export default function PlantDetail({
       // Build flags for pending requests only (for button states)
       const updates: Record<string, boolean> = {};
       const deletes: Record<string, boolean> = {};
-      let deletePlant = false;
-      
+
       for (const r of allItems.filter(r => r.status === 'pending')) {
-        if (r.requestType === "delete") {
-          deletePlant = true;
-        }
         if (r.requestType === "update_history" && r.historyId) {
           updates[r.historyId] = true;
         }
@@ -361,8 +356,8 @@ export default function PlantDetail({
           deletes[r.historyId] = true;
         }
       }
-      
-      setPendingRequests({ deletePlant, updates, deletes });
+
+      setPendingRequests({ updates, deletes });
       setFullPendingRequests(allItems); // Store all requests (pending + rejected)
     } catch (err) {
       console.error("Error fetching requests:", err);
@@ -667,20 +662,19 @@ export default function PlantDetail({
       };
 
       if (plantData) {
-        const updatedPlant: PlantInstance = {
-          ...plantData,
-          status: newHistoryEntry.type,
-          lastUpdate: newHistoryEntry.date,
-          history: [newHistoryEntry, ...(plantData.history || [])],
-        };
-
-        const response = await fetch(`/api/plants/${id}`, {
-          method: "PUT",
+        // Use the new history API endpoint to avoid overwriting existing history
+        const response = await fetch(`/api/plants/${id}/history`, {
+          method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(updatedPlant),
+          body: JSON.stringify({
+            historyEntry: newHistoryEntry,
+            status: newHistoryEntry.type,
+            lastUpdate: newHistoryEntry.date,
+          }),
         });
 
         if (response.ok) {
+          const updatedPlant = await response.json();
           setPlantData(updatedPlant);
           setReportStatus("");
           setCustomStatus("");
@@ -742,43 +736,38 @@ export default function PlantDetail({
         return;
       }
 
-      const updatedHistory = (plantData.history || []).map((item) => {
-        if (item.id === selectedHistory.id) {
-          // If item was rejected and being resubmitted, reset to pending
-          if (item.approvalStatus === "rejected") {
-            return {
-              ...item,
-              description: editNotes,
-              approvalStatus: "pending" as const,
-              rejectionReason: undefined,
-              // if new media provided, set it; otherwise keep existing
-              ...(newImageUrl ? { imageUrl: newImageUrl, hasImage: true } : {}),
-            };
-          }
-          return {
-            ...item,
-            description: editNotes,
-            ...(newImageUrl ? { imageUrl: newImageUrl, hasImage: true } : {}),
-          };
-        }
-        return item;
-      });
-
-      const updatedPlant: PlantInstance = {
-        ...plantData,
-        history: updatedHistory,
+      // Build updates object
+      const updates: any = {
+        description: editNotes,
       };
 
-      const response = await fetch(`/api/plants/${id}`, {
-        method: "PUT",
+      // If item was rejected and being resubmitted, reset to pending
+      if (selectedHistory.approvalStatus === "rejected") {
+        updates.approvalStatus = "pending";
+        updates.rejectionReason = undefined;
+      }
+
+      // If new media provided, set it
+      if (newImageUrl) {
+        updates.imageUrl = newImageUrl;
+        updates.hasImage = true;
+      }
+
+      // Use the PATCH endpoint to update only this history entry
+      const response = await fetch(`/api/plants/${id}/history`, {
+        method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(updatedPlant),
+        body: JSON.stringify({
+          historyId: selectedHistory.id,
+          updates: updates,
+        }),
       });
 
       if (response.ok) {
+        const updatedPlant = await response.json();
         setPlantData(updatedPlant);
-        const updatedItem = updatedHistory.find(
-          (h) => h.id === selectedHistory.id
+        const updatedItem = updatedPlant.history?.find(
+          (h: any) => h.id === selectedHistory.id
         );
         if (updatedItem) {
           setSelectedHistory(updatedItem);
@@ -788,7 +777,7 @@ export default function PlantDetail({
         setSelectedEditPhoto(null);
         setSelectedEditVideo(null);
         const successMessage =
-          (updatedItem as any)?.approvalStatus === "rejected"
+          updates.approvalStatus === "pending"
             ? "Riwayat berhasil diajukan ulang untuk persetujuan!"
             : "Catatan berhasil diperbarui!";
         showSuccess("Berhasil!", successMessage);
@@ -812,27 +801,21 @@ export default function PlantDetail({
       if (!confirmed) return;
 
       try {
-        const updatedHistory = (plantData.history || []).filter(
-          (item) => item.id !== historyId
-        );
-        const updatedPlant: PlantInstance = {
-          ...plantData,
-          history: updatedHistory,
-        };
-
-        const response = await fetch(`/api/plants/${id}`, {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(updatedPlant),
+        // Use the DELETE endpoint to remove only this history entry
+        const response = await fetch(`/api/plants/${id}/history?historyId=${historyId}`, {
+          method: "DELETE",
         });
 
         if (response.ok) {
+          const updatedPlant = await response.json();
           setPlantData(updatedPlant);
           setShowModal(false);
           showSuccess("Berhasil!", "Riwayat berhasil dihapus!");
+        } else {
+          throw new Error("Failed to delete history");
         }
-      } catch {
-        console.error("Error deleting history");
+      } catch (error) {
+        console.error("Error deleting history:", error);
         showError("Gagal menghapus", "Gagal menghapus riwayat.");
       }
     } else if (session?.user.role === "asisten") {
@@ -849,48 +832,6 @@ export default function PlantDetail({
     // Mandor cannot delete at all - no action
   };
 
-  const handleDeletePlant = async () => {
-    // Manajer and Admin can delete directly
-    if (session?.user.role === "admin" || session?.user.role === "manajer") {
-      const confirmed = await showConfirmation(
-        "Hapus Tanaman",
-        "Apakah Anda yakin ingin menghapus tanaman ini? Aksi ini tidak dapat dibatalkan.",
-        { confirmText: "Hapus", cancelText: "Batal", type: "danger" }
-      );
-      if (!confirmed) return;
-
-      try {
-        const response = await fetch(`/api/plants/${id}`, { method: "DELETE" });
-
-        if (response.ok) {
-          showSuccess("Berhasil!", "Tanaman berhasil dihapus!");
-          window.location.href = "/checker";
-        } else {
-          const errorData = await response.json();
-          throw new Error(errorData.details || "Failed to delete plant");
-        }
-      } catch (error: unknown) {
-        console.error("Error deleting plant:", error);
-        const errorMessage =
-          error instanceof Error ? error.message : "Unknown error occurred";
-        showError(
-          "Gagal menghapus",
-          `Gagal menghapus tanaman: ${errorMessage}`
-        );
-      }
-    } else if (session?.user.role === "asisten") {
-      // Asisten can only request delete
-      setRequestFormData({
-        requestType: "delete",
-        deleteReason: "",
-        historyId: undefined,
-        originalDescription: "",
-        newDescription: "",
-      });
-      setShowRequestModal(true);
-    }
-    // Mandor cannot delete plant at all - no action
-  };
 
   const handleDownloadPhoto = () => {
     if (selectedHistory?.imageUrl) {
@@ -1700,88 +1641,6 @@ export default function PlantDetail({
                       <Download className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
                       <span className="text-xs sm:text-sm">Download PDF</span>
                     </Button>
-                    {(session?.user.role === "admin" ||
-                      session?.user.role === "manajer" ||
-                      session?.user.role === "asisten") && (() => {
-                        // Check if there's a PENDING delete plant request (not rejected)
-                        const deletePlantRequest = fullPendingRequests.find(
-                          (r) => r.requestType === "delete" && r.status === "pending"
-                        );
-
-                        // Manajer/Admin sees the request with approve/reject buttons
-                        if ((session?.user.role === "manajer" || session?.user.role === "admin") && deletePlantRequest) {
-                          return (
-                            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 bg-yellow-50 border border-yellow-300 rounded-lg p-3">
-                              <div className="flex-1 min-w-0">
-                                <p className="text-xs sm:text-sm font-semibold text-yellow-800 mb-1">
-                                  Permintaan hapus tanaman dari {deletePlantRequest.requestedBy?.fullName}
-                                </p>
-                                <p className="text-xs sm:text-sm text-gray-600 break-words">
-                                  Alasan: {deletePlantRequest.deleteReason}
-                                </p>
-                              </div>
-                              <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
-                                <Button
-                                  size="sm"
-                                  onClick={() => handleApproveRequest(deletePlantRequest._id)}
-                                  className="bg-green-600 hover:bg-green-700 text-white text-xs sm:text-sm px-3 py-2 w-full sm:w-auto"
-                                >
-                                  Setujui
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  onClick={() => handleOpenRequestRejectionModal(deletePlantRequest._id)}
-                                  className="bg-red-600 hover:bg-red-700 text-white text-xs sm:text-sm px-3 py-2 w-full sm:w-auto"
-                                >
-                                  Tolak
-                                </Button>
-                              </div>
-                            </div>
-                          );
-                        }
-
-                        // Asisten sees pending status or can request
-                        if (session?.user.role === "asisten") {
-                          return pendingRequests?.deletePlant ? (
-                            <Button
-                              disabled
-                              size="sm"
-                              className="bg-gray-300 text-white rounded-lg sm:rounded-xl flex-1 sm:flex-none"
-                              title="Delete Plant (Pending)"
-                            >
-                              <Trash2 className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
-                              <span className="text-xs sm:text-sm">
-                                Delete Plant (Pending)
-                              </span>
-                            </Button>
-                          ) : (
-                            <Button
-                              onClick={() => handleDeletePlant()}
-                              className="bg-gradient-to-r from-red-500 to-red-600 hover:shadow-lg text-white rounded-lg sm:rounded-xl flex-1 sm:flex-none"
-                              size="sm"
-                            >
-                              <Trash2 className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
-                              <span className="text-xs sm:text-sm">
-                                Delete Plant
-                              </span>
-                            </Button>
-                          );
-                        }
-
-                        // Manajer/Admin without pending request - can delete directly
-                        return (
-                          <Button
-                            onClick={() => handleDeletePlant()}
-                            className="bg-gradient-to-r from-red-500 to-red-600 hover:shadow-lg text-white rounded-lg sm:rounded-xl flex-1 sm:flex-none"
-                            size="sm"
-                          >
-                            <Trash2 className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
-                            <span className="text-xs sm:text-sm">
-                              Delete Plant
-                            </span>
-                          </Button>
-                        );
-                      })()}
                   </div>
                 </div>
               </CardHeader>
@@ -1964,8 +1823,15 @@ export default function PlantDetail({
                               {session?.user.role === "asisten" ? (
                                 <>
                                   <Button
-                                    size="sm"
+                                    size="lg"
                                     onClick={async () => {
+                                      const confirmed = await showConfirmation(
+                                        "Setujui Riwayat",
+                                        `Apakah Anda yakin ingin menyetujui riwayat "${item.type}" pada tanggal ${item.date}?`,
+                                        { confirmText: "Setujui", cancelText: "Batal", type: "info" }
+                                      );
+                                      if (!confirmed) return;
+
                                       try {
                                         const res = await fetch(
                                           "/api/plant-history/approve",
@@ -1983,25 +1849,29 @@ export default function PlantDetail({
                                           }
                                         );
                                         if (res.ok) {
+                                          showSuccess("Berhasil", "Riwayat berhasil disetujui");
                                           fetchPlantData();
+                                        } else {
+                                          showError("Gagal", "Gagal menyetujui riwayat");
                                         }
                                       } catch (error) {
                                         console.error(
                                           "Error approving:",
                                           error
                                         );
+                                        showError("Error", "Terjadi kesalahan saat menyetujui riwayat");
                                       }
                                     }}
-                                    className="bg-green-600 hover:bg-green-700 text-white text-xs px-2 py-1 h-auto"
+                                    className="bg-green-600 hover:bg-green-700 text-white text-sm px-4 py-2 h-auto"
                                   >
                                     Setujui
                                   </Button>
                                   <Button
-                                    size="sm"
+                                    size="lg"
                                     onClick={() =>
                                       handleOpenRejectionModal(item.id)
                                     }
-                                    className="bg-red-600 hover:bg-red-700 text-white text-xs px-2 py-1 h-auto"
+                                    className="bg-red-600 hover:bg-red-700 text-white text-sm px-4 py-2 h-auto"
                                   >
                                     Tolak
                                   </Button>
@@ -2021,8 +1891,15 @@ export default function PlantDetail({
                               session?.user.role === "admin" ? (
                                 <>
                                   <Button
-                                    size="sm"
+                                    size="lg"
                                     onClick={async () => {
+                                      const confirmed = await showConfirmation(
+                                        "Setujui Riwayat",
+                                        `Apakah Anda yakin ingin menyetujui riwayat "${item.type}" pada tanggal ${item.date}?`,
+                                        { confirmText: "Setujui", cancelText: "Batal", type: "info" }
+                                      );
+                                      if (!confirmed) return;
+
                                       try {
                                         const res = await fetch(
                                           "/api/plant-history/approve",
@@ -2040,25 +1917,29 @@ export default function PlantDetail({
                                           }
                                         );
                                         if (res.ok) {
+                                          showSuccess("Berhasil", "Riwayat berhasil disetujui");
                                           fetchPlantData();
+                                        } else {
+                                          showError("Gagal", "Gagal menyetujui riwayat");
                                         }
                                       } catch (error) {
                                         console.error(
                                           "Error approving:",
                                           error
                                         );
+                                        showError("Error", "Terjadi kesalahan saat menyetujui riwayat");
                                       }
                                     }}
-                                    className="bg-green-600 hover:bg-green-700 text-white text-xs px-2 py-1 h-auto"
+                                    className="bg-green-600 hover:bg-green-700 text-white text-sm px-4 py-2 h-auto"
                                   >
                                     Setujui
                                   </Button>
                                   <Button
-                                    size="sm"
+                                    size="lg"
                                     onClick={() =>
                                       handleOpenRejectionModal(item.id)
                                     }
-                                    className="bg-red-600 hover:bg-red-700 text-white text-xs px-2 py-1 h-auto"
+                                    className="bg-red-600 hover:bg-red-700 text-white text-sm px-4 py-2 h-auto"
                                   >
                                     Tolak
                                   </Button>

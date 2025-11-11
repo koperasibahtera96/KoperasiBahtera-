@@ -14,7 +14,7 @@ import {
   X,
   Download,
   Wallet,
-  Ban,
+  // Ban, // Moved to /marketing page
   CheckCircle,
   Copy,
   Check,
@@ -240,33 +240,34 @@ export default function MarketingHeadPage() {
     }
   };
 
-  const handleGenerateReferralCode = async (staffId: string) => {
-    try {
-      const response = await fetch("/api/admin/marketing/staff", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ staffId }),
-      });
+  // Moved to /marketing page
+  // const handleGenerateReferralCode = async (staffId: string) => {
+  //   try {
+  //     const response = await fetch("/api/admin/marketing/staff", {
+  //       method: "POST",
+  //       headers: {
+  //         "Content-Type": "application/json",
+  //       },
+  //       body: JSON.stringify({ staffId }),
+  //     });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to generate referral code");
-      }
+  //     if (!response.ok) {
+  //       const errorData = await response.json();
+  //       throw new Error(errorData.error || "Failed to generate referral code");
+  //     }
 
-      // Refresh data
-      await fetchData();
-      setError("");
-    } catch (error) {
-      console.error("Error generating referral code:", error);
-      setError(
-        error instanceof Error
-          ? error.message
-          : "Failed to generate referral code"
-      );
-    }
-  };
+  //     // Refresh data
+  //     await fetchData();
+  //     setError("");
+  //   } catch (error) {
+  //     console.error("Error generating referral code:", error);
+  //     setError(
+  //       error instanceof Error
+  //         ? error.message
+  //         : "Failed to generate referral code"
+  //     );
+  //   }
+  // };
 
   const handleViewCommissionHistory = async (staff: MarketingStaff) => {
     setCommissionHistory((prev) => ({

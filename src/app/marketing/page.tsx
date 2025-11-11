@@ -19,7 +19,10 @@ import {
   Bell,
   Filter,
   Wallet,
-  // CheckCircle,
+  CheckCircle,
+  Ban,
+  Copy,
+  Check,
 } from "lucide-react";
 
 interface MarketingStaff {
@@ -113,6 +116,21 @@ export default function MarketingHeadPage() {
     newCode: "",
     transferCommissions: true,
     loading: false,
+  });
+
+  // Toggle status modal state
+  const [toggleStatusModal, setToggleStatusModal] = useState<{
+    show: boolean;
+    staff: MarketingStaff | null;
+    loading: boolean;
+    newPassword: string | null;
+    copied: boolean;
+  }>({
+    show: false,
+    staff: null,
+    loading: false,
+    newPassword: null,
+    copied: false,
   });
 
   // Commission history modal
@@ -276,6 +294,90 @@ export default function MarketingHeadPage() {
           : "Failed to generate referral code"
       );
     }
+  };
+
+  const handleToggleStatus = async () => {
+    if (!toggleStatusModal.staff) {
+      return;
+    }
+
+    setToggleStatusModal((prev) => ({ ...prev, loading: true }));
+
+    try {
+      const response = await fetch("/api/admin/marketing/toggle-status", {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          staffId: toggleStatusModal.staff._id,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(
+          errorData.error || "Gagal mengubah status staff"
+        );
+      }
+
+      const result = await response.json();
+
+      // If staff was deactivated, show the new password
+      if (result.data.newPassword) {
+        setToggleStatusModal((prev) => ({
+          ...prev,
+          newPassword: result.data.newPassword,
+          loading: false,
+        }));
+      } else {
+        // If staff was activated, just close modal and refresh
+        setToggleStatusModal({
+          show: false,
+          staff: null,
+          loading: false,
+          newPassword: null,
+          copied: false,
+        });
+        await fetchData(appliedStartDate, appliedEndDate);
+      }
+
+      setError("");
+    } catch (error) {
+      console.error("Error toggling status:", error);
+      setError(
+        error instanceof Error
+          ? error.message
+          : "Gagal mengubah status staff"
+      );
+      setToggleStatusModal((prev) => ({ ...prev, loading: false }));
+    }
+  };
+
+  const handleCopyPassword = async () => {
+    if (toggleStatusModal.newPassword) {
+      try {
+        await navigator.clipboard.writeText(toggleStatusModal.newPassword);
+        setToggleStatusModal((prev) => ({ ...prev, copied: true }));
+        setTimeout(() => {
+          setToggleStatusModal((prev) => ({ ...prev, copied: false }));
+        }, 2000);
+      } catch (error) {
+        console.error("Failed to copy password:", error);
+      }
+    }
+  };
+
+  const handleCloseToggleModal = async () => {
+    setToggleStatusModal({
+      show: false,
+      staff: null,
+      loading: false,
+      newPassword: null,
+      copied: false,
+    });
+    // Refresh data after closing
+    await fetchData(appliedStartDate, appliedEndDate);
   };
 
   const handleViewCommissionHistory = async (staff: MarketingStaff) => {
@@ -1481,6 +1583,35 @@ export default function MarketingHeadPage() {
                               >
                                 <RefreshCw className="w-4 h-4" />
                               </button>
+
+                              <button
+                                onClick={() =>
+                                  setToggleStatusModal({
+                                    show: true,
+                                    staff: staff,
+                                    loading: false,
+                                    newPassword: null,
+                                    copied: false,
+                                  })
+                                }
+                                className={getThemeClasses(
+                                  staff.isActive
+                                    ? "p-1 text-red-600 hover:text-red-800 hover:bg-red-50 rounded transition-colors dark:text-red-300 dark:hover:bg-red-900/30"
+                                    : "p-1 text-green-600 hover:text-green-800 hover:bg-green-50 rounded transition-colors dark:text-green-300 dark:hover:bg-green-900/30",
+                                  ""
+                                )}
+                                title={
+                                  staff.isActive
+                                    ? "Nonaktifkan staff"
+                                    : "Aktifkan staff"
+                                }
+                              >
+                                {staff.isActive ? (
+                                  <Ban className="w-4 h-4" />
+                                ) : (
+                                  <CheckCircle className="w-4 h-4" />
+                                )}
+                              </button>
                             </>
                           )}
 
@@ -1615,6 +1746,163 @@ export default function MarketingHeadPage() {
                 </div>
               </div>
             </div>
+          </div>
+        )}
+
+        {/* Toggle Status Modal */}
+        {toggleStatusModal.show && toggleStatusModal.staff && (
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+            <motion.div
+              className="bg-white dark:bg-gray-800 rounded-2xl max-w-md w-full shadow-2xl"
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+            >
+              <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                    {toggleStatusModal.staff.isActive
+                      ? "Nonaktifkan Staff"
+                      : "Aktifkan Staff"}
+                  </h3>
+                  <button
+                    onClick={handleCloseToggleModal}
+                    className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
+                  Staff: <span className="font-semibold">{toggleStatusModal.staff.fullName}</span>
+                </p>
+              </div>
+
+              {toggleStatusModal.newPassword ? (
+                <div className="p-6 space-y-4">
+                  <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-xl p-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-400" />
+                      <p className="font-semibold text-green-800 dark:text-green-200">
+                        Staff berhasil dinonaktifkan
+                      </p>
+                    </div>
+                    <p className="text-sm text-green-700 dark:text-green-300">
+                      Password telah direset dan user telah logout otomatis.
+                    </p>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Password Baru
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="text"
+                        value={toggleStatusModal.newPassword}
+                        readOnly
+                        className="w-full px-3 py-2 pr-10 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700 font-mono text-sm"
+                      />
+                      <button
+                        onClick={handleCopyPassword}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 p-2 text-gray-600 hover:text-gray-800 hover:bg-gray-200 dark:hover:bg-gray-600 rounded transition-colors"
+                        title="Salin password"
+                      >
+                        {toggleStatusModal.copied ? (
+                          <Check className="w-4 h-4" />
+                        ) : (
+                          <Copy className="w-4 h-4" />
+                        )}
+                      </button>
+                    </div>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                      ⚠️ Simpan password ini dengan aman. Password tidak dapat
+                      dilihat lagi setelah modal ditutup.
+                    </p>
+                  </div>
+
+                  <button
+                    onClick={handleCloseToggleModal}
+                    className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                  >
+                    Tutup
+                  </button>
+                </div>
+              ) : (
+                <div className="p-6 space-y-4">
+                  <div className={`rounded-xl p-4 ${
+                    toggleStatusModal.staff.isActive
+                      ? "bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800"
+                      : "bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800"
+                  }`}>
+                    <div className="flex items-start gap-3">
+                      <AlertTriangle className={`w-5 h-5 flex-shrink-0 mt-0.5 ${
+                        toggleStatusModal.staff.isActive
+                          ? "text-red-600 dark:text-red-400"
+                          : "text-blue-600 dark:text-blue-400"
+                      }`} />
+                      <div>
+                        <p className={`font-semibold mb-2 ${
+                          toggleStatusModal.staff.isActive
+                            ? "text-red-800 dark:text-red-200"
+                            : "text-blue-800 dark:text-blue-200"
+                        }`}>
+                          {toggleStatusModal.staff.isActive
+                            ? "Konfirmasi Nonaktifkan Staff"
+                            : "Konfirmasi Aktifkan Staff"}
+                        </p>
+                        <p className={`text-sm ${
+                          toggleStatusModal.staff.isActive
+                            ? "text-red-700 dark:text-red-300"
+                            : "text-blue-700 dark:text-blue-300"
+                        }`}>
+                          {toggleStatusModal.staff.isActive ? (
+                            <>
+                              Staff akan <strong>logout otomatis</strong> dan{" "}
+                              <strong>password akan direset</strong>. Staff tidak
+                              akan bisa login hingga diaktifkan kembali.
+                            </>
+                          ) : (
+                            <>
+                              Staff akan <strong>diaktifkan kembali</strong> dan
+                              dapat login menggunakan password yang telah direset
+                              sebelumnya.
+                            </>
+                          )}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex gap-3">
+                    <button
+                      onClick={handleCloseToggleModal}
+                      disabled={toggleStatusModal.loading}
+                      className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50"
+                    >
+                      Batal
+                    </button>
+                    <button
+                      onClick={handleToggleStatus}
+                      disabled={toggleStatusModal.loading}
+                      className={`flex-1 px-4 py-2 text-white rounded-lg transition-colors disabled:opacity-50 ${
+                        toggleStatusModal.staff.isActive
+                          ? "bg-red-600 hover:bg-red-700"
+                          : "bg-green-600 hover:bg-green-700"
+                      }`}
+                    >
+                      {toggleStatusModal.loading ? (
+                        <div className="flex items-center justify-center gap-2">
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                          Memproses...
+                        </div>
+                      ) : (
+                        toggleStatusModal.staff.isActive ? "Nonaktifkan" : "Aktifkan"
+                      )}
+                    </button>
+                  </div>
+                </div>
+              )}
+            </motion.div>
           </div>
         )}
 

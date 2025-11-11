@@ -779,8 +779,8 @@ export default function StaffDashboard() {
             </button>
           </div>
 
-          {/* Approval Notification Bar - only for asisten and manajer */}
-          {(userRole === "asisten" || userRole === "manajer") && (
+          {/* Approval Notification Bar - for asisten, manajer, and mandor */}
+          {(userRole === "asisten" || userRole === "manajer" || userRole === "mandor") && (
             <ApprovalNotificationBar userRole={userRole} />
           )}
 

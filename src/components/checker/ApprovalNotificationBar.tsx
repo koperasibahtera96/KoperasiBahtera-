@@ -20,7 +20,7 @@ interface PendingPlant {
 }
 
 interface ApprovalNotificationBarProps {
-  userRole: "asisten" | "manajer";
+  userRole: "asisten" | "manajer" | "mandor";
 }
 
 export default function ApprovalNotificationBar({
@@ -71,6 +71,13 @@ export default function ApprovalNotificationBar({
     return null;
   }
 
+  const isRejectionMode = userRole === "mandor";
+  const borderColor = isRejectionMode ? "border-red-200" : "border-amber-200";
+  const bgColor = isRejectionMode ? "bg-red-50" : "bg-amber-50";
+  const textColor = isRejectionMode ? "text-red-600" : "text-amber-600";
+  const badgeBg = isRejectionMode ? "bg-red-100" : "bg-amber-100";
+  const badgeText = isRejectionMode ? "text-red-700" : "text-amber-700";
+
   return (
     <motion.div
       className="mb-6 relative"
@@ -80,14 +87,14 @@ export default function ApprovalNotificationBar({
     >
       {/* Compact Header Banner */}
       <div
-        className="bg-white/90 backdrop-blur-md border border-amber-200 rounded-xl shadow-sm hover:shadow-md transition-shadow cursor-pointer"
+        className={`bg-white/90 backdrop-blur-md border ${borderColor} rounded-xl shadow-sm hover:shadow-md transition-shadow cursor-pointer`}
         onClick={() => setShowNotifications(!showNotifications)}
       >
         <div className="px-4 py-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="relative p-2 bg-amber-50 rounded-lg">
-                <Bell className="w-4 h-4 text-amber-600 animate-pulse" />
+              <div className={`relative p-2 ${bgColor} rounded-lg`}>
+                <Bell className={`w-4 h-4 ${textColor} animate-pulse`} />
                 {totalPending > 0 && (
                   <span className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
                     {totalPending > 9 ? "9+" : totalPending}
@@ -99,14 +106,18 @@ export default function ApprovalNotificationBar({
                   <h3 className="text-sm font-semibold text-gray-900">
                     {userRole === "asisten"
                       ? "Persetujuan dari Mandor"
+                      : userRole === "mandor"
+                      ? "Riwayat Ditolak oleh Asisten"
                       : "Persetujuan dari Asisten"}
                   </h3>
-                  <span className="px-2 py-0.5 text-xs font-medium bg-amber-100 text-amber-700 rounded-full">
+                  <span className={`px-2 py-0.5 text-xs font-medium ${badgeBg} ${badgeText} rounded-full`}>
                     {plantsWithPending.length} tanaman
                   </span>
                 </div>
                 <p className="text-xs text-gray-600 mt-0.5">
-                  Total {totalPending} riwayat menunggu persetujuan
+                  {userRole === "mandor"
+                    ? `Total ${totalPending} riwayat ditolak`
+                    : `Total ${totalPending} riwayat menunggu persetujuan`}
                 </p>
               </div>
             </div>
@@ -152,11 +163,11 @@ export default function ApprovalNotificationBar({
                     transition={{ delay: index * 0.05, duration: 0.2 }}
                   >
                     <Link href={`/checker/plant/${plant.plantId}`}>
-                      <div className="p-3 hover:bg-amber-50/50 transition-colors cursor-pointer">
+                      <div className={`p-3 ${isRejectionMode ? "hover:bg-red-50/50" : "hover:bg-amber-50/50"} transition-colors cursor-pointer`}>
                         <div className="flex items-start gap-3">
                           {/* Icon/Avatar */}
-                          <div className="flex-shrink-0 w-10 h-10 bg-gradient-to-br from-green-100 to-emerald-100 rounded-full flex items-center justify-center">
-                            <Leaf className="w-5 h-5 text-green-600" />
+                          <div className={`flex-shrink-0 w-10 h-10 bg-gradient-to-br ${isRejectionMode ? "from-red-100 to-rose-100" : "from-green-100 to-emerald-100"} rounded-full flex items-center justify-center`}>
+                            <Leaf className={`w-5 h-5 ${isRejectionMode ? "text-red-600" : "text-green-600"}`} />
                           </div>
 
                           {/* Content */}
@@ -170,7 +181,7 @@ export default function ApprovalNotificationBar({
                                   {plant.location} • {plant.plantType}
                                 </p>
                               </div>
-                              <span className="flex-shrink-0 px-2 py-1 text-xs font-semibold bg-amber-100 text-amber-700 rounded-full flex items-center gap-1">
+                              <span className={`flex-shrink-0 px-2 py-1 text-xs font-semibold ${badgeBg} ${badgeText} rounded-full flex items-center gap-1`}>
                                 <Clock className="w-3 h-3" />
                                 {plant.pendingCount}
                               </span>
@@ -178,7 +189,7 @@ export default function ApprovalNotificationBar({
 
                             <div className="mt-2 p-2 bg-gray-50 rounded-lg">
                               <p className="text-xs text-gray-600 mb-1">
-                                Riwayat terbaru:
+                                {isRejectionMode ? "Riwayat yang ditolak:" : "Riwayat terbaru:"}
                               </p>
                               <div className="flex items-center gap-2 flex-wrap">
                                 <span className="px-2 py-0.5 text-xs font-medium bg-blue-100 text-blue-700 rounded">
@@ -193,14 +204,14 @@ export default function ApprovalNotificationBar({
                                 </span>
                               </div>
                               <p className="text-xs text-gray-500 mt-1">
-                                Ditambahkan: {formatDate(plant.latestPending.addedAt)}
+                                {isRejectionMode ? "Ditolak pada:" : "Ditambahkan:"} {formatDate(plant.latestPending.addedAt)}
                               </p>
                             </div>
 
                             <div className="mt-2 flex items-center gap-2">
-                              <CheckCircle className="w-3 h-3 text-green-600" />
-                              <span className="text-xs text-green-600 font-medium">
-                                Klik untuk melihat dan menyetujui
+                              <CheckCircle className={`w-3 h-3 ${isRejectionMode ? "text-red-600" : "text-green-600"}`} />
+                              <span className={`text-xs ${isRejectionMode ? "text-red-600" : "text-green-600"} font-medium`}>
+                                {isRejectionMode ? "Klik untuk melihat dan memperbaiki" : "Klik untuk melihat dan menyetujui"}
                               </span>
                             </div>
                           </div>
@@ -218,8 +229,8 @@ export default function ApprovalNotificationBar({
                 <span className="text-gray-600">
                   Total {plantsWithPending.length} tanaman memerlukan perhatian
                 </span>
-                <span className="font-semibold text-amber-700">
-                  {totalPending} riwayat tertunda
+                <span className={`font-semibold ${isRejectionMode ? "text-red-700" : "text-amber-700"}`}>
+                  {totalPending} {isRejectionMode ? "riwayat ditolak" : "riwayat tertunda"}
                 </span>
               </div>
             </div>

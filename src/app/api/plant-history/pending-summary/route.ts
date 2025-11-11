@@ -16,9 +16,9 @@ export async function GET(_req: NextRequest) {
 
     const { role, id: userId } = session.user as any;
 
-    if (role !== "asisten" && role !== "manajer") {
+    if (role !== "asisten" && role !== "manajer" && role !== "mandor") {
       return NextResponse.json(
-        { error: "Only asisten and manajer can view pending approvals" },
+        { error: "Only asisten, manajer, and mandor can view pending approvals" },
         { status: 403 }
       );
     }
@@ -51,6 +51,22 @@ export async function GET(_req: NextRequest) {
       });
 
       plantIds = assignments.flatMap((a) => a.plantInstanceIds);
+    } else if (role === "mandor") {
+      // Get plants assigned to this mandor
+      const assignment = await PlantAssignment.findOne({
+        assignedTo: userId,
+        assignedRole: "mandor",
+        isActive: true,
+      });
+
+      if (!assignment) {
+        return NextResponse.json({
+          totalPlantsWithPending: 0,
+          plants: []
+        });
+      }
+
+      plantIds = assignment.plantInstanceIds;
     }
 
     if (plantIds.length === 0) {
@@ -71,10 +87,22 @@ export async function GET(_req: NextRequest) {
     plants.forEach((plant) => {
       if (plant.history && Array.isArray(plant.history)) {
         const pendingHistories = plant.history.filter((h: any) => {
-          const shouldInclude =
-            role === "asisten"
-              ? h.approvalStatus === "pending"
-              : h.approvalStatus === "approved_by_asisten";
+          let shouldInclude = false;
+
+          if (role === "asisten") {
+            // Asisten sees pending approvals from mandor
+            shouldInclude = h.approvalStatus === "pending";
+          } else if (role === "manajer") {
+            // Manajer sees approvals pending from asisten
+            shouldInclude = h.approvalStatus === "approved_by_asisten";
+          } else if (role === "mandor") {
+            // Mandor sees ALL rejected approvals (both from asisten and manajer)
+            // When asisten rejects: status is "rejected", approvedByAsisten is NOT set
+            // When manajer rejects: status is "rejected", approvedByAsisten IS set
+            // Mandor should see both cases, so just check if status is "rejected"
+            shouldInclude = h.approvalStatus === "rejected";
+          }
+
           return shouldInclude;
         });
 

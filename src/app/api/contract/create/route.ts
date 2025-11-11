@@ -81,10 +81,11 @@ export async function POST(req: NextRequest) {
         );
       }
 
-      // Check if referral code exists and belongs to a marketing staff
+      // Check if referral code exists and belongs to an ACTIVE marketing staff
       const marketingUser = await User.findOne({
         referralCode: referralCode,
         role: { $in: ["marketing", "marketing_head"] },
+        isActive: true, // Only allow referral codes from active marketing staff
       });
 
       if (!marketingUser) {

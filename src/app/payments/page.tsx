@@ -2902,6 +2902,10 @@ export default function PaymentsPage() {
                             className={`relative border-2 rounded-2xl p-6 pb-20 transition-shadow duration-200 hover:shadow-lg ${
                               contract.paymentCompleted
                                 ? "bg-gradient-to-br from-emerald-50/90 to-green-50/90 border-emerald-200"
+                                : contract.paymentMethod === "manual-bca" &&
+                                  contract.adminStatus === "rejected"
+                                ? // Manual BCA payment rejected - red background
+                                  "bg-gradient-to-br from-red-50/90 to-rose-50/90 border-red-200"
                                 : (() => {
                                     // Check if contract is overdue using actual dueDate
                                     const isContractOverdue =
@@ -2987,11 +2991,35 @@ export default function PaymentsPage() {
                               </div>
                             )}
 
-                            {/* Fixed Height Area for Manual BCA Payments - Only show if manual-bca */}
+                            {/* Manual BCA Payments - Show admin notes and proof */}
                             {contract.paymentMethod === "manual-bca" && (
-                              <div className="mb-2 h-16">
+                              <div className="mb-2">
+                                {/* Admin Notes / Rejection Reason - Show first */}
+                                {contract.adminNotes && (
+                                  <div className={`p-3 rounded-lg text-sm mb-3 font-poppins ${
+                                    contract.adminStatus === "rejected"
+                                      ? "bg-red-50 text-red-800 border border-red-200"
+                                      : "bg-yellow-50 text-yellow-800 border border-yellow-200"
+                                  }`}>
+                                    <strong className="flex items-center gap-2 mb-1">
+                                      {contract.adminStatus === "rejected" ? (
+                                        <>
+                                          <AlertTriangle size={16} className="flex-shrink-0" />
+                                          {t("payments.ui.rejectionReason")}
+                                        </>
+                                      ) : (
+                                        t("payments.ui.adminNote")
+                                      )}
+                                    </strong>
+                                    <span className="whitespace-pre-wrap break-words">
+                                      {translateRejectionReason(contract.adminNotes)}
+                                    </span>
+                                  </div>
+                                )}
+
+                                {/* Proof Image - Show after admin notes */}
                                 {contract.proofImageUrl ? (
-                                  <div className="flex items-center gap-2 h-full">
+                                  <div className="flex items-center gap-2 mb-2">
                                     <Image
                                       width={64}
                                       height={64}
@@ -3007,7 +3035,7 @@ export default function PaymentsPage() {
                                     />
                                   </div>
                                 ) : (
-                                  <div className="text-xs text-gray-400 font-poppins italic h-full flex items-center">
+                                  <div className="text-xs text-gray-400 font-poppins italic mb-2">
                                     {t("payments.proof.noProof")}
                                   </div>
                                 )}
