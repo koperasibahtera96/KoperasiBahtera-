@@ -936,6 +936,49 @@ export default function MarketingHeadPage() {
               </div>
             </motion.div>
 
+
+
+            <motion.div
+              className={getThemeClasses(
+                "bg-white/95 dark:bg-gray-800/95 backdrop-blur-lg rounded-2xl shadow-lg border border-[#324D3E]/10 dark:border-gray-700 p-4 sm:p-6",
+                "!bg-white/95 !border-[#FFC1CC]/30"
+              )}
+              whileHover={{ scale: 1.02, y: -5 }}
+              transition={{ duration: 0.2 }}
+            >
+              <div className="flex flex-col items-center text-center space-y-3">
+                <p
+                  className={getThemeClasses(
+                    "text-sm text-[#889063] dark:text-gray-400",
+                    "!text-[#6b7280]"
+                  )}
+                >
+                  Total Referrals
+                </p>
+                <p
+                  className={getThemeClasses(
+                    "text-2xl font-bold text-[#324D3E] dark:text-white",
+                    "!text-[#4c1d1d]"
+                  )}
+                >
+                  {commissionData.overallSummary.totalReferrals}
+                </p>
+                <div
+                  className={getThemeClasses(
+                    "p-3 bg-purple-100 dark:bg-purple-900/30 rounded-xl",
+                    "!bg-[#C7CEEA]/40"
+                  )}
+                >
+                  <TrendingUp
+                    className={getThemeClasses(
+                      "w-6 h-6 text-purple-600 dark:text-purple-400",
+                      "!text-[#4c1d1d]"
+                    )}
+                  />
+                </div>
+              </div>
+            </motion.div>
+
             <motion.div
               className={getThemeClasses(
                 "bg-white/95 dark:bg-gray-800/95 backdrop-blur-lg rounded-2xl shadow-lg border border-[#324D3E]/10 dark:border-gray-700 p-4 sm:p-6",
@@ -972,47 +1015,6 @@ export default function MarketingHeadPage() {
                   <DollarSign
                     className={getThemeClasses(
                       "w-6 h-6 text-green-600 dark:text-green-400",
-                      "!text-[#4c1d1d]"
-                    )}
-                  />
-                </div>
-              </div>
-            </motion.div>
-
-            <motion.div
-              className={getThemeClasses(
-                "bg-white/95 dark:bg-gray-800/95 backdrop-blur-lg rounded-2xl shadow-lg border border-[#324D3E]/10 dark:border-gray-700 p-4 sm:p-6",
-                "!bg-white/95 !border-[#FFC1CC]/30"
-              )}
-              whileHover={{ scale: 1.02, y: -5 }}
-              transition={{ duration: 0.2 }}
-            >
-              <div className="flex flex-col items-center text-center space-y-3">
-                <p
-                  className={getThemeClasses(
-                    "text-sm text-[#889063] dark:text-gray-400",
-                    "!text-[#6b7280]"
-                  )}
-                >
-                  Total Referrals
-                </p>
-                <p
-                  className={getThemeClasses(
-                    "text-2xl font-bold text-[#324D3E] dark:text-white",
-                    "!text-[#4c1d1d]"
-                  )}
-                >
-                  {commissionData.overallSummary.totalReferrals}
-                </p>
-                <div
-                  className={getThemeClasses(
-                    "p-3 bg-purple-100 dark:bg-purple-900/30 rounded-xl",
-                    "!bg-[#C7CEEA]/40"
-                  )}
-                >
-                  <TrendingUp
-                    className={getThemeClasses(
-                      "w-6 h-6 text-purple-600 dark:text-purple-400",
                       "!text-[#4c1d1d]"
                     )}
                   />
