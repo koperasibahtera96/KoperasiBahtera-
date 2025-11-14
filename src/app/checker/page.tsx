@@ -1,11 +1,27 @@
 "use client";
 
-import LandingNavbar from "@/components/landing/LandingNavbar";
+import ApprovalNotificationBar from "@/components/checker/ApprovalNotificationBar";
 import FilterSidebar from "@/components/checker/FilterSidebar";
+import LandingNavbar from "@/components/landing/LandingNavbar";
 import { Badge } from "@/components/ui-staff/badge";
 import { Button } from "@/components/ui-staff/button";
 import { Input } from "@/components/ui-staff/input";
-import type { PlantInstance, PlantHistory } from "@/types/checker";
+import type { PlantHistory, PlantInstance } from "@/types/checker";
+import {
+  Calendar,
+  ChevronLeft,
+  ChevronRight,
+  Download,
+  Leaf,
+  MapPin,
+  Search,
+  User,
+} from "lucide-react";
+import { useSession } from "next-auth/react";
+import Image from "next/image";
+import Link from "next/link";
+import type React from "react";
+import { useEffect, useState } from "react";
 // For grouping
 //test
 type AssignmentGroup = {
@@ -15,22 +31,6 @@ type AssignmentGroup = {
   role?: "asisten" | "mandor";
   assignedById?: string;
 };
-import {
-  Calendar,
-  ChevronLeft,
-  ChevronRight,
-  Leaf,
-  MapPin,
-  Search,
-  User,
-  Download,
-} from "lucide-react";
-import Image from "next/image";
-import Link from "next/link";
-import type React from "react";
-import { useEffect, useState } from "react";
-import { useSession } from "next-auth/react";
-import ApprovalNotificationBar from "@/components/checker/ApprovalNotificationBar";
 
 const statusColors: Record<string, string> = {
   // === General ===
@@ -113,11 +113,11 @@ const isPlantProblem = (p: PlantInstance): boolean => {
 // avatar default berbasis plantType (mengarah ke /public/*.jpg)
 const getPlantTypeImage = (plantType?: string): string | null => {
   const pt = (plantType || "").toLowerCase();
-  if (pt === "alpukat") return "/alpukat1.jpg";
-  if (pt === "aren") return "/aren.jpg";
-  if (pt === "jengkol") return "/jengkol.jpg";
-  if (pt === "gaharu") return "/gaharu.jpg";
-  if (pt === "kelapa") return "/kelapa.jpg";
+  if (pt === "alpukat") return "/images/checker/Alpukat.jpg";
+  if (pt === "aren") return "/images/checker/Aren.jpg";
+  if (pt === "jengkol") return "/images/checker/Jengkol.jpg";
+  if (pt === "gaharu") return "/images/checker/Gaharu.jpg";
+  if (pt === "kelapa") return "/images/checker/Kelapa.jpg";
   return null;
 };
 /* =================================================== */
@@ -129,7 +129,9 @@ export default function StaffDashboard() {
   const [_assignmentGroups, setAssignmentGroups] = useState<AssignmentGroup[]>(
     []
   );
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(true); // Initial page load only
+  const [loadingPlants, setLoadingPlants] = useState(false); // For filter/search changes
+  const [initialLoadComplete, setInitialLoadComplete] = useState(false);
   const [_assignedPlantIds, setAssignedPlantIds] = useState<string[]>([]);
   const [assignmentsLoaded, setAssignmentsLoaded] = useState(false);
 
@@ -152,12 +154,13 @@ export default function StaffDashboard() {
   );
 
   const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
 
   // Pagination state
   const [totalPages, setTotalPages] = useState(1);
   const [totalPlants, setTotalPlants] = useState(0);
-  
+
   // Total stats for manajer (all plants, not filtered)
   const [totalAllPlants, setTotalAllPlants] = useState(0);
   const [totalNewPlants, setTotalNewPlants] = useState(0);
@@ -169,14 +172,14 @@ export default function StaffDashboard() {
   useEffect(() => {
     if (session?.user) {
       fetchAssignmentsAndGroups();
-      // Fetch total stats for all roles (unfiltered)
+      // Fetch total stats for all roles (unfiltered) - only once on mount
       const userRole = (session?.user as any)?.role;
       if (userRole === "manajer") {
         fetchManajerTotalStats();
       } else if (userRole === "asisten" || userRole === "mandor") {
         fetchAsistenMandorTotalStats();
       }
-      
+
       // Set default filter based on role
       if (userRole === "mandor") {
         // Mandor has no "no-group" option, show all their assigned plants
@@ -191,8 +194,17 @@ export default function StaffDashboard() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session, sessionStatus]);
 
+  // Debounce search query to avoid refetching on every keystroke
   useEffect(() => {
-    // Fetch plants when filters change
+    const timer = setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery);
+    }, 500); // 500ms delay
+
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  useEffect(() => {
+    // Fetch plants when filters change (using debounced search query)
     if (assignmentsLoaded) {
       setCurrentPage(1); // Reset to page 1 when filters change
       fetchPlants();
@@ -201,7 +213,7 @@ export default function StaffDashboard() {
   }, [
     assignmentsLoaded,
     sidebarFilter,
-    searchQuery,
+    debouncedSearchQuery, // Use debounced value instead of searchQuery
     selectedPlantType,
     statsFilter,
   ]);
@@ -223,7 +235,7 @@ export default function StaffDashboard() {
       if (res.ok) {
         const allPlants = await res.json();
         const plantsList = Array.isArray(allPlants) ? allPlants : [];
-        
+
         setTotalAllPlants(plantsList.length);
         setTotalNewPlants(
           plantsList.filter((p: any) => isPlantNew(p)).length
@@ -248,7 +260,7 @@ export default function StaffDashboard() {
       if (res.ok) {
         const allPlants = await res.json();
         const plantsList = Array.isArray(allPlants) ? allPlants : [];
-        
+
         setTotalAllPlants(plantsList.length);
         setTotalNewPlants(
           plantsList.filter((p: any) => isPlantNew(p)).length
@@ -315,7 +327,7 @@ export default function StaffDashboard() {
               role: "asisten" as const,
               assignedById: a.assignedBy?._id,
             }));
-            
+
             // Also store mandor assignments with assignedBy reference
             const mandorAssignments = assignments.filter(
               (a: any) => a.assignedRole === "mandor"
@@ -327,7 +339,7 @@ export default function StaffDashboard() {
               role: "mandor" as const,
               assignedById: a.assignedBy?._id,
             }));
-            
+
             // Store both asisten and mandor groups
             groups = [...asistenGroups, ...mandorGroups];
             // Manajer sees all plants
@@ -354,7 +366,12 @@ export default function StaffDashboard() {
 
   const fetchPlants = async () => {
     try {
-      setLoading(true);
+      // Use different loading state based on whether it's initial load or filter change
+      if (initialLoadComplete) {
+        setLoadingPlants(true);
+      } else {
+        setLoading(true);
+      }
 
       // Build query params for server-side filtering
       const params = new URLSearchParams();
@@ -363,9 +380,9 @@ export default function StaffDashboard() {
       params.append("page", currentPage.toString());
       params.append("limit", PLANTS_PER_PAGE.toString());
 
-      // Search
-      if (searchQuery.trim()) {
-        params.append("search", searchQuery.trim());
+      // Search (use debounced value)
+      if (debouncedSearchQuery.trim()) {
+        params.append("search", debouncedSearchQuery.trim());
       }
 
       // PlantType filter
@@ -425,11 +442,14 @@ export default function StaffDashboard() {
 
       // All filtering is now done server-side
       setPlants(normalized);
+      setInitialLoadComplete(true);
     } catch (err) {
       console.error("Error fetching plants:", err);
       setPlants([]);
+      setInitialLoadComplete(true);
     } finally {
       setLoading(false);
+      setLoadingPlants(false);
     }
   };
 
@@ -890,7 +910,7 @@ export default function StaffDashboard() {
             )}
 
             {/* Main Content Area */}
-            <div className="flex-1 space-y-6">
+            <div className="flex-1 space-y-6 relative">
               {/* Results Summary + EXPORT BUTTON (baru) */}
               <div className="bg-white/80 backdrop-blur-lg rounded-2xl border border-[#324D3E]/10 p-4">
                 <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
@@ -922,7 +942,16 @@ export default function StaffDashboard() {
               </div>
 
               {/* Plants Grid - No Grouping */}
-              {currentPlants.length === 0 ? (
+              <div className="relative">
+                {loadingPlants && (
+                  <div className="absolute inset-0 bg-white/70 backdrop-blur-sm z-10 flex items-center justify-center rounded-3xl min-h-[400px]">
+                    <div className="flex flex-col items-center gap-3">
+                      <div className="w-8 h-8 border-4 border-[#324D3E] border-t-transparent rounded-full animate-spin"></div>
+                      <p className="text-[#324D3E] font-medium">Memuat data...</p>
+                    </div>
+                  </div>
+                )}
+                {currentPlants.length === 0 && !loadingPlants ? (
                 <div className="bg-white/90 backdrop-blur-xl rounded-3xl shadow-xl border border-[#324D3E]/10 p-12 text-center">
                   <div className="flex flex-col items-center gap-6 max-w-md mx-auto">
                     <div className="w-24 h-24 rounded-full bg-gradient-to-br from-[#324D3E]/10 to-[#4C3D19]/10 flex items-center justify-center">
@@ -983,7 +1012,7 @@ export default function StaffDashboard() {
                             <div className="flex items-start justify-between mb-4">
                               <div className="flex items-center gap-3">
                                 {/* Avatar */}
-                                <div className="relative w-12 h-12 rounded-xl bg-gradient-to-br from-[#324D3E] to-[#4C3D19] shadow-lg group-hover:scale-110 transition-all duration-300 overflow-hidden">
+                                <div className="relative w-12 h-12 rounded-xl bg-gradient-to-br shadow-lg group-hover:scale-110 transition-all duration-300 overflow-hidden">
                                   {plant.fotoGambar ? (
                                     <Image
                                       src={
@@ -999,7 +1028,7 @@ export default function StaffDashboard() {
                                       src={typeImage}
                                       alt={plant.plantType || "Plant type"}
                                       fill
-                                      sizes="48px"
+                                      sizes="100px"
                                       className="object-cover"
                                       priority={false}
                                     />
@@ -1082,6 +1111,7 @@ export default function StaffDashboard() {
                   })}
                 </div>
               )}
+              </div>
 
               {/* Pagination */}
 {totalPages > 1 && (
