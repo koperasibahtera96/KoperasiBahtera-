@@ -1,9 +1,9 @@
 "use client";
 
+import { useLanguage } from "@/contexts/LanguageContext";
 import { motion } from "framer-motion";
 import Image from "next/image";
 import { useState } from "react";
-import { useLanguage } from "@/contexts/LanguageContext";
 
 const containerVariants: any = {
   hidden: { opacity: 0 },
@@ -78,7 +78,7 @@ export default function LandingHero() {
       {/* Background Image - Optimized with Next.js Image */}
       <div className="absolute inset-0">
         <Image
-          src="/landing/hero-bg.webp"
+          src="/landing/hero-bg-2.jpeg"
           alt="Hero background - sustainable agriculture investment"
           fill
           priority
@@ -87,7 +87,7 @@ export default function LandingHero() {
           onLoad={() => setImageLoaded(true)}
         />
         {/* White overlay to brighten the image */}
-        <div className="absolute inset-0 bg-white opacity-50"></div>
+        <div className="absolute inset-0 bg-gray-400 opacity-60"></div>
       </div>
 
       {/* Content */}
@@ -110,7 +110,7 @@ export default function LandingHero() {
             variants={containerVariants}
           >
             <motion.span
-              className="block text-[#0D4710] font-black"
+              className="block text-[#0D4710] font-bold"
               style={{ textShadow: '2px 2px 4px rgba(0, 0, 0, 0.3)' }}
               variants={slideInFromLeft}
               whileHover={{
@@ -137,7 +137,7 @@ export default function LandingHero() {
 
           {/* Description */}
           <motion.p
-            className="text-sm sm:text-base md:text-lg lg:text-xl xl:text-2xl leading-relaxed mb-6 sm:mb-8 md:mb-10 max-w-[50rem] text-[#4C3D19]"
+            className="text-sm sm:text-base font-semibold md:text-lg lg:text-xl xl:text-2xl leading-relaxed mb-6 sm:mb-8 md:mb-10 max-w-[60rem] text-[#4C3D19]"
             variants={fadeInUp}
           >
             {t("hero.description")}
