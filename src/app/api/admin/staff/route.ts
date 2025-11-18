@@ -131,16 +131,16 @@ export async function POST(request: NextRequest) {
           return parts && parts.length === 3 ? parseInt(parts[2]) : 0;
         })
         .filter((n) => !isNaN(n));
-      
+
       if (sequentialNumbers.length > 0) {
         sequential = Math.max(...sequentialNumbers) + 1;
       }
     }
-    
+
     let userCode = `${prefix}-${currentYear}-${sequential
       .toString()
       .padStart(3, "0")}`;
-    
+
     // Check if userCode already exists (safety check) and increment if needed
     let existingUserCode = await User.findOne({ userCode });
     let attempts = 0;
@@ -150,7 +150,7 @@ export async function POST(request: NextRequest) {
       existingUserCode = await User.findOne({ userCode });
       attempts++;
     }
-    
+
     if (existingUserCode) {
       return NextResponse.json(
         { error: `Unable to generate unique userCode after multiple attempts. Please try again.` },
@@ -367,6 +367,7 @@ export async function GET(request: NextRequest) {
           "marketing",
           "marketing_head",
           "marketing_admin",
+          "ketua",
           "mandor",
           "asisten",
           "manajer",
