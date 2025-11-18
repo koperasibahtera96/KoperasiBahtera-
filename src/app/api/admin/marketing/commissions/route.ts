@@ -1,8 +1,9 @@
 import dbConnect from "@/lib/mongodb";
 import CommissionHistory from "@/models/CommissionHistory";
+import CommissionWithdrawal from "@/models/CommissionWithdrawal";
 import Payment from "@/models/Payment";
-import User from "@/models/User";
 import Settings from "@/models/Settings";
+import User from "@/models/User";
 import { getServerSession } from "next-auth/next";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -46,11 +47,11 @@ export async function GET(req: NextRequest) {
       // Set start date to beginning of day (00:00:00.000)
       const start = new Date(startDate);
       start.setHours(0, 0, 0, 0);
-      
+
       // Set end date to end of day (23:59:59.999)
       const end = new Date(endDate);
       end.setHours(23, 59, 59, 999);
-      
+
       query.earnedAt = {
         $gte: start,
         $lte: end,
@@ -72,43 +73,103 @@ export async function GET(req: NextRequest) {
       .populate("customerId", "fullName email phoneNumber")
       .sort({ earnedAt: -1 });
 
+    // Build withdrawal query based on date filters
+    const withdrawalQuery: any = {};
+    if (startDate && endDate) {
+      const start = new Date(startDate);
+      start.setHours(0, 0, 0, 0);
+      const end = new Date(endDate);
+      end.setHours(23, 59, 59, 999);
+      withdrawalQuery.withdrawalDate = {
+        $gte: start,
+        $lte: end,
+      };
+    }
+
+    // Get withdrawals filtered by date (if date filters are applied)
+    const withdrawals = await CommissionWithdrawal.find(withdrawalQuery);
+
     // Calculate summary by staff
-    const staffSummary = marketingStaff.map((staff) => {
-      const staffCommissions = commissions.filter(
-        (c) => c.marketingStaffId._id.toString() === staff._id.toString()
-      );
+    const staffSummary = await Promise.all(
+      marketingStaff.map(async (staff) => {
+        const staffCommissions = commissions.filter(
+          (c) => c.marketingStaffId._id.toString() === staff._id.toString()
+        );
 
-      const totalCommission = staffCommissions.reduce(
-        (sum, c) => sum + c.commissionAmount,
-        0
-      );
+        const totalCommission = staffCommissions.reduce(
+          (sum, c) => sum + c.commissionAmount,
+          0
+        );
 
-      const totalReferrals = staffCommissions.length;
+        const totalReferrals = staffCommissions.length;
 
-      const byType = {
-        fullInvestment: staffCommissions.filter(
-          (c) => c.paymentType === "full-investment"
-        ).length,
-        cicilan: staffCommissions.filter(
-          (c) => c.paymentType === "cicilan-installment"
-        ).length,
-      };
+        const byType = {
+          fullInvestment: staffCommissions.filter(
+            (c) => c.paymentType === "full-investment"
+          ).length,
+          cicilan: staffCommissions.filter(
+            (c) => c.paymentType === "cicilan-installment"
+          ).length,
+        };
 
-      return {
-        staffId: staff._id,
-        staffName: staff.fullName,
-        staffEmail: staff.email,
-        referralCode: staff.referralCode,
-        totalCommission,
-        totalReferrals,
-        byType,
-        commissions: staffCommissions,
-      };
-    });
+        // Calculate paid/unpaid commissions based on date filters
+        let totalPaidCommission = 0;
+        if (startDate && endDate) {
+          // If date filters are applied, only count withdrawals within that date range
+          const staffWithdrawals = withdrawals.filter(
+            (w) => w.marketingStaffId.toString() === staff._id.toString()
+          );
+          totalPaidCommission = staffWithdrawals.reduce(
+            (sum, w) => sum + w.amount,
+            0
+          );
+        } else {
+          // If no date filters, get all-time withdrawals for this staff
+          const allTimeWithdrawals = await CommissionWithdrawal.aggregate([
+            { $match: { marketingStaffId: staff._id } },
+            {
+              $group: {
+                _id: null,
+                totalPaid: { $sum: "$amount" },
+              },
+            },
+          ]);
+          totalPaidCommission =
+            allTimeWithdrawals.length > 0 ? allTimeWithdrawals[0].totalPaid : 0;
+        }
+
+        // Unpaid commission is the filtered commission total minus filtered paid amount
+        // But we need to cap it - can't have negative unpaid
+        const totalUnpaidCommission = Math.max(
+          0,
+          totalCommission - totalPaidCommission
+        );
+
+        return {
+          staffId: staff._id,
+          staffName: staff.fullName,
+          staffEmail: staff.email,
+          referralCode: staff.referralCode,
+          totalCommission,
+          totalReferrals,
+          byType,
+          commissions: staffCommissions,
+          totalPaidCommission,
+          totalUnpaidCommission,
+        };
+      })
+    );
 
     // Overall summary
+    // When date filters are applied, only count staff with commissions > 0
+    const staffWithCommissions = staffSummary.filter(
+      (s) => s.totalCommission > 0
+    );
     const overallSummary = {
-      totalStaff: marketingStaff.length,
+      totalStaff:
+        startDate && endDate
+          ? staffWithCommissions.length
+          : marketingStaff.length,
       totalCommissions: commissions.reduce(
         (sum, c) => sum + c.commissionAmount,
         0

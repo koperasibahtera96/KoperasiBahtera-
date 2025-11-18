@@ -55,6 +55,8 @@ interface CommissionData {
       fullInvestment: number;
       cicilan: number;
     };
+    totalPaidCommission?: number;
+    totalUnpaidCommission?: number;
   }[];
   overallSummary: {
     totalStaff: number;
@@ -72,7 +74,7 @@ export default function MarketingHeadPage() {
   const { data: session } = useSession();
   const { theme } = useTheme();
   const [mounted, setMounted] = useState(false);
-  
+
   // Check if user is marketing_admin (read-only for referral editing)
   const isMarketingAdmin = session?.user?.role === "marketing_admin";
 
@@ -483,8 +485,20 @@ export default function MarketingHeadPage() {
     }
   };
 
-  // Filter marketing staff based on search query
+  // Filter marketing staff based on search query and date filter
   const filteredStaff = marketingStaff.filter((staff) => {
+    // If date filters are applied, only show staff with commissions > 0 in that range
+    if (appliedStartDate && appliedEndDate && commissionData) {
+      const staffCommissionData = commissionData.staffSummary.find(
+        (s) => s.staffId.toString() === staff._id.toString()
+      );
+      // Only include staff with commissions in the filtered date range
+      if (!staffCommissionData || staffCommissionData.totalCommission === 0) {
+        return false;
+      }
+    }
+
+    // Apply search query filter
     if (!searchQuery.trim()) return true;
 
     const query = searchQuery.toLowerCase();
@@ -1148,11 +1162,16 @@ export default function MarketingHeadPage() {
                   )}
                 >
                   {formatCurrency(
-                    marketingStaff.reduce(
+                    commissionData?.staffSummary.reduce(
                       (sum, staff) =>
-                        sum + (staff.commissionSummary.totalPaidCommission || 0),
+                        sum + (staff.totalPaidCommission || 0),
                       0
-                    )
+                    ) ??
+                      marketingStaff.reduce(
+                        (sum, staff) =>
+                          sum + (staff.commissionSummary.totalPaidCommission || 0),
+                        0
+                      )
                   )}
                 </p>
                 <div
@@ -1198,11 +1217,16 @@ export default function MarketingHeadPage() {
                   Math.max(
                     0,
                     (commissionData?.overallSummary?.totalCommissions || 0) -
-                      marketingStaff.reduce(
+                      (commissionData?.staffSummary.reduce(
                         (sum, staff) =>
-                          sum + (staff.commissionSummary.totalPaidCommission || 0),
+                          sum + (staff.totalPaidCommission || 0),
                         0
-                      )
+                      ) ??
+                        marketingStaff.reduce(
+                          (sum, staff) =>
+                            sum + (staff.commissionSummary.totalPaidCommission || 0),
+                          0
+                        ))
                   )
                 )}
               </p>
@@ -1415,7 +1439,7 @@ export default function MarketingHeadPage() {
                     const staffCommissionData = commissionData?.staffSummary.find(
                       (s) => s.staffId.toString() === staff._id.toString()
                     );
-                    
+
                     return (
                     <tr
                       key={staff._id}
@@ -1498,7 +1522,9 @@ export default function MarketingHeadPage() {
                           )}
                         >
                           {formatCurrency(
-                            staff.commissionSummary.totalPaidCommission || 0
+                            staffCommissionData?.totalPaidCommission ??
+                              staff.commissionSummary.totalPaidCommission ??
+                              0
                           )}
                         </p>
                       </td>
@@ -1511,7 +1537,9 @@ export default function MarketingHeadPage() {
                           )}
                         >
                           {formatCurrency(
-                            staff.commissionSummary.totalUnpaidCommission || 0
+                            staffCommissionData?.totalUnpaidCommission ??
+                              staff.commissionSummary.totalUnpaidCommission ??
+                              0
                           )}
                         </p>
                       </td>
