@@ -190,27 +190,11 @@ export async function GET(_request: NextRequest) {
         };
       });
 
-    // Get recent investors (last 4) - sorted by most recent investment or creation date
+    // Get recent investors (last 4) - sorted by creation date (newest first)
     const recentInvestors = investors
-      .map((investor) => {
-        // Get the most recent investment date for this investor
-        const mostRecentInvestmentDate =
-          investor.investments && investor.investments.length > 0
-            ? Math.max(
-                ...investor.investments.map((inv: any) =>
-                  new Date(inv.investmentDate).getTime()
-                )
-              )
-            : new Date(investor.createdAt).getTime();
-
-        return {
-          ...investor.toObject(),
-          mostRecentActivity: new Date(mostRecentInvestmentDate),
-        };
-      })
       .sort(
         (a, b) =>
-          b.mostRecentActivity.getTime() - a.mostRecentActivity.getTime()
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
       )
       .slice(0, 4)
       .map((investor) => ({
@@ -218,7 +202,7 @@ export async function GET(_request: NextRequest) {
         name: investor.name,
         email: investor.email,
         investment: `Rp ${investor.totalInvestasi.toLocaleString("id-ID")}`,
-        date: investor.mostRecentActivity.toISOString().split("T")[0],
+        date: new Date(investor.createdAt).toISOString().split("T")[0],
         status: investor.status,
       }));
 
