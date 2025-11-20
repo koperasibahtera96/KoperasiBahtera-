@@ -1,31 +1,31 @@
 "use client";
 
 import LandingHeader from "@/components/landing/LandingHeader";
+import PaymentMethodModal from "@/components/payments/PaymentMethodModal";
 import { useAlert } from "@/components/ui/Alert";
 import { DualSignatureInput } from "@/components/ui/dual-signature-input";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { downloadInvoiceImage } from "@/lib/invoiceImage";
 import { CicilanGroup, CicilanInstallmentWithPayment } from "@/types/cicilan";
-import { useLanguage } from "@/contexts/LanguageContext";
-import PaymentMethodModal from "@/components/payments/PaymentMethodModal";
 import jsPDF from "jspdf";
 import {
+  AlertTriangle,
   Calendar,
   CheckCircle,
   Clock,
   CreditCard,
   DollarSign,
+  Download,
+  Edit3,
   Search,
   TrendingUp,
   Upload,
-  Edit3,
   X,
-  Download,
-  AlertTriangle,
 } from "lucide-react";
 import { useSession } from "next-auth/react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { useEffect, useState, useCallback } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 // Type alias for backward compatibility
 type Installment = CicilanInstallmentWithPayment;
@@ -267,6 +267,26 @@ export default function PaymentsPage() {
   // Handle Midtrans payment for full payment
   const handleFullPayment = async (contract: FullPaymentContract) => {
     try {
+      // First, set the payment method to midtrans if not already set and paymentId exists
+      if (contract.paymentId && !contract.paymentMethod) {
+        const setMethodResponse = await fetch("/api/payment/set-payment-method", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            paymentId: contract.paymentId,
+            paymentMethod: "midtrans",
+          }),
+        });
+
+        if (!setMethodResponse.ok) {
+          const error = await setMethodResponse.json();
+          showError("Error", error.error || "Gagal mengatur metode pembayaran");
+          return;
+        }
+      }
+
       const response = await fetch("/api/payment/create-investment", {
         method: "POST",
         headers: {
@@ -296,6 +316,7 @@ export default function PaymentsPage() {
           installment: null,
           group: null,
         });
+        fetchInstallments(); // Refresh to get updated paymentMethod
       } else {
         showError(
           t("payments.errors.paymentFailed"),
@@ -313,16 +334,51 @@ export default function PaymentsPage() {
 
   // Handle BCA manual payment
   const handleBCAPayment = async () => {
-    const { contract, group } = paymentMethodModal;
+    const { contract, installment, group } = paymentMethodModal;
 
     try {
       const contractId = contract ? contract.contractId : group?.cicilanOrderId;
+      const paymentId = contract ? contract.paymentId : installment?._id;
 
       if (!contractId) {
         showError("Error", "Contract ID tidak ditemukan");
         return;
       }
 
+      // If it's an installment payment, we need to set the payment method on the payment record
+      if (installment && paymentId) {
+        const response = await fetch("/api/payment/set-payment-method", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            paymentId,
+            paymentMethod: "manual-bca",
+          }),
+        });
+
+        if (response.ok) {
+          showSuccess(
+            "Berhasil",
+            "Metode pembayaran BCA dipilih. Silakan upload bukti pembayaran di bawah."
+          );
+          setPaymentMethodModal({
+            isOpen: false,
+            contract: null,
+            installment: null,
+            group: null,
+          });
+          fetchInstallments(); // Refresh to get updated paymentMethod
+          return;
+        } else {
+          const error = await response.json();
+          showError("Error", error.error || "Gagal mengatur metode pembayaran");
+          return;
+        }
+      }
+
+      // For full payment contracts, create the manual BCA payment
       const response = await fetch("/api/payment/create-manual-bca", {
         method: "POST",
         headers: {
@@ -1229,6 +1285,24 @@ export default function PaymentsPage() {
     try {
       setUploadingProof(paymentId); // Reuse loading state
 
+      // First, set the payment method to midtrans if not already set
+      const setMethodResponse = await fetch("/api/payment/set-payment-method", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          paymentId,
+          paymentMethod: "midtrans",
+        }),
+      });
+
+      if (!setMethodResponse.ok) {
+        const error = await setMethodResponse.json();
+        showError("Error", error.error || "Gagal mengatur metode pembayaran");
+        return;
+      }
+
       const response = await fetch("/api/payment/create-installment-payment", {
         method: "POST",
         headers: {
@@ -1252,6 +1326,7 @@ export default function PaymentsPage() {
           installment: null,
           group: null,
         });
+        fetchInstallments(); // Refresh to get updated paymentMethod
       } else {
         showError(t("payments.errors.paymentFailed"), data.error);
       }
@@ -1324,7 +1399,7 @@ export default function PaymentsPage() {
 
     // Allow payment for pending OR rejected installments that exist
     return (
-      (installment.status === "pending" || installment.status === "rejected") && 
+      (installment.status === "pending" || installment.status === "rejected") &&
       (installment as any).exists !== false
     );
   };
@@ -1387,7 +1462,7 @@ export default function PaymentsPage() {
     if (translationKey) {
       return t(translationKey);
     }
-    
+
     // Otherwise, return the original reason (for custom admin notes)
     return reason;
   };
@@ -2246,10 +2321,8 @@ export default function PaymentsPage() {
                                           group
                                         ) && (
                                           <>
-                                            {/* Show appropriate button based on payment method - use group's method if set, otherwise installment's */}
-                                            {(group.paymentMethod ||
-                                              installment.paymentMethod) ===
-                                            "manual-bca" ? (
+                                            {/* Show appropriate button based on installment's own payment method */}
+                                            {installment.paymentMethod === "manual-bca" ? (
                                               installment.adminStatus !==
                                               "approved" ? (
                                                 <div>
@@ -2315,9 +2388,7 @@ export default function PaymentsPage() {
                                                   )}
                                                 </div>
                                               )
-                                            ) : (group.paymentMethod ||
-                                                installment.paymentMethod) ===
-                                              "midtrans" ? (
+                                            ) : installment.paymentMethod === "midtrans" ? (
                                               /* Direct Midtrans payment button for pre-selected method */
                                               <button
                                                 onClick={() => {
@@ -2344,20 +2415,15 @@ export default function PaymentsPage() {
                                                       )}
                                                 </span>
                                               </button>
-                                            ) : !group.paymentMethod &&
-                                              !installment.paymentMethod ? (
-                                              /* Redirect to payment-method page if no method selected */
+                                            ) : !installment.paymentMethod ? (
+                                              /* Show payment method modal if no method selected for this installment */
                                               <button
-                                                onClick={() => {
-                                                  const contractId =
-                                                    group.contractId ||
-                                                    group.cicilanOrderId;
-                                                  if (contractId) {
-                                                    router.push(
-                                                      `/contract/${contractId}/payment-method`
-                                                    );
-                                                  }
-                                                }}
+                                                onClick={() =>
+                                                  handleInstallmentPaymentClick(
+                                                    installment,
+                                                    group
+                                                  )
+                                                }
                                                 className="w-full px-3 py-2 bg-gradient-to-r from-[#324D3E] to-[#4C3D19] text-white text-sm rounded-full hover:shadow-lg transition-all duration-300 font-poppins font-medium"
                                                 disabled={
                                                   uploadingProof ===
@@ -3109,12 +3175,10 @@ export default function PaymentsPage() {
                                         </div>
                                       )
                                     ) : !contract.paymentMethod ? (
-                                      /* Redirect to payment-method page if no method selected */
+                                      /* Show payment method modal if no method selected */
                                       <button
                                         onClick={() =>
-                                          router.push(
-                                            `/contract/${contract.contractId}/payment-method`
-                                          )
+                                          handleFullPaymentClick(contract)
                                         }
                                         className="w-full px-3 py-2 bg-gradient-to-r from-[#324D3E] to-[#4C3D19] text-white text-sm rounded-full hover:shadow-lg transition-all duration-300 font-poppins font-medium"
                                       >

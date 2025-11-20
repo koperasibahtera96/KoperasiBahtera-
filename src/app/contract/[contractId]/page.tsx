@@ -50,19 +50,19 @@ function renderNumberedTextWithIndent(
   lineHeight: number
 ): number {
   const numberMatch = text.match(/^(\d+\.\s)/);
-  
+
   if (!numberMatch) {
     return renderTextWithFormatting(pdf, text, x, y, maxWidth, lineHeight);
   }
-  
+
   const numberPart = numberMatch[1];
   const textPart = text.substring(numberPart.length);
   const numberWidth = pdf.getTextWidth(numberPart);
   const indentX = x + numberWidth;
   const textMaxWidth = maxWidth - numberWidth;
-  
+
   pdf.text(numberPart, x, y);
-  
+
   const heightUsed = renderTextWithFormatting(
     pdf,
     textPart,
@@ -71,7 +71,7 @@ function renderNumberedTextWithIndent(
     textMaxWidth,
     lineHeight
   );
-  
+
   return heightUsed;
 }
 
@@ -85,7 +85,7 @@ function renderTextWithFormatting(
   lineHeight: number
 ): number {
   const parts: { text: string; bold?: boolean; italic?: boolean }[] = [];
-  
+
   let processedText = text;
   const forceMajeureRegex = /Force Majeure/g;
   const modalKerjasamaRegex = /MODAL KERJASAMA/g;
@@ -95,7 +95,11 @@ function renderTextWithFormatting(
   const pihakKeduaLabelRegex = /(?<=disebut sebagai )(Pihak Kedua)/g;
   const priceRegex = /(Rp[\d\.,]+-)/g;
   const plantRegex = /\b(GAHARU|ALPUKAT|JENGKOL|AREN|KELAPA)\b/g;
-  
+  // Match amount in words (Indonesian number words like "satu juta", "dua puluh ribu", etc.)
+  const amountWordsRegex = /([a-z\s]+rupiah)/gi;
+  // Match payment type phrases
+  const paymentTypeRegex = /(sekali bayar|dengan cara dicicil)/gi;
+
   processedText = processedText.replace(forceMajeureRegex, '{{ITALIC:Force Majeure}}');
   processedText = processedText.replace(modalKerjasamaRegex, '{{BOLD:MODAL KERJASAMA}}');
   processedText = processedText.replace(halimRegex, '{{BOLD:Halim Perdana Kusuma, S.H., M.H.}}');
@@ -103,11 +107,13 @@ function renderTextWithFormatting(
   processedText = processedText.replace(pihakKeduaLabelRegex, '{{BOLD:Pihak Kedua}}');
   processedText = processedText.replace(priceRegex, '{{BOLD:$1}}');
   processedText = processedText.replace(plantRegex, '{{BOLD:$1}}');
-  
+  processedText = processedText.replace(amountWordsRegex, '{{BOLD:$1}}');
+  processedText = processedText.replace(paymentTypeRegex, '{{BOLD:$1}}');
+
   const markerRegex = /\{\{(BOLD|ITALIC):([^}]+)\}\}/g;
   let lastIndex = 0;
   let match;
-  
+
   while ((match = markerRegex.exec(processedText)) !== null) {
     if (match.index > lastIndex) {
       parts.push({ text: processedText.substring(lastIndex, match.index) });
@@ -119,40 +125,40 @@ function renderTextWithFormatting(
     });
     lastIndex = match.index + match[0].length;
   }
-  
+
   if (lastIndex < processedText.length) {
     parts.push({ text: processedText.substring(lastIndex) });
   }
-  
+
   if (parts.length === 0 || (parts.length === 1 && !parts[0].bold && !parts[0].italic)) {
     const lines = pdf.splitTextToSize(text, maxWidth);
     pdf.text(lines, x, y);
     return lineHeight * lines.length;
   }
-  
+
   let currentY = y;
   let currentX = x;
   const pageWidth = maxWidth;
-  
+
   parts.forEach(part => {
     const style = part.italic ? 'italic' : (part.bold ? 'bold' : 'normal');
     pdf.setFont('helvetica', style);
-    
+
     const words = part.text.split(' ');
     words.forEach((word, idx) => {
       const wordWithSpace = idx < words.length - 1 ? word + ' ' : word;
       const wordWidth = pdf.getTextWidth(wordWithSpace);
-      
+
       if (currentX + wordWidth > x + pageWidth && currentX > x) {
         currentY += lineHeight;
         currentX = x;
       }
-      
+
       pdf.text(wordWithSpace, currentX, currentY);
       currentX += wordWidth;
     });
   });
-  
+
   pdf.setFont('helvetica', 'normal');
   return currentY - y + lineHeight;
 }
@@ -732,6 +738,9 @@ export default function ContractPage() {
         }
       }
 
+      // Helper function to wrap dynamic values in bold markers
+      const wrapBold = (text: string) => `{{BOLD:${text}}}`;
+
       const preambleIntroText =
         "Bahwa sebelum ditandatanganinya Surat Perjanjian ini, Para pihak terlebih dahulu menerangkan hal–hal sebagai berikut:";
       const preambleIntroLines = pdf.splitTextToSize(
@@ -742,9 +751,9 @@ export default function ContractPage() {
       yPosition += lineHeight * preambleIntroLines.length + 3;
 
     const preambleTexts = [
-      `1. Bahwa Pihak Pertama adalah selaku yang memiliki modal sebesar ${totalAmountText} (${totalAmountWords.toLowerCase()}) untuk selanjutnya disebut sebagai MODAL KERJASAMA untuk project (${plantTypesText});`,
-        `2. Bahwa Pihak Kedua adalah Pengelola Dana Kerjasama untuk project (${plantTypesText}) berlokasi di Kabupten Musi Rawas Utara Provinsi Sumatera Selatan;`,
-        `3. Bahwa Pihak Pertama dan Pihak Kedua setuju untuk saling mengikatkan diri dalam suatu perjanjian Kerjasama di project (${plantTypesText}) sesuai dengan ketentuan hukum yang berlaku.`,
+      `1. Bahwa Pihak Pertama adalah selaku yang memiliki modal sebesar ${wrapBold(totalAmountText)} (${wrapBold(totalAmountWords.toLowerCase())}) untuk selanjutnya disebut sebagai MODAL KERJASAMA untuk project (${wrapBold(plantTypesText)});`,
+        `2. Bahwa Pihak Kedua adalah Pengelola Dana Kerjasama untuk project (${wrapBold(plantTypesText)}) berlokasi di Kabupten Musi Rawas Utara Provinsi Sumatera Selatan;`,
+        `3. Bahwa Pihak Pertama dan Pihak Kedua setuju untuk saling mengikatkan diri dalam suatu perjanjian Kerjasama di project (${wrapBold(plantTypesText)}) sesuai dengan ketentuan hukum yang berlaku.`,
         `4. Bahwa berdasarkan hal-hal tersebut di atas, kedua belah pihak menyatakan sepakat dan setuju untuk mengadakan Perjanjian Kerjasama ini yang dilaksanakan dengan ketentuan dan syarat-syarat sebagai berikut:`,
       ];
 
@@ -776,7 +785,7 @@ export default function ContractPage() {
           content: [
             "Dalam perjanjian ini, istilah-istilah berikut mempunyai arti sebagai berikut:",
             "",
-            `1. Paket Penanaman adalah unit usaha yang terdiri dari 10 (sepuluh) pohon (${plantTypesText}) yang ditanam, dirawat, dan dipanen oleh Pihak Pertama.`,
+            `1. Paket Penanaman adalah unit usaha yang terdiri dari 10 (sepuluh) pohon (${wrapBold(plantTypesText)}) yang ditanam, dirawat, dan dipanen oleh Pihak Pertama.`,
             `2. Dana Investasi adalah sejumlah uang yang diserahkan Pihak Kedua kepada Pihak Pertama untuk mendanai pembelian bibit, penanaman, perawatan, serta biaya operasional hingga pemanenan pohon.`,
             `3. Keuntungan adalah hasil bersih dari penjualan panen setelah dikurangi biaya operasional yang sah.`,
             `4. Kerugian adalah nilai minus yang timbul akibat berkurangnya hasil panen atau biaya operasional yang lebih besar daripada pendapatan.`,
@@ -789,14 +798,14 @@ export default function ContractPage() {
         {
           title: "PASAL II\nMAKSUD DAN TUJUAN",
           content: [
-            `Pihak Pertama dalam perjanjian ini memberi dana kerjasama kepada Pihak Kedua sebesar ${totalAmountText} (${totalAmountWords.toLowerCase()}) untuk 1 (satu) paket penanaman dan Pihak Kedua dengan ini telah menerima penyerahan DANA KERJASAMA tersebut dari Pihak Pertama serta menyanggupi untuk melaksanakan pengelolaan DANA KERJASAMA tersebut.`,
+            `Pihak Pertama dalam perjanjian ini memberi dana kerjasama kepada Pihak Kedua sebesar ${wrapBold(totalAmountText)} (${wrapBold(totalAmountWords.toLowerCase())}) untuk 1 (satu) paket penanaman dan Pihak Kedua dengan ini telah menerima penyerahan DANA KERJASAMA tersebut dari Pihak Pertama serta menyanggupi untuk melaksanakan pengelolaan DANA KERJASAMA tersebut.`,
           ],
         },
         {
           title: "PASAL III\nRUANG LINGKUP",
           content: [
-            `1. Dalam pelaksanaan perjanjian ini, Pihak Pertama memberi dana kepada Pihak Kedua sebesar ${totalAmountText} (${totalAmountWords.toLowerCase()}) untuk 1 (satu) paket penanaman dan Pihak Kedua dengan ini telah menerima penyerahan dana tersebut dari Pihak Pertama serta menyanggupi untuk melaksanakan pengelolaan dana.`,
-            `2. Pihak Kedua dengan ini berjanji dan mengikatkan diri untuk melaksanakan perputaran dana pada Usaha Peningkatan Modal di project (${plantTypesText}) yang berlokasi di Kabupten Musi Rawas Utara Provinsi Sumatera Selatan setelah ditandatanganinya perjanjian ini.`,
+            `1. Dalam pelaksanaan perjanjian ini, Pihak Pertama memberi dana kepada Pihak Kedua sebesar ${wrapBold(totalAmountText)} (${wrapBold(totalAmountWords.toLowerCase())}) untuk 1 (satu) paket penanaman dan Pihak Kedua dengan ini telah menerima penyerahan dana tersebut dari Pihak Pertama serta menyanggupi untuk melaksanakan pengelolaan dana.`,
+            `2. Pihak Kedua dengan ini berjanji dan mengikatkan diri untuk melaksanakan perputaran dana pada Usaha Peningkatan Modal di project (${wrapBold(plantTypesText)}) yang berlokasi di Kabupten Musi Rawas Utara Provinsi Sumatera Selatan setelah ditandatanganinya perjanjian ini.`,
             `3. Pihak Kedua dengan ini berjanji dan mengikatkan diri untuk memberikan keuntungan kepada Pihak Pertama di mulai dari setelah masa panen pertama;`,
           ],
         },
@@ -805,7 +814,7 @@ export default function ContractPage() {
           content: [
             "Bahwa Para Pihak sepakat mengenai tata cara pembayaran terhadap Kerjasama dengan cara:",
             "",
-            `1. Pihak Pertama membayar sebesar ${totalAmountText} (${totalAmountWords.toLowerCase()}) ${contractData.investment.paymentType === 'full' ? 'sekali bayar' : 'dengan cara dicicil'};`,
+            `1. Pihak Pertama membayar sebesar ${wrapBold(totalAmountText)} (${wrapBold(totalAmountWords.toLowerCase())}) ${wrapBold(contractData.investment.paymentType === 'full' ? 'sekali bayar' : 'dengan cara dicicil')};`,
           ],
         },
         {
@@ -818,7 +827,7 @@ export default function ContractPage() {
           title: "PASAL VI\nHAK DAN KEWAJIBAN PIHAK PERTAMA",
           content: [
             "Dalam Perjanjian Kerjasama ini, Pihak Pertama memiliki Hak dan Kewajiban sebagai berikut:",
-            `1. Memberikan dana kepada Pihak Kedua sebesar ${totalAmountText} (${totalAmountWords.toLowerCase()}) untuk 1 (satu) paket penanaman;`,
+            `1. Memberikan dana kepada Pihak Kedua sebesar ${wrapBold(totalAmountText)} (${wrapBold(totalAmountWords.toLowerCase())}) untuk 1 (satu) paket penanaman;`,
             `2. Menerima hasil keuntungan atas pengelolaan dana;`,
             `3. Menerima laporan perkembangan usaha secara berkala;`,
             `4. Melakukan pengawasan terhadap usaha dengan pemberitahuan terlebih dahulu;`,
@@ -830,7 +839,7 @@ export default function ContractPage() {
           title: "PASAL VII\nHAK DAN KEWAJIBAN PIHAK KEDUA",
           content: [
             "Dalam Perjanjian Kerjasama ini, Pihak Kedua memiliki Hak dan Kewajiban sebagai berikut :",
-            `1. Menerima dana dari Pihak Pertama sebesar ${totalAmountText} (${totalAmountWords.toLowerCase()}) untuk 1 (satu) paket penanaman;`,
+            `1. Menerima dana dari Pihak Pertama sebesar ${wrapBold(totalAmountText)} (${wrapBold(totalAmountWords.toLowerCase())}) untuk 1 (satu) paket penanaman;`,
             `2. Memberikan bagian hasil keuntungan kepada Pihak Pertama;`,
             `3. Memperoleh bagian keuntungan dari pengelolaan usaha;`,
             `4. Menentukan metode teknis penanaman, perawatan, dan pemanenan pohon;`,
@@ -845,7 +854,7 @@ export default function ContractPage() {
           title: "PASAL VIII\nPEMBAGIAN HASIL",
           content: [
             "Dalam Perjanjian Kerjasama ini, kedua belah pihak sepakat didalam hal pembagian hasil penyertaan dana sebagai berikut:",
-            `1. Kedua belah pihak sepakat dan setuju bahwa perjanjian kerjasama ini dilakukan dengan cara pemberian keuntungan yang diperoleh dalam Usaha Peningkatan Modal Usaha di project (${plantTypesText}) berlokasi di Kabupten Musi Rawas Utara Provinsi Sumatera Selatan;`,
+            `1. Kedua belah pihak sepakat dan setuju bahwa perjanjian kerjasama ini dilakukan dengan cara pemberian keuntungan yang diperoleh dalam Usaha Peningkatan Modal Usaha di project (${wrapBold(plantTypesText)}) berlokasi di Kabupten Musi Rawas Utara Provinsi Sumatera Selatan;`,
             `2. Keuntungan yang akan di Terima Pihak Pertama dibagi dengan skema: 30% (tiga puluh persen) untuk Pihak Pertama dan 70% (tujuh puluh persen) untuk Pihak Kedua;`,
             `3. Pembagian keuntungan dilakukan paling lambat 7 (tujuh) hari Kerja setelah masa panen dan penjualan telah selesai dilaksanakan.`,
             `4. Pembayaran keuntungan dilakukan melalui transfer ke rekening Pihak Pertama.`,
@@ -1414,13 +1423,16 @@ export default function ContractPage() {
                         plantTypesText = "KELAPA";
                     }
 
+                    // Helper function to wrap dynamic values in strong tags for HTML preview
+                    const wrapStrong = (text: string) => `<strong>${text}</strong>`;
+
                     const articles = [
                       {
                         title: "PASAL I\nDEFINISI",
                         content: [
                           "Dalam perjanjian ini, istilah-istilah berikut mempunyai arti sebagai berikut:",
                           "",
-                          `1. Paket Penanaman adalah unit usaha yang terdiri dari 10 (sepuluh) pohon (${plantTypesText}) yang ditanam, dirawat, dan dipanen oleh Pihak Pertama.`,
+                          `1. Paket Penanaman adalah unit usaha yang terdiri dari 10 (sepuluh) pohon (${wrapStrong(plantTypesText)}) yang ditanam, dirawat, dan dipanen oleh Pihak Pertama.`,
                           `2. Dana Investasi adalah sejumlah uang yang diserahkan Pihak Kedua kepada Pihak Pertama untuk mendanai pembelian bibit, penanaman, perawatan, serta biaya operasional hingga pemanenan pohon.`,
                           `3. Keuntungan adalah hasil bersih dari penjualan panen setelah dikurangi biaya operasional yang sah.`,
                           `4. Kerugian adalah nilai minus yang timbul akibat berkurangnya hasil panen atau biaya operasional yang lebih besar daripada pendapatan.`,
@@ -1433,14 +1445,14 @@ export default function ContractPage() {
                       {
                         title: "PASAL II\nMAKSUD DAN TUJUAN",
                         content: [
-                          `Pihak Pertama dalam perjanjian ini memberi dana kerjasama kepada Pihak Kedua sebesar ${totalAmountText} (${totalAmountWords.toLowerCase()}) untuk 1 (satu) paket penanaman dan Pihak Kedua dengan ini telah menerima penyerahan DANA KERJASAMA tersebut dari Pihak Pertama serta menyanggupi untuk melaksanakan pengelolaan DANA KERJASAMA tersebut.`,
+                          `Pihak Pertama dalam perjanjian ini memberi dana kerjasama kepada Pihak Kedua sebesar ${wrapStrong(totalAmountText)} (${wrapStrong(totalAmountWords.toLowerCase())}) untuk 1 (satu) paket penanaman dan Pihak Kedua dengan ini telah menerima penyerahan DANA KERJASAMA tersebut dari Pihak Pertama serta menyanggupi untuk melaksanakan pengelolaan DANA KERJASAMA tersebut.`,
                         ],
                       },
                       {
                         title: "PASAL III\nRUANG LINGKUP",
                         content: [
-                          `1. Dalam pelaksanaan perjanjian ini, Pihak Pertama memberi dana kepada Pihak Kedua sebesar ${totalAmountText} (${totalAmountWords.toLowerCase()}) untuk 1 (satu) paket penanaman dan Pihak Kedua dengan ini telah menerima penyerahan dana tersebut dari Pihak Pertama serta menyanggupi untuk melaksanakan pengelolaan dana.`,
-                          `2. Pihak Kedua dengan ini berjanji dan mengikatkan diri untuk melaksanakan perputaran dana pada Usaha Peningkatan Modal di project (${plantTypesText}) yang berlokasi di Kabupten Musi Rawas Utara Provinsi Sumatera Selatan setelah ditandatanganinya perjanjian ini.`,
+                          `1. Dalam pelaksanaan perjanjian ini, Pihak Pertama memberi dana kepada Pihak Kedua sebesar ${wrapStrong(totalAmountText)} (${wrapStrong(totalAmountWords.toLowerCase())}) untuk 1 (satu) paket penanaman dan Pihak Kedua dengan ini telah menerima penyerahan dana tersebut dari Pihak Pertama serta menyanggupi untuk melaksanakan pengelolaan dana.`,
+                          `2. Pihak Kedua dengan ini berjanji dan mengikatkan diri untuk melaksanakan perputaran dana pada Usaha Peningkatan Modal di project (${wrapStrong(plantTypesText)}) yang berlokasi di Kabupten Musi Rawas Utara Provinsi Sumatera Selatan setelah ditandatanganinya perjanjian ini.`,
                           `3. Pihak Kedua dengan ini berjanji dan mengikatkan diri untuk memberikan keuntungan kepada Pihak Pertama di mulai dari setelah masa panen pertama;`,
                         ],
                       },
@@ -1449,7 +1461,7 @@ export default function ContractPage() {
                         content: [
                           "Bahwa Para Pihak sepakat mengenai tata cara pembayaran terhadap Kerjasama dengan cara:",
                           "",
-                          `1. Pihak Pertama membayar sebesar ${totalAmountText} (${totalAmountWords.toLowerCase()}) ${contractData.investment.paymentType === 'full' ? 'sekali bayar' : 'dengan cara dicicil'};`,
+                          `1. Pihak Pertama membayar sebesar ${wrapStrong(totalAmountText)} (${wrapStrong(totalAmountWords.toLowerCase())}) ${wrapStrong(contractData.investment.paymentType === 'full' ? 'sekali bayar' : 'dengan cara dicicil')};`,
                         ],
                       },
                       {
@@ -1462,7 +1474,7 @@ export default function ContractPage() {
                         title: "PASAL VI\nHAK DAN KEWAJIBAN PIHAK PERTAMA",
                         content: [
                           "Dalam Perjanjian Kerjasama ini, Pihak Pertama memiliki Hak dan Kewajiban sebagai berikut:",
-                          `1. Memberikan dana kepada Pihak Kedua sebesar ${totalAmountText} (${totalAmountWords.toLowerCase()}) untuk 1 (satu) paket penanaman;`,
+                          `1. Memberikan dana kepada Pihak Kedua sebesar ${wrapStrong(totalAmountText)} (${wrapStrong(totalAmountWords.toLowerCase())}) untuk 1 (satu) paket penanaman;`,
                           `2. Menerima hasil keuntungan atas pengelolaan dana;`,
                           `3. Menerima laporan perkembangan usaha secara berkala;`,
                           `4. Melakukan pengawasan terhadap usaha dengan pemberitahuan terlebih dahulu;`,
@@ -1474,7 +1486,7 @@ export default function ContractPage() {
                         title: "PASAL VII\nHAK DAN KEWAJIBAN PIHAK KEDUA",
                         content: [
                           "Dalam Perjanjian Kerjasama ini, Pihak Kedua memiliki Hak dan Kewajiban sebagai berikut :",
-                          `1. Menerima dana dari Pihak Pertama sebesar ${totalAmountText} (${totalAmountWords.toLowerCase()}) untuk 1 (satu) paket penanaman;`,
+                          `1. Menerima dana dari Pihak Pertama sebesar ${wrapStrong(totalAmountText)} (${wrapStrong(totalAmountWords.toLowerCase())}) untuk 1 (satu) paket penanaman;`,
                           `2. Memberikan bagian hasil keuntungan kepada Pihak Pertama;`,
                           `3. Memperoleh bagian keuntungan dari pengelolaan usaha;`,
                           `4. Menentukan metode teknis penanaman, perawatan, dan pemanenan pohon;`,
@@ -1489,7 +1501,7 @@ export default function ContractPage() {
                         title: "PASAL VIII\nPEMBAGIAN HASIL",
                         content: [
                           "Dalam Perjanjian Kerjasama ini, kedua belah pihak sepakat didalam hal pembagian hasil penyertaan dana sebagai berikut:",
-                          `1. Kedua belah pihak sepakat dan setuju bahwa perjanjian kerjasama ini dilakukan dengan cara pemberian keuntungan yang diperoleh dalam Usaha Peningkatan Modal Usaha di project (${plantTypesText}) berlokasi di Kabupten Musi Rawas Utara Provinsi Sumatera Selatan;`,
+                          `1. Kedua belah pihak sepakat dan setuju bahwa perjanjian kerjasama ini dilakukan dengan cara pemberian keuntungan yang diperoleh dalam Usaha Peningkatan Modal Usaha di project (${wrapStrong(plantTypesText)}) berlokasi di Kabupten Musi Rawas Utara Provinsi Sumatera Selatan;`,
                           `2. Keuntungan yang akan di Terima Pihak Pertama dibagi dengan skema: 30% (tiga puluh persen) untuk Pihak Pertama dan 70% (tujuh puluh persen) untuk Pihak Kedua;`,
                           `3. Pembagian keuntungan dilakukan paling lambat 7 (tujuh) hari Kerja setelah masa panen dan penjualan telah selesai dilaksanakan.`,
                           `4. Pembayaran keuntungan dilakukan melalui transfer ke rekening Pihak Pertama.`,
@@ -1551,7 +1563,7 @@ export default function ContractPage() {
 
                     return articles.map((article, index) => (
                       <div key={index} className="mb-6">
-                        <h3 className="font-bold text-[#324D3E] mb-3 whitespace-pre-line">
+                        <h3 className="font-bold text-[#324D3E] mb-3 whitespace-pre-line text-center">
                           {article.title}
                         </h3>
                         <div className="space-y-2">
@@ -1563,9 +1575,8 @@ export default function ContractPage() {
                                   ? "h-2"
                                   : "text-xs leading-relaxed"
                               }
-                            >
-                              {paragraph}
-                            </p>
+                              dangerouslySetInnerHTML={{ __html: paragraph }}
+                            />
                           ))}
                         </div>
                       </div>

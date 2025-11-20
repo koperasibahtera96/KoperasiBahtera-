@@ -758,7 +758,7 @@ export default function StaffPage() {
                   "!text-[#4c1d1d]"
                 )}
               >
-                {data?.summary.fullPayments || 0}
+                {data?.summary?.fullPayments || 0}
               </div>
               <p
                 className={getThemeClasses(
@@ -809,7 +809,7 @@ export default function StaffPage() {
                   "!text-[#4c1d1d]"
                 )}
               >
-                {data?.summary.cicilanPayments || 0}
+                {data?.summary?.cicilanPayments || 0}
               </div>
               <p
                 className={getThemeClasses(

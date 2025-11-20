@@ -1,25 +1,25 @@
 "use client";
 
+import { useLanguage } from "@/contexts/LanguageContext";
+import { formatDate, parseDateString } from "@/lib/utils/date";
+import { coconut } from "@lucide/lab";
 import { AnimatePresence, motion } from "framer-motion";
 import jsPDF from "jspdf";
-import { formatDate, parseDateString } from "@/lib/utils/date";
 import {
   BarChart3,
   CheckCircle,
   Coins,
   Download,
+  Icon,
   Leaf,
   Palmtree,
   Sprout,
   Trees,
-  Icon,
 } from "lucide-react";
-import { coconut } from "@lucide/lab";
 import { useSession } from "next-auth/react";
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { useLanguage } from "@/contexts/LanguageContext";
 
 interface PlantInstance {
   id: string;
@@ -563,8 +563,7 @@ export default function InvestasiPage() {
             {[
               {
                 title: t("payments.stats.totalPackages"),
-                value: data?.totalInvestments || 0,
-                suffix: ` ${t("plants.trees")}`,
+                value: `${data?.totalInvestments} ${t("plants.packages")} - ${data?.jumlahPohon} ${t("plants.trees")}`,
                 icon: <BarChart3 className="w-6 h-6" />,
                 bgColor: "from-blue-500 to-blue-600",
               },
@@ -581,13 +580,6 @@ export default function InvestasiPage() {
                 suffix: "",
                 icon: <CheckCircle className="w-6 h-6" />,
                 bgColor: "from-emerald-500 to-emerald-600",
-              },
-              {
-                title: t("plants.treeCount"),
-                value: data?.jumlahPohon || 0,
-                suffix: ` ${t("plants.trees")}`,
-                icon: <Trees className="w-6 h-6" />,
-                bgColor: "from-teal-500 to-teal-600",
               },
             ].map((stat) => (
               <motion.div
@@ -611,7 +603,7 @@ export default function InvestasiPage() {
                 <p className="text-2xl font-bold text-gray-900">
                   {typeof stat.value === "string"
                     ? stat.value
-                    : stat.value + stat.suffix}
+                    : stat.value + stat.suffix!}
                 </p>
               </motion.div>
             ))}
@@ -702,6 +694,16 @@ export default function InvestasiPage() {
                           {formatCurrency(investment.amountPaid)}
                         </p>
                       </div>
+                        <div>
+                          <span className="text-gray-600">
+                            {t("plants.remainingPayment")}
+                          </span>
+                          <p className="font-semibold text-orange-600">
+                            {formatCurrency(
+                              investment.totalAmount - investment.amountPaid
+                            )}
+                          </p>
+                        </div>
                     </div>
                   </div>
 
@@ -1122,6 +1124,27 @@ export default function InvestasiPage() {
                           {selectedInvestment.progress}%
                         </p>
                       </div>
+                        <>
+                          <div className="p-4 bg-gray-50 rounded-lg">
+                            <span className="text-sm text-gray-600">
+                              {t("plants.totalAmount")}
+                            </span>
+                            <p className="font-semibold">
+                              {formatCurrency(selectedInvestment.totalAmount)}
+                            </p>
+                          </div>
+                          <div className="p-4 bg-gray-50 rounded-lg">
+                            <span className="text-sm text-gray-600">
+                              {t("plants.remainingPayment")}
+                            </span>
+                            <p className="font-semibold text-orange-600">
+                              {formatCurrency(
+                                selectedInvestment.totalAmount -
+                                  selectedInvestment.amountPaid
+                              )}
+                            </p>
+                          </div>
+                        </>
                     </div>
                   </div>
 

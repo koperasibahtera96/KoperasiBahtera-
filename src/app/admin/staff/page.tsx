@@ -12,8 +12,8 @@ import {
   StaffStats,
   StaffUser,
 } from "@/types/admin";
-import { useEffect, useState } from "react";
 import { useTheme } from 'next-themes';
+import { useEffect, useState } from "react";
 
 export default function StaffPage() {
   const { theme } = useTheme();

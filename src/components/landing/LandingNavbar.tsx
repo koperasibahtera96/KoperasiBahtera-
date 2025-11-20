@@ -1,13 +1,13 @@
 "use client";
 
+import { CameraSelfie, CameraSelfieRef } from "@/components/forms/CameraSelfie";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { AnimatePresence, motion } from "framer-motion";
 import { signOut, useSession } from "next-auth/react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState, useRef, useCallback } from "react";
-import { CameraSelfie, CameraSelfieRef } from "@/components/forms/CameraSelfie";
-import { useLanguage } from "@/contexts/LanguageContext";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 const navVariants: any = {
   hidden: {
@@ -72,6 +72,7 @@ export default function LandingNavbar({
   const [ktpFile, setKtpFile] = useState<File | null>(null);
   const [faceFile, setFaceFile] = useState<File | null>(null);
   const cameraSelfieRef = useRef<CameraSelfieRef | null>(null);
+  const ktpFileInputRef = useRef<HTMLInputElement | null>(null);
   const [currentResubmission, setCurrentResubmission] = useState<any | null>(
     null
   );
@@ -1072,7 +1073,7 @@ export default function LandingNavbar({
           </motion.div>
         </div>
       </motion.nav>
-      
+
       {/* Floating Hamburger Navigation Menu for Mobile - Bottom Left */}
       {!hideNavigation && (
         <div className="xl:hidden mobile-nav-menu">
@@ -1143,7 +1144,7 @@ export default function LandingNavbar({
           </AnimatePresence>
         </div>
       )}
-      
+
       {/* Modal rendered outside the nav to avoid layout constraints */}
       <AnimatePresence>
         {showResubmitModal && session?.user && (
@@ -1207,15 +1208,92 @@ export default function LandingNavbar({
                     )}
 
                   <div>
-                    <label className="block text-sm font-medium text-gray-700">
+                    <label className="block text-sm font-medium text-gray-700 underline mb-2">
                       {t("resubmit.ktpLabel")}
                     </label>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={(e) => setKtpFile(e.target.files?.[0] || null)}
-                      className="mt-1"
-                    />
+                    <div className="relative">
+                      <input
+                        ref={ktpFileInputRef}
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => setKtpFile(e.target.files?.[0] || null)}
+                        className="hidden"
+                      />
+                      {ktpFile ? (
+                        <div className="border-2 border-green-500 rounded-lg p-4 bg-green-50">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                              <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
+                                <svg
+                                  className="w-5 h-5 text-green-600"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  viewBox="0 0 24 24"
+                                >
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={2}
+                                    d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                                  />
+                                </svg>
+                              </div>
+                              <div>
+                                <p className="text-sm font-medium text-gray-700">
+                                  {ktpFile.name}
+                                </p>
+                                <p className="text-xs text-gray-500">
+                                  {(ktpFile.size / 1024 / 1024).toFixed(2)} MB
+                                </p>
+                              </div>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setKtpFile(null);
+                                if (ktpFileInputRef.current) {
+                                  ktpFileInputRef.current.value = "";
+                                }
+                              }}
+                              className="text-red-500 hover:text-red-700 text-sm"
+                            >
+                              Remove
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div
+                          onClick={() => ktpFileInputRef.current?.click()}
+                          className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-[#324D3E] hover:bg-gray-50 transition-colors cursor-pointer"
+                        >
+                          <div className="space-y-3">
+                            <div className="w-12 h-12 mx-auto bg-gray-100 rounded-full flex items-center justify-center">
+                              <svg
+                                className="w-6 h-6 text-gray-400"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
+                                />
+                              </svg>
+                            </div>
+                            <div>
+                              <p className="text-sm text-gray-600 font-medium">
+                                {t("resubmit.clickToUploadKtp")}
+                              </p>
+                              <p className="text-xs text-gray-500 mt-1">
+                                PNG, JPG up to 5MB
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   </div>
 
                   <div>

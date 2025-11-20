@@ -8,11 +8,11 @@ import {
   ReviewInstallmentRequest,
   ReviewInstallmentResponse,
 } from "@/types/cicilan";
-import { MessageCircle, Users, Clock, DollarSign } from "lucide-react";
+import { Clock, DollarSign, MessageCircle, Users } from "lucide-react";
+import { useTheme } from "next-themes";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { use, useEffect, useState } from "react";
-import { useTheme } from "next-themes";
 
 export default function FinanceInvestorDetailPage({
   params,
@@ -181,6 +181,7 @@ export default function FinanceInvestorDetailPage({
       case "submitted":
         return "Sudah Upload";
       case "approved":
+      case "completed":
         return "Disetujui";
       case "rejected":
         return "Ditolak";
@@ -739,7 +740,10 @@ export default function FinanceInvestorDetailPage({
                             }/1`
                           : `${
                               group.installments.filter(
-                                (i) => i.status === "approved"
+                                (i) =>
+                                  i.status === "approved" ||
+                                  i.status === "completed" ||
+                                  (i as any).isPaid === true
                               ).length
                             }/${group.totalInstallments}`}
                       </div>
@@ -761,7 +765,10 @@ export default function FinanceInvestorDetailPage({
                                   ? 100
                                   : 0
                                 : (group.installments.filter(
-                                    (i) => i.status === "approved"
+                                    (i) =>
+                                      i.status === "approved" ||
+                                      i.status === "completed" ||
+                                      (i as any).isPaid === true
                                   ).length /
                                     group.installments.length) *
                                   100
@@ -1277,9 +1284,9 @@ function ReviewModal({
                 setAction("approve");
                 handleSubmit("approve");
               }}
-              disabled={isReviewing}
+              disabled={isReviewing || notes !== ""}
               className={getThemeClasses(
-                "flex-1 px-3 sm:px-4 py-2 bg-gradient-to-r from-[#324D3E] to-[#4C3D19] dark:from-blue-500 dark:to-green-500 text-white rounded-full hover:shadow-lg disabled:opacity-50 font-poppins font-medium transition-all duration-300 text-sm sm:text-base",
+                "flex-1 px-3 sm:px-4 py-2 bg-gradient-to-r from-[#324D3E] to-[#4C3D19] dark:from-blue-500 dark:to-green-500 text-white rounded-full hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed font-poppins font-medium transition-all duration-300 text-sm sm:text-base",
                 "!from-[#FFC1CC] !to-[#FFB3C6] !text-[#4c1d1d]"
               )}
             >

@@ -1,19 +1,19 @@
 import { occupationOptions } from "@/constant/OCCUPATION";
+import { stampContractAfterPayment } from "@/lib/contract-stamping";
+import { generateInvoiceNumber } from "@/lib/invoiceNumberGenerator";
 import { midtransService } from "@/lib/midtrans";
 import dbConnect from "@/lib/mongodb";
-import { generateInvoiceNumber } from "@/lib/invoiceNumberGenerator";
-import { getFirstAdminName } from "@/lib/utils/admin";
 import generateUserCode from "@/lib/userCodeGenerator";
+import { getFirstAdminName } from "@/lib/utils/admin";
 import { Investor } from "@/models";
 import CommissionHistory from "@/models/CommissionHistory";
 import Contract from "@/models/Contract";
 import Payment from "@/models/Payment";
 import PlantInstance from "@/models/PlantInstance";
-import User from "@/models/User";
 import Settings from "@/models/Settings";
+import User from "@/models/User";
 import mongoose from "mongoose";
 import { NextRequest, NextResponse } from "next/server";
-import { stampContractAfterPayment } from "@/lib/contract-stamping";
 
 // Helper function to recalculate investor totals from investment records
 const recalculateInvestorTotals = (investor: any) => {
@@ -1023,7 +1023,6 @@ export async function POST(request: NextRequest) {
               isProcessed: false,
               customerData: installmentPayment.customerData,
               referralCode: installmentPayment.referralCode, // Preserve referral code for commission tracking
-              paymentMethod: installmentPayment.paymentMethod, // Preserve payment method from previous installment
             });
 
             await nextInstallment.save({ session: mongoSession });
@@ -1095,7 +1094,7 @@ export async function POST(request: NextRequest) {
                 // Get commission rate from settings
                 const settings = await Settings.findOne({ type: "system" }).session(mongoSession);
                 const commissionRate = settings?.config?.commissionRate ?? 0.02; // Default to 2% if not set
-                
+
                 // Use stored minConsecutiveTenor from payment (locked at creation time)
                 const minConsecutiveTenor = installmentPayment.minConsecutiveTenor || 10; // Default to 10 if not stored
 
@@ -1107,11 +1106,11 @@ export async function POST(request: NextRequest) {
                   // Within threshold period: Calculate evenly distributed commission
                   const totalInstallments = installmentPayment.totalInstallments;
                   const installmentAmount = installmentPayment.installmentAmount;
-                  
+
                   // Total contract value and total commission
                   const totalContractValue = installmentAmount * totalInstallments;
                   const totalCommission = Math.round(totalContractValue * commissionRate);
-                  
+
                   // Evenly distribute total commission across minConsecutiveTenor installments
                   const commissionPerInstallment = Math.round(totalCommission / minConsecutiveTenor);
 

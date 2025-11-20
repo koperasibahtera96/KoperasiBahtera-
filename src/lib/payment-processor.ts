@@ -1,3 +1,4 @@
+import { stampContractAfterPayment } from "@/lib/contract-stamping";
 import { generateInvoiceNumber } from "@/lib/invoiceNumberGenerator";
 import { getFirstAdminName } from "@/lib/utils/admin";
 import { Investor } from "@/models";
@@ -5,10 +6,9 @@ import CommissionHistory from "@/models/CommissionHistory";
 import Contract from "@/models/Contract";
 import Payment from "@/models/Payment";
 import PlantInstance from "@/models/PlantInstance";
-import User from "@/models/User";
 import Settings from "@/models/Settings";
+import User from "@/models/User";
 import mongoose from "mongoose";
-import { stampContractAfterPayment } from "@/lib/contract-stamping";
 
 // Helper function to recalculate investor totals from investment records
 const recalculateInvestorTotals = (investor: any) => {
@@ -727,7 +727,6 @@ export async function processInstallmentPayment(
         isProcessed: false,
         customerData: payment.customerData,
         referralCode: payment.referralCode, // Preserve referral code for commission tracking
-        paymentMethod: payment.paymentMethod, // Preserve payment method from previous installment
         minConsecutiveTenor: payment.minConsecutiveTenor, // Preserve minConsecutiveTenor for commission calculation
       });
 
@@ -799,7 +798,7 @@ export async function processInstallmentPayment(
           // Get commission rate from settings
           const settings = await Settings.findOne({ type: "system" }).session(mongoSession);
           const commissionRate = settings?.config?.commissionRate ?? 0.02; // Default to 2% if not set
-          
+
           // Use stored minConsecutiveTenor from payment (locked at creation time)
           const minConsecutiveTenor = payment.minConsecutiveTenor || 10; // Default to 10 if not stored
 
@@ -811,11 +810,11 @@ export async function processInstallmentPayment(
             // Within threshold period: Calculate evenly distributed commission
             const totalInstallments = payment.totalInstallments;
             const installmentAmount = payment.installmentAmount;
-            
+
             // Total contract value and total commission
             const totalContractValue = installmentAmount * totalInstallments;
             const totalCommission = Math.round(totalContractValue * commissionRate);
-            
+
             // Evenly distribute total commission across minConsecutiveTenor installments
             const commissionPerInstallment = Math.round(totalCommission / minConsecutiveTenor);
 

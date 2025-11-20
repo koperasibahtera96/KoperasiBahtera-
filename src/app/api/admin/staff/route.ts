@@ -367,6 +367,7 @@ export async function GET(request: NextRequest) {
           "marketing",
           "marketing_head",
           "marketing_admin",
+          "marketing_staff",
           "ketua",
           "mandor",
           "asisten",

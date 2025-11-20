@@ -1,10 +1,10 @@
 "use client";
 
 import { useAlert } from "@/components/ui/Alert";
-import { X, CheckCircle2 } from "lucide-react";
+import { CheckCircle2, X } from "lucide-react";
+import Image from "next/image";
 import { useParams, useRouter } from "next/navigation";
 import { useState } from "react";
-import Image from "next/image";
 
 export default function PaymentMethodPage() {
   const params = useParams();
