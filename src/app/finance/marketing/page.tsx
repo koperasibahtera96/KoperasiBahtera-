@@ -1021,7 +1021,8 @@ export default function MarketingHeadPage() {
                       ""
                     )}
                   >
-                    Komisi Belum Terbayar
+                    Komisi Belum Terbayar 
+                    {/* Catatan Komisi ini butuh perbaikan !  */}
                   </th>
                   <th
                     className={getThemeClasses(
