@@ -272,11 +272,56 @@ export async function processFullPayment(
         }).session(mongoSession);
 
         if (marketingStaff) {
-          // Get commission rate from settings
+          // Get commission rate: prefer locked rates from contract, then custom rate, then global
           const settings = await Settings.findOne({ type: "system" }).session(mongoSession);
-          const commissionRate = settings?.config?.commissionRate ?? 0.02; // Default to 2% if not set
-          const contractValue = payment.amount;
-          const commissionAmount = Math.round(contractValue * commissionRate);
+          const globalCommissionRate = settings?.config?.commissionRate ?? 0.02;
+          
+          // Try to get locked rates from contract
+          const paymentContract = await Contract.findOne({ contractId: contractId }).session(mongoSession);
+          
+          let commissionRate: number;
+          let companyCutRate: number | undefined;
+          let rateSource: string;
+          
+          if (paymentContract?.lockedCommissionRate !== undefined) {
+            // Use locked rates from contract creation time
+            commissionRate = paymentContract.lockedCommissionRate;
+            companyCutRate = paymentContract.lockedCompanyCutRate;
+            rateSource = "contract_locked";
+          } else if (marketingStaff.customCommissionRate !== undefined) {
+            // Use custom rate on marketing staff
+            commissionRate = marketingStaff.customCommissionRate;
+            companyCutRate = marketingStaff.companyCutRate;
+            rateSource = "staff_custom";
+          } else {
+            // Fall back to global rate
+            commissionRate = globalCommissionRate;
+            companyCutRate = undefined;
+            rateSource = "global_default";
+          }
+          
+          console.log(`📊 [${txnId}] Commission rate selection: ${(commissionRate * 100).toFixed(1)}% (source: ${rateSource}, contractId: ${contractId}, contractFound: ${!!paymentContract})`);
+          
+          const isSppgTransaction = payment.isSppgDiscount === true;
+          
+          // For SPPG transactions, use ORIGINAL amount (before discount) for commission calculation
+          const contractValue = isSppgTransaction && payment.originalAmount
+            ? payment.originalAmount
+            : payment.amount;
+          
+          // Calculate commission amounts
+          let commissionAmount: number;
+          let companyCutAmount: number | undefined;
+          
+          if (isSppgTransaction && companyCutRate !== undefined) {
+            // SPPG transaction: split commission between company and marketing staff
+            const marketingCommissionRate = commissionRate - companyCutRate;
+            commissionAmount = Math.round(contractValue * marketingCommissionRate);
+            companyCutAmount = Math.round(contractValue * companyCutRate);
+          } else {
+            // Regular transaction: marketing staff gets full commission
+            commissionAmount = Math.round(contractValue * commissionRate);
+          }
 
           // Create commission record
           const commissionRecord = new CommissionHistory({
@@ -292,6 +337,13 @@ export async function processFullPayment(
             contractValue,
             commissionRate,
             commissionAmount,
+            
+            // SPPG-specific fields
+            ...(isSppgTransaction && {
+              companyCutRate,
+              companyCutAmount,
+              isSppgTransaction: true,
+            }),
 
             paymentType: payment.paymentType,
             earnedAt:
@@ -304,7 +356,7 @@ export async function processFullPayment(
 
           await commissionRecord.save({ session: mongoSession });
           console.log(
-            `💰 [${txnId}] Commission created: ${commissionAmount} for ${marketingStaff.fullName} (${payment.referralCode})`
+            `💰 [${txnId}] Commission created: ${commissionAmount} for ${marketingStaff.fullName} (${payment.referralCode})${isSppgTransaction ? ` [SPPG: company cut ${companyCutAmount}]` : ''}`
           );
         } else {
           console.log(
@@ -728,6 +780,13 @@ export async function processInstallmentPayment(
         customerData: payment.customerData,
         referralCode: payment.referralCode, // Preserve referral code for commission tracking
         minConsecutiveTenor: payment.minConsecutiveTenor, // Preserve minConsecutiveTenor for commission calculation
+        // Preserve SPPG discount fields for commission calculation
+        ...(payment.isSppgDiscount && {
+          isSppgDiscount: true,
+          originalAmount: payment.originalAmount,
+          discountPercentage: payment.discountPercentage,
+          discountAmount: payment.discountAmount,
+        }),
       });
 
       await nextInstallment.save({ session: mongoSession });
@@ -795,15 +854,71 @@ export async function processInstallmentPayment(
         }).session(mongoSession);
 
         if (marketingStaff) {
-          // Get commission rate from settings
+          // Get commission rate: prefer locked rates from contract, then custom rate, then global
           const settings = await Settings.findOne({ type: "system" }).session(mongoSession);
-          const commissionRate = settings?.config?.commissionRate ?? 0.02; // Default to 2% if not set
+          const globalCommissionRate = settings?.config?.commissionRate ?? 0.02;
+          
+          // Try to get locked rates from contract (cicilan contracts use contractId = cicilanOrderId)
+          const installmentContract = await Contract.findOne({ 
+            contractId: payment.cicilanOrderId 
+          }).session(mongoSession);
+          
+          let commissionRate: number;
+          let companyCutRate: number | undefined;
+          let rateSource: string;
+          
+          if (installmentContract?.lockedCommissionRate !== undefined) {
+            // Use locked rates from contract creation time
+            commissionRate = installmentContract.lockedCommissionRate;
+            companyCutRate = installmentContract.lockedCompanyCutRate;
+            rateSource = "contract_locked";
+          } else if (marketingStaff.customCommissionRate !== undefined) {
+            // Use custom rate on marketing staff
+            commissionRate = marketingStaff.customCommissionRate;
+            companyCutRate = marketingStaff.companyCutRate;
+            rateSource = "staff_custom";
+          } else {
+            // Fall back to global rate
+            commissionRate = globalCommissionRate;
+            companyCutRate = undefined;
+            rateSource = "global_default";
+          }
+          
+          console.log(`📊 [${txnId}] Commission rate selection for installment ${installmentNumber}: ${(commissionRate * 100).toFixed(1)}% (source: ${rateSource}, cicilanOrderId: ${payment.cicilanOrderId}, contractFound: ${!!installmentContract})`);
+          
+          const isSppgTransaction = payment.isSppgDiscount === true;
 
           // Use stored minConsecutiveTenor from payment (locked at creation time)
           const minConsecutiveTenor = payment.minConsecutiveTenor || 10; // Default to 10 if not stored
 
           // Check if payment term is monthly (minConsecutiveTenor only applies to monthly payments)
           const isMonthlyPayment = payment.paymentTerm === "monthly";
+          
+          // For SPPG transactions, calculate original amounts (before discount) for commission
+          const getOriginalAmount = (discountedAmount: number) => {
+            if (isSppgTransaction && payment.discountPercentage) {
+              // Reverse the discount: original = discounted / (1 - discountPercentage)
+              return Math.round(discountedAmount / (1 - payment.discountPercentage));
+            }
+            return discountedAmount;
+          };
+          
+          // Helper to calculate SPPG split for commission
+          const calculateCommissionWithSppgSplit = (totalCommission: number) => {
+            let commissionAmount: number;
+            let companyCutAmount: number | undefined;
+            
+            if (isSppgTransaction && companyCutRate !== undefined) {
+              // Split commission: company gets companyCutRate portion, marketing gets remainder
+              const marketingCommissionRate = commissionRate - companyCutRate;
+              commissionAmount = Math.round(totalCommission * marketingCommissionRate / commissionRate);
+              companyCutAmount = Math.round(totalCommission * companyCutRate / commissionRate);
+            } else {
+              commissionAmount = totalCommission;
+            }
+            
+            return { commissionAmount, companyCutAmount };
+          };
 
           // Check if this installment is within the minConsecutiveTenor period (only for monthly)
           if (isMonthlyPayment && installmentNumber <= minConsecutiveTenor) {
@@ -811,12 +926,16 @@ export async function processInstallmentPayment(
             const totalInstallments = payment.totalInstallments;
             const installmentAmount = payment.installmentAmount;
 
-            // Total contract value and total commission
-            const totalContractValue = installmentAmount * totalInstallments;
+            // For SPPG, use ORIGINAL contract value (before discount) for commission calculation
+            const discountedContractValue = installmentAmount * totalInstallments;
+            const totalContractValue = getOriginalAmount(discountedContractValue);
             const totalCommission = Math.round(totalContractValue * commissionRate);
 
             // Evenly distribute total commission across minConsecutiveTenor installments
             const commissionPerInstallment = Math.round(totalCommission / minConsecutiveTenor);
+            
+            // Apply SPPG split if applicable
+            const { commissionAmount, companyCutAmount } = calculateCommissionWithSppgSplit(commissionPerInstallment);
 
             // Create commission record for this installment
             const commissionRecord = new CommissionHistory({
@@ -832,7 +951,14 @@ export async function processInstallmentPayment(
 
               contractValue: totalContractValue / minConsecutiveTenor, // Proportional contract value
               commissionRate,
-              commissionAmount: commissionPerInstallment,
+              commissionAmount,
+              
+              // SPPG-specific fields
+              ...(isSppgTransaction && {
+                companyCutRate,
+                companyCutAmount,
+                isSppgTransaction: true,
+              }),
 
               paymentType: payment.paymentType,
               earnedAt: payment.adminReviewDate || new Date(),
@@ -849,7 +975,7 @@ export async function processInstallmentPayment(
 
             await commissionRecord.save({ session: mongoSession });
             console.log(
-              `💰 [${txnId}] Commission created for installment ${installmentNumber}/${minConsecutiveTenor}: ${commissionPerInstallment} for ${marketingStaff.fullName} (${payment.referralCode})`
+              `💰 [${txnId}] Commission created for installment ${installmentNumber}/${minConsecutiveTenor}: ${commissionAmount} for ${marketingStaff.fullName} (${payment.referralCode})${isSppgTransaction ? ` [SPPG: company cut ${companyCutAmount}]` : ''}`
             );
           } else if (isMonthlyPayment && installmentNumber > minConsecutiveTenor) {
             // After threshold: No commission (already paid in bulk) - only for monthly
@@ -859,7 +985,11 @@ export async function processInstallmentPayment(
           } else {
             // Non-monthly payments (yearly, quarterly, etc.): Regular per-installment commission
             const installmentAmount = payment.amount;
-            const commissionAmount = Math.round(installmentAmount * commissionRate);
+            const originalInstallmentAmount = getOriginalAmount(installmentAmount);
+            const totalCommission = Math.round(originalInstallmentAmount * commissionRate);
+            
+            // Apply SPPG split if applicable
+            const { commissionAmount, companyCutAmount } = calculateCommissionWithSppgSplit(totalCommission);
 
             // Create commission record for this specific installment
             const commissionRecord = new CommissionHistory({
@@ -873,9 +1003,16 @@ export async function processInstallmentPayment(
               customerName: user.fullName,
               customerEmail: user.email,
 
-              contractValue: installmentAmount, // This installment's amount only
+              contractValue: originalInstallmentAmount, // Use original (pre-discount) amount
               commissionRate,
               commissionAmount,
+              
+              // SPPG-specific fields
+              ...(isSppgTransaction && {
+                companyCutRate,
+                companyCutAmount,
+                isSppgTransaction: true,
+              }),
 
               paymentType: payment.paymentType,
               earnedAt: payment.adminReviewDate || new Date(),
@@ -892,7 +1029,7 @@ export async function processInstallmentPayment(
 
             await commissionRecord.save({ session: mongoSession });
             console.log(
-              `💰 [${txnId}] Commission created for installment ${installmentNumber} (${payment.paymentTerm}): ${commissionAmount} for ${marketingStaff.fullName} (${payment.referralCode})`
+              `💰 [${txnId}] Commission created for installment ${installmentNumber} (${payment.paymentTerm}): ${commissionAmount} for ${marketingStaff.fullName} (${payment.referralCode})${isSppgTransaction ? ` [SPPG: company cut ${companyCutAmount}]` : ''}`
             );
           }
         } else {

@@ -55,6 +55,22 @@ export interface IContract extends Document {
   // Overall status
   status: 'draft' | 'signed' | 'approved' | 'rejected' | 'permanently_rejected' | 'paid';
 
+  // Locked commission rates - captured at contract creation to prevent race conditions
+  /** Commission rate locked at contract creation (0.00-1.00) */
+  lockedCommissionRate?: number;
+  /** Company cut rate locked at contract creation (0.00-1.00) */
+  lockedCompanyCutRate?: number;
+
+  // SPPG discount tracking
+  /** Original price before SPPG discount */
+  originalAmount?: number;
+  /** SPPG discount percentage applied (0.00-1.00) */
+  discountPercentage?: number;
+  /** Amount discounted from original price */
+  discountAmount?: number;
+  /** Flag indicating SPPG discount was applied */
+  isSppgDiscount?: boolean;
+
   createdAt: Date;
   updatedAt: Date;
 }
@@ -204,6 +220,38 @@ const ContractSchema: Schema = new Schema({
     type: String,
     enum: ['draft', 'signed', 'approved', 'rejected', 'permanently_rejected', 'paid'],
     default: 'draft'
+  },
+  lockedCommissionRate: {
+    type: Number,
+    min: 0,
+    max: 1,
+    required: false
+  },
+  lockedCompanyCutRate: {
+    type: Number,
+    min: 0,
+    max: 1,
+    required: false
+  },
+  originalAmount: {
+    type: Number,
+    min: 0,
+    required: false
+  },
+  discountPercentage: {
+    type: Number,
+    min: 0,
+    max: 1,
+    required: false
+  },
+  discountAmount: {
+    type: Number,
+    min: 0,
+    required: false
+  },
+  isSppgDiscount: {
+    type: Boolean,
+    required: false
   }
 }, {
   timestamps: true

@@ -33,6 +33,10 @@ export interface IUser extends Document {
   kartuAnggotaUrl?: string; // Kartu Anggota PDF URL from ImageKit
   role: 'user' | 'staff' | 'spv_staff' | 'admin' | 'staff_admin' | 'finance' | 'staff_finance' | 'ketua' | 'marketing' | 'marketing_head' | 'marketing_admin' | 'mandor' | 'asisten' | 'manajer';
   referralCode?: string; // 6-digit alphanumeric code for marketing staff
+  /** Custom commission rate override (0.00-1.00). If undefined, uses global rate from Settings. Only for marketing/marketing_head roles. */
+  customCommissionRate?: number;
+  /** Company cut rate for SPPG transactions (0.00-1.00). Portion company keeps from commission. Only for marketing/marketing_head roles. */
+  companyCutRate?: number;
   isEmailVerified: boolean;
   isPhoneVerified: boolean;
   isActive: boolean;
@@ -210,6 +214,18 @@ const UserSchema: Schema = new Schema({
     sparse: true,
     trim: true,
     match: [/^[A-Z0-9]{6}$/, 'Referral code must be 6 alphanumeric characters'],
+  },
+  customCommissionRate: {
+    type: Number,
+    min: [0, 'Commission rate cannot be negative'],
+    max: [1, 'Commission rate cannot exceed 1 (100%)'],
+    required: false,
+  },
+  companyCutRate: {
+    type: Number,
+    min: [0, 'Company cut rate cannot be negative'],
+    max: [1, 'Company cut rate cannot exceed 1 (100%)'],
+    required: false,
   },
   isEmailVerified: {
     type: Boolean,

@@ -39,7 +39,7 @@ export async function GET(_req: NextRequest) {
     // Get all marketing staff and marketing_head with their commission summary
     const marketingStaff = await User.find({
       role: { $in: ["marketing", "marketing_head"] },
-    }).select("_id fullName email phoneNumber referralCode isActive createdAt");
+    }).select("_id fullName email phoneNumber referralCode isActive createdAt customCommissionRate companyCutRate");
 
     // Get commission summary for each staff
     const staffWithCommissions = await Promise.all(

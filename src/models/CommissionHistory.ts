@@ -17,6 +17,13 @@ export interface ICommissionHistory extends Document {
   commissionRate: number; // 0.02 (2%)
   commissionAmount: number; // contractValue * commissionRate
 
+  /** Company's cut percentage for SPPG transactions (0.00-1.00, e.g., 0.20 = 20%) */
+  companyCutRate?: number;
+  /** Absolute amount company receives (companyCutRate × originalPrice) */
+  companyCutAmount?: number;
+  /** Flag indicating this is an SPPG user transaction */
+  isSppgTransaction?: boolean;
+
   // Type and timing
   paymentType: 'full-investment' | 'cicilan-installment';
   earnedAt: Date; // When commission was earned (payment approved)
@@ -104,6 +111,21 @@ const CommissionHistorySchema: Schema = new Schema(
       type: Number,
       required: true,
       min: 0,
+    },
+    companyCutRate: {
+      type: Number,
+      min: 0,
+      max: 1,
+      required: false,
+    },
+    companyCutAmount: {
+      type: Number,
+      min: 0,
+      required: false,
+    },
+    isSppgTransaction: {
+      type: Boolean,
+      required: false,
     },
 
     // Type and timing

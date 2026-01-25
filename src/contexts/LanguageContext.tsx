@@ -196,6 +196,7 @@ const translations = {
     "plants.contractCreationError": "Gagal Membuat Kontrak",
     "plants.contractCreationErrorMessage":
       "Gagal membuat kontrak. Silakan coba lagi.",
+    "plants.validatingReferral": "Memvalidasi...",
     "plants.verificationRequired": "Verifikasi Diperlukan",
     "plants.verificationRequiredMessage":
       "Akun Anda harus diverifikasi terlebih dahulu untuk melakukan pembelian.",
@@ -646,6 +647,7 @@ const translations = {
     "cicilan.errorCreatingContract": "Terjadi kesalahan saat membuat kontrak",
     "cicilan.errorPreparingContract":
       "Terjadi kesalahan saat menyiapkan kontrak",
+    "cicilan.validatingReferral": "Memvalidasi...",
     "signature.clear": "Bersihkan",
 
     // General
@@ -833,6 +835,7 @@ const translations = {
     "plants.contractCreationError": "Failed to Create Contract",
     "plants.contractCreationErrorMessage":
       "Failed to create contract. Please try again.",
+    "plants.validatingReferral": "Validating...",
     "plants.verificationRequired": "Verification Required",
     "plants.verificationRequiredMessage":
       "Your account must be verified before you can make a purchase.",
@@ -1283,6 +1286,7 @@ const translations = {
       "An error occurred while creating the contract",
     "cicilan.errorPreparingContract":
       "An error occurred while preparing the contract",
+    "cicilan.validatingReferral": "Validating...",
 
     // General
     loading: "Loading...",

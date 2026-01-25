@@ -1,6 +1,7 @@
 import dbConnect from "@/lib/mongodb";
 import CommissionHistory from "@/models/CommissionHistory";
 import CommissionWithdrawal from "@/models/CommissionWithdrawal";
+import Contract from "@/models/Contract";
 import Payment from "@/models/Payment";
 import Settings from "@/models/Settings";
 import User from "@/models/User";
@@ -311,10 +312,61 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Get commission rate from settings
+    // Get commission rate: prefer locked rates from contract, then custom rate, then global
     const settings = await Settings.findOne({ type: "system" });
-    const commissionRate = settings?.config?.commissionRate ?? 0.02; // Default to 2% if not set
-    const commissionAmount = Math.round(contractValue * commissionRate);
+    const globalCommissionRate = settings?.config?.commissionRate ?? 0.02;
+    
+    // Try to get locked rates from contract
+    const contractLookupId = payment.paymentType === 'full-investment' 
+      ? payment.orderId || payment.contractId
+      : payment.cicilanOrderId;
+    const paymentContract = contractLookupId
+      ? await Contract.findOne({ contractId: contractLookupId })
+      : null;
+    
+    let commissionRate: number;
+    let companyCutRate: number | undefined;
+    let rateSource: string;
+    
+    if (paymentContract?.lockedCommissionRate !== undefined) {
+      // Use locked rates from contract creation time
+      commissionRate = paymentContract.lockedCommissionRate;
+      companyCutRate = paymentContract.lockedCompanyCutRate;
+      rateSource = "contract_locked";
+    } else if (marketingStaff.customCommissionRate !== undefined) {
+      // Use custom rate on marketing staff
+      commissionRate = marketingStaff.customCommissionRate;
+      companyCutRate = marketingStaff.companyCutRate;
+      rateSource = "staff_custom";
+    } else {
+      // Fall back to global rate
+      commissionRate = globalCommissionRate;
+      companyCutRate = undefined;
+      rateSource = "global_default";
+    }
+    
+    console.log(`📊 Admin commission rate selection: ${(commissionRate * 100).toFixed(1)}% (source: ${rateSource}, contractLookupId: ${contractLookupId}, contractFound: ${!!paymentContract})`);
+    
+    const isSppgTransaction = payment.isSppgDiscount === true;
+    
+    // For SPPG transactions, use ORIGINAL amount (before discount) for commission calculation
+    const actualContractValue = isSppgTransaction && payment.originalAmount
+      ? payment.originalAmount
+      : contractValue;
+    
+    // Calculate commission amounts
+    let commissionAmount: number;
+    let companyCutAmount: number | undefined;
+    
+    if (isSppgTransaction && companyCutRate !== undefined) {
+      // SPPG transaction: split commission between company and marketing staff
+      const marketingCommissionRate = commissionRate - companyCutRate;
+      commissionAmount = Math.round(actualContractValue * marketingCommissionRate);
+      companyCutAmount = Math.round(actualContractValue * companyCutRate);
+    } else {
+      // Regular transaction: marketing staff gets full commission
+      commissionAmount = Math.round(actualContractValue * commissionRate);
+    }
 
     // Create commission record
     const commissionRecord = new CommissionHistory({
@@ -328,9 +380,16 @@ export async function POST(req: NextRequest) {
       customerName: payment.userId.fullName,
       customerEmail: payment.userId.email,
 
-      contractValue,
+      contractValue: actualContractValue,
       commissionRate,
       commissionAmount,
+      
+      // SPPG-specific fields
+      ...(isSppgTransaction && {
+        companyCutRate,
+        companyCutAmount,
+        isSppgTransaction: true,
+      }),
 
       paymentType: payment.paymentType,
       earnedAt:

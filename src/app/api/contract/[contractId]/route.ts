@@ -255,6 +255,13 @@ export async function POST(
           ...(contract.referralCode && {
             referralCode: contract.referralCode,
           }),
+          // Copy SPPG discount fields from contract for commission calculation
+          ...(contract.isSppgDiscount && {
+            isSppgDiscount: true,
+            originalAmount: contract.originalAmount, // Store original total for commission calculation
+            discountPercentage: contract.discountPercentage,
+            discountAmount: contract.discountAmount,
+          }),
         });
 
         await firstInstallmentPayment.save();
@@ -301,6 +308,13 @@ export async function POST(
           // Copy referral code from contract if it exists
           ...(contract.referralCode && {
             referralCode: contract.referralCode,
+          }),
+          // Copy SPPG discount fields from contract for commission calculation
+          ...(contract.isSppgDiscount && {
+            isSppgDiscount: true,
+            originalAmount: contract.originalAmount,
+            discountPercentage: contract.discountPercentage,
+            discountAmount: contract.discountAmount,
           }),
         });
 

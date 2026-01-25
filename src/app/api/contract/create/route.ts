@@ -2,6 +2,7 @@ import dbConnect from "@/lib/mongodb";
 import { generateInvoiceNumber } from "@/lib/invoiceNumberGenerator";
 import Contract from "@/models/Contract";
 import User from "@/models/User";
+import Settings from "@/models/Settings";
 import { midtransService } from "@/lib/midtrans";
 import { getServerSession } from "next-auth/next";
 import { NextRequest, NextResponse } from "next/server";
@@ -65,6 +66,22 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Find user first (we need user data to check SPPG status)
+    const user = await User.findOne({ email: session.user.email });
+    if (!user) {
+      return NextResponse.json({ error: "User not found" }, { status: 404 });
+    }
+
+    // Variables for SPPG discount and locked rates
+    let marketingUser = null;
+    let lockedCommissionRate: number | undefined;
+    let lockedCompanyCutRate: number | undefined;
+    const originalAmount = totalAmount;
+    let discountPercentage: number | undefined;
+    let discountAmount: number | undefined;
+    let isSppgDiscount = false;
+    let finalAmount = totalAmount;
+
     // Validate referral code format and existence if provided
     if (referralCode) {
       if (
@@ -82,7 +99,7 @@ export async function POST(req: NextRequest) {
       }
 
       // Check if referral code exists and belongs to an ACTIVE marketing staff
-      const marketingUser = await User.findOne({
+      marketingUser = await User.findOne({
         referralCode: referralCode,
         role: { $in: ["marketing", "marketing_head"] },
         isActive: true, // Only allow referral codes from active marketing staff
@@ -94,12 +111,24 @@ export async function POST(req: NextRequest) {
           { status: 400 }
         );
       }
-    }
 
-    // Find user
-    const user = await User.findOne({ email: session.user.email });
-    if (!user) {
-      return NextResponse.json({ error: "User not found" }, { status: 404 });
+      // Get commission rates to lock at contract creation time
+      const settings = await Settings.findOne({ type: "system" });
+      const globalCommissionRate = settings?.config?.commissionRate ?? 0.02;
+
+      lockedCommissionRate = marketingUser.customCommissionRate ?? globalCommissionRate;
+      lockedCompanyCutRate = marketingUser.companyCutRate;
+
+      // Check if user is SPPG or TNI and apply discount
+      const discountEligibleOccupations = ["sppg", "tni"];
+      if (discountEligibleOccupations.includes(user.occupation) && lockedCommissionRate !== undefined && lockedCommissionRate > 0) {
+        isSppgDiscount = true;
+        discountPercentage = lockedCommissionRate;
+        discountAmount = Math.round(originalAmount * discountPercentage);
+        finalAmount = originalAmount - discountAmount;
+
+        console.log(`[SPPG Discount] User: ${user.email}, Original: ${originalAmount}, Discount: ${(discountPercentage * 100).toFixed(1)}% (${discountAmount}), Final: ${finalAmount}`);
+      }
     }
 
     // Spam protection: Check for recent contract creation attempts
@@ -131,23 +160,41 @@ export async function POST(req: NextRequest) {
     let paymentUrl = undefined;
     if (paymentType === "full") {
       try {
+        // Build item details - include discount as separate line item if SPPG
+        const itemDetails = isSppgDiscount
+          ? [
+              {
+                id: productId,
+                price: originalAmount,
+                quantity: 1,
+                name: productName,
+              },
+              {
+                id: "MEMBER_DISCOUNT",
+                price: -discountAmount!,
+                quantity: 1,
+                name: `Diskon Anggota (${Math.round(discountPercentage! * 100)}%)`,
+              },
+            ]
+          : [
+              {
+                id: productId,
+                price: finalAmount,
+                quantity: 1,
+                name: productName,
+              },
+            ];
+
         const midtransTransaction = await midtransService.createTransaction({
           orderId: contractId,
-          amount: totalAmount,
+          amount: finalAmount, // Use discounted amount for SPPG users
           customerDetails: {
             first_name: user.fullName || user.firstName || "User",
             last_name: user.lastName || "",
             email: user.email,
             phone: user.phoneNumber || "",
           },
-          itemDetails: [
-            {
-              id: productId,
-              price: totalAmount,
-              quantity: 1,
-              name: productName,
-            },
-          ],
+          itemDetails,
           callbacks: {
             finish: `${process.env.NEXT_PUBLIC_BASE_URL}/payments?paymentSuccess=${contractId}`,
             error: `${process.env.NEXT_PUBLIC_BASE_URL}/payments?paymentError=${contractId}`,
@@ -198,13 +245,16 @@ export async function POST(req: NextRequest) {
       userId: user._id,
       productName,
       productId,
-      totalAmount,
+      totalAmount: finalAmount, // Use discounted amount as the contract total
       paymentType,
       // For cicilan payments, store the user's selected terms
       ...(paymentType === "cicilan" && {
         paymentTerm,
         totalInstallments,
-        installmentAmount,
+        // Recalculate installment amount if SPPG discount applies
+        installmentAmount: isSppgDiscount
+          ? Math.round(finalAmount / totalInstallments)
+          : installmentAmount,
         durationYears,
       }),
       // For full payments, store the Midtrans payment URL
@@ -215,6 +265,20 @@ export async function POST(req: NextRequest) {
       // Add referral code if provided
       ...(referralCode && {
         referralCode,
+      }),
+      // Lock commission rates at contract creation time (for rate consistency)
+      ...(lockedCommissionRate !== undefined && {
+        lockedCommissionRate,
+      }),
+      ...(lockedCompanyCutRate !== undefined && {
+        lockedCompanyCutRate,
+      }),
+      // SPPG discount fields
+      ...(isSppgDiscount && {
+        originalAmount,
+        discountPercentage,
+        discountAmount,
+        isSppgDiscount: true,
       }),
       contractNumber,
       status: "draft",
@@ -246,6 +310,15 @@ export async function POST(req: NextRequest) {
         totalAmount: contract.totalAmount,
         paymentType: contract.paymentType,
         ...(contract.paymentUrl && { paymentUrl: contract.paymentUrl }),
+        // Include discount info if SPPG discount was applied
+        ...(isSppgDiscount && {
+          discountApplied: {
+            originalAmount,
+            discountPercentage,
+            discountAmount,
+            finalAmount,
+          },
+        }),
       },
     });
   } catch (error) {

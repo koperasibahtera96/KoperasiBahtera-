@@ -35,6 +35,93 @@ export function CicilanModal({
   const [showOrderConfirmation, setShowOrderConfirmation] = useState(false);
   const [contractDetails, setContractDetails] = useState<any>(null);
   const [referralCode, setReferralCode] = useState("");
+  const [referralValidation, setReferralValidation] = useState<{
+    isValidating: boolean;
+    isValid: boolean | null;
+    marketingName: string | null;
+    discountInfo: {
+      isSppgUser: boolean;
+      discountPercentage: number;
+      discountLabel: string;
+    } | null;
+    error: string | null;
+  }>({
+    isValidating: false,
+    isValid: null,
+    marketingName: null,
+    discountInfo: null,
+    error: null,
+  });
+
+  // Validate referral code with API
+  const validateReferralWithApi = async (code: string) => {
+    if (!code || code.length !== 6) {
+      setReferralValidation({
+        isValidating: false,
+        isValid: null,
+        marketingName: null,
+        discountInfo: null,
+        error: null,
+      });
+      return;
+    }
+
+    setReferralValidation(prev => ({ ...prev, isValidating: true, error: null }));
+
+    try {
+      const response = await fetch("/api/referral/validate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ referralCode: code }),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        setReferralValidation({
+          isValidating: false,
+          isValid: true,
+          marketingName: data.marketingStaffName,
+          discountInfo: data.discountInfo || null,
+          error: null,
+        });
+      } else {
+        setReferralValidation({
+          isValidating: false,
+          isValid: false,
+          marketingName: null,
+          discountInfo: null,
+          error: data.error || "Kode referral tidak valid",
+        });
+      }
+    } catch {
+      setReferralValidation({
+        isValidating: false,
+        isValid: false,
+        marketingName: null,
+        discountInfo: null,
+        error: "Gagal memvalidasi kode referral",
+      });
+    }
+  };
+
+  // Debounced API validation when referral code changes
+  useEffect(() => {
+    if (referralCode.length === 6 && validateReferralCode(referralCode)) {
+      const timer = setTimeout(() => {
+        validateReferralWithApi(referralCode);
+      }, 500);
+      return () => clearTimeout(timer);
+    } else if (referralCode.length === 0) {
+      setReferralValidation({
+        isValidating: false,
+        isValid: null,
+        marketingName: null,
+        discountInfo: null,
+        error: null,
+      });
+    }
+  }, [referralCode]);
 
   // Validate referral code format
   const validateReferralCode = (code: string) => {
@@ -427,17 +514,90 @@ export function CicilanModal({
                       <span className="text-[#324D3E]/80 font-medium">
                         {t("cicilan.enterReferralCode")}
                       </span>
-                      <input
-                        type="text"
-                        value={referralCode}
-                        onChange={(e) =>
-                          setReferralCode(e.target.value.toUpperCase())
-                        }
-                        className="px-3 py-3 border-2 border-[#324D3E]/20 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#324D3E] focus:border-[#324D3E] font-mono text-base text-[#324D3E] bg-white/80"
-                        placeholder="ABC123"
-                        maxLength={6}
-                        pattern="[A-Z0-9]{6}"
-                      />
+                      <div className="relative">
+                        <input
+                          type="text"
+                          value={referralCode}
+                          onChange={(e) =>
+                            setReferralCode(e.target.value.toUpperCase())
+                          }
+                          className={`w-full px-3 py-3 border-2 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#324D3E] focus:border-[#324D3E] font-mono text-base text-[#324D3E] bg-white/80 ${
+                            referralValidation.isValid === true
+                              ? "border-green-500"
+                              : referralValidation.isValid === false
+                              ? "border-red-500"
+                              : "border-[#324D3E]/20"
+                          }`}
+                          placeholder="ABC123"
+                          maxLength={6}
+                          pattern="[A-Z0-9]{6}"
+                        />
+                        {referralValidation.isValidating && (
+                          <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                            <svg className="animate-spin h-5 w-5 text-[#324D3E]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                          </div>
+                        )}
+                        {referralValidation.isValid === true && (
+                          <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                            <svg className="h-5 w-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
+                            </svg>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Member Discount Display (SPPG/TNI) */}
+                      {referralValidation.discountInfo?.isSppgUser && currentPrice > 0 && (
+                        <div className="mt-3 p-4 bg-gradient-to-r from-emerald-50 to-green-50 border border-emerald-200 rounded-xl">
+                          <div className="flex items-center gap-2 mb-2">
+                            <span className="text-emerald-600 text-lg">🎉</span>
+                            <span className="font-bold text-emerald-700">Diskon Anggota Aktif!</span>
+                          </div>
+                          <p className="text-sm text-emerald-600 mb-2">
+                            Anda mendapatkan diskon khusus:
+                          </p>
+                          <div className="flex items-baseline gap-2">
+                            <span className="text-2xl font-bold text-emerald-600">
+                              {referralValidation.discountInfo.discountLabel}
+                            </span>
+                            <span className="text-sm text-emerald-600">diskon</span>
+                          </div>
+                          <div className="mt-3 pt-3 border-t border-emerald-200">
+                            <div className="flex justify-between text-sm">
+                              <span className="text-emerald-600">Harga Normal:</span>
+                              <span className="text-emerald-600 line-through">
+                                {formatIDRCurrency(currentPrice)}
+                              </span>
+                            </div>
+                            <div className="flex justify-between text-sm font-bold mt-1">
+                              <span className="text-emerald-700">Harga Anda:</span>
+                              <span className="text-emerald-700">
+                                {formatIDRCurrency(
+                                  Math.round(
+                                    currentPrice *
+                                      (1 - referralValidation.discountInfo.discountPercentage)
+                                  )
+                                )}
+                              </span>
+                            </div>
+                            <div className="flex justify-between text-sm mt-1 text-emerald-600">
+                              <span>Cicilan/bulan:</span>
+                              <span>
+                                {formatIDRCurrency(
+                                  Math.ceil(
+                                    (currentPrice *
+                                      (1 - referralValidation.discountInfo.discountPercentage)) /
+                                      getInstallmentCount(selectedTermDetails?.period || "Per Bulan")
+                                  )
+                                )}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -485,11 +645,13 @@ export function CicilanModal({
                   </button>
                   <button
                     onClick={handleConfirmOrder}
-                    disabled={isLoading}
+                    disabled={isLoading || referralValidation.isValidating}
                     className="flex-1 px-6 py-3 bg-gradient-to-r from-[#324D3E] to-[#4C3D19] text-white rounded-full font-bold hover:shadow-lg transition-all duration-300 font-[family-name:var(--font-poppins)] disabled:opacity-50"
                   >
                     {isLoading
                       ? t("cicilan.creatingContract")
+                      : referralValidation.isValidating
+                      ? t("cicilan.validatingReferral")
                       : t("cicilan.continue")}
                   </button>
                 </div>

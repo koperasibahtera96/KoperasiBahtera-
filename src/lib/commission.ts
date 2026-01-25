@@ -40,13 +40,22 @@ export async function createCommissionRecord(paymentId: string): Promise<{
       // Full payment: commission when settlement/approved
       if (payment.transactionStatus === 'settlement' || payment.adminStatus === 'approved') {
         isEligible = true;
-        contractValue = payment.amount;
+        // For SPPG transactions, use ORIGINAL amount (before discount) for commission calculation
+        contractValue = payment.isSppgDiscount && payment.originalAmount
+          ? payment.originalAmount
+          : payment.amount;
       }
     } else if (payment.paymentType === 'cicilan-installment') {
       // Cicilan: commission on each installment when approved (progressive commission)
       if (payment.adminStatus === 'approved') {
         isEligible = true;
-        contractValue = payment.amount; // Commission on THIS installment amount only
+        // For SPPG transactions, use ORIGINAL amount for commission calculation
+        if (payment.isSppgDiscount && payment.discountPercentage) {
+          // Reverse the discount: original = discounted / (1 - discountPercentage)
+          contractValue = Math.round(payment.amount / (1 - payment.discountPercentage));
+        } else {
+          contractValue = payment.amount;
+        }
       }
     }
 
@@ -77,10 +86,50 @@ export async function createCommissionRecord(paymentId: string): Promise<{
       };
     }
 
-    // Get commission rate from settings
+    // Get commission rate: prefer custom rate on marketing staff, fallback to global
     const settings = await Settings.findOne({ type: "system" });
-    const commissionRate = settings?.config?.commissionRate ?? 0.02; // Default to 2% if not set
-    const commissionAmount = Math.round(contractValue * commissionRate);
+    const globalCommissionRate = settings?.config?.commissionRate ?? 0.02; // Default to 2% if not set
+    
+    // Use locked rates from contract if available (for rate consistency), otherwise use current rates
+    let commissionRate: number;
+    let companyCutRate: number | undefined;
+    
+    // Try to get locked rates from contract
+    // For full-investment: payment.orderId IS the contract's contractId
+    // For cicilan: payment.cicilanOrderId IS the contract's contractId
+    const Contract = (await import("@/models/Contract")).default;
+    const contractLookupId = payment.paymentType === 'full-investment' 
+      ? payment.orderId 
+      : payment.cicilanOrderId;
+    const contract = contractLookupId ? await Contract.findOne({ contractId: contractLookupId }) : null;
+    
+    if (contract?.lockedCommissionRate !== undefined) {
+      // Use locked rates from contract creation time
+      commissionRate = contract.lockedCommissionRate;
+      companyCutRate = contract.lockedCompanyCutRate;
+    } else {
+      // Fall back to current rates on marketing staff or global
+      commissionRate = marketingStaff.customCommissionRate ?? globalCommissionRate;
+      companyCutRate = marketingStaff.companyCutRate;
+    }
+
+    // Check if this is an SPPG transaction
+    const isSppgTransaction = payment.isSppgDiscount === true;
+    
+    // Calculate commission amounts
+    let commissionAmount: number;
+    let companyCutAmount: number | undefined;
+    
+    if (isSppgTransaction && companyCutRate !== undefined) {
+      // SPPG transaction: split commission between company and marketing staff
+      // Company gets companyCutRate, marketing gets (commissionRate - companyCutRate)
+      const marketingCommissionRate = commissionRate - companyCutRate;
+      commissionAmount = Math.round(contractValue * marketingCommissionRate);
+      companyCutAmount = Math.round(contractValue * companyCutRate);
+    } else {
+      // Regular transaction: marketing staff gets full commission
+      commissionAmount = Math.round(contractValue * commissionRate);
+    }
 
     // Create commission record
     const commissionRecord = new CommissionHistory({
@@ -97,6 +146,13 @@ export async function createCommissionRecord(paymentId: string): Promise<{
       contractValue,
       commissionRate,
       commissionAmount,
+      
+      // SPPG-specific fields
+      ...(isSppgTransaction && {
+        companyCutRate,
+        companyCutAmount,
+        isSppgTransaction: true,
+      }),
 
       paymentType: payment.paymentType,
       earnedAt: payment.transactionStatus === 'settlement'

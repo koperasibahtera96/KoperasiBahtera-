@@ -194,6 +194,13 @@ export async function POST(req: NextRequest) {
         ...(contract.referralCode && {
           referralCode: contract.referralCode,
         }),
+        // Copy SPPG discount info from contract if it exists
+        ...(contract.isSppgDiscount && {
+          originalAmount: contract.originalAmount ? Math.ceil(contract.originalAmount / totalInstallments) : undefined,
+          discountPercentage: contract.discountPercentage,
+          discountAmount: contract.discountAmount ? Math.ceil(contract.discountAmount / totalInstallments) : undefined,
+          isSppgDiscount: true,
+        }),
       });
 
       await firstInstallment.save({ session: mongoSession });

@@ -49,6 +49,9 @@ export interface IPayment extends Document {
   // Product info
   productName?: string;
   productId?: string;
+  
+  // Contract linkage (for commission rate locking)
+  contractId?: string;
 
   // Customer details for registration
   customerData?: {
@@ -92,6 +95,16 @@ export interface IPayment extends Document {
 
   // Marketing referral code
   referralCode?: string;
+
+  // SPPG discount tracking
+  /** Original price before SPPG discount was applied */
+  originalAmount?: number;
+  /** SPPG discount rate (0.00-1.00), equals marketing staff's customCommissionRate */
+  discountPercentage?: number;
+  /** Absolute discount amount (originalAmount × discountPercentage) */
+  discountAmount?: number;
+  /** True only for SPPG user transactions with referral code */
+  isSppgDiscount?: boolean;
 
   createdAt: Date;
   updatedAt: Date;
@@ -225,6 +238,12 @@ const PaymentSchema: Schema = new Schema(
       type: String,
       trim: true,
     },
+    
+    // Contract linkage (for commission rate locking)
+    contractId: {
+      type: String,
+      trim: true,
+    },
 
     // Customer details for registration
     customerData: {
@@ -283,6 +302,24 @@ const PaymentSchema: Schema = new Schema(
       type: String,
       trim: true,
       match: [/^[A-Z0-9]{6}$/, 'Referral code must be 6 alphanumeric characters'],
+    },
+
+    // SPPG discount tracking
+    originalAmount: {
+      type: Number,
+      min: 0,
+    },
+    discountPercentage: {
+      type: Number,
+      min: 0,
+      max: 1,
+    },
+    discountAmount: {
+      type: Number,
+      min: 0,
+    },
+    isSppgDiscount: {
+      type: Boolean,
     },
   },
   {

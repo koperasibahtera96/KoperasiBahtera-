@@ -18,5 +18,6 @@ export const occupationOptions = [
   { value: "tenaga_kesehatan", label: "Tenaga Kesehatan", code: "11" },
   { value: "wirausaha", label: "Wirausaha", code: "47" },
   { value: "wiraswasta", label: "Wiraswasta", code: "95" },
+  { value: "sppg", label: "SPPG", code: "14" },
   { value: "lainnya", label: "Lainnya", code: "55" },
 ];

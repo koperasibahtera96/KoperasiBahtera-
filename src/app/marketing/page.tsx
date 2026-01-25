@@ -1,29 +1,30 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
-import { useSession } from "next-auth/react";
 import StaffLayout from "@/components/staff/StaffLayout";
-import { useTheme } from "next-themes";
-import { motion, AnimatePresence } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import {
-  Users,
-  TrendingUp,
-  DollarSign,
-  Edit3,
-  RefreshCw,
-  Eye,
   AlertTriangle,
-  X,
-  Download,
-  Bell,
-  Filter,
-  Wallet,
-  CheckCircle,
   Ban,
-  Copy,
+  Bell,
   Check,
+  CheckCircle,
+  Copy,
+  DollarSign,
+  Download,
+  Edit3,
+  Eye,
+  Filter,
+  Percent,
+  RefreshCw,
+  TrendingUp,
+  Users,
+  Wallet,
+  X,
 } from "lucide-react";
+import { useSession } from "next-auth/react";
+import { useTheme } from "next-themes";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 
 interface MarketingStaff {
   _id: string;
@@ -33,6 +34,8 @@ interface MarketingStaff {
   referralCode: string;
   isActive: boolean;
   createdAt: string;
+  customCommissionRate?: number;
+  companyCutRate?: number;
   commissionSummary: {
     totalCommission: number;
     totalReferrals: number;
@@ -146,6 +149,23 @@ export default function MarketingHeadPage() {
     staff: null,
     history: [],
     loading: false,
+  });
+
+  // Commission settings modal
+  const [commissionSettingsModal, setCommissionSettingsModal] = useState<{
+    show: boolean;
+    staff: MarketingStaff | null;
+    customCommissionRate: string;
+    companyCutRate: string;
+    loading: boolean;
+    error: string;
+  }>({
+    show: false,
+    staff: null,
+    customCommissionRate: "",
+    companyCutRate: "",
+    loading: false,
+    error: "",
   });
 
   useEffect(() => {
@@ -270,33 +290,33 @@ export default function MarketingHeadPage() {
     }
   };
 
-  const handleGenerateReferralCode = async (staffId: string) => {
-    try {
-      const response = await fetch("/api/admin/marketing/staff", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ staffId }),
-      });
+  // const handleGenerateReferralCode = async (staffId: string) => {
+  //   try {
+  //     const response = await fetch("/api/admin/marketing/staff", {
+  //       method: "POST",
+  //       headers: {
+  //         "Content-Type": "application/json",
+  //       },
+  //       body: JSON.stringify({ staffId }),
+  //     });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to generate referral code");
-      }
+  //     if (!response.ok) {
+  //       const errorData = await response.json();
+  //       throw new Error(errorData.error || "Failed to generate referral code");
+  //     }
 
-      // Refresh data with current filters
-      await fetchData(appliedStartDate, appliedEndDate);
-      setError("");
-    } catch (error) {
-      console.error("Error generating referral code:", error);
-      setError(
-        error instanceof Error
-          ? error.message
-          : "Failed to generate referral code"
-      );
-    }
-  };
+  //     // Refresh data with current filters
+  //     await fetchData(appliedStartDate, appliedEndDate);
+  //     setError("");
+  //   } catch (error) {
+  //     console.error("Error generating referral code:", error);
+  //     setError(
+  //       error instanceof Error
+  //         ? error.message
+  //         : "Failed to generate referral code"
+  //     );
+  //   }
+  // };
 
   const handleToggleStatus = async () => {
     if (!toggleStatusModal.staff) {
@@ -380,6 +400,78 @@ export default function MarketingHeadPage() {
     });
     // Refresh data after closing
     await fetchData(appliedStartDate, appliedEndDate);
+  };
+
+  // Commission settings handlers
+  const handleOpenCommissionSettings = (staff: MarketingStaff) => {
+    setCommissionSettingsModal({
+      show: true,
+      staff,
+      customCommissionRate: staff.customCommissionRate !== undefined
+        ? (staff.customCommissionRate * 100).toString()
+        : "",
+      companyCutRate: staff.companyCutRate !== undefined
+        ? (staff.companyCutRate * 100).toString()
+        : "",
+      loading: false,
+      error: "",
+    });
+  };
+
+  const handleSaveCommissionSettings = async () => {
+    if (!commissionSettingsModal.staff) return;
+
+    const customRate = commissionSettingsModal.customCommissionRate.trim();
+    const companyRate = commissionSettingsModal.companyCutRate.trim();
+
+    // Validate inputs
+    if (customRate && (isNaN(Number(customRate)) || Number(customRate) < 0 || Number(customRate) > 100)) {
+      setCommissionSettingsModal(prev => ({ ...prev, error: "Persentase komisi harus antara 0 dan 100" }));
+      return;
+    }
+    if (companyRate && (isNaN(Number(companyRate)) || Number(companyRate) < 0 || Number(companyRate) > 100)) {
+      setCommissionSettingsModal(prev => ({ ...prev, error: "Persentase potongan perusahaan harus antara 0 dan 100" }));
+      return;
+    }
+    if (customRate && companyRate && Number(companyRate) >= Number(customRate)) {
+      setCommissionSettingsModal(prev => ({ ...prev, error: "Potongan perusahaan harus kurang dari komisi" }));
+      return;
+    }
+
+    setCommissionSettingsModal(prev => ({ ...prev, loading: true, error: "" }));
+
+    try {
+      const response = await fetch("/api/admin/marketing/referral-settings", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          staffId: commissionSettingsModal.staff._id,
+          customCommissionRate: customRate ? Number(customRate) / 100 : undefined,
+          companyCutRate: companyRate ? Number(companyRate) / 100 : undefined,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Gagal menyimpan pengaturan");
+      }
+
+      setCommissionSettingsModal({
+        show: false,
+        staff: null,
+        customCommissionRate: "",
+        companyCutRate: "",
+        loading: false,
+        error: "",
+      });
+      await fetchData(appliedStartDate, appliedEndDate);
+    } catch (err) {
+      setCommissionSettingsModal(prev => ({
+        ...prev,
+        loading: false,
+        error: err instanceof Error ? err.message : "Gagal menyimpan pengaturan"
+      }));
+    }
   };
 
   const handleViewCommissionHistory = async (staff: MarketingStaff) => {
@@ -548,7 +640,7 @@ export default function MarketingHeadPage() {
   return (
     <StaffLayout>
       <motion.div
-        className="container max-w-7xl mx-auto px-3 sm:px-4 lg:px-6 py-4 sm:py-6 lg:py-8"
+        className="container max-w-10xl mx-auto px-2 sm:px-3 lg:px-4 py-3 sm:py-4 lg:py-6"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
@@ -1359,6 +1451,14 @@ export default function MarketingHeadPage() {
                       ""
                     )}
                   >
+                    Rate Komisi
+                  </th>
+                  <th
+                    className={getThemeClasses(
+                      "px-6 py-4 text-left text-sm font-medium text-gray-700 dark:text-gray-200",
+                      ""
+                    )}
+                  >
                     Total Komisi
                   </th>
                   <th
@@ -1502,6 +1602,31 @@ export default function MarketingHeadPage() {
                       </td>
 
                       <td className="px-6 py-4">
+                        <div className="flex flex-col">
+                          <span
+                            className={getThemeClasses(
+                              "text-sm font-semibold text-purple-600 dark:text-purple-400",
+                              ""
+                            )}
+                          >
+                            {staff.customCommissionRate !== undefined
+                              ? `${Math.round(staff.customCommissionRate * 100)}%`
+                              : "Default"}
+                          </span>
+                          {staff.companyCutRate !== undefined && staff.companyCutRate > 0 && (
+                            <span
+                              className={getThemeClasses(
+                                "text-xs text-gray-500 dark:text-gray-400",
+                                ""
+                              )}
+                            >
+                              Potongan: {Math.round(staff.companyCutRate * 100)}%
+                            </span>
+                          )}
+                        </div>
+                      </td>
+
+                      <td className="px-6 py-4">
                         <p
                           className={getThemeClasses(
                             "font-semibold text-gray-900 dark:text-white",
@@ -1599,18 +1724,6 @@ export default function MarketingHeadPage() {
                                 <Edit3 className="w-4 h-4" />
                               </button>
 
-                              <button
-                                onClick={() =>
-                                  handleGenerateReferralCode(staff._id)
-                                }
-                                className={getThemeClasses(
-                                  "p-1 text-green-600 hover:text-green-800 hover:bg-green-50 rounded transition-colors",
-                                  "dark:text-green-300 dark:hover:bg-green-900/30"
-                                )}
-                                title="Buat kode baru"
-                              >
-                                <RefreshCw className="w-4 h-4" />
-                              </button>
 
                               <button
                                 onClick={() =>
@@ -1639,6 +1752,17 @@ export default function MarketingHeadPage() {
                                 ) : (
                                   <CheckCircle className="w-4 h-4" />
                                 )}
+                              </button>
+
+                              <button
+                                onClick={() => handleOpenCommissionSettings(staff)}
+                                className={getThemeClasses(
+                                  "p-1 text-purple-600 hover:text-purple-800 hover:bg-purple-50 rounded transition-colors",
+                                  "dark:text-purple-300 dark:hover:bg-purple-900/30"
+                                )}
+                                title="Pengaturan komisi"
+                              >
+                                <Percent className="w-4 h-4" />
                               </button>
                             </>
                           )}
@@ -2151,6 +2275,163 @@ export default function MarketingHeadPage() {
                     </div>
                   </div>
                 )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Commission Settings Modal */}
+        {commissionSettingsModal.show && commissionSettingsModal.staff && (
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+            <div className="bg-white dark:bg-gray-800 rounded-2xl max-w-md w-full shadow-2xl">
+              <div className="p-6 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                    Pengaturan Komisi
+                  </h3>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    {commissionSettingsModal.staff.fullName}
+                  </p>
+                </div>
+                <button
+                  onClick={() =>
+                    setCommissionSettingsModal({
+                      show: false,
+                      staff: null,
+                      customCommissionRate: "",
+                      companyCutRate: "",
+                      loading: false,
+                      error: "",
+                    })
+                  }
+                  className="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="p-6 space-y-4">
+                {commissionSettingsModal.error && (
+                  <div className="p-3 bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-lg text-sm">
+                    {commissionSettingsModal.error}
+                  </div>
+                )}
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Persentase Komisi (%)
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    max="100"
+                    step="1"
+                    value={commissionSettingsModal.customCommissionRate}
+                    onChange={(e) =>
+                      setCommissionSettingsModal((prev) => ({
+                        ...prev,
+                        customCommissionRate: e.target.value,
+                      }))
+                    }
+                    placeholder="Contoh: 30 untuk 30%"
+                    className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 dark:bg-gray-700 dark:text-white"
+                  />
+                  <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                    Kosongkan untuk menggunakan rate default dari pengaturan global
+                  </p>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                    Potongan Perusahaan untuk SPPG (%)
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    max="100"
+                    step="1"
+                    value={commissionSettingsModal.companyCutRate}
+                    onChange={(e) =>
+                      setCommissionSettingsModal((prev) => ({
+                        ...prev,
+                        companyCutRate: e.target.value,
+                      }))
+                    }
+                    placeholder="Contoh: 20 untuk 20%"
+                    className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 dark:bg-gray-700 dark:text-white"
+                  />
+                  <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                    Khusus untuk transaksi SPPG. Harus lebih kecil dari komisi.
+                  </p>
+                </div>
+
+                <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4">
+                  <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Ringkasan untuk SPPG:
+                  </p>
+                  <div className="text-sm text-gray-600 dark:text-gray-400 space-y-1">
+                    {commissionSettingsModal.customCommissionRate ? (
+                      <>
+                        <p>
+                          • Diskon Customer:{" "}
+                          <span className="font-semibold">
+                            {commissionSettingsModal.customCommissionRate}%
+                          </span>
+                        </p>
+                        <p>
+                          • Potongan Perusahaan:{" "}
+                          <span className="font-semibold">
+                            {commissionSettingsModal.companyCutRate || "0"}%
+                          </span>
+                        </p>
+                        <p>
+                          • Komisi Marketing:{" "}
+                          <span className="font-semibold">
+                            {Number(commissionSettingsModal.customCommissionRate) -
+                              Number(commissionSettingsModal.companyCutRate || 0)}
+                            %
+                          </span>
+                        </p>
+                      </>
+                    ) : (
+                      <p className="text-gray-400 dark:text-gray-500 italic">
+                        Masukkan persentase komisi untuk melihat ringkasan
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-6 border-t border-gray-200 dark:border-gray-700 flex justify-end gap-3">
+                <button
+                  onClick={() =>
+                    setCommissionSettingsModal({
+                      show: false,
+                      staff: null,
+                      customCommissionRate: "",
+                      companyCutRate: "",
+                      loading: false,
+                      error: "",
+                    })
+                  }
+                  className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                >
+                  Batal
+                </button>
+                <button
+                  onClick={handleSaveCommissionSettings}
+                  disabled={commissionSettingsModal.loading}
+                  className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50 flex items-center gap-2"
+                >
+                  {commissionSettingsModal.loading ? (
+                    <>
+                      <RefreshCw className="w-4 h-4 animate-spin" />
+                      Menyimpan...
+                    </>
+                  ) : (
+                    "Simpan"
+                  )}
+                </button>
               </div>
             </div>
           </div>
