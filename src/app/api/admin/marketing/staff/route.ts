@@ -36,10 +36,10 @@ export async function GET(_req: NextRequest) {
       );
     }
 
-    // Get all marketing staff and marketing_head with their commission summary
+    // Get all marketing staff, marketing_head, and mitra with their commission summary
     const marketingStaff = await User.find({
-      role: { $in: ["marketing", "marketing_head"] },
-    }).select("_id fullName email phoneNumber referralCode isActive createdAt customCommissionRate companyCutRate");
+      role: { $in: ["marketing", "marketing_head", "mitra"] },
+    }).select("_id fullName email phoneNumber referralCode isActive createdAt customCommissionRate companyCutRate role occupation");
 
     // Get commission summary for each staff
     const staffWithCommissions = await Promise.all(
@@ -179,12 +179,12 @@ export async function PUT(req: NextRequest) {
       );
     }
 
-    // Find the marketing staff
+    // Find the marketing staff or mitra
     const marketingStaff = await User.findById(staffId);
-    if (!marketingStaff || marketingStaff.role !== "marketing") {
+    if (!marketingStaff || !["marketing", "marketing_head", "mitra"].includes(marketingStaff.role)) {
       return NextResponse.json(
         {
-          error: "Marketing staff not found",
+          error: "Marketing staff or mitra not found",
         },
         { status: 404 }
       );
@@ -286,12 +286,12 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Find the marketing staff
+    // Find the marketing staff or mitra
     const marketingStaff = await User.findById(staffId);
-    if (!marketingStaff || marketingStaff.role !== "marketing") {
+    if (!marketingStaff || !["marketing", "marketing_head", "mitra"].includes(marketingStaff.role)) {
       return NextResponse.json(
         {
-          error: "Marketing staff not found",
+          error: "Marketing staff or mitra not found",
         },
         { status: 404 }
       );

@@ -9,6 +9,7 @@ import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
+import { occupationOptions } from "@/constant/OCCUPATION";
 
 interface StaffUser {
   _id: string;
@@ -75,6 +76,7 @@ export default function MarketingKelolaStaff() {
     confirmPassword: "",
     ktpImageUrl: "",
     faceImageUrl: "",
+    occupation: "",
   });
   const [submitting, setSubmitting] = useState(false);
   const [uploadingKtp, setUploadingKtp] = useState(false);
@@ -91,7 +93,7 @@ export default function MarketingKelolaStaff() {
       const params = new URLSearchParams({
         page: String(currentPage),
         limit: "10",
-        role: "marketing,marketing_head",
+        role: "marketing,marketing_head,mitra",
         ...(searchTerm && { search: searchTerm }),
       });
       const res = await fetch(`/api/admin/staff?${params}`);
@@ -176,6 +178,13 @@ export default function MarketingKelolaStaff() {
         }
       }
       // For editing, images are optional but if provided should be included
+      
+      // For Mitra role, occupation is required
+      if (formData.role === "Mitra" && !formData.occupation) {
+        showError("Occupation diperlukan", "Occupation wajib diisi untuk Mitra");
+        setSubmitting(false);
+        return;
+      }
 
       const url = "/api/admin/staff";
       const method = isEditing ? "PUT" : "POST";
@@ -186,7 +195,8 @@ export default function MarketingKelolaStaff() {
             email: formData.email,
             password: formData.password,
             id: editingStaff?._id,
-            role: formData.role, // Use the role from formData to preserve marketing vs marketing_head
+            role: formData.role, // Use the role from formData to preserve marketing vs marketing_head vs mitra
+            occupation: formData.role === "Mitra" ? formData.occupation : undefined,
             // Always include image URLs, even if empty, to preserve existing images
             ktpImageUrl: formData.ktpImageUrl || editingStaff?.ktpImageUrl || "",
             faceImageUrl: formData.faceImageUrl || editingStaff?.faceImageUrl || "",
@@ -196,7 +206,8 @@ export default function MarketingKelolaStaff() {
             phoneNumber: formData.phoneNumber,
             email: formData.email,
             password: formData.password,
-            role: "Marketing",
+            role: formData.role,
+            occupation: formData.role === "Mitra" ? formData.occupation : undefined,
             ktpImageUrl: formData.ktpImageUrl,
             faceImageUrl: formData.faceImageUrl,
           });
@@ -223,6 +234,7 @@ export default function MarketingKelolaStaff() {
         confirmPassword: "",
         ktpImageUrl: "",
         faceImageUrl: "",
+        occupation: "",
       });
       fetchStaff();
     } catch (err: any) {
@@ -239,7 +251,9 @@ export default function MarketingKelolaStaff() {
       fullName: staff.fullName,
       phoneNumber: staff.phoneNumber,
       email: staff.email,
-      role: staff.role === "marketing_head" ? "Marketing Head" : "Marketing",
+      role: staff.role === "marketing_head" ? "Marketing Head" : 
+            staff.role === "mitra" ? "Mitra" : "Marketing",
+      occupation: (staff as any).occupation || "",
       password: "",
       confirmPassword: "",
       ktpImageUrl: staff.ktpImageUrl || "",
@@ -606,7 +620,7 @@ export default function MarketingKelolaStaff() {
           <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
             <div
               className={getThemeClasses(
-                "bg-white rounded-2xl p-6 w-full max-w-md dark:bg-gray-800",
+                "bg-white rounded-2xl p-6 w-full max-w-3xl dark:bg-gray-800 max-h-[90vh] overflow-y-auto",
                 "!bg-[#FFF7F9] !text-[#4c1d1d]"
               )}
             >
@@ -619,100 +633,207 @@ export default function MarketingKelolaStaff() {
                 {showEditModal ? "Ubah Staff" : "Tambah Staff Marketing"}
               </h2>
               <form onSubmit={handleSubmit} className="space-y-4">
-                <div>
-                  <label
-                    className={getThemeClasses(
-                      "block text-sm text-gray-700 dark:text-gray-200",
-                      "!text-[#4c1d1d]"
-                    )}
-                  >
-                    Nama Lengkap
-                  </label>
-                  <Input
-                    type="text"
-                    value={formData.fullName}
-                    onChange={(e) =>
-                      setFormData((prev) => ({
-                        ...prev,
-                        fullName: e.target.value,
-                      }))
-                    }
-                    required
-                    className={getThemeClasses(
-                      "border-[#324D3E]/20 dark:border-gray-600 focus:border-[#324D3E] focus:ring-[#324D3E]/20 rounded-xl dark:bg-gray-700 dark:text-white",
-                      "!bg-white !text-[#4c1d1d]"
-                    )}
-                  />
-                </div>
-                <div>
-                  <label
-                    className={getThemeClasses(
-                      "block text-sm text-gray-700 dark:text-gray-200",
-                      "!text-[#4c1d1d]"
-                    )}
-                  >
-                    Email
-                  </label>
-                  <Input
-                    type="email"
-                    value={formData.email}
-                    onChange={(e) =>
-                      setFormData((prev) => ({
-                        ...prev,
-                        email: e.target.value,
-                      }))
-                    }
-                    required
-                    className={getThemeClasses(
-                      "border-[#324D3E]/20 dark:border-gray-600 focus:border-[#324D3E] focus:ring-[#324D3E]/20 rounded-xl dark:bg-gray-700 dark:text-white",
-                      "!bg-white !text-[#4c1d1d]"
-                    )}
-                  />
-                </div>
-                <div>
-                  <label
-                    className={getThemeClasses(
-                      "block text-sm text-gray-700 dark:text-gray-200",
-                      "!text-[#4c1d1d]"
-                    )}
-                  >
-                    Telepon
-                  </label>
-                  <Input
-                    type="tel"
-                    value={formData.phoneNumber}
-                    onChange={(e) =>
-                      setFormData((prev) => ({
-                        ...prev,
-                        phoneNumber: e.target.value,
-                      }))
-                    }
-                    required
-                    className={getThemeClasses(
-                      "border-[#324D3E]/20 dark:border-gray-600 focus:border-[#324D3E] focus:ring-[#324D3E]/20 rounded-xl dark:bg-gray-700 dark:text-white",
-                      "!bg-white !text-[#4c1d1d]"
-                    )}
-                  />
-                </div>
-                <div>
-                  <label
-                    className={getThemeClasses(
-                      "block text-sm text-gray-700 dark:text-gray-200",
-                      "!text-[#4c1d1d]"
-                    )}
-                  >
-                    Password{" "}
-                    {showEditModal ? "(kosongkan jika tidak diubah)" : ""}
-                  </label>
-
-                  <div className="flex gap-2">
+                {/* Grid layout for basic info fields */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label
+                      className={getThemeClasses(
+                        "block text-sm text-gray-700 dark:text-gray-200",
+                        "!text-[#4c1d1d]"
+                      )}
+                    >
+                      Nama Lengkap
+                    </label>
                     <Input
                       type="text"
-                      value={formData.password}
+                      value={formData.fullName}
                       onChange={(e) =>
                         setFormData((prev) => ({
                           ...prev,
-                          password: e.target.value,
+                          fullName: e.target.value,
+                        }))
+                      }
+                      required
+                      className={getThemeClasses(
+                        "border-[#324D3E]/20 dark:border-gray-600 focus:border-[#324D3E] focus:ring-[#324D3E]/20 rounded-xl dark:bg-gray-700 dark:text-white",
+                        "!bg-white !text-[#4c1d1d]"
+                      )}
+                    />
+                  </div>
+                  <div>
+                    <label
+                      className={getThemeClasses(
+                        "block text-sm text-gray-700 dark:text-gray-200",
+                        "!text-[#4c1d1d]"
+                      )}
+                    >
+                      Email
+                    </label>
+                    <Input
+                      type="email"
+                      value={formData.email}
+                      onChange={(e) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          email: e.target.value,
+                        }))
+                      }
+                      required
+                      className={getThemeClasses(
+                        "border-[#324D3E]/20 dark:border-gray-600 focus:border-[#324D3E] focus:ring-[#324D3E]/20 rounded-xl dark:bg-gray-700 dark:text-white",
+                        "!bg-white !text-[#4c1d1d]"
+                      )}
+                    />
+                  </div>
+                  <div>
+                    <label
+                      className={getThemeClasses(
+                        "block text-sm text-gray-700 dark:text-gray-200",
+                        "!text-[#4c1d1d]"
+                      )}
+                    >
+                      Telepon
+                    </label>
+                    <Input
+                      type="tel"
+                      value={formData.phoneNumber}
+                      onChange={(e) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          phoneNumber: e.target.value,
+                        }))
+                      }
+                      required
+                      className={getThemeClasses(
+                        "border-[#324D3E]/20 dark:border-gray-600 focus:border-[#324D3E] focus:ring-[#324D3E]/20 rounded-xl dark:bg-gray-700 dark:text-white",
+                        "!bg-white !text-[#4c1d1d]"
+                      )}
+                    />
+                  </div>
+                  <div>
+                    <label
+                      className={getThemeClasses(
+                        "block text-sm text-gray-700 dark:text-gray-200",
+                        "!text-[#4c1d1d]"
+                      )}
+                    >
+                      Role
+                    </label>
+                    <select
+                      value={formData.role}
+                      onChange={(e) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          role: e.target.value,
+                          ...(e.target.value !== "Mitra" ? { occupation: "" } : {}),
+                        }))
+                      }
+                      className={getThemeClasses(
+                        "w-full px-3 py-2 border border-[#324D3E]/20 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#324D3E]/20 focus:border-[#324D3E] text-[#324D3E] dark:text-white bg-white dark:bg-gray-700",
+                        "!bg-white !text-[#4c1d1d]"
+                      )}
+                      required
+                    >
+                      <option value="Marketing">Marketing</option>
+                      <option value="Marketing Head">Marketing Head</option>
+                      <option value="Mitra">Mitra</option>
+                    </select>
+                  </div>
+                  {/* Occupation field - only shown for Mitra role */}
+                  {formData.role === "Mitra" && (
+                    <div>
+                      <label
+                        className={getThemeClasses(
+                          "block text-sm text-gray-700 dark:text-gray-200",
+                          "!text-[#4c1d1d]"
+                        )}
+                      >
+                        Occupation <span className="text-red-500">*</span>
+                      </label>
+                      <select
+                        value={formData.occupation || ""}
+                        onChange={(e) =>
+                          setFormData((prev) => ({
+                            ...prev,
+                            occupation: e.target.value,
+                          }))
+                        }
+                        className={getThemeClasses(
+                          "w-full px-3 py-2 border border-[#324D3E]/20 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#324D3E]/20 focus:border-[#324D3E] text-[#324D3E] dark:text-white bg-white dark:bg-gray-700",
+                          "!bg-white !text-[#4c1d1d]"
+                        )}
+                        required
+                      >
+                        {occupationOptions.map((option) => (
+                          <option key={option.value} value={option.value}>
+                            {option.label}
+                          </option>
+                        ))}
+                      </select>
+                      <p className="mt-1 text-xs text-[#889063] dark:text-gray-400">
+                        Occupation harus dipilih untuk mitra
+                      </p>
+                    </div>
+                  )}
+                </div>
+                {/* Password fields side by side */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label
+                      className={getThemeClasses(
+                        "block text-sm text-gray-700 dark:text-gray-200",
+                        "!text-[#4c1d1d]"
+                      )}
+                    >
+                      Password{" "}
+                      {showEditModal ? "(kosongkan jika tidak diubah)" : ""}
+                    </label>
+                    <div className="flex gap-2">
+                      <Input
+                        type="text"
+                        value={formData.password}
+                        onChange={(e) =>
+                          setFormData((prev) => ({
+                            ...prev,
+                            password: e.target.value,
+                          }))
+                        }
+                        className={getThemeClasses(
+                          "border-[#324D3E]/20 dark:border-gray-600 focus:border-[#324D3E] focus:ring-[#324D3E]/20 rounded-xl dark:bg-gray-700 dark:text-white",
+                          "!bg-white !text-[#4c1d1d]"
+                        )}
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={generatePassword}
+                        className={getThemeClasses(
+                          "whitespace-nowrap px-3 border-[#324D3E]/20 dark:border-gray-600 text-[#324D3E] dark:text-gray-300 hover:bg-[#324D3E]/10 dark:hover:bg-gray-700 hover:border-[#324D3E] rounded-xl",
+                          "!bg-gradient-to-r !from-[#FFF0F3] !to-[#FFF7F9] !text-[#4c1d1d]"
+                        )}
+                      >
+                        Buat
+                      </Button>
+                    </div>
+                  </div>
+                  <div>
+                    <label
+                      className={getThemeClasses(
+                        "block text-sm text-gray-700 dark:text-gray-200",
+                        "!text-[#4c1d1d]"
+                      )}
+                    >
+                      Konfirmasi Password{" "}
+                      {showEditModal ? "(kosongkan jika tidak diubah)" : ""}
+                    </label>
+                    <Input
+                      type="password"
+                      value={formData.confirmPassword}
+                      onChange={(e) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          confirmPassword: e.target.value,
                         }))
                       }
                       className={getThemeClasses(
@@ -720,56 +841,19 @@ export default function MarketingKelolaStaff() {
                         "!bg-white !text-[#4c1d1d]"
                       )}
                     />
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={generatePassword}
-                      className={getThemeClasses(
-                        "whitespace-nowrap px-3 border-[#324D3E]/20 dark:border-gray-600 text-[#324D3E] dark:text-gray-300 hover:bg-[#324D3E]/10 dark:hover:bg-gray-700 hover:border-[#324D3E] rounded-xl",
-                        "!bg-gradient-to-r !from-[#FFF0F3] !to-[#FFF7F9] !text-[#4c1d1d]"
-                      )}
-                    >
-                      Buat Password
-                    </Button>
-                  </div>
-                  <div className="text-xs text-[#889063] dark:text-gray-300 mt-1">
-                    <p>Password harus memenuhi kriteria:</p>
-                    <ul className="list-disc list-inside pl-2 mt-1 space-y-0.5">
-                      <li>Minimal 8 karakter</li>
-                      <li>Mengandung huruf besar dan kecil</li>
-                      <li>Mengandung angka</li>
-                      <li>Mengandung karakter khusus (@$!%*?&)</li>
-                    </ul>
                   </div>
                 </div>
-                <div>
-                  <label
-                    className={getThemeClasses(
-                      "block text-sm text-gray-700 dark:text-gray-200",
-                      "!text-[#4c1d1d]"
-                    )}
-                  >
-                    Konfirmasi Password{" "}
-                    {showEditModal ? "(kosongkan jika tidak diubah)" : ""}
-                  </label>
-                  <Input
-                    type="password"
-                    value={formData.confirmPassword}
-                    onChange={(e) =>
-                      setFormData((prev) => ({
-                        ...prev,
-                        confirmPassword: e.target.value,
-                      }))
-                    }
-                    className={getThemeClasses(
-                      "border-[#324D3E]/20 dark:border-gray-600 focus:border-[#324D3E] focus:ring-[#324D3E]/20 rounded-xl dark:bg-gray-700 dark:text-white",
-                      "!bg-white !text-[#4c1d1d]"
-                    )}
-                  />
+                <div className="text-xs text-[#889063] dark:text-gray-300">
+                  <p>Password harus memenuhi kriteria:</p>
+                  <ul className="list-disc list-inside pl-2 mt-1 space-y-0.5">
+                    <li>Minimal 8 karakter</li>
+                    <li>Mengandung huruf besar dan kecil</li>
+                    <li>Mengandung angka</li>
+                    <li>Mengandung karakter khusus (@$!%*?&)</li>
+                  </ul>
                 </div>
                 {/* KTP Upload - shown for both add and edit */}
-                <>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <label
                         className={getThemeClasses(
@@ -936,7 +1020,7 @@ export default function MarketingKelolaStaff() {
                         </div>
                       )}
                     </div>
-                  </>
+                </div>
                 <div className="flex gap-2">
                   <Button
                     type="button"
@@ -954,6 +1038,7 @@ export default function MarketingKelolaStaff() {
                         confirmPassword: "",
                         ktpImageUrl: "",
                         faceImageUrl: "",
+                        occupation: "",
                       });
                     }}
                     className={getThemeClasses(

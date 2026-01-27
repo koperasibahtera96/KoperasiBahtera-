@@ -854,8 +854,8 @@ export default function DailyIncomingInvestorPage() {
                       ))}
                     </Pie>
                     <Tooltip
-                      formatter={(value: number) => [
-                        new Intl.NumberFormat("id-ID").format(value),
+                      formatter={(value: number | undefined) => [
+                        new Intl.NumberFormat("id-ID").format(value ?? 0),
                         "Total",
                       ]}
                       contentStyle={{
@@ -912,8 +912,8 @@ export default function DailyIncomingInvestorPage() {
                       }
                     />
                     <Tooltip
-                      formatter={(value: number) => [
-                        formatCurrency(value),
+                      formatter={(value: number | undefined) => [
+                        formatCurrency(value ?? 0),
                         "Pemasukan",
                       ]}
                       contentStyle={{

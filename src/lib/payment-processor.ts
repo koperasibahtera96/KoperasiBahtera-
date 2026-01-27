@@ -257,6 +257,8 @@ export async function processFullPayment(
   await payment.save({ session: mongoSession });
 
   // Create commission record inside transaction
+  // For marketing/marketing_head: Only create commission for cicilan, NOT for full payments
+  // For mitra: Create commission for both payment types
   if (payment.referralCode && payment.paymentType === "full-investment") {
     try {
       // Check if commission already exists
@@ -265,13 +267,21 @@ export async function processFullPayment(
       }).session(mongoSession);
 
       if (!existingCommission) {
-        // Find marketing staff or marketing head
+        // Find marketing staff, marketing head, or mitra
         const marketingStaff = await User.findOne({
           referralCode: payment.referralCode,
-          role: { $in: ["marketing", "marketing_head"] },
+          role: { $in: ["marketing", "marketing_head", "mitra"] },
         }).session(mongoSession);
 
         if (marketingStaff) {
+          // Skip commission for marketing/marketing_head on full payments
+          // Only mitra gets commission on full payments
+          if (marketingStaff.role === "marketing" || marketingStaff.role === "marketing_head") {
+            console.log(
+              `ℹ️ [${txnId}] Skipping commission for ${marketingStaff.role} referral code on full payment: ${payment.referralCode}`
+            );
+            return txnId;
+          }
           // Get commission rate: prefer locked rates from contract, then custom rate, then global
           const settings = await Settings.findOne({ type: "system" }).session(mongoSession);
           const globalCommissionRate = settings?.config?.commissionRate ?? 0.02;
@@ -847,10 +857,11 @@ export async function processInstallmentPayment(
       }).session(mongoSession);
 
       if (!existingCommission) {
-        // Find marketing staff or marketing head
+        // Find marketing staff, marketing head, or mitra
+        // For cicilan payments: All roles (marketing, marketing_head, mitra) get commission
         const marketingStaff = await User.findOne({
           referralCode: payment.referralCode,
-          role: { $in: ["marketing", "marketing_head"] },
+          role: { $in: ["marketing", "marketing_head", "mitra"] },
         }).session(mongoSession);
 
         if (marketingStaff) {

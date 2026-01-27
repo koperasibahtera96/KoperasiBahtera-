@@ -14,6 +14,7 @@ import {
 } from "@/types/admin";
 import { useTheme } from 'next-themes';
 import { useEffect, useState } from "react";
+import { occupationOptions } from "@/constant/OCCUPATION";
 
 export default function StaffPage() {
   const { theme } = useTheme();
@@ -34,6 +35,7 @@ export default function StaffPage() {
     email: "",
     role: "Mandor",
     password: "",
+    occupation: "",
   });
   const [submitting, setSubmitting] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
@@ -149,6 +151,13 @@ export default function StaffPage() {
         return;
       }
 
+      // For Mitra role, occupation is required
+      if (formData.role === "Mitra" && !formData.occupation) {
+        showError("Occupation diperlukan", "Occupation wajib diisi untuk Mitra");
+        setSubmitting(false);
+        return;
+      }
+
       const url = "/api/admin/staff";
       const method = isEditing ? "PUT" : "POST";
       const body = isEditing
@@ -177,6 +186,7 @@ export default function StaffPage() {
           email: "",
           role: "Mandor",
           password: "",
+          occupation: "",
         });
         fetchStaffUsers();
         fetchStats();
@@ -243,8 +253,10 @@ export default function StaffPage() {
             staff.role === "marketing_admin" ? "Marketing Admin" :
             staff.role === "mandor" ? "Mandor" :
             staff.role === "asisten" ? "Asisten" :
-            staff.role === "manajer" ? "Manajer" : "Staff",
+            staff.role === "manajer" ? "Manajer" :
+            staff.role === "mitra" ? "Mitra" : "Staff",
       password: "",
+      occupation: (staff as any).occupation || "",
     });
     setShowEditModal(true);
   };
@@ -640,6 +652,8 @@ export default function StaffPage() {
                                     ? "bg-blue-100 text-blue-800 border-blue-300 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-700/50"
                                     : staff.role === "marketing" || staff.role === "marketing_head" || staff.role === "marketing_admin"
                                     ? "bg-pink-100 text-pink-800 border-pink-300 dark:bg-pink-900/30 dark:text-pink-300 dark:border-pink-700/50"
+                                    : staff.role === "mitra"
+                                    ? "bg-indigo-100 text-indigo-800 border-indigo-300 dark:bg-indigo-900/30 dark:text-indigo-300 dark:border-indigo-700/50"
                                     : "bg-[#324D3E]/10 text-[#324D3E] border-[#324D3E]/20 dark:bg-gray-700 dark:text-white dark:border-gray-600"
                                 }`}
                               >
@@ -654,7 +668,8 @@ export default function StaffPage() {
                                  staff.role === "ketua" ? "Ketua" :
                                  staff.role === "marketing" ? "Marketing" :
                                  staff.role === "marketing_head" ? "Marketing Head" :
-                                 staff.role === "marketing_admin" ? "Marketing Admin" : "Staff"}
+                                 staff.role === "marketing_admin" ? "Marketing Admin" :
+                                 staff.role === "mitra" ? "Mitra" : "Staff"}
                               </Badge>
                             </td>
                             <td className="py-3 px-3 sm:px-4">
@@ -824,7 +839,8 @@ export default function StaffPage() {
                     onChange={(e) =>
                       setFormData((prev) => ({
                         ...prev,
-                        role: e.target.value as "Staff" | "SPV Staff" | "Admin" | "Staff Admin" | "Finance" | "Staff Finance" | "Ketua" | "Marketing" | "Marketing Head" | "Marketing Admin" | "Mandor" | "Asisten" | "Manajer",
+                        role: e.target.value as "Staff" | "SPV Staff" | "Admin" | "Staff Admin" | "Finance" | "Staff Finance" | "Ketua" | "Marketing" | "Marketing Head" | "Marketing Admin" | "Mandor" | "Asisten" | "Manajer" | "Mitra",
+                        ...(e.target.value === "Mitra" ? {} : { occupation: "" }),
                       }))
                     }
                     className="w-full px-3 py-2 border border-[#324D3E]/20 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#324D3E]/20 focus:border-[#324D3E] text-[#324D3E] dark:text-white bg-white dark:bg-gray-700"
@@ -844,9 +860,39 @@ export default function StaffPage() {
                       <option value="Marketing">Marketing</option>
                       <option value="Marketing Head">Marketing Head</option>
                       <option value="Marketing Admin">Marketing Admin</option>
+                      <option value="Mitra">Mitra</option>
                     </optgroup>
                   </select>
                 </div>
+
+                {/* Occupation field - only shown for Mitra role */}
+                {formData.role === "Mitra" && (
+                  <div>
+                    <label className="block text-sm font-medium text-[#324D3E] dark:text-white mb-1">
+                      Occupation <span className="text-red-500">*</span>
+                    </label>
+                    <select
+                      value={formData.occupation || ""}
+                      onChange={(e) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          occupation: e.target.value,
+                        }))
+                      }
+                      className="w-full px-3 py-2 border border-[#324D3E]/20 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#324D3E]/20 focus:border-[#324D3E] text-[#324D3E] dark:text-white bg-white dark:bg-gray-700"
+                      required
+                    >
+                      {occupationOptions.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                    <p className="mt-1 text-xs text-[#889063] dark:text-gray-400">
+                      Occupation harus dipilih untuk mitra
+                    </p>
+                  </div>
+                )}
 
                 <div>
                   <label className="block text-sm font-medium text-[#324D3E] dark:text-white mb-1">
@@ -983,7 +1029,8 @@ export default function StaffPage() {
                     onChange={(e) =>
                       setFormData((prev) => ({
                         ...prev,
-                        role: e.target.value as "Staff" | "SPV Staff" | "Admin" | "Staff Admin" | "Finance" | "Staff Finance" | "Ketua" | "Marketing" | "Marketing Head" | "Marketing Admin" | "Mandor" | "Asisten" | "Manajer",
+                        role: e.target.value as "Staff" | "SPV Staff" | "Admin" | "Staff Admin" | "Finance" | "Staff Finance" | "Ketua" | "Marketing" | "Marketing Head" | "Marketing Admin" | "Mandor" | "Asisten" | "Manajer" | "Mitra",
+                        ...(e.target.value === "Mitra" ? {} : { occupation: "" }),
                       }))
                     }
                     className="w-full px-3 py-2 border border-[#324D3E]/20 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#324D3E]/20 focus:border-[#324D3E] text-[#324D3E] dark:text-white bg-white dark:bg-gray-700"
@@ -1003,9 +1050,39 @@ export default function StaffPage() {
                       <option value="Marketing">Marketing</option>
                       <option value="Marketing Head">Marketing Head</option>
                       <option value="Marketing Admin">Marketing Admin</option>
+                      <option value="Mitra">Mitra</option>
                     </optgroup>
                   </select>
                 </div>
+
+                {/* Occupation field - only shown for Mitra role */}
+                {formData.role === "Mitra" && (
+                  <div>
+                    <label className="block text-sm font-medium text-[#324D3E] dark:text-white mb-1">
+                      Occupation <span className="text-red-500">*</span>
+                    </label>
+                    <select
+                      value={formData.occupation || ""}
+                      onChange={(e) =>
+                        setFormData((prev) => ({
+                          ...prev,
+                          occupation: e.target.value,
+                        }))
+                      }
+                      className="w-full px-3 py-2 border border-[#324D3E]/20 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#324D3E]/20 focus:border-[#324D3E] text-[#324D3E] dark:text-white bg-white dark:bg-gray-700"
+                      required
+                    >
+                      {occupationOptions.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                    <p className="mt-1 text-xs text-[#889063] dark:text-gray-400">
+                      Occupation harus dipilih untuk mitra
+                    </p>
+                  </div>
+                )}
 
                 <div>
                   <label className="block text-sm font-medium text-[#324D3E] dark:text-white mb-1">

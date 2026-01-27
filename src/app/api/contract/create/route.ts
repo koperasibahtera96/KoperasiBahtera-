@@ -1,9 +1,9 @@
-import dbConnect from "@/lib/mongodb";
 import { generateInvoiceNumber } from "@/lib/invoiceNumberGenerator";
-import Contract from "@/models/Contract";
-import User from "@/models/User";
-import Settings from "@/models/Settings";
 import { midtransService } from "@/lib/midtrans";
+import dbConnect from "@/lib/mongodb";
+import Contract from "@/models/Contract";
+import Settings from "@/models/Settings";
+import User from "@/models/User";
 import { getServerSession } from "next-auth/next";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -98,11 +98,11 @@ export async function POST(req: NextRequest) {
         );
       }
 
-      // Check if referral code exists and belongs to an ACTIVE marketing staff
+      // Check if referral code exists and belongs to an ACTIVE marketing staff, marketing_head, or mitra
       marketingUser = await User.findOne({
         referralCode: referralCode,
-        role: { $in: ["marketing", "marketing_head"] },
-        isActive: true, // Only allow referral codes from active marketing staff
+        role: { $in: ["marketing", "marketing_head", "mitra"] },
+        isActive: true, // Only allow referral codes from active users
       });
 
       if (!marketingUser) {
@@ -117,17 +117,31 @@ export async function POST(req: NextRequest) {
       const globalCommissionRate = settings?.config?.commissionRate ?? 0.02;
 
       lockedCommissionRate = marketingUser.customCommissionRate ?? globalCommissionRate;
-      lockedCompanyCutRate = marketingUser.companyCutRate;
 
-      // Check if user is SPPG or TNI and apply discount
-      const discountEligibleOccupations = ["sppg", "tni"];
-      if (discountEligibleOccupations.includes(user.occupation) && lockedCommissionRate !== undefined && lockedCommissionRate > 0) {
+      // Only apply discount if:
+      // 1. Referral code owner is 'mitra'
+      // 2. User's occupation matches mitra's occupation (both must be truthy and match)
+      // 3. Commission rate > 0
+      if (
+        marketingUser.role === 'mitra' &&
+        user.occupation &&
+        marketingUser.occupation &&
+        user.occupation === marketingUser.occupation &&
+        lockedCommissionRate !== undefined &&
+        lockedCommissionRate > 0
+      ) {
         isSppgDiscount = true;
         discountPercentage = lockedCommissionRate;
         discountAmount = Math.round(originalAmount * discountPercentage);
         finalAmount = originalAmount - discountAmount;
 
-        console.log(`[SPPG Discount] User: ${user.email}, Original: ${originalAmount}, Discount: ${(discountPercentage * 100).toFixed(1)}% (${discountAmount}), Final: ${finalAmount}`);
+        // Only set company cut if discount is applied (mitra match)
+        lockedCompanyCutRate = marketingUser.companyCutRate;
+
+        console.log(`[Mitra Discount] User: ${user.email}, Occupation: ${user.occupation}, Mitra Occupation: ${marketingUser.occupation}, Original: ${originalAmount}, Discount: ${(discountPercentage * 100).toFixed(1)}% (${discountAmount}), Final: ${finalAmount}`);
+      } else {
+        // For marketing/head marketing: No discount, no company cut
+        lockedCompanyCutRate = undefined;
       }
     }
 

@@ -1010,8 +1010,8 @@ export default function LaporanPengeluaranPage() {
                         )}
                       </Pie>
                       <Tooltip
-                        formatter={(value: number) => [
-                          formatCurrency(value),
+                        formatter={(value: number | undefined) => [
+                          formatCurrency(value ?? 0),
                           isExpense ? "Pengeluaran" : "Pendapatan",
                         ]}
                         contentStyle={{
@@ -1076,8 +1076,8 @@ export default function LaporanPengeluaranPage() {
                         }
                       />
                       <Tooltip
-                        formatter={(value: number) => [
-                          formatCurrency(value),
+                        formatter={(value: number | undefined) => [
+                          formatCurrency(value ?? 0),
                           isExpense ? "Pengeluaran" : "Pendapatan",
                         ]}
                         contentStyle={{

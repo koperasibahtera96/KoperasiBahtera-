@@ -1,9 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth/next';
 import dbConnect from '@/lib/mongodb';
-import User from '@/models/User';
-import Settings from '@/models/Settings';
 import { validateReferralCode } from '@/lib/referral';
+import Settings from '@/models/Settings';
+import User from '@/models/User';
+import { getServerSession } from 'next-auth/next';
+import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(req: NextRequest) {
   await dbConnect();
@@ -26,57 +26,73 @@ export async function POST(req: NextRequest) {
       }, { status: 400 });
     }
 
-    // Verify the referral code exists (belongs to a marketing staff or marketing_head)
-    const marketingUser = await User.findOne({
+    // Verify the referral code exists (belongs to marketing, marketing_head, or mitra)
+    const referralOwner = await User.findOne({
       referralCode: referralCode,
-      role: { $in: ['marketing', 'marketing_head'] }
+      role: { $in: ['marketing', 'marketing_head', 'mitra'] }
     });
 
-    if (!marketingUser) {
+    if (!referralOwner) {
       return NextResponse.json({
         success: false,
         error: 'Kode referral tidak valid atau tidak ditemukan'
       }, { status: 400 });
     }
 
-    // Check if marketing staff is deactivated
-    if (!marketingUser.isActive) {
+    // Check if referral owner is deactivated
+    if (!referralOwner.isActive) {
       return NextResponse.json({
         success: false,
         error: 'Kode referral tidak aktif'
       }, { status: 400 });
     }
 
+    // Determine referral code type
+    const referralCodeType = referralOwner.role === 'mitra' ? 'mitra' :
+                             referralOwner.role === 'marketing_head' ? 'marketing_head' : 'marketing';
+
     // Get the commission rate for this referral (custom or global)
-    let commissionRate = marketingUser.customCommissionRate;
+    let commissionRate = referralOwner.customCommissionRate;
     if (commissionRate === undefined || commissionRate === null) {
       // Fall back to global rate
       const settings = await Settings.findOne({ type: 'system' });
       commissionRate = settings?.config?.commissionRate ?? 0.02;
     }
 
-    // Check if the requesting user is SPPG to calculate discount
+    // Check discount eligibility based on referral code type
     const session = await getServerSession();
     let discountInfo = null;
+    let isMitraMatch = false;
 
     if (session?.user?.email) {
       const requestingUser = await User.findOne({ email: session.user.email });
-      
-      // SPPG and TNI users get discount equal to the commission rate
-      const discountEligibleOccupations = ['sppg', 'tni'];
-      if (requestingUser?.occupation && discountEligibleOccupations.includes(requestingUser.occupation)) {
+
+      // Only apply discount if:
+      // 1. Referral code owner is 'mitra'
+      // 2. User's occupation matches mitra's occupation
+      // 3. Commission rate > 0
+      if (
+        referralOwner.role === 'mitra' &&
+        requestingUser?.occupation &&
+        requestingUser.occupation === referralOwner.occupation &&
+        commissionRate > 0
+      ) {
+        isMitraMatch = true;
         discountInfo = {
           isSppgUser: true, // Keep field name for backward compatibility
           discountPercentage: commissionRate, // e.g., 0.30 = 30%
           discountLabel: `${Math.round(commissionRate * 100)}%`
         };
       }
+      // Marketing/head marketing codes never provide discount (regardless of user occupation)
     }
 
     return NextResponse.json({
       success: true,
       message: 'Kode referral valid',
-      marketingStaffName: marketingUser.fullName,
+      marketingStaffName: referralOwner.fullName,
+      referralCodeType,
+      ...(referralOwner.role === 'mitra' && { isMitraMatch }),
       ...(discountInfo && { discountInfo })
     });
 

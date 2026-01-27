@@ -46,10 +46,10 @@ export async function POST(req: NextRequest) {
       }, { status: 400 });
     }
 
-    // Verify the referral code exists (belongs to a marketing staff)
+    // Verify the referral code exists (belongs to a marketing staff, marketing_head, or mitra)
     const marketingUser = await User.findOne({
       referralCode: referralCode,
-      role: 'marketing'
+      role: { $in: ['marketing', 'marketing_head', 'mitra'] }
     });
 
     if (!marketingUser) {

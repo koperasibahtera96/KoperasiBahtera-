@@ -63,9 +63,9 @@ export async function GET(req: NextRequest) {
       query.marketingStaffId = staffId;
     }
 
-    // Get all marketing staff and marketing_head
+    // Get all marketing staff, marketing_head, and mitra
     const marketingStaff = await User.find({
-      role: { $in: ["marketing", "marketing_head"] },
+      role: { $in: ["marketing", "marketing_head", "mitra"] },
     }).select("_id fullName email referralCode");
 
     // Get commission history
@@ -297,16 +297,28 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Find marketing staff or marketing_head
+    // Find marketing staff, marketing_head, or mitra
     const marketingStaff = await User.findOne({
       referralCode: payment.referralCode,
-      role: { $in: ["marketing", "marketing_head"] },
+      role: { $in: ["marketing", "marketing_head", "mitra"] },
     });
 
     if (!marketingStaff) {
       return NextResponse.json(
         {
           error: "Marketing staff not found for referral code",
+        },
+        { status: 400 }
+      );
+    }
+
+    // For marketing/marketing_head: Only create commission for cicilan, NOT for full payments
+    // For mitra: Create commission for both payment types
+    if (payment.paymentType === "full-investment" && 
+        (marketingStaff.role === "marketing" || marketingStaff.role === "marketing_head")) {
+      return NextResponse.json(
+        {
+          error: "Commission not applicable for marketing/marketing_head referral codes on full payments",
         },
         { status: 400 }
       );

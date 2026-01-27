@@ -34,11 +34,11 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    // Find the marketing staff
+    // Find the marketing staff or mitra
     const marketingStaff = await User.findById(staffId);
-    if (!marketingStaff || !['marketing', 'marketing_head'].includes(marketingStaff.role)) {
+    if (!marketingStaff || !['marketing', 'marketing_head', 'mitra'].includes(marketingStaff.role)) {
       return NextResponse.json(
-        { error: 'Marketing staff not found' },
+        { error: 'Marketing staff or mitra not found' },
         { status: 404 }
       );
     }
@@ -103,11 +103,11 @@ export async function PUT(req: NextRequest) {
       );
     }
 
-    // Find the marketing staff
+    // Find the marketing staff or mitra
     const marketingStaff = await User.findById(staffId);
-    if (!marketingStaff || !['marketing', 'marketing_head'].includes(marketingStaff.role)) {
+    if (!marketingStaff || !['marketing', 'marketing_head', 'mitra'].includes(marketingStaff.role)) {
       return NextResponse.json(
-        { error: 'Marketing staff not found' },
+        { error: 'Marketing staff or mitra not found' },
         { status: 404 }
       );
     }
@@ -122,8 +122,15 @@ export async function PUT(req: NextRequest) {
       }
     }
 
-    // Validate companyCutRate (0 to customCommissionRate)
+    // Company cut can only be set for mitra role
     if (companyCutRate !== undefined && companyCutRate !== null) {
+      if (marketingStaff.role !== 'mitra') {
+        return NextResponse.json(
+          { error: 'Company cut rate can only be set for mitra role' },
+          { status: 400 }
+        );
+      }
+
       if (typeof companyCutRate !== 'number' || companyCutRate < 0 || companyCutRate > 1) {
         return NextResponse.json(
           { error: 'Company cut rate must be between 0 and 1 (0% to 100%)' },
@@ -139,6 +146,9 @@ export async function PUT(req: NextRequest) {
           { status: 400 }
         );
       }
+    } else if (marketingStaff.role === 'mitra' && companyCutRate === null) {
+      // Allow clearing company cut for mitra (set to undefined)
+      // This is handled by the updateFields logic below
     }
 
     // Store old values for audit logging
@@ -152,8 +162,17 @@ export async function PUT(req: NextRequest) {
     if (customCommissionRate !== undefined) {
       updateFields.customCommissionRate = customCommissionRate;
     }
-    if (companyCutRate !== undefined) {
-      updateFields.companyCutRate = companyCutRate;
+    
+    // Company cut handling:
+    // - For mitra: Set to provided value (or undefined if null)
+    // - For marketing/head marketing: Always set to undefined (cannot have company cut)
+    if (marketingStaff.role === 'mitra') {
+      if (companyCutRate !== undefined) {
+        updateFields.companyCutRate = companyCutRate;
+      }
+    } else {
+      // Marketing/head marketing cannot have company cut
+      updateFields.companyCutRate = undefined;
     }
 
     // Update the marketing staff

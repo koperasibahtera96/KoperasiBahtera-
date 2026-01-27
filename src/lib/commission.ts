@@ -73,16 +73,26 @@ export async function createCommissionRecord(paymentId: string): Promise<{
       };
     }
 
-    // Find marketing staff or marketing head
+    // Find marketing staff, marketing head, or mitra
     const marketingStaff = await User.findOne({
       referralCode: payment.referralCode,
-      role: { $in: ['marketing', 'marketing_head'] }
+      role: { $in: ['marketing', 'marketing_head', 'mitra'] }
     });
 
     if (!marketingStaff) {
       return {
         success: false,
         message: "Marketing staff not found for referral code"
+      };
+    }
+
+    // For marketing/marketing_head: Only create commission for cicilan, NOT for full payments
+    // For mitra: Create commission for both payment types
+    if (payment.paymentType === 'full-investment' && 
+        (marketingStaff.role === 'marketing' || marketingStaff.role === 'marketing_head')) {
+      return {
+        success: false,
+        message: "Commission not applicable for marketing/marketing_head referral codes on full payments"
       };
     }
 

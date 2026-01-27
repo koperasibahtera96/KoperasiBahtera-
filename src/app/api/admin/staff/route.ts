@@ -15,7 +15,7 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     const body = await request.json();
-    const { fullName, phoneNumber, email, role, password, ktpImageUrl, faceImageUrl } = body;
+    const { fullName, phoneNumber, email, role, password, ktpImageUrl, faceImageUrl, occupation } = body;
 
     if (!fullName || !phoneNumber || !email || !role || !password) {
       return NextResponse.json(
@@ -109,6 +109,10 @@ export async function POST(request: NextRequest) {
         prefix = "MKA";
         dbRole = "marketing_admin";
         break;
+      case "Mitra":
+        prefix = "MTR";
+        dbRole = "mitra";
+        break;
       default:
         prefix = "ST";
         dbRole = "staff";
@@ -158,9 +162,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Generate referral code only for marketing_head and marketing_admin (NOT regular marketing staff)
+    // Generate referral code for marketing_head, marketing_admin, and mitra
     let referralCode;
-    if (dbRole === "marketing_head" || dbRole === "marketing_admin") {
+    if (dbRole === "marketing_head" || dbRole === "marketing_admin" || dbRole === "mitra") {
       let isUnique = false;
       while (!isUnique) {
         referralCode = generateReferralCode();
@@ -221,7 +225,9 @@ export async function POST(request: NextRequest) {
       domisiliProvince: "Provinsi domisili belum diisi",
       domisiliPostalCode: "00000",
       occupation:
-        role === "Mandor"
+        role === "Mitra" && occupation
+          ? occupation.trim()
+          : role === "Mandor"
           ? "Mandor Lapangan"
           : role === "Asisten"
           ? "Asisten Lapangan"

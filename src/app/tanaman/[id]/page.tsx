@@ -576,8 +576,8 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
                     />
                     <YAxis stroke="#889063" fontSize={12} fontWeight="500" />
                     <Tooltip
-                      formatter={(value: number) => [
-                        fmtIDR(value),
+                      formatter={(value: number | undefined) => [
+                        fmtIDR(value ?? 0),
                         "Net Profit",
                       ]}
                       contentStyle={mounted && theme === "pink" ? {
@@ -655,7 +655,7 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
                       ))}
                     </Pie>
                     <Tooltip
-                      formatter={(v: number) => [fmtIDR(v), "Investasi"]}
+                      formatter={(v: number | undefined) => [fmtIDR(v ?? 0), "Investasi"]}
                       contentStyle={mounted && theme === "pink" ? {
                         backgroundColor: "#ffffff",
                         border: "2px solid #FFC1CC",

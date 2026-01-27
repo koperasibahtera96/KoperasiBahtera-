@@ -57,8 +57,7 @@ export async function POST(req: NextRequest) {
     const marketingStaff = await User.findById(staffId);
     if (
       !marketingStaff ||
-      (marketingStaff.role !== "marketing" &&
-        marketingStaff.role !== "marketing_head")
+      !["marketing", "marketing_head", "mitra"].includes(marketingStaff.role)
     ) {
       return NextResponse.json(
         {

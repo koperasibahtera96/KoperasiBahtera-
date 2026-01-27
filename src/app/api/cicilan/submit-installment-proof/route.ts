@@ -76,7 +76,7 @@ export async function POST(req: NextRequest) {
       // Verify the referral code exists (belongs to a marketing staff)
       const marketingUser = await User.findOne({
         referralCode: referralCode,
-        role: 'marketing'
+        role: { $in: ['marketing', 'marketing_head', 'mitra'] }
       });
 
       console.log('Marketing user found:', marketingUser ? 'Yes' : 'No');
