@@ -314,7 +314,7 @@ export async function POST(req: NextRequest) {
 
     // For marketing/marketing_head: Only create commission for cicilan, NOT for full payments
     // For mitra: Create commission for both payment types
-    if (payment.paymentType === "full-investment" && 
+    if (payment.paymentType === "full-investment" &&
         (marketingStaff.role === "marketing" || marketingStaff.role === "marketing_head")) {
       return NextResponse.json(
         {
@@ -327,19 +327,19 @@ export async function POST(req: NextRequest) {
     // Get commission rate: prefer locked rates from contract, then custom rate, then global
     const settings = await Settings.findOne({ type: "system" });
     const globalCommissionRate = settings?.config?.commissionRate ?? 0.02;
-    
+
     // Try to get locked rates from contract
-    const contractLookupId = payment.paymentType === 'full-investment' 
+    const contractLookupId = payment.paymentType === 'full-investment'
       ? payment.orderId || payment.contractId
       : payment.cicilanOrderId;
     const paymentContract = contractLookupId
       ? await Contract.findOne({ contractId: contractLookupId })
       : null;
-    
+
     let commissionRate: number;
     let companyCutRate: number | undefined;
     let rateSource: string;
-    
+
     if (paymentContract?.lockedCommissionRate !== undefined) {
       // Use locked rates from contract creation time
       commissionRate = paymentContract.lockedCommissionRate;
@@ -356,20 +356,20 @@ export async function POST(req: NextRequest) {
       companyCutRate = undefined;
       rateSource = "global_default";
     }
-    
+
     console.log(`📊 Admin commission rate selection: ${(commissionRate * 100).toFixed(1)}% (source: ${rateSource}, contractLookupId: ${contractLookupId}, contractFound: ${!!paymentContract})`);
-    
+
     const isSppgTransaction = payment.isSppgDiscount === true;
-    
+
     // For SPPG transactions, use ORIGINAL amount (before discount) for commission calculation
     const actualContractValue = isSppgTransaction && payment.originalAmount
       ? payment.originalAmount
       : contractValue;
-    
+
     // Calculate commission amounts
     let commissionAmount: number;
     let companyCutAmount: number | undefined;
-    
+
     if (isSppgTransaction && companyCutRate !== undefined) {
       // SPPG transaction: split commission between company and marketing staff
       const marketingCommissionRate = commissionRate - companyCutRate;
@@ -395,7 +395,7 @@ export async function POST(req: NextRequest) {
       contractValue: actualContractValue,
       commissionRate,
       commissionAmount,
-      
+
       // SPPG-specific fields
       ...(isSppgTransaction && {
         companyCutRate,
