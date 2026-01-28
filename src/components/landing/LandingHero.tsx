@@ -48,6 +48,22 @@ const fadeInUp: any = {
   },
 };
 
+const slideInFromRight: any = {
+  hidden: {
+    opacity: 0,
+    x: 50,
+  },
+  visible: {
+    opacity: 1,
+    x: 0,
+    transition: {
+      type: "tween",
+      duration: 0.3,
+      ease: "easeOut",
+    },
+  },
+};
+
 // const scaleIn: any = {
 //   hidden: {
 //     opacity: 0,
@@ -90,12 +106,13 @@ export default function LandingHero() {
         <div className="absolute inset-0 bg-gray-400 opacity-60"></div>
       </div>
 
-      {/* Content */}
+      {/* Content: two-column layout — text left, brochure right */}
       <motion.div
-        className="relative z-10 ml-4 sm:ml-8 md:ml-12 lg:ml-16 xl:ml-24 max-w-[85%] px-3 md:px-5 lg:px-6 text-left"
+        className="relative z-10 w-full max-w-7xl mx-auto pl-4 sm:pl-6 md:pl-8 lg:pl-10 xl:pl-12 pr-2 sm:pr-4 md:pr-6 lg:pr-6 xl:pr-8 flex flex-col lg:flex-row items-center justify-between gap-8 lg:gap-12 xl:gap-16 text-left"
         variants={containerVariants}
       >
-        <div>
+        {/* Left: hero text */}
+        <div className="flex-1 min-w-0 max-w-6xl pt-8 sm:pt-10 lg:pt-12 xl:pt-16">
           {/* Subtitle */}
           <motion.p
             className="text-base sm:text-lg md:text-xl lg:text-2xl mb-3 sm:mb-4 md:mb-5 italic font-medium text-[#4C3D19] block"
@@ -106,7 +123,7 @@ export default function LandingHero() {
 
           {/* Main Title */}
           <motion.h1
-            className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl max-w-[85%] font-bold leading-tight mb-4 sm:mb-6 md:mb-7 font-[family-name:var(--font-poppins)]"
+            className="text-2xl sm:text-3xl md:text-4xl lg:text-[2.75rem] xl:text-[3.25rem] w-full font-bold leading-tight mb-4 sm:mb-6 md:mb-7 font-[family-name:var(--font-poppins)]"
             variants={containerVariants}
           >
             <motion.span
@@ -162,6 +179,23 @@ export default function LandingHero() {
             {t("hero.cta")}
           </motion.button> */}
         </div>
+
+        {/* Right: brochure image (first page of PDF converted to JPG) */}
+        <motion.div
+          className="shrink-0 w-full max-w-[300px] sm:max-w-[360px] lg:max-w-[380px] xl:max-w-[420px]"
+          variants={slideInFromRight}
+        >
+          <div className="relative rounded-2xl overflow-hidden shadow-2xl w-full">
+            <Image
+              src="/assets/brosur-umum-web.jpg"
+              alt="Brosur Umum Investasi Hijau"
+              width={480}
+              height={640}
+              className="w-full h-auto block"
+              sizes="(max-width: 640px) 300px, (max-width: 1024px) 360px, 420px"
+            />
+          </div>
+        </motion.div>
       </motion.div>
 
       {/* Scroll indicator - Simplified */}
