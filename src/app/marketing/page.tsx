@@ -435,10 +435,14 @@ export default function MarketingHeadPage() {
 
     // Company cut validation - only for mitra role
     if (isMitra) {
-      if (companyRate && (isNaN(Number(companyRate)) || Number(companyRate) < 0 || Number(companyRate) > 100)) {
-        setCommissionSettingsModal(prev => ({ ...prev, error: "Persentase potongan perusahaan harus antara 0 dan 100" }));
+      if (companyRate && !customRate) {
+        setCommissionSettingsModal(prev => ({ 
+          ...prev, 
+          error: "Persentase komisi harus diatur terlebih dahulu sebelum potongan perusahaan" 
+        }));
         return;
       }
+      
       if (customRate && companyRate && Number(companyRate) >= Number(customRate)) {
         setCommissionSettingsModal(prev => ({ ...prev, error: "Potongan perusahaan harus kurang dari komisi" }));
         return;

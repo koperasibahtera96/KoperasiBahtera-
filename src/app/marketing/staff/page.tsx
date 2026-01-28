@@ -9,7 +9,6 @@ import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
-import { occupationOptions } from "@/constant/OCCUPATION";
 
 interface StaffUser {
   _id: string;
@@ -178,13 +177,7 @@ export default function MarketingKelolaStaff() {
         }
       }
       // For editing, images are optional but if provided should be included
-      
-      // For Mitra role, occupation is required
-      if (formData.role === "Mitra" && !formData.occupation) {
-        showError("Occupation diperlukan", "Occupation wajib diisi untuk Mitra");
-        setSubmitting(false);
-        return;
-      }
+      // For Mitra role, occupation is not used – no validation.
 
       const url = "/api/admin/staff";
       const method = isEditing ? "PUT" : "POST";
@@ -196,7 +189,7 @@ export default function MarketingKelolaStaff() {
             password: formData.password,
             id: editingStaff?._id,
             role: formData.role, // Use the role from formData to preserve marketing vs marketing_head vs mitra
-            occupation: formData.role === "Mitra" ? formData.occupation : undefined,
+            occupation: formData.role === "Mitra" ? undefined : formData.occupation,
             // Always include image URLs, even if empty, to preserve existing images
             ktpImageUrl: formData.ktpImageUrl || editingStaff?.ktpImageUrl || "",
             faceImageUrl: formData.faceImageUrl || editingStaff?.faceImageUrl || "",
@@ -207,7 +200,7 @@ export default function MarketingKelolaStaff() {
             email: formData.email,
             password: formData.password,
             role: formData.role,
-            occupation: formData.role === "Mitra" ? formData.occupation : undefined,
+            occupation: formData.role === "Mitra" ? undefined : formData.occupation,
             ktpImageUrl: formData.ktpImageUrl,
             faceImageUrl: formData.faceImageUrl,
           });
@@ -725,7 +718,7 @@ export default function MarketingKelolaStaff() {
                         setFormData((prev) => ({
                           ...prev,
                           role: e.target.value,
-                          ...(e.target.value !== "Mitra" ? { occupation: "" } : {}),
+                          occupation: "", // Clear when role changes; Mitra does not use occupation
                         }))
                       }
                       className={getThemeClasses(
@@ -739,42 +732,7 @@ export default function MarketingKelolaStaff() {
                       <option value="Mitra">Mitra</option>
                     </select>
                   </div>
-                  {/* Occupation field - only shown for Mitra role */}
-                  {formData.role === "Mitra" && (
-                    <div>
-                      <label
-                        className={getThemeClasses(
-                          "block text-sm text-gray-700 dark:text-gray-200",
-                          "!text-[#4c1d1d]"
-                        )}
-                      >
-                        Occupation <span className="text-red-500">*</span>
-                      </label>
-                      <select
-                        value={formData.occupation || ""}
-                        onChange={(e) =>
-                          setFormData((prev) => ({
-                            ...prev,
-                            occupation: e.target.value,
-                          }))
-                        }
-                        className={getThemeClasses(
-                          "w-full px-3 py-2 border border-[#324D3E]/20 dark:border-gray-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#324D3E]/20 focus:border-[#324D3E] text-[#324D3E] dark:text-white bg-white dark:bg-gray-700",
-                          "!bg-white !text-[#4c1d1d]"
-                        )}
-                        required
-                      >
-                        {occupationOptions.map((option) => (
-                          <option key={option.value} value={option.value}>
-                            {option.label}
-                          </option>
-                        ))}
-                      </select>
-                      <p className="mt-1 text-xs text-[#889063] dark:text-gray-400">
-                        Occupation harus dipilih untuk mitra
-                      </p>
-                    </div>
-                  )}
+                  {/* Occupation input removed for Mitra role – occupation does not matter for mitra */}
                 </div>
                 {/* Password fields side by side */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
