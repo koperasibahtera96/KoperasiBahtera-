@@ -543,7 +543,21 @@ export default function ProfilePage() {
     document.body.appendChild(overlay);
     overlay.appendChild(container);
 
-    await loadImage(kartuData.qrCodeDataUrl);
+    // Preload all images (backgrounds, logo, face, QR) so they're ready before toPng
+    const preloads: Promise<unknown>[] = [
+      loadImage("/assets/kartu-anggota-front.jpg"),
+      loadImage("/assets/kartu-anggota-back.jpg"),
+      loadImage("/images/koperasi-logo-kartu-anggota.png").catch(() =>
+        loadImage("/images/koperasi-logo-removebg.png")
+      ),
+      loadImage(kartuData.qrCodeDataUrl),
+    ];
+    if (kartuData.user?.faceImageUrl) {
+      preloads.push(
+        loadImage(kartuData.user.faceImageUrl).catch(() => {})
+      );
+    }
+    await Promise.all(preloads);
 
     const dataUrl = await toPng(container, {
       pixelRatio: 2,
