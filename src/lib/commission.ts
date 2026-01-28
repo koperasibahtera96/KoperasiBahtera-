@@ -2,7 +2,6 @@ import dbConnect from "@/lib/mongodb";
 import CommissionHistory from "@/models/CommissionHistory";
 import Payment from "@/models/Payment";
 import User from "@/models/User";
-import Settings from "@/models/Settings";
 
 export async function createCommissionRecord(paymentId: string): Promise<{
   success: boolean;
@@ -86,23 +85,18 @@ export async function createCommissionRecord(paymentId: string): Promise<{
       };
     }
 
-    // For marketing/marketing_head: Only create commission for cicilan, NOT for full payments
-    // For mitra: Create commission for both payment types
-    if (payment.paymentType === 'full-investment' && 
-        (marketingStaff.role === 'marketing' || marketingStaff.role === 'marketing_head')) {
-      return {
-        success: false,
-        message: "Commission not applicable for marketing/marketing_head referral codes on full payments"
-      };
-    }
+     // Block ALL roles from full payment commissions (including mitra)
+     if (payment.paymentType === 'full-investment' && 
+         ['marketing', 'marketing_head', 'mitra'].includes(marketingStaff.role)) {
+       return {
+         success: false,
+         message: "Commission not applicable for referral codes on full payments"
+       };
+     }
 
-    // Get commission rate: prefer custom rate on marketing staff, fallback to global
-    const settings = await Settings.findOne({ type: "system" });
-    const globalCommissionRate = settings?.config?.commissionRate ?? 0.02; // Default to 2% if not set
-    
-    // Use locked rates from contract if available (for rate consistency), otherwise use current rates
-    let commissionRate: number;
-    let companyCutRate: number | undefined;
+     // Use locked rates from contract if available (for rate consistency), otherwise use current rates
+     let commissionRate: number;
+     let companyCutRate: number | undefined;
     
     // Try to get locked rates from contract
     // For full-investment: payment.orderId IS the contract's contractId
@@ -113,15 +107,22 @@ export async function createCommissionRecord(paymentId: string): Promise<{
       : payment.cicilanOrderId;
     const contract = contractLookupId ? await Contract.findOne({ contractId: contractLookupId }) : null;
     
-    if (contract?.lockedCommissionRate !== undefined) {
-      // Use locked rates from contract creation time
-      commissionRate = contract.lockedCommissionRate;
-      companyCutRate = contract.lockedCompanyCutRate;
-    } else {
-      // Fall back to current rates on marketing staff or global
-      commissionRate = marketingStaff.customCommissionRate ?? globalCommissionRate;
-      companyCutRate = marketingStaff.companyCutRate;
-    }
+     if (contract?.lockedCommissionRate !== undefined) {
+       // Use locked rates from contract creation time
+       commissionRate = contract.lockedCommissionRate;
+       companyCutRate = contract.lockedCompanyCutRate;
+     } else {
+       // Use custom commission rate from marketing staff
+       // If no custom rate is set, skip commission creation
+       if (marketingStaff.customCommissionRate === undefined || marketingStaff.customCommissionRate === null) {
+         return {
+           success: false,
+           message: "No commission rate configured for marketing staff"
+         };
+       }
+       commissionRate = marketingStaff.customCommissionRate;
+       companyCutRate = marketingStaff.companyCutRate;
+     }
 
     // Check if this is an SPPG transaction
     const isSppgTransaction = payment.isSppgDiscount === true;
