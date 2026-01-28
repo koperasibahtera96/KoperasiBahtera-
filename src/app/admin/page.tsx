@@ -2,7 +2,7 @@
 
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import { motion } from 'framer-motion';
-import { RefreshCw, Users, TreePine, DollarSign, TrendingUp, Sprout, CreditCard, Percent, CheckCircle, UserCog, Stamp } from 'lucide-react';
+import { RefreshCw, Users, TreePine, DollarSign, TrendingUp, Sprout, CreditCard, CheckCircle, UserCog, Stamp } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useTheme } from 'next-themes';
 
@@ -411,18 +411,6 @@ export default function AdminDashboard() {
               <div className="text-left">
                 <p className={getThemeClasses("font-medium text-[#324D3E] dark:text-white", "!text-[#4c1d1d] dark:!text-white")}>Biaya Pendaftaran</p>
                 <p className={getThemeClasses("text-sm text-[#889063] dark:text-gray-300", "!text-[#6b7280] dark:!text-gray-300")}>Kelola biaya pendaftaran user</p>
-              </div>
-            </button>
-            <button
-              onClick={() => window.location.href = '/admin/commission-rate'}
-              className={getThemeClasses("flex items-center gap-3 p-4 border-2 border-dashed border-[#889063]/20 rounded-xl hover:border-[#889063] hover:bg-[#889063]/5 transition-all group", "!border-[#FFDEE9]/30 hover:!border-[#FFDEE9] hover:!bg-[#FFDEE9]/10")}
-            >
-              <div className={getThemeClasses("w-10 h-10 bg-[#889063]/10 group-hover:bg-[#889063]/20 rounded-xl flex items-center justify-center transition-colors", "!bg-[#FFDEE9]/20 group-hover:!bg-[#FFDEE9]/30")}>
-                <Percent className={getThemeClasses("w-5 h-5 text-[#889063]", "!text-[#4c1d1d]")} />
-              </div>
-              <div className="text-left">
-                <p className={getThemeClasses("font-medium text-[#324D3E] dark:text-white", "!text-[#4c1d1d] dark:!text-white")}>Tarif Komisi Marketing</p>
-                <p className={getThemeClasses("text-sm text-[#889063] dark:text-gray-300", "!text-[#6b7280] dark:!text-gray-300")}>Atur persentase komisi marketing</p>
               </div>
             </button>
             <button
