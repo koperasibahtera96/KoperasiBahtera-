@@ -2,7 +2,6 @@ import { generateInvoiceNumber } from "@/lib/invoiceNumberGenerator";
 import { midtransService } from "@/lib/midtrans";
 import dbConnect from "@/lib/mongodb";
 import Contract from "@/models/Contract";
-import Settings from "@/models/Settings";
 import User from "@/models/User";
 import { getServerSession } from "next-auth/next";
 import { NextRequest, NextResponse } from "next/server";
@@ -20,18 +19,20 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     console.log("Contract creation request body:", body);
 
-    const {
-      productName,
-      productId,
-      totalAmount,
-      paymentType,
-      paymentTerm,
-      totalInstallments,
-      installmentAmount,
-      durationYears,
-      contractNumber,
-      referralCode,
-    } = body;
+     const {
+       productName,
+       productId,
+       totalAmount,
+       paymentType,
+       paymentTerm,
+       totalInstallments,
+       installmentAmount,
+       durationYears,
+       contractNumber,
+       referralCode: _referralCode,
+     } = body;
+
+     let referralCode = _referralCode;
 
     // Validate required fields
     if (
@@ -50,13 +51,18 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Validate payment type
-    if (!["full", "cicilan"].includes(paymentType)) {
-      return NextResponse.json(
-        { error: "Invalid payment type. Must be 'full' or 'cicilan'" },
-        { status: 400 }
-      );
-    }
+     // Validate payment type
+     if (!["full", "cicilan"].includes(paymentType)) {
+       return NextResponse.json(
+         { error: "Invalid payment type. Must be 'full' or 'cicilan'" },
+         { status: 400 }
+       );
+     }
+
+     if (paymentType === 'full' && referralCode) {
+       console.log(`[Full Payment] Ignoring referralCode ${referralCode} - referrals not supported for full payments`);
+       referralCode = undefined;
+     }
 
     // Validate amount
     if (typeof totalAmount !== "number" || totalAmount <= 0) {
@@ -105,45 +111,58 @@ export async function POST(req: NextRequest) {
         isActive: true, // Only allow referral codes from active users
       });
 
-      if (!marketingUser) {
-        return NextResponse.json(
-          { error: "Kode referral salah atau tidak valid" },
-          { status: 400 }
-        );
-      }
+       if (!marketingUser) {
+         return NextResponse.json(
+           { error: "Kode referral salah atau tidak valid" },
+           { status: 400 }
+         );
+       }
 
-      // Get commission rates to lock at contract creation time
-      const settings = await Settings.findOne({ type: "system" });
-      const globalCommissionRate = settings?.config?.commissionRate ?? 0.02;
+       // Get commission rates to lock at contract creation time
+       if (marketingUser.customCommissionRate !== undefined) {
+         lockedCommissionRate = marketingUser.customCommissionRate;
+       }
 
-      lockedCommissionRate = marketingUser.customCommissionRate ?? globalCommissionRate;
-
-      // Only apply discount if:
-      // 1. Referral code owner is 'mitra'
-      // 2. User's occupation matches mitra's occupation (both must be truthy and match)
-      // 3. Commission rate > 0
-      if (
-        marketingUser.role === 'mitra' &&
-        user.occupation &&
-        marketingUser.occupation &&
-        user.occupation === marketingUser.occupation &&
-        lockedCommissionRate !== undefined &&
-        lockedCommissionRate > 0
-      ) {
-        isSppgDiscount = true;
-        discountPercentage = lockedCommissionRate;
-        discountAmount = Math.round(originalAmount * discountPercentage);
-        finalAmount = originalAmount - discountAmount;
-
-        // Only set company cut if discount is applied (mitra match)
-        lockedCompanyCutRate = marketingUser.companyCutRate;
-
-        console.log(`[Mitra Discount] User: ${user.email}, Occupation: ${user.occupation}, Mitra Occupation: ${marketingUser.occupation}, Original: ${originalAmount}, Discount: ${(discountPercentage * 100).toFixed(1)}% (${discountAmount}), Final: ${finalAmount}`);
-      } else {
-        // For marketing/head marketing: No discount, no company cut
-        lockedCompanyCutRate = undefined;
-      }
-    }
+       if (
+         paymentType === 'cicilan' &&
+         marketingUser.role === 'mitra' &&
+         marketingUser.customCommissionRate !== undefined &&
+         marketingUser.customCommissionRate > 0
+       ) {
+         isSppgDiscount = true;
+         
+         const companyCut = marketingUser.companyCutRate || 0;
+         discountPercentage = Math.max(0, marketingUser.customCommissionRate - companyCut);
+         
+         if (discountPercentage > 0) {
+           lockedCompanyCutRate = companyCut;
+           discountAmount = Math.round(originalAmount * discountPercentage);
+           finalAmount = originalAmount - discountAmount;
+           
+           console.log(`[Mitra Discount] User: ${user.email}, Original: ${originalAmount}, Commission: ${(marketingUser.customCommissionRate * 100).toFixed(1)}%, Company Cut: ${(companyCut * 100).toFixed(1)}%, Discount: ${(discountPercentage * 100).toFixed(1)}% (${discountAmount}), Final: ${finalAmount}`);
+         } else {
+           isSppgDiscount = false;
+           discountPercentage = undefined;
+           discountAmount = undefined;
+           finalAmount = originalAmount;
+           lockedCompanyCutRate = undefined;
+           
+           console.log(`[Mitra No Discount] User: ${user.email}, Commission: ${(marketingUser.customCommissionRate * 100).toFixed(1)}%, Company Cut: ${(companyCut * 100).toFixed(1)}%, Calculated discount would be 0%`);
+         }
+       } else {
+         lockedCompanyCutRate = undefined;
+         
+         if (paymentType !== 'cicilan') {
+           console.log(`[No Discount] Payment type is ${paymentType}, discount only applies to cicilan`);
+         } else if (marketingUser.role !== 'mitra') {
+           console.log(`[No Discount] Referral role is ${marketingUser.role}, discount only for mitra`);
+         } else if (marketingUser.customCommissionRate === undefined) {
+           console.log(`[No Discount] No custom commission rate set for mitra referral`);
+         } else if (marketingUser.customCommissionRate <= 0) {
+           console.log(`[No Discount] Custom commission rate is ${marketingUser.customCommissionRate}, must be positive`);
+         }
+       }
+     }
 
     // Spam protection: Check for recent contract creation attempts
     const fiveMinutesAgo = new Date(Date.now() - 1 * 60 * 1000);

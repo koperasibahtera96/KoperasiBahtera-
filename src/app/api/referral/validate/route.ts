@@ -1,8 +1,6 @@
 import dbConnect from '@/lib/mongodb';
 import { validateReferralCode } from '@/lib/referral';
-import Settings from '@/models/Settings';
 import User from '@/models/User';
-import { getServerSession } from 'next-auth/next';
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(req: NextRequest) {
@@ -47,45 +45,40 @@ export async function POST(req: NextRequest) {
       }, { status: 400 });
     }
 
-    // Determine referral code type
-    const referralCodeType = referralOwner.role === 'mitra' ? 'mitra' :
-                             referralOwner.role === 'marketing_head' ? 'marketing_head' : 'marketing';
+     // Determine referral code type
+     const referralCodeType = referralOwner.role === 'mitra' ? 'mitra' :
+                              referralOwner.role === 'marketing_head' ? 'marketing_head' : 'marketing';
 
-    // Get the commission rate for this referral (custom or global)
-    let commissionRate = referralOwner.customCommissionRate;
-    if (commissionRate === undefined || commissionRate === null) {
-      // Fall back to global rate
-      const settings = await Settings.findOne({ type: 'system' });
-      commissionRate = settings?.config?.commissionRate ?? 0.02;
-    }
+     // Get the commission rate for this referral (only custom, no fallback to global)
+     const commissionRate = referralOwner.customCommissionRate;
 
-    // Check discount eligibility based on referral code type
-    const session = await getServerSession();
-    let discountInfo = null;
-    let isMitraMatch = false;
+     // Determine if this is a mitra referral (outside session block)
+     const isMitraMatch = referralOwner.role === 'mitra';
 
-    if (session?.user?.email) {
-      const requestingUser = await User.findOne({ email: session.user.email });
+     // Check discount eligibility based on referral code type
+     // Calculate discount info regardless of session for preview functionality
+     let discountInfo = null;
 
       // Only apply discount if:
       // 1. Referral code owner is 'mitra'
-      // 2. User's occupation matches mitra's occupation
-      // 3. Commission rate > 0
+      // 2. Mitra has a custom commission rate set
       if (
         referralOwner.role === 'mitra' &&
-        requestingUser?.occupation &&
-        requestingUser.occupation === referralOwner.occupation &&
-        commissionRate > 0
+        referralOwner.customCommissionRate !== undefined &&
+        referralOwner.customCommissionRate !== null
       ) {
-        isMitraMatch = true;
-        discountInfo = {
-          isSppgUser: true, // Keep field name for backward compatibility
-          discountPercentage: commissionRate, // e.g., 0.30 = 30%
-          discountLabel: `${Math.round(commissionRate * 100)}%`
-        };
+        // Calculate discount as commissionRate minus companyCutRate
+        const companyCutRate = referralOwner.companyCutRate ?? 0;
+        const discountPercentage = Math.max(0, commissionRate - companyCutRate);
+        
+        if (discountPercentage > 0) {
+          discountInfo = {
+            isSppgUser: true, // Keep field name for backward compatibility
+            discountPercentage: discountPercentage, // e.g., 0.30 = 30%
+            discountLabel: `${Math.round(discountPercentage * 100)}%`
+          };
+        }
       }
-      // Marketing/head marketing codes never provide discount (regardless of user occupation)
-    }
 
     return NextResponse.json({
       success: true,

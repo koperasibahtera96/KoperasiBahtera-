@@ -10,7 +10,6 @@ import CommissionHistory from "@/models/CommissionHistory";
 import Contract from "@/models/Contract";
 import Payment from "@/models/Payment";
 import PlantInstance from "@/models/PlantInstance";
-import Settings from "@/models/Settings";
 import User from "@/models/User";
 import mongoose from "mongoose";
 import { NextRequest, NextResponse } from "next/server";
@@ -510,40 +509,44 @@ export async function POST(request: NextRequest) {
                   );
                   return; // Exit early, don't create commission
                 }
-                // Get commission rate: prefer locked rates from contract, then custom rate, then global
-                const settings = await Settings.findOne({ type: "system" }).session(mongoSession);
-                const globalCommissionRate = settings?.config?.commissionRate ?? 0.02;
-                
-                // Try to get locked rates from contract
-                // For full-investment: payment.orderId IS the contract's contractId
-                // For cicilan: payment.cicilanOrderId IS the contract's contractId
-                const contractLookupId = payment.paymentType === 'full-investment' 
-                  ? payment.orderId 
-                  : payment.cicilanOrderId;
-                const paymentContract = contractLookupId
-                  ? await Contract.findOne({ contractId: contractLookupId }).session(mongoSession)
-                  : null;
-                
-                let commissionRate: number;
-                let companyCutRate: number | undefined;
-                let rateSource: string;
-                
-                if (paymentContract?.lockedCommissionRate !== undefined) {
-                  // Use locked rates from contract creation time
-                  commissionRate = paymentContract.lockedCommissionRate;
-                  companyCutRate = paymentContract.lockedCompanyCutRate;
-                  rateSource = "contract_locked";
-                } else if (marketingStaff.customCommissionRate !== undefined) {
-                  // Use custom rate on marketing staff
-                  commissionRate = marketingStaff.customCommissionRate;
-                  companyCutRate = marketingStaff.companyCutRate;
-                  rateSource = "staff_custom";
-                } else {
-                  // Fall back to global rate
-                  commissionRate = globalCommissionRate;
-                  companyCutRate = undefined;
-                  rateSource = "global_default";
-                }
+                 // Get commission rate: prefer locked rates from contract, then custom rate
+                 // Skip commission if no rate is set (no global fallback)
+                 
+                 // Try to get locked rates from contract
+                 // For full-investment: payment.orderId IS the contract's contractId
+                 // For cicilan: payment.cicilanOrderId IS the contract's contractId
+                 const contractLookupId = payment.paymentType === 'full-investment' 
+                   ? payment.orderId 
+                   : payment.cicilanOrderId;
+                 const paymentContract = contractLookupId
+                   ? await Contract.findOne({ contractId: contractLookupId }).session(mongoSession)
+                   : null;
+                 
+                 let commissionRate: number | undefined;
+                 let companyCutRate: number | undefined;
+                 let rateSource: string;
+                 
+                 if (paymentContract?.lockedCommissionRate !== undefined) {
+                   // Use locked rates from contract creation time
+                   commissionRate = paymentContract.lockedCommissionRate;
+                   companyCutRate = paymentContract.lockedCompanyCutRate;
+                   rateSource = "contract_locked";
+                 } else if (marketingStaff.customCommissionRate !== undefined) {
+                   // Use custom rate on marketing staff
+                   commissionRate = marketingStaff.customCommissionRate;
+                   companyCutRate = marketingStaff.companyCutRate;
+                   rateSource = "staff_custom";
+                 } else {
+                   // No rate available, skip commission creation
+                   console.log(`⚠️ No commission rate found for ${marketingStaff.role} ${marketingStaff.fullName}, skipping commission`);
+                   return; // Exit early, don't create commission
+                 }
+                 
+                 // If we reach here, we have a commission rate
+                 if (commissionRate === undefined) {
+                   console.log(`⚠️ Commission rate is undefined, skipping commission`);
+                   return; // Exit early, don't create commission
+                 }
                 
                 console.log(`📊 Commission rate selection for ${orderId}: ${(commissionRate * 100).toFixed(1)}% (source: ${rateSource}, contractLookupId: ${contractLookupId}, contractFound: ${!!paymentContract})`);
                 
@@ -1167,35 +1170,39 @@ export async function POST(request: NextRequest) {
               }).session(mongoSession);
 
               if (marketingStaff) {
-                // Get commission rate: prefer locked rates from contract, then custom rate, then global
-                const settings = await Settings.findOne({ type: "system" }).session(mongoSession);
-                const globalCommissionRate = settings?.config?.commissionRate ?? 0.02;
-                
-                // Try to get locked rates from contract (cicilan contracts use contractId = cicilanOrderId)
-                const installmentContract = await Contract.findOne({ 
-                  contractId: installmentPayment.cicilanOrderId 
-                }).session(mongoSession);
-                
-                let commissionRate: number;
-                let companyCutRate: number | undefined;
-                let rateSource: string;
-                
-                if (installmentContract?.lockedCommissionRate !== undefined) {
-                  // Use locked rates from contract creation time
-                  commissionRate = installmentContract.lockedCommissionRate;
-                  companyCutRate = installmentContract.lockedCompanyCutRate;
-                  rateSource = "contract_locked";
-                } else if (marketingStaff.customCommissionRate !== undefined) {
-                  // Use custom rate on marketing staff
-                  commissionRate = marketingStaff.customCommissionRate;
-                  companyCutRate = marketingStaff.companyCutRate;
-                  rateSource = "staff_custom";
-                } else {
-                  // Fall back to global rate
-                  commissionRate = globalCommissionRate;
-                  companyCutRate = undefined;
-                  rateSource = "global_default";
-                }
+                 // Get commission rate: prefer locked rates from contract, then custom rate
+                 // Skip commission if no rate is set (no global fallback)
+                 
+                 // Try to get locked rates from contract (cicilan contracts use contractId = cicilanOrderId)
+                 const installmentContract = await Contract.findOne({ 
+                   contractId: installmentPayment.cicilanOrderId 
+                 }).session(mongoSession);
+                 
+                 let commissionRate: number | undefined;
+                 let companyCutRate: number | undefined;
+                 let rateSource: string;
+                 
+                 if (installmentContract?.lockedCommissionRate !== undefined) {
+                   // Use locked rates from contract creation time
+                   commissionRate = installmentContract.lockedCommissionRate;
+                   companyCutRate = installmentContract.lockedCompanyCutRate;
+                   rateSource = "contract_locked";
+                 } else if (marketingStaff.customCommissionRate !== undefined) {
+                   // Use custom rate on marketing staff
+                   commissionRate = marketingStaff.customCommissionRate;
+                   companyCutRate = marketingStaff.companyCutRate;
+                   rateSource = "staff_custom";
+                 } else {
+                   // No rate available, skip commission creation
+                   console.log(`⚠️ No commission rate found for ${marketingStaff.role} ${marketingStaff.fullName}, skipping commission`);
+                   return; // Exit early, don't create commission
+                 }
+                 
+                 // If we reach here, we have a commission rate
+                 if (commissionRate === undefined) {
+                   console.log(`⚠️ Commission rate is undefined, skipping commission`);
+                   return; // Exit early, don't create commission
+                 }
                 
                 console.log(`📊 Commission rate selection for installment ${installmentNumber}: ${(commissionRate * 100).toFixed(1)}% (source: ${rateSource}, cicilanOrderId: ${installmentPayment.cicilanOrderId}, contractFound: ${!!installmentContract})`);
                 
