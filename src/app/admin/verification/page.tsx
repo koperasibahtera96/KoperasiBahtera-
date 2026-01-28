@@ -2,10 +2,10 @@
 
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import { motion } from 'framer-motion';
-import { RefreshCw, Hourglass, CheckCircle, XCircle, X } from 'lucide-react';
-import { useEffect, useState } from 'react';
-import Image from 'next/image';
+import { CheckCircle, Hourglass, RefreshCw, X, XCircle } from 'lucide-react';
 import { useTheme } from 'next-themes';
+import Image from 'next/image';
+import { useEffect, useState } from 'react';
 
 interface PendingUser {
   _id: string;
@@ -13,6 +13,7 @@ interface PendingUser {
   nik: string;
   email: string;
   phoneNumber: string;
+  occupation?: string;
   ktpImageUrl?: string;
   faceImageUrl?: string;
   verificationStatus: 'pending' | 'approved' | 'rejected';
@@ -403,7 +404,7 @@ export default function UserVerificationPage() {
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
             >
-                <div className={getThemeClasses("p-4 sm:p-6 border-b border-gray-200 dark:border-gray-700 sticky top-0 bg-white dark:bg-gray-800 rounded-t-2xl transition-colors duration-300", "!bg-white/95 !border-[#FFC1CC]/30")}> 
+                <div className={getThemeClasses("p-4 sm:p-6 border-b border-gray-200 dark:border-gray-700 sticky top-0 bg-white dark:bg-gray-800 rounded-t-2xl transition-colors duration-300", "!bg-white/95 !border-[#FFC1CC]/30")}>
                 <div className="flex items-center justify-between">
                   <h3 className="text-base sm:text-xl font-bold text-[#324D3E] dark:text-white truncate pr-4 transition-colors duration-300">
                     Detail Verifikasi - {selectedUser.fullName}
@@ -509,6 +510,7 @@ export default function UserVerificationPage() {
                       <p className="text-gray-600 dark:text-gray-200 transition-colors duration-300">NIK: <span className="font-medium">{selectedUser.nik}</span></p>
                       <p className="text-gray-600 dark:text-gray-200 transition-colors duration-300">Email: <span className="font-medium">{selectedUser.email}</span></p>
                       <p className="text-gray-600 dark:text-gray-200 transition-colors duration-300">Telepon: <span className="font-medium">{selectedUser.phoneNumber}</span></p>
+                      <p className="text-gray-600 dark:text-gray-200 transition-colors duration-300">Pekerjaan: <span className="font-medium">{selectedUser.occupation || '-'}</span></p>
                     </div>
                     <div className="space-y-2">
                       <h5 className="font-semibold text-[#324D3E] dark:text-white text-xs sm:text-sm">Alamat KTP:</h5>

@@ -1,15 +1,15 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import dbConnect from '@/lib/mongodb';
-import User from '@/models/User';
 import ResubmissionRequest from '@/models/ResubmissionRequest';
+import User from '@/models/User';
+import { getServerSession } from 'next-auth';
+import { NextRequest, NextResponse } from 'next/server';
 
 // GET - Fetch users for verification
 export async function GET() {
   try {
     const session = await getServerSession(authOptions);
-    
+
     if (!session?.user || !['admin', 'staff_admin', 'staff'].includes(session.user.role)) {
       return NextResponse.json(
         { error: 'Unauthorized' },
@@ -22,7 +22,7 @@ export async function GET() {
     const users = await User.find({
       role: 'user'
     })
-    .select('fullName nik email phoneNumber ktpImageUrl faceImageUrl verificationStatus createdAt ktpAddress ktpVillage ktpCity ktpProvince ktpPostalCode domisiliAddress domisiliVillage domisiliCity domisiliProvince domisiliPostalCode verificationNotes verifiedBy verifiedAt beneficiaryName beneficiaryNik beneficiaryDateOfBirth beneficiaryRelationship')
+    .select('fullName nik email phoneNumber occupation ktpImageUrl faceImageUrl verificationStatus createdAt ktpAddress ktpVillage ktpCity ktpProvince ktpPostalCode domisiliAddress domisiliVillage domisiliCity domisiliProvince domisiliPostalCode verificationNotes verifiedBy verifiedAt beneficiaryName beneficiaryNik beneficiaryDateOfBirth beneficiaryRelationship')
     .sort({ createdAt: -1 })
     .lean();
 
@@ -46,7 +46,7 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    
+
     if (!session?.user || !['admin', 'staff_admin', 'staff'].includes(session.user.role)) {
       return NextResponse.json(
         { error: 'Unauthorized' },
