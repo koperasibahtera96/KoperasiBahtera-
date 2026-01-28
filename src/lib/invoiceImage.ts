@@ -292,9 +292,33 @@ export async function downloadInvoiceImage(
         </tbody>
       `;
     }
-    el.appendChild(tbl);
+     el.appendChild(tbl);
 
-    /* DETAIL */
+     if (payment.isSppgDiscount) {
+       const originalAmount = payment.originalAmount || (payment.totalAmount || amount) / (1 - (payment.discountPercentage || 0));
+       const discountPercentage = payment.discountPercentage || 0;
+       const discountAmount = payment.discountAmount || 0;
+       
+       const sppgInfoDiv = document.createElement("div");
+       sppgInfoDiv.style.margin = "8px 2px 0";
+       sppgInfoDiv.style.fontSize = "13px";
+       sppgInfoDiv.style.lineHeight = "1.7";
+       sppgInfoDiv.style.backgroundColor = "#f0f8ff";
+       sppgInfoDiv.style.padding = "8px";
+       sppgInfoDiv.style.borderRadius = "4px";
+       sppgInfoDiv.style.borderLeft = "4px solid #4a90e2";
+       
+       sppgInfoDiv.innerHTML = `
+         <div><b>DISKON SPPG DITERAPKAN:</b></div>
+         <div>Harga Awal: ${fmtIDR(originalAmount)}</div>
+         <div>Diskon: ${(discountPercentage * 100).toFixed(2)}% (${fmtIDR(discountAmount)})</div>
+         <div>Harga Akhir: ${fmtIDR(amount)}</div>
+       `;
+       
+       el.appendChild(sppgInfoDiv);
+     }
+
+     /* DETAIL */
     const detail = document.createElement("div");
     detail.style.margin = "8px 2px 0";
     detail.style.fontSize = "13px";

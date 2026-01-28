@@ -151,7 +151,7 @@ const translations = {
     "plants.weekly": "Mingguan",
     "plants.daily": "Harian",
     "plants.profitDisclaimer":
-      "*Selama ± 15 tahun masa panen",
+      "*Selama ± 7 tahun masa panen",
     "plants.processingProducts": "Produk Olahan dari {name}:",
     "plants.chooseInvestment": "Pilih Investasi",
     "plants.choosePackage": "Pilih Paket Investasi",
@@ -789,7 +789,7 @@ const translations = {
     "plants.weekly": "Weekly",
     "plants.daily": "Daily",
     "plants.profitDisclaimer":
-      "*For ± 15 years harvest period",
+      "*For ± 7 years harvest period",
     "plants.processingProducts": "Processed Products from {name}:",
     "plants.chooseInvestment": "Choose Investment",
     "plants.choosePackage": "Choose Investment Package",
