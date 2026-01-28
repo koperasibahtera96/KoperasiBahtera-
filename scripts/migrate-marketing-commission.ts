@@ -8,13 +8,13 @@ import Settings from '../src/models/Settings';
  * This script:
  * 1. Connects to MongoDB
  * 2. Fetches global commission rate from Settings.config.commissionRate
- * 3. Updates all users with role 'marketing' or 'marketing_head' to have customCommissionRate set to the global rate
+ * 3. Updates all users with role 'marketing', 'marketing_head', or 'mitra' to have customCommissionRate set to the global rate
  * 4. Logs progress and results
  */
 
 async function migrateMarketingCommission() {
   try {
-    console.log('🚀 Starting migration: Set default customCommissionRate for marketing staff...\n');
+    console.log('🚀 Starting migration: Set default customCommissionRate for marketing staff and mitra users...\n');
 
     // Step 1: Connect to MongoDB
     console.log('📡 Connecting to MongoDB...');
@@ -55,16 +55,16 @@ async function migrateMarketingCommission() {
 }
 
 async function updateMarketingUsers(commissionRate: number) {
-  // Step 3: Find all users with role 'marketing' or 'marketing_head'
-  console.log('🔍 Finding marketing staff users...');
+  // Step 3: Find all users with role 'marketing', 'marketing_head', or 'mitra'
+  console.log('🔍 Finding marketing staff and mitra users...');
   const marketingUsers = await User.find({
-    role: { $in: ['marketing', 'marketing_head'] }
+    role: { $in: ['marketing', 'marketing_head', 'mitra'] }
   }).select('_id email fullName role customCommissionRate');
 
-  console.log(`📋 Found ${marketingUsers.length} marketing staff user(s)\n`);
+  console.log(`📋 Found ${marketingUsers.length} marketing staff and mitra user(s)\n`);
 
   if (marketingUsers.length === 0) {
-    console.log('ℹ️  No marketing staff found. Nothing to update.');
+    console.log('ℹ️  No marketing staff or mitra users found. Nothing to update.');
     return;
   }
 
@@ -127,7 +127,7 @@ async function updateMarketingUsers(commissionRate: number) {
   // Verify the updates
   console.log('\n🔍 Verifying updates...');
   const updatedUsers = await User.find({
-    role: { $in: ['marketing', 'marketing_head'] },
+    role: { $in: ['marketing', 'marketing_head', 'mitra'] },
     customCommissionRate: commissionRate
   }).select('email fullName role customCommissionRate');
 
