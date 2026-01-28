@@ -1,6 +1,6 @@
-import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/mongodb';
 import User from '@/models/User';
+import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(request: NextRequest) {
   try {
@@ -16,39 +16,24 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check if email already exists
-    const existingUserByEmail = await User.findOne({ 
-      email: email.toLowerCase().trim() 
+    // Check if email already exists (phone uniqueness not enforced)
+    const existingUserByEmail = await User.findOne({
+      email: email.toLowerCase().trim(),
     });
-
-    // Check if phone number already exists
-    const existingUserByPhone = await User.findOne({ 
-      phoneNumber: phoneNumber.trim() 
-    });
-
-    const errors = [];
 
     if (existingUserByEmail) {
-      errors.push('Email sudah terdaftar. Silakan gunakan email lain atau login.');
-    }
-
-    if (existingUserByPhone) {
-      errors.push('Nomor telepon sudah terdaftar. Silakan gunakan nomor lain atau login.');
-    }
-
-    if (errors.length > 0) {
       return NextResponse.json(
-        { 
-          available: false, 
-          errors 
+        {
+          available: false,
+          errors: ['Email sudah terdaftar. Silakan gunakan email lain atau login.'],
         },
-        { status: 409 } // Conflict status
+        { status: 409 }
       );
     }
 
     return NextResponse.json({
       available: true,
-      message: 'Email dan nomor telepon tersedia'
+      message: 'Email dan nomor telepon tersedia',
     });
 
   } catch (error) {

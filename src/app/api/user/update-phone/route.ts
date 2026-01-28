@@ -26,23 +26,10 @@ export async function POST(request: Request) {
     // Connect to database
     await dbConnect();
 
-    // Check if phone number is already in use by another user
-    const existingUser = await User.findOne({ 
-      phoneNumber: phoneNumber.trim(),
-      email: { $ne: session.user.email }
-    });
-
-    if (existingUser) {
-      return NextResponse.json(
-        { error: 'Phone number is already in use' },
-        { status: 400 }
-      );
-    }
-
     // Update user's phone number
     const updatedUser = await User.findOneAndUpdate(
       { email: session.user.email },
-      { 
+      {
         phoneNumber: phoneNumber.trim(),
         isPhoneVerified: false // Reset phone verification status
       },

@@ -1,9 +1,9 @@
+import { occupationOptions } from '@/constant/OCCUPATION';
 import dbConnect from '@/lib/mongodb';
+import generateUserCode from '@/lib/userCodeGenerator';
 import User from '@/models/User';
 import bcrypt from 'bcryptjs';
 import { NextRequest, NextResponse } from 'next/server';
-import { occupationOptions } from '@/constant/OCCUPATION';
-import generateUserCode from '@/lib/userCodeGenerator';
 
 export async function POST(request: NextRequest) {
   try {
@@ -206,27 +206,16 @@ export async function POST(request: NextRequest) {
     // Connect to database
     await dbConnect();
 
-    // Check if user already exists
+    // Check if user already exists (email uniqueness only)
     const existingUser = await User.findOne({
-      $or: [
-        { email: email.toLowerCase().trim() },
-        { phoneNumber: phoneNumber.trim() }
-      ]
+      email: email.toLowerCase().trim(),
     });
 
     if (existingUser) {
-      if (existingUser.email === email.toLowerCase().trim()) {
-        return NextResponse.json(
-          { error: 'Email sudah terdaftar' },
-          { status: 400 }
-        );
-      }
-      if (existingUser.phoneNumber === phoneNumber.trim()) {
-        return NextResponse.json(
-          { error: 'Nomor telepon sudah terdaftar' },
-          { status: 400 }
-        );
-      }
+      return NextResponse.json(
+        { error: 'Email sudah terdaftar' },
+        { status: 400 }
+      );
     }
 
     // Hash password

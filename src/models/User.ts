@@ -19,7 +19,7 @@ export interface IUser extends Document {
   domisiliCity: string;
   domisiliProvince: string;
   domisiliPostalCode: string;
-  occupation: string;
+  occupation?: string;  // Optional for mitra role
   occupationCode?: string; // Auto-generated based on occupation
   userCode?: string; // Auto-generated user code
   // Beneficiary Information (Penerima Manfaat)
@@ -89,7 +89,6 @@ const UserSchema: Schema = new Schema({
   phoneNumber: {
     type: String,
     required: [true, 'Phone number is required'],
-    unique: true,
     trim: true,
     match: [/^(\+62|0)[0-9]{9,13}$/, 'Please enter a valid Indonesian phone number'],
   },
@@ -153,7 +152,11 @@ const UserSchema: Schema = new Schema({
   },
   occupation: {
     type: String,
-    required: [true, 'Occupation is required'],
+    required: [function(this: any) {
+      // Mitra role does not require occupation
+      // Staff roles created via admin get default occupation anyway
+      return this.role === 'user';  // Only required for investor registration
+    }, 'Occupation is required'],
     trim: true,
   },
   occupationCode: {
