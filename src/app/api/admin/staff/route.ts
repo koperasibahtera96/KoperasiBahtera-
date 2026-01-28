@@ -29,18 +29,6 @@ export async function POST(request: NextRequest) {
 
     await dbConnect();
 
-    // Check for existing phone number
-    const existingPhoneUser = await User.findOne({
-      phoneNumber: phoneNumber.trim(),
-    });
-
-    if (existingPhoneUser) {
-      return NextResponse.json(
-        { error: "Nomor telepon sudah terdaftar" },
-        { status: 400 }
-      );
-    }
-
     // Check for existing email
     const existingEmailUser = await User.findOne({
       email: email.trim().toLowerCase(),
@@ -225,8 +213,8 @@ export async function POST(request: NextRequest) {
       domisiliProvince: "Provinsi domisili belum diisi",
       domisiliPostalCode: "00000",
       occupation:
-        role === "Mitra" && occupation
-          ? occupation.trim()
+        role === "Mitra"
+          ? (occupation ? occupation.trim() : "Mitra")  // Default to "Mitra" if not provided
           : role === "Mandor"
           ? "Mandor Lapangan"
           : role === "Asisten"
@@ -378,6 +366,7 @@ export async function GET(request: NextRequest) {
           "mandor",
           "asisten",
           "manajer",
+          "mitra",
         ];
 
     const skip = (page - 1) * limit;
@@ -475,19 +464,6 @@ export async function PUT(request: NextRequest) {
       role: staffUser.role,
       occupation: staffUser.occupation,
     };
-
-    // Check for existing phone number (excluding current user)
-    const existingPhoneUser = await User.findOne({
-      phoneNumber: phoneNumber.trim(),
-      _id: { $ne: id },
-    });
-
-    if (existingPhoneUser) {
-      return NextResponse.json(
-        { error: "Nomor telepon sudah terdaftar" },
-        { status: 400 }
-      );
-    }
 
     // Check for existing email (excluding current user)
     const existingEmailUser = await User.findOne({
@@ -732,6 +708,7 @@ export async function DELETE(request: NextRequest) {
       "staff",
       "spv_staff",
       "admin",
+      "staff_admin",
       "finance",
       "staff_finance",
       "marketing",
@@ -740,6 +717,7 @@ export async function DELETE(request: NextRequest) {
       "mandor",
       "asisten",
       "manajer",
+      "mitra",
     ];
     if (!allowedRoles.includes(userToDelete.role)) {
       return NextResponse.json(
