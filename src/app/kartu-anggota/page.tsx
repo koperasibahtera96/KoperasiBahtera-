@@ -1,12 +1,12 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useSession } from 'next-auth/react';
-import { useRouter } from 'next/navigation';
-import Image from 'next/image';
 import { Button } from '@/components/ui-staff/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui-staff/card';
-import { Download, Printer, ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Download, Printer } from 'lucide-react';
+import { useSession } from 'next-auth/react';
+import Image from 'next/image';
+import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
 
 interface User {
   fullName: string;
@@ -366,13 +366,20 @@ export default function KartuAnggotaPage() {
             {/* Bottom row with QR */}
             <div className="flex items-center py-1.5 px-2.5 gap-3 min-h-[96px]">
               <div className="w-20 h-20 flex-shrink-0 ml-1">
-                <Image
-                  src={`https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(window.location.origin + '/kartu-anggota')}`}
-                  alt="QR Code"
-                  width={80}
-                  height={80}
-                  className="w-full h-full block"
-                />
+                {kartuData?.qrCodeDataUrl ? (
+                  <Image
+                    src={kartuData.qrCodeDataUrl}
+                    alt="QR Code"
+                    width={80}
+                    height={80}
+                    className="w-full h-full block"
+                    unoptimized
+                  />
+                ) : (
+                  <div className="w-full h-full bg-gray-200 flex items-center justify-center text-xs text-gray-500">
+                    QR
+                  </div>
+                )}
               </div>
               <div className="flex-grow"></div>
             </div>

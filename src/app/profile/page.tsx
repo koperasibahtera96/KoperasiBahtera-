@@ -3,14 +3,14 @@
 import LandingHeader from "@/components/landing/LandingHeader";
 import { useAlert } from "@/components/ui/Alert";
 import { provinceOptions } from "@/constant/PROVINCE";
-import { motion } from "framer-motion";
-import { Check, Edit2, X, FileText, Camera, ArrowLeft } from "lucide-react";
-import { useSession } from "next-auth/react";
-import { useRouter } from "next/navigation";
-import Image from "next/image";
-import { useEffect, useRef, useState } from "react";
-import { toPng } from "html-to-image";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { motion } from "framer-motion";
+import { toPng } from "html-to-image";
+import { ArrowLeft, Camera, Check, Edit2, FileText, X } from "lucide-react";
+import { useSession } from "next-auth/react";
+import Image from "next/image";
+import { useRouter } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
 
 const containerVariants: any = {
   hidden: { opacity: 0 },
@@ -231,6 +231,16 @@ export default function ProfilePage() {
   };
 
   const generateKartuAnggotaImage = async (kartuData: any) => {
+    const loadImage = (src: string): Promise<HTMLImageElement> => {
+      return new Promise((resolve, reject) => {
+        const img = document.createElement("img");
+        img.crossOrigin = "anonymous";
+        img.onload = () => resolve(img);
+        img.onerror = reject;
+        img.src = src;
+      });
+    };
+
     // Add overlay background
     const overlay = document.createElement("div");
     overlay.style.cssText = `
@@ -411,9 +421,10 @@ export default function ProfilePage() {
       "width: 50px; height: 50px; flex-shrink: 0; margin-left: 3px;";
 
     const qrImage = document.createElement("img");
-    qrImage.src = `https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent(
-      window.location.origin + "/kartu-anggota"
-    )}`;
+    if (!kartuData.qrCodeDataUrl) {
+      throw new Error("QR code tidak tersedia. Silakan coba lagi.");
+    }
+    qrImage.src = kartuData.qrCodeDataUrl;
     qrImage.style.cssText = "width: 100%; height: 100%; display: block;";
 
     qrContainer.appendChild(qrImage);
@@ -532,10 +543,8 @@ export default function ProfilePage() {
     document.body.appendChild(overlay);
     overlay.appendChild(container);
 
-    // Wait for images to load and background images to be applied
-    await new Promise((resolve) => setTimeout(resolve, 2000));
+    await loadImage(kartuData.qrCodeDataUrl);
 
-    // Convert to PNG
     const dataUrl = await toPng(container, {
       pixelRatio: 2,
       quality: 1,
