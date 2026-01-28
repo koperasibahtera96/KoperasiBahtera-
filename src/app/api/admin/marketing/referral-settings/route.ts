@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import dbConnect from '@/lib/mongodb';
 import User from '@/models/User';
-import Settings from '@/models/Settings';
 
 /**
  * GET - Fetch commission settings for a marketing staff
@@ -43,9 +42,7 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    // Get global commission rate for reference
-    const settings = await Settings.findOne({ type: 'system' });
-    const globalCommissionRate = settings?.config?.commissionRate ?? 0.02;
+
 
     return NextResponse.json({
       success: true,
@@ -55,9 +52,6 @@ export async function GET(req: NextRequest) {
         referralCode: marketingStaff.referralCode,
         customCommissionRate: marketingStaff.customCommissionRate,
         companyCutRate: marketingStaff.companyCutRate,
-        globalCommissionRate,
-        // Effective rate: custom if set, otherwise global
-        effectiveCommissionRate: marketingStaff.customCommissionRate ?? globalCommissionRate,
       },
     });
   } catch (error) {
@@ -131,21 +125,28 @@ export async function PUT(req: NextRequest) {
         );
       }
 
-      if (typeof companyCutRate !== 'number' || companyCutRate < 0 || companyCutRate > 1) {
-        return NextResponse.json(
-          { error: 'Company cut rate must be between 0 and 1 (0% to 100%)' },
-          { status: 400 }
-        );
-      }
+       if (typeof companyCutRate !== 'number' || companyCutRate < 0 || companyCutRate > 1) {
+         return NextResponse.json(
+           { error: 'Company cut rate must be between 0 and 1 (0% to 100%)' },
+           { status: 400 }
+         );
+       }
 
-      // Company cut must be less than commission rate
-      const effectiveCommissionRate = customCommissionRate ?? marketingStaff.customCommissionRate;
-      if (effectiveCommissionRate !== undefined && companyCutRate >= effectiveCommissionRate) {
-        return NextResponse.json(
-          { error: 'Company cut rate must be less than commission rate' },
-          { status: 400 }
-        );
-      }
+       const effectiveCommissionRate = customCommissionRate ?? marketingStaff.customCommissionRate;
+
+       if (effectiveCommissionRate === undefined || effectiveCommissionRate === null) {
+         return NextResponse.json(
+           { error: 'Persentase komisi harus diatur terlebih dahulu sebelum potongan perusahaan' },
+           { status: 400 }
+         );
+       }
+       
+       if (companyCutRate >= effectiveCommissionRate) {
+         return NextResponse.json(
+           { error: 'Potongan perusahaan harus kurang dari komisi' },
+           { status: 400 }
+         );
+       }
     } else if (marketingStaff.role === 'mitra' && companyCutRate === null) {
       // Allow clearing company cut for mitra (set to undefined)
       // This is handled by the updateFields logic below

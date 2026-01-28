@@ -3,7 +3,6 @@ import CommissionHistory from "@/models/CommissionHistory";
 import CommissionWithdrawal from "@/models/CommissionWithdrawal";
 import Contract from "@/models/Contract";
 import Payment from "@/models/Payment";
-import Settings from "@/models/Settings";
 import User from "@/models/User";
 import { getServerSession } from "next-auth/next";
 import { NextRequest, NextResponse } from "next/server";
@@ -324,10 +323,6 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Get commission rate: prefer locked rates from contract, then custom rate, then global
-    const settings = await Settings.findOne({ type: "system" });
-    const globalCommissionRate = settings?.config?.commissionRate ?? 0.02;
-
     // Try to get locked rates from contract
     const contractLookupId = payment.paymentType === 'full-investment'
       ? payment.orderId || payment.contractId
@@ -351,10 +346,12 @@ export async function POST(req: NextRequest) {
       companyCutRate = marketingStaff.companyCutRate;
       rateSource = "staff_custom";
     } else {
-      // Fall back to global rate
-      commissionRate = globalCommissionRate;
-      companyCutRate = undefined;
-      rateSource = "global_default";
+      return NextResponse.json(
+        {
+          error: "No commission rate configured for marketing staff and no global rate available",
+        },
+        { status: 400 }
+      );
     }
 
     console.log(`📊 Admin commission rate selection: ${(commissionRate * 100).toFixed(1)}% (source: ${rateSource}, contractLookupId: ${contractLookupId}, contractFound: ${!!paymentContract})`);
