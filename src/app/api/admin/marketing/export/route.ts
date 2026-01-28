@@ -1,11 +1,11 @@
-import { NextRequest, NextResponse } from "next/server";
-import * as XLSX from "xlsx-js-style";
+import { authOptions } from "@/lib/auth";
 import dbConnect from "@/lib/mongodb";
 import CommissionHistory from "@/models/CommissionHistory";
 import CommissionWithdrawal from "@/models/CommissionWithdrawal";
 import PlantInstance from "@/models/PlantInstance";
 import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { NextRequest, NextResponse } from "next/server";
+import * as XLSX from "xlsx-js-style";
 
 export async function GET(req: NextRequest) {
   try {
@@ -13,10 +13,10 @@ export async function GET(req: NextRequest) {
     const session = await getServerSession(authOptions);
     if (
       !session ||
-      (session.user.role !== "admin" && 
-       session.user.role !== "marketing_head" && 
-       session.user.role !== "marketing_admin" && 
-       session.user.role !== "finance" && 
+      (session.user.role !== "admin" &&
+       session.user.role !== "marketing_head" &&
+       session.user.role !== "marketing_admin" &&
+       session.user.role !== "finance" &&
        session.user.role !== "staff_finance")
     ) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -35,11 +35,11 @@ export async function GET(req: NextRequest) {
       // Set start date to beginning of day (00:00:00.000)
       const start = new Date(startDate);
       start.setHours(0, 0, 0, 0);
-      
+
       // Set end date to end of day (23:59:59.999)
       const end = new Date(endDate);
       end.setHours(23, 59, 59, 999);
-      
+
       query.earnedAt = {
         $gte: start,
         $lte: end,
@@ -50,7 +50,7 @@ export async function GET(req: NextRequest) {
     const commissions = await CommissionHistory.find(query)
       .populate("marketingStaffId", "fullName email referralCode")
       .populate("customerId", "fullName email phoneNumber")
-      .populate("paymentId", "orderId contractId paymentTerm")
+      .populate("paymentId", "orderId contractId paymentTerm originalAmount discountPercentage discountAmount isSppgDiscount amount")
       .sort({ earnedAt: -1 });
 
     // Get all commission withdrawals to calculate paid amounts per staff
@@ -184,6 +184,31 @@ export async function GET(req: NextRequest) {
       // Determine status (always "Aktif" for commission records)
       const status = "Aktif";
 
+      // Mitra/SPPG discount detail (only when isSppgTransaction).
+      // Derive from amount + discountPercentage only: some Payments store contract-level
+      // originalAmount/discountAmount (totals) while amount is per-installment, which
+      // mixes scales. Use: Harga Akhir = amount; Harga Awal = amount / (1 - p);
+      // Diskon (Rp) = Harga Awal - Harga Akhir.
+      const pay = commission.paymentId as any;
+      const hasDiscount = commission.isSppgTransaction && pay?.isSppgDiscount;
+      const p = pay?.discountPercentage;
+      const paid = pay?.amount;
+      const validP = typeof p === "number" && p > 0 && p < 1;
+      const discPct = hasDiscount && validP
+        ? `${(p * 100).toFixed(2)}%`
+        : "-";
+      let discRp = "-";
+      let hargaAwal = "-";
+      const hargaAkhir = hasDiscount && typeof paid === "number" && paid >= 0
+        ? `Rp. ${paid.toLocaleString("id-ID")}`
+        : "-";
+      if (hasDiscount && validP && typeof paid === "number" && paid >= 0) {
+        const orig = Math.round(paid / (1 - p));
+        const disc = orig - paid;
+        discRp = `Rp. ${disc.toLocaleString("id-ID")}`;
+        hargaAwal = `Rp. ${orig.toLocaleString("id-ID")}`;
+      }
+
       marketingData.push([
         rowNumber,
         commission.marketingStaffName,
@@ -199,6 +224,10 @@ export async function GET(req: NextRequest) {
         totalKomisi,
         1,
         status,
+        discPct,
+        discRp,
+        hargaAwal,
+        hargaAkhir,
       ]);
 
       rowNumber++;
@@ -241,6 +270,10 @@ export async function GET(req: NextRequest) {
         "Total Komisi",
         "Total Referal",
         "Status",
+        "Diskon %",
+        "Diskon (Rp)",
+        "Harga Awal",
+        "Harga Akhir",
       ],
     ];
 
@@ -315,27 +348,36 @@ export async function GET(req: NextRequest) {
           // No., Total Referal
           worksheet[cellRef].s.alignment = { horizontal: "center" };
         }
+        if (row > 8 && col === 14) {
+          // Diskon %
+          worksheet[cellRef].s.alignment = { horizontal: "center" };
+        }
+        if (row > 8 && (col === 15 || col === 16 || col === 17)) {
+          // Diskon (Rp), Harga Awal, Harga Akhir
+          worksheet[cellRef].s.alignment = { horizontal: "right" };
+        }
       }
     }
 
-    // Merge header cells
+    // Merge header cells (18 columns: 0–17)
+    const lastCol = 17;
     try {
       worksheet["!merges"] = worksheet["!merges"] || [];
 
-      // Merge company header rows (0..4) across all 14 columns
+      // Merge company header rows (0..4) across all columns
       for (let r = 0; r <= 4; r++) {
-        worksheet["!merges"].push({ s: { r, c: 0 }, e: { r, c: 13 } });
+        worksheet["!merges"].push({ s: { r, c: 0 }, e: { r, c: lastCol } });
       }
       // Merge empty rows (5..6)
       for (let r = 5; r <= 6; r++) {
-        worksheet["!merges"].push({ s: { r, c: 0 }, e: { r, c: 13 } });
+        worksheet["!merges"].push({ s: { r, c: 0 }, e: { r, c: lastCol } });
       }
-      // Merge "DAFTAR MARKETING" across all 14 columns
-      worksheet["!merges"].push({ s: { r: 7, c: 0 }, e: { r: 7, c: 13 } });
+      // Merge "DAFTAR MARKETING" across all columns
+      worksheet["!merges"].push({ s: { r: 7, c: 0 }, e: { r: 7, c: lastCol } });
 
       // Ensure merged cells are created
       for (let r = 0; r <= 7; r++) {
-        for (let c = 0; c <= 13; c++) {
+        for (let c = 0; c <= lastCol; c++) {
           const cellRef = XLSX.utils.encode_cell({ r, c });
           if (!worksheet[cellRef]) {
             const val = (worksheetData[r] && worksheetData[r][c]) || "";
@@ -353,7 +395,7 @@ export async function GET(req: NextRequest) {
                   ? { style: "thin", color: { rgb: "000000" } }
                   : undefined,
               right:
-                c === 13
+                c === lastCol
                   ? { style: "thin", color: { rgb: "000000" } }
                   : undefined,
             };
