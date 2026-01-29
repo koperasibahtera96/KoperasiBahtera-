@@ -75,8 +75,8 @@ const translations = {
 
     // Hero Section
     "hero.subtitle": "Untuk Masa Depan",
-    "hero.title.line1": "Pembiayaan Pengembangan Usaha Pertanian",
-    "hero.title.line2": "Berkelanjutan yang Mudah",
+    "hero.title.line1": "Pembiayaan Pengembangan",
+    "hero.title.line2": "Usaha Pertanian Berkelanjutan yang Mudah",
     "hero.description":
       "Solusi tepat bagi Anda yang ingin meraih keuntungan sekaligus memberikan dampak positif bagi lingkungan dan masyarakat. Melalui sistem investasi yang sederhana dan transparan, Anda dapat ikut mendukung petani lokal untuk meningkatkan hasil panen.",
     "hero.cta": "Mulai Sekarang",
@@ -713,8 +713,8 @@ const translations = {
 
     // Hero Section
     "hero.subtitle": "For the Future",
-    "hero.title.line1": "Sustainable Agricultural Business Development",
-    "hero.title.line2": "Financing Made Easy",
+    "hero.title.line1": "Sustainable Agricultural",
+    "hero.title.line2": "Business Development Financing Made Easy",
     "hero.description":
       "The perfect solution for those who want to achieve profits while providing positive impact for the environment and society. Through a simple and transparent investment system, you can support local farmers to improve their harvest yields.",
     "hero.cta": "Start Now",

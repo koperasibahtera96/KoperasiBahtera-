@@ -824,39 +824,45 @@ export async function processInstallmentPayment(
                return discountedAmount;
              };
              
-             // Helper to calculate SPPG split for commission
-             const calculateCommissionWithSppgSplit = (totalCommission: number) => {
-               let commissionAmount: number;
-               let companyCutAmount: number | undefined;
-               
-               if (isSppgTransaction && companyCutRate !== undefined && commissionRate !== undefined) {
-                 // Split commission: company gets companyCutRate portion, marketing gets remainder
-                 const marketingCommissionRate = commissionRate - companyCutRate;
-                 commissionAmount = Math.round(totalCommission * marketingCommissionRate / commissionRate);
-                 companyCutAmount = Math.round(totalCommission * companyCutRate / commissionRate);
-               } else {
-                 commissionAmount = totalCommission;
-               }
-               
-               return { commissionAmount, companyCutAmount };
-             };
+              // Helper to calculate SPPG split for commission
+              // For mitra SPPG: mitra gets companyCutRate portion, buyer gets (commissionRate - companyCutRate) as discount
+              const calculateCommissionWithSppgSplit = (totalCommission: number) => {
+                let commissionAmount: number;
+                let companyCutAmount: number | undefined;
+                
+                if (isSppgTransaction && companyCutRate !== undefined && commissionRate !== undefined) {
+                  // Mitra gets companyCutRate portion as commission
+                  // The (commissionRate - companyCutRate) is the buyer's discount, already applied in pricing
+                  commissionAmount = Math.round(totalCommission * companyCutRate / commissionRate);
+                  companyCutAmount = Math.round(totalCommission * (commissionRate - companyCutRate) / commissionRate);
+                } else {
+                  commissionAmount = totalCommission;
+                }
+                
+                return { commissionAmount, companyCutAmount };
+              };
 
-             // Check if this installment is within the minConsecutiveTenor period (only for monthly)
-             if (isMonthlyPayment && installmentNumber <= minConsecutiveTenor) {
-               // Within threshold period: Calculate evenly distributed commission
-               const totalInstallments = payment.totalInstallments;
-               const installmentAmount = payment.installmentAmount;
+              // Check if this is a mitra with SPPG transaction (companyCutRate is set)
+              // Mitra should get commission per-installment based on actual cicilan amount, not distributed total
+              const isMitraWithSppg = marketingStaff.role === 'mitra' && companyCutRate !== undefined;
 
-               // For SPPG, use ORIGINAL contract value (before discount) for commission calculation
-               const discountedContractValue = installmentAmount * totalInstallments;
-               const totalContractValue = getOriginalAmount(discountedContractValue);
-               const totalCommission = Math.round(totalContractValue * commissionRate);
+              // Check if this installment is within the minConsecutiveTenor period (only for monthly)
+              if (isMonthlyPayment && installmentNumber <= minConsecutiveTenor && !isMitraWithSppg) {
+                // Within threshold period: Calculate evenly distributed commission
+                // This applies to marketing/marketing_head roles
+                const totalInstallments = payment.totalInstallments;
+                const installmentAmount = payment.installmentAmount;
 
-               // Evenly distribute total commission across minConsecutiveTenor installments
-               const commissionPerInstallment = Math.round(totalCommission / minConsecutiveTenor);
-               
-               // Apply SPPG split if applicable
-               const { commissionAmount, companyCutAmount } = calculateCommissionWithSppgSplit(commissionPerInstallment);
+                // For SPPG, use ORIGINAL contract value (before discount) for commission calculation
+                const discountedContractValue = installmentAmount * totalInstallments;
+                const totalContractValue = getOriginalAmount(discountedContractValue);
+                const totalCommission = Math.round(totalContractValue * commissionRate);
+
+                // Evenly distribute total commission across minConsecutiveTenor installments
+                const commissionPerInstallment = Math.round(totalCommission / minConsecutiveTenor);
+                
+                // Apply SPPG split if applicable
+                const { commissionAmount, companyCutAmount } = calculateCommissionWithSppgSplit(commissionPerInstallment);
 
                // Create commission record for this installment
                const commissionRecord = new CommissionHistory({
@@ -898,13 +904,13 @@ export async function processInstallmentPayment(
                console.log(
                  `💰 [${txnId}] Commission created for installment ${installmentNumber}/${minConsecutiveTenor}: ${commissionAmount} for ${marketingStaff.fullName} (${payment.referralCode})${isSppgTransaction ? ` [SPPG: company cut ${companyCutAmount}]` : ''}`
                );
-             } else if (isMonthlyPayment && installmentNumber > minConsecutiveTenor) {
-               // After threshold: No commission (already paid in bulk) - only for monthly
-               console.log(
-                 `ℹ️ [${txnId}] Installment ${installmentNumber} after threshold ${minConsecutiveTenor}, no commission created (already paid in bulk)`
-               );
-             } else {
-               // Non-monthly payments (yearly, quarterly, etc.): Regular per-installment commission
+              } else if (isMonthlyPayment && installmentNumber > minConsecutiveTenor && !isMitraWithSppg) {
+                // After threshold: No commission (already paid in bulk) - only for marketing/marketing_head monthly
+                console.log(
+                  `ℹ️ [${txnId}] Installment ${installmentNumber} after threshold ${minConsecutiveTenor}, no commission created (already paid in bulk)`
+                );
+              } else {
+                // Non-monthly payments OR mitra with SPPG: Regular per-installment commission based on actual cicilan amount
                const installmentAmount = payment.amount;
                const originalInstallmentAmount = getOriginalAmount(installmentAmount);
                const totalCommission = Math.round(originalInstallmentAmount * commissionRate);

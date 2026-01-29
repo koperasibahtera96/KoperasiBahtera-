@@ -368,10 +368,10 @@ export async function POST(req: NextRequest) {
     let companyCutAmount: number | undefined;
 
     if (isSppgTransaction && companyCutRate !== undefined) {
-      // SPPG transaction: split commission between company and marketing staff
-      const marketingCommissionRate = commissionRate - companyCutRate;
-      commissionAmount = Math.round(actualContractValue * marketingCommissionRate);
-      companyCutAmount = Math.round(actualContractValue * companyCutRate);
+      // SPPG transaction: mitra gets companyCutRate portion as commission
+      // The (commissionRate - companyCutRate) is the buyer's discount, already applied in pricing
+      commissionAmount = Math.round(actualContractValue * companyCutRate);
+      companyCutAmount = Math.round(actualContractValue * (commissionRate - companyCutRate));
     } else {
       // Regular transaction: marketing staff gets full commission
       commissionAmount = Math.round(actualContractValue * commissionRate);

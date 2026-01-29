@@ -132,11 +132,10 @@ export async function createCommissionRecord(paymentId: string): Promise<{
     let companyCutAmount: number | undefined;
     
     if (isSppgTransaction && companyCutRate !== undefined) {
-      // SPPG transaction: split commission between company and marketing staff
-      // Company gets companyCutRate, marketing gets (commissionRate - companyCutRate)
-      const marketingCommissionRate = commissionRate - companyCutRate;
-      commissionAmount = Math.round(contractValue * marketingCommissionRate);
-      companyCutAmount = Math.round(contractValue * companyCutRate);
+      // SPPG transaction: mitra gets companyCutRate portion as commission
+      // The (commissionRate - companyCutRate) is the buyer's discount, already applied in pricing
+      commissionAmount = Math.round(contractValue * companyCutRate);
+      companyCutAmount = Math.round(contractValue * (commissionRate - companyCutRate));
     } else {
       // Regular transaction: marketing staff gets full commission
       commissionAmount = Math.round(contractValue * commissionRate);

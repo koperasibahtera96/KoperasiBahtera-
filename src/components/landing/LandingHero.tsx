@@ -86,7 +86,7 @@ export default function LandingHero() {
 
   return (
     <motion.section
-      className="relative h-screen flex items-center justify-start w-full light"
+      className="relative min-h-screen lg:h-screen flex items-center justify-start w-full light overflow-hidden"
       initial="hidden"
       animate="visible"
       variants={containerVariants}
@@ -108,14 +108,14 @@ export default function LandingHero() {
 
       {/* Content: two-column layout — text left, brochure right */}
       <motion.div
-        className="relative z-10 w-full max-w-7xl mx-auto pl-4 sm:pl-6 md:pl-8 lg:pl-10 xl:pl-12 pr-2 sm:pr-4 md:pr-6 lg:pr-6 xl:pr-8 flex flex-col lg:flex-row items-center justify-between gap-8 lg:gap-12 xl:gap-16 text-left"
+        className="relative z-10 w-full max-w-[95rem] mx-auto pl-2 sm:pl-3 md:pl-4 lg:pl-5 xl:pl-6 pr-2 sm:pr-3 md:pr-4 lg:pr-4 xl:pr-5 flex flex-col lg:flex-row items-center justify-between gap-8 lg:gap-12 xl:gap-16 text-left"
         variants={containerVariants}
       >
         {/* Left: hero text */}
-        <div className="flex-1 min-w-0 max-w-6xl pt-8 sm:pt-10 lg:pt-12 xl:pt-16">
+        <div className="flex-1 min-w-0 max-w-[85rem] pt-20 sm:pt-24 lg:pt-12 xl:pt-16">
           {/* Subtitle */}
           <motion.p
-            className="text-base sm:text-lg md:text-xl lg:text-2xl mb-3 sm:mb-4 md:mb-5 italic font-medium text-[#4C3D19] block"
+            className="text-base sm:text-lg md:text-xl lg:text-2xl mb-3 sm:mb-4 md:mb-5 italic font-medium text-[#4C3D19] block pl-4 sm:pl-6 lg:pl-0"
             variants={slideInFromLeft}
           >
             {t("hero.subtitle")}
@@ -123,11 +123,11 @@ export default function LandingHero() {
 
           {/* Main Title */}
           <motion.h1
-            className="text-2xl sm:text-3xl md:text-4xl lg:text-[2.75rem] xl:text-[3.25rem] w-full font-bold leading-tight mb-4 sm:mb-6 md:mb-7 font-[family-name:var(--font-poppins)]"
+            className="text-2xl sm:text-3xl md:text-4xl lg:text-[2.75rem] xl:text-[3.25rem] w-full font-bold leading-tight mb-4 sm:mb-6 md:mb-7 font-[family-name:var(--font-poppins)] pl-4 sm:pl-6 lg:pl-0"
             variants={containerVariants}
           >
             <motion.span
-              className="block text-[#0D4710] font-bold"
+              className="block text-[#0D4710] font-bold lg:whitespace-nowrap"
               style={{ textShadow: '2px 2px 4px rgba(0, 0, 0, 0.3)' }}
               variants={slideInFromLeft}
               whileHover={{
@@ -154,7 +154,7 @@ export default function LandingHero() {
 
           {/* Description */}
           <motion.p
-            className="text-sm sm:text-base font-semibold md:text-lg lg:text-xl xl:text-2xl leading-relaxed mb-6 sm:mb-8 md:mb-10 max-w-[60rem] text-[#4C3D19]"
+            className="text-sm sm:text-base font-semibold md:text-lg lg:text-xl xl:text-2xl leading-relaxed mb-6 sm:mb-8 md:mb-10 max-w-full lg:max-w-[60rem] text-[#4C3D19] pl-4 sm:pl-6 lg:pl-0"
             variants={fadeInUp}
           >
             {t("hero.description")}
@@ -182,7 +182,7 @@ export default function LandingHero() {
 
         {/* Right: brochure image (first page of PDF converted to JPG) */}
         <motion.div
-          className="shrink-0 w-full max-w-[300px] sm:max-w-[360px] lg:max-w-[380px] xl:max-w-[420px]"
+          className="shrink-0 w-full max-w-[280px] sm:max-w-[320px] lg:max-w-[380px] xl:max-w-[420px] pb-8 lg:pb-0"
           variants={slideInFromRight}
         >
           <div className="relative rounded-2xl overflow-hidden shadow-2xl w-full">
