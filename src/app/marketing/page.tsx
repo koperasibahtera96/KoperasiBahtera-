@@ -434,14 +434,14 @@ export default function MarketingHeadPage() {
       if (companyRate && !customRate) {
         setCommissionSettingsModal(prev => ({
           ...prev,
-          error: "Komisi Marketing harus diatur terlebih dahulu sebelum Potongan Perusahaan",
+          error: "Total Potongan harus diatur terlebih dahulu sebelum Komisi Mitra",
         }));
         return;
       }
       const R = customRate ? Number(customRate) : 0;
       const C = companyRate ? Number(companyRate) : 0;
       if (customRate && companyRate && C >= R) {
-        setCommissionSettingsModal(prev => ({ ...prev, error: "Potongan perusahaan harus kurang dari Komisi Marketing" }));
+        setCommissionSettingsModal(prev => ({ ...prev, error: "Komisi Mitra harus kurang dari Total Potongan" }));
         return;
       }
     }
@@ -1665,7 +1665,7 @@ export default function MarketingHeadPage() {
                                 ""
                               )}
                             >
-                              Potongan: {Math.round(staff.companyCutRate * 100)}%
+                              Komisi: {Math.round(staff.companyCutRate * 100)}%
                             </span>
                           )}
                         </div>
@@ -2362,14 +2362,14 @@ export default function MarketingHeadPage() {
                   </div>
                 )}
 
-                {/* Inputs: mitra = Komisi Marketing + Potongan; Diskon Customer auto = Komisi − Potongan. Non-mitra = Persentase Komisi only */}
+                {/* Inputs: mitra = Total Potongan + Komisi Mitra; Diskon Pembeli auto = Total − Komisi. Non-mitra = Persentase Komisi only */}
                 <div>
                   {commissionSettingsModal.staff.role === 'mitra' ? (
                     <div className="space-y-3">
                       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 items-end">
                         <div>
                           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                            Komisi Marketing (%)
+                            Total Potongan (%)
                           </label>
                           <input
                             type="number"
@@ -2383,13 +2383,13 @@ export default function MarketingHeadPage() {
                                 customCommissionRate: e.target.value,
                               }))
                             }
-                            placeholder="Contoh: 15"
+                            placeholder="Contoh: 40"
                             className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 dark:bg-gray-700 dark:text-white"
                           />
                         </div>
                         <div>
                           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                            Potongan Perusahaan (%)
+                            Komisi Mitra (%)
                           </label>
                           <input
                             type="number"
@@ -2403,13 +2403,13 @@ export default function MarketingHeadPage() {
                                 companyCutRate: e.target.value,
                               }))
                             }
-                            placeholder="Contoh: 5"
+                            placeholder="Contoh: 10"
                             className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-purple-500 dark:bg-gray-700 dark:text-white"
                           />
                         </div>
                         <div>
                           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                            Diskon Customer (%) — otomatis
+                            Diskon Pembeli (%) — otomatis
                           </label>
                           <div
                             className="w-full px-4 py-3 border border-gray-200 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-700/50 text-gray-700 dark:text-gray-300 tabular-nums"
@@ -2425,7 +2425,7 @@ export default function MarketingHeadPage() {
                         </div>
                       </div>
                       <p className="text-xs text-gray-500 dark:text-gray-400">
-                        Komisi Marketing & Potongan Perusahaan bisa diedit. Diskon Customer = Komisi − Potongan (otomatis). Potongan harus kurang dari Komisi.
+                        Diskon Pembeli = Total Potongan − Komisi Mitra. Komisi Mitra harus kurang dari Total Potongan.
                       </p>
                     </div>
                   ) : (
@@ -2459,47 +2459,48 @@ export default function MarketingHeadPage() {
                 {commissionSettingsModal.staff.role === 'mitra' && (
                   <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4">
                     <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
-                      Perhitungan per paket contoh (Rp 27.000.000 / 5 tahun)
+                      Contoh Perhitungan (Rp 27.000.000 / 60 bulan = Rp 450.000/bulan)
                     </p>
                     {(commissionSettingsModal.customCommissionRate ?? "").trim() || (commissionSettingsModal.companyCutRate ?? "").trim() ? (
                       (() => {
-                        const EXAMPLE_TOTAL = 27_000_000;
-                        const EXAMPLE_ANNUAL = EXAMPLE_TOTAL / 5;
+                        const EXAMPLE_INSTALLMENT = 450_000;
                         const R = Number(commissionSettingsModal.customCommissionRate || "0") / 100;
                         const C = Number(commissionSettingsModal.companyCutRate || "0") / 100;
                         const D = Math.max(0, R - C);
-                        const discountPct = D;
-                        const discountAnnual = Math.round(EXAMPLE_ANNUAL * discountPct);
-                        const commissionAnnual = Math.round(EXAMPLE_ANNUAL * discountPct);
-                        const yangKitaAnnual = Math.max(0, Math.round(EXAMPLE_ANNUAL * (1 - 2 * discountPct)));
-                        const discountPctLabel = Math.round(discountPct * 100);
+                        const discountAmount = Math.round(EXAMPLE_INSTALLMENT * D);
+                        const mitraCommission = Math.round(EXAMPLE_INSTALLMENT * C);
+                        const buyerPays = EXAMPLE_INSTALLMENT - discountAmount;
+                        const companyReceives = buyerPays - mitraCommission;
+                        const discountPctLabel = Math.round(D * 100);
+                        const mitraPctLabel = Math.round(C * 100);
                         return (
-                          <div className="text-sm space-y-3">
-                            <div className="grid grid-cols-[1fr_auto_auto] gap-x-4 gap-y-1 items-baseline text-xs font-medium text-gray-500 dark:text-gray-400 pb-1 border-b border-gray-200 dark:border-gray-600">
+                          <div className="text-sm space-y-2">
+                            <div className="grid grid-cols-[1fr_auto] gap-x-4 gap-y-1 items-baseline">
+                              <span className="text-gray-600 dark:text-gray-400">Harga Cicilan Asli</span>
+                              <span className="text-gray-900 dark:text-white tabular-nums">{formatCurrency(EXAMPLE_INSTALLMENT)}</span>
                             </div>
-                            <div className="grid grid-cols-[1fr_auto_auto] gap-x-4 gap-y-1 items-baseline">
-                              <span className="text-gray-600 dark:text-gray-400">Harga Dasar Paket</span>
-                              <span className="text-gray-900 dark:text-white tabular-nums">{formatCurrency(EXAMPLE_ANNUAL)}</span>
-                              <span className="text-gray-900 dark:text-white tabular-nums">{formatCurrency(EXAMPLE_TOTAL)}</span>
+                            <div className="grid grid-cols-[1fr_auto] gap-x-4 gap-y-1 items-baseline">
+                              <span className="text-gray-600 dark:text-gray-400">Diskon Pembeli ({discountPctLabel}%)</span>
+                              <span className="text-red-600 dark:text-red-400 tabular-nums">- {formatCurrency(discountAmount)}</span>
                             </div>
-                            <div className="grid grid-cols-[1fr_auto_auto] gap-x-4 gap-y-1 items-baseline">
-                              <span className="text-gray-600 dark:text-gray-400">Diskon Customer ({discountPctLabel}%)</span>
-                              <span className="text-gray-900 dark:text-white tabular-nums">{formatCurrency(discountAnnual)}</span>
+                            <div className="grid grid-cols-[1fr_auto] gap-x-4 gap-y-1 items-baseline border-t border-gray-200 dark:border-gray-600 pt-2">
+                              <span className="font-medium text-gray-700 dark:text-gray-300">Pembeli Bayar</span>
+                              <span className="font-medium text-gray-900 dark:text-white tabular-nums">{formatCurrency(buyerPays)}</span>
                             </div>
-                            <div className="grid grid-cols-[1fr_auto_auto] gap-x-4 gap-y-1 items-baseline">
-                              <span className="text-gray-600 dark:text-gray-400">Komisi Marketing ({discountPctLabel}%)</span>
-                              <span className="text-gray-900 dark:text-white tabular-nums">{formatCurrency(commissionAnnual)}</span>
+                            <div className="grid grid-cols-[1fr_auto] gap-x-4 gap-y-1 items-baseline">
+                              <span className="text-gray-600 dark:text-gray-400">Komisi Mitra ({mitraPctLabel}%)</span>
+                              <span className="text-green-600 dark:text-green-400 tabular-nums">- {formatCurrency(mitraCommission)}</span>
                             </div>
-                            <div className="grid grid-cols-[1fr_auto_auto] gap-x-4 gap-y-1 items-baseline pt-2 border-t border-gray-200 dark:border-gray-600">
-                              <span className="font-semibold text-gray-900 dark:text-white">Yang Kita Terima</span>
-                              <span className="font-semibold text-gray-900 dark:text-white tabular-nums">{formatCurrency(yangKitaAnnual)}</span>
+                            <div className="grid grid-cols-[1fr_auto] gap-x-4 gap-y-1 items-baseline border-t border-gray-200 dark:border-gray-600 pt-2">
+                              <span className="font-semibold text-gray-900 dark:text-white">Perusahaan Terima</span>
+                              <span className="font-semibold text-gray-900 dark:text-white tabular-nums">{formatCurrency(companyReceives)}</span>
                             </div>
                           </div>
                         );
                       })()
                     ) : (
                       <p className="text-gray-400 dark:text-gray-500 italic text-sm">
-                        Masukkan Komisi Marketing atau Potongan Perusahaan untuk melihat ringkasan
+                        Masukkan Total Potongan dan Komisi Mitra untuk melihat ringkasan
                       </p>
                     )}
                   </div>
