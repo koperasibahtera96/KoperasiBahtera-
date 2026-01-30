@@ -52,6 +52,11 @@ type DailyRow = {
   // optional dari backend
   orderId?: string;
   userId?: string;
+
+  // pricing fields for discount display
+  originalAmount?: number;
+  discountedAmount?: number;
+  discountPercentage?: number;
 };
 
 const BRUTALIST_COLORS = [
@@ -380,16 +385,18 @@ export default function DailyIncomingInvestorPage() {
       html += `</table>`;
 
       html += `<table>`;
-      html += `<tr class="bluebar"><th colspan="9">Detail Tarikan Repot Harian</th></tr>`;
+      html += `<tr class="bluebar"><th colspan="11">Detail Tarikan Repot Harian</th></tr>`;
       html += `<tr class="tight">
         <th>No</th>
         <th>Tanggal</th>
         <th>Nama Investor</th>
+        <th>Harga Dasar</th>
+        <th>Harga Diskon</th>
+        <th>Diskon %</th>
         <th>Kode Blok/Paket</th>
         <th>Kode Transaksi/INV ID</th>
         <th>Jenis Transaksi</th>
         <th>Tanaman/Produk</th>
-        <th>Jumlah</th>
         <th>Status</th>
       </tr>`;
 
@@ -405,14 +412,21 @@ export default function DailyIncomingInvestorPage() {
               month: "short",
             })
           : "-";
-        const jumlah = `Rp ${Number(r.totalAmount || 0).toLocaleString(
+        const hargaDasar = `Rp ${Number(r.originalAmount || r.totalAmount || 0).toLocaleString(
           "id-ID"
         )}`;
+        const hargaDiskon = `Rp ${Number(r.discountedAmount || r.totalAmount || 0).toLocaleString(
+          "id-ID"
+        )}`;
+        const diskonPersen = `${((r.discountPercentage || 0) * 100).toFixed(0)}%`;
         const status = "Lunas";
         html += `<tr class="tight">
           <td>${no++}</td>
           <td>${tanggal}</td>
           <td>${r.investorName || "-"}</td>
+          <td>${hargaDasar}</td>
+          <td>${hargaDiskon}</td>
+          <td>${diskonPersen}</td>
           <td>-</td>
           <td>${r.investmentId || "-"}</td>
           <td>${
@@ -420,7 +434,6 @@ export default function DailyIncomingInvestorPage() {
             (r.paymentType || "").slice(1)
           }</td>
           <td>${r.productName || "-"}</td>
-          <td>${jumlah}</td>
           <td>${status}</td>
         </tr>`;
       }
@@ -1035,8 +1048,10 @@ export default function DailyIncomingInvestorPage() {
                       <tr className="border-b-2 border-[#324D3E]/10 dark:border-gray-600">
                         <th className="text-left py-3 px-4">Tanggal</th>
                         <th className="text-left py-3 px-4">Investment ID</th>
-                        <th className="text-left py-3 px-4">Name</th>
-                        <th className="text-right py-3 px-4">Jumlah</th>
+                        <th className="text-left py-3 px-4">Nama</th>
+                        <th className="text-right py-3 px-4">Harga Dasar</th>
+                        <th className="text-right py-3 px-4">Harga Diskon</th>
+                        <th className="text-right py-3 px-4">Diskon %</th>
                         <th className="text-left py-3 px-4">Payment Type</th>
                         <th className="text-left py-3 px-4">Status</th>
                       </tr>
@@ -1059,7 +1074,13 @@ export default function DailyIncomingInvestorPage() {
                           <td className="py-3 px-4">{r.investmentId}</td>
                           <td className="py-3 px-4">{r.investorName || "-"}</td>
                           <td className="py-3 px-4 text-right text-green-600 dark:text-emerald-400 font-medium">
-                            {formatCurrency(r.totalAmount || 0)}
+                            {formatCurrency(r.originalAmount || r.totalAmount || 0)}
+                          </td>
+                          <td className="py-3 px-4 text-right text-green-600 dark:text-emerald-400 font-medium">
+                            {formatCurrency(r.discountedAmount || r.totalAmount || 0)}
+                          </td>
+                          <td className="py-3 px-4 text-right">
+                            {`${((r.discountPercentage || 0) * 100).toFixed(0)}%`}
                           </td>
                           <td className="py-3 px-4">{r.paymentType}</td>
                           <td className="py-3 px-4">{r.status}</td>

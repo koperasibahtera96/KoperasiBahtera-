@@ -2,6 +2,7 @@
 import { NextResponse } from "next/server";
 import dbConnect from "@/lib/mongodb";
 import { Investor } from "@/models";
+import Contract from "@/models/Contract";
 
 function parseISODateOnly(iso: string) {
   // iso diharap "yyyy-mm-dd"
@@ -90,6 +91,9 @@ export async function GET(req: Request) {
       // biar kompatibel ke depan kalau mau dipakai export-helper:
       orderId?: string;
       userId?: string;
+      originalAmount?: number;
+      discountedAmount?: number;
+      discountPercentage?: number;
     };
 
     const rows: Row[] = [];
@@ -131,6 +135,30 @@ export async function GET(req: Request) {
           userId: inv.userId || inv._id?.toString?.() || undefined,
         });
       }
+    }
+
+    const investmentIds = rows.map((r) => r.investmentId).filter(Boolean);
+    let contractMap = new Map<string, { originalAmount?: number; discountPercentage?: number }>();
+
+    if (investmentIds.length > 0) {
+      const contracts = await Contract.find(
+        { contractId: { $in: investmentIds } },
+        { contractId: 1, originalAmount: 1, discountPercentage: 1 }
+      ).lean();
+
+      contractMap = new Map(
+        contracts.map((c) => [
+          c.contractId,
+          { originalAmount: c.originalAmount, discountPercentage: c.discountPercentage },
+        ])
+      );
+    }
+
+    for (const row of rows) {
+      const contract = contractMap.get(row.investmentId);
+      row.originalAmount = contract?.originalAmount ?? row.totalAmount;
+      row.discountedAmount = row.totalAmount;
+      row.discountPercentage = contract?.discountPercentage ?? 0;
     }
 
     // ====== Agregasi sesuai aturan lama ======
