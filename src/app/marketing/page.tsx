@@ -170,9 +170,23 @@ export default function MarketingHeadPage() {
     error: "",
   });
 
+  // Mitra discount settings
+  const [mitraDiscountSettings, setMitraDiscountSettings] = useState<{
+    eligiblePaymentTerms: string[];
+    loading: boolean;
+    saving: boolean;
+    error: string;
+  }>({
+    eligiblePaymentTerms: ['monthly', 'annual'],
+    loading: true,
+    saving: false,
+    error: "",
+  });
+
   useEffect(() => {
     fetchData();
     fetchRecentCommissions();
+    fetchMitraDiscountSettings();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -229,6 +243,57 @@ export default function MarketingHeadPage() {
       }
     } catch (error) {
       console.error("Error fetching recent commissions:", error);
+    }
+  };
+
+  const fetchMitraDiscountSettings = async () => {
+    try {
+      setMitraDiscountSettings(prev => ({ ...prev, loading: true, error: "" }));
+      const response = await fetch("/api/admin/marketing/mitra-discount-settings");
+      if (response.ok) {
+        const data = await response.json();
+        setMitraDiscountSettings(prev => ({
+          ...prev,
+          eligiblePaymentTerms: data.data.eligiblePaymentTerms || ['monthly', 'annual'],
+          loading: false,
+        }));
+      } else {
+        throw new Error("Failed to fetch settings");
+      }
+    } catch (error) {
+      console.error("Error fetching mitra discount settings:", error);
+      setMitraDiscountSettings(prev => ({
+        ...prev,
+        loading: false,
+        error: "Gagal memuat pengaturan",
+      }));
+    }
+  };
+
+  const saveMitraDiscountSettings = async () => {
+    try {
+      setMitraDiscountSettings(prev => ({ ...prev, saving: true, error: "" }));
+      const response = await fetch("/api/admin/marketing/mitra-discount-settings", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          eligiblePaymentTerms: mitraDiscountSettings.eligiblePaymentTerms,
+        }),
+      });
+      if (response.ok) {
+        setMitraDiscountSettings(prev => ({ ...prev, saving: false }));
+        alert("Pengaturan berhasil disimpan");
+      } else {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Failed to save settings");
+      }
+    } catch (error) {
+      console.error("Error saving mitra discount settings:", error);
+      setMitraDiscountSettings(prev => ({
+        ...prev,
+        saving: false,
+        error: error instanceof Error ? error.message : "Gagal menyimpan pengaturan",
+      }));
     }
   };
 
@@ -1349,6 +1414,104 @@ export default function MarketingHeadPage() {
           </motion.div>
           </motion.div>
         )}
+
+        {/* Mitra Discount Settings Section */}
+        <motion.div
+          className={getThemeClasses(
+            "bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl border border-[#324D3E]/10 dark:border-gray-700 rounded-2xl p-6 shadow-lg mb-6",
+            "!bg-white/80 !border-[#FFC1CC]/30"
+          )}
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.25, duration: 0.6 }}
+        >
+          <h3 className={getThemeClasses(
+            "text-lg font-bold text-[#324D3E] dark:text-white mb-4",
+            "!text-[#4c1d1d]"
+          )}>
+            Pengaturan Diskon Mitra
+          </h3>
+
+          <p className={getThemeClasses(
+            "text-sm text-[#889063] dark:text-gray-300 mb-4",
+            "!text-[#6b7280]"
+          )}>
+            Pilih jenis pembayaran cicilan yang eligible untuk diskon mitra:
+          </p>
+
+          {mitraDiscountSettings.loading ? (
+            <div className="flex items-center justify-center py-4">
+              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-[#324D3E]"></div>
+            </div>
+          ) : (
+            <>
+              <div className="space-y-3">
+                <label className="flex items-center gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={mitraDiscountSettings.eligiblePaymentTerms.includes('monthly')}
+                    onChange={(e) => {
+                      const newTerms = e.target.checked
+                        ? [...mitraDiscountSettings.eligiblePaymentTerms, 'monthly']
+                        : mitraDiscountSettings.eligiblePaymentTerms.filter(t => t !== 'monthly');
+                      setMitraDiscountSettings(prev => ({ ...prev, eligiblePaymentTerms: newTerms }));
+                    }}
+                    className="w-5 h-5 rounded border-gray-300 text-[#324D3E] focus:ring-[#324D3E]"
+                  />
+                  <span className={getThemeClasses(
+                    "text-[#324D3E] dark:text-white",
+                    "!text-[#4c1d1d]"
+                  )}>
+                    Bulanan (Monthly)
+                  </span>
+                </label>
+
+                <label className="flex items-center gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={mitraDiscountSettings.eligiblePaymentTerms.includes('annual')}
+                    onChange={(e) => {
+                      const newTerms = e.target.checked
+                        ? [...mitraDiscountSettings.eligiblePaymentTerms, 'annual']
+                        : mitraDiscountSettings.eligiblePaymentTerms.filter(t => t !== 'annual');
+                      setMitraDiscountSettings(prev => ({ ...prev, eligiblePaymentTerms: newTerms }));
+                    }}
+                    className="w-5 h-5 rounded border-gray-300 text-[#324D3E] focus:ring-[#324D3E]"
+                  />
+                  <span className={getThemeClasses(
+                    "text-[#324D3E] dark:text-white",
+                    "!text-[#4c1d1d]"
+                  )}>
+                    Tahunan (Annual)
+                  </span>
+                </label>
+              </div>
+
+              {mitraDiscountSettings.error && (
+                <p className="text-red-500 text-sm mt-3">{mitraDiscountSettings.error}</p>
+              )}
+
+              <div className="mt-4 flex justify-end">
+                <button
+                  onClick={saveMitraDiscountSettings}
+                  disabled={mitraDiscountSettings.saving || mitraDiscountSettings.eligiblePaymentTerms.length === 0}
+                  className={getThemeClasses(
+                    "px-4 py-2 bg-[#324D3E] text-white rounded-lg hover:bg-[#4C3D19] transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+                    "!bg-[#FFC1CC] !text-[#4c1d1d] hover:!bg-[#FFDEE9]"
+                  )}
+                >
+                  {mitraDiscountSettings.saving ? "Menyimpan..." : "Simpan Pengaturan"}
+                </button>
+              </div>
+
+              {mitraDiscountSettings.eligiblePaymentTerms.length === 0 && (
+                <p className="text-amber-600 text-sm mt-2">
+                  Pilih minimal satu jenis pembayaran
+                </p>
+              )}
+            </>
+          )}
+        </motion.div>
 
         {/* Marketing Staff Table */}
         <div

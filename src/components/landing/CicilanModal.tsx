@@ -43,6 +43,7 @@ export function CicilanModal({
       isSppgUser: boolean;
       discountPercentage: number;
       discountLabel: string;
+      eligiblePaymentTerms: string[];
     } | null;
     error: string | null;
   }>({
@@ -551,51 +552,80 @@ export function CicilanModal({
 
                       {/* Member Discount Display (SPPG/TNI) */}
                       {referralValidation.discountInfo?.isSppgUser && currentPrice > 0 && (
-                        <div className="mt-3 p-4 bg-gradient-to-r from-emerald-50 to-green-50 border border-emerald-200 rounded-xl">
-                          <div className="flex items-center gap-2 mb-2">
-                            <span className="text-emerald-600 text-lg">🎉</span>
-                            <span className="font-bold text-emerald-700">Diskon Anggota Aktif!</span>
-                          </div>
-                          <p className="text-sm text-emerald-600 mb-2">
-                            Anda mendapatkan diskon khusus:
-                          </p>
-                          <div className="flex items-baseline gap-2">
-                            <span className="text-2xl font-bold text-emerald-600">
-                              {referralValidation.discountInfo.discountLabel}
-                            </span>
-                            <span className="text-sm text-emerald-600">diskon</span>
-                          </div>
-                          <div className="mt-3 pt-3 border-t border-emerald-200">
-                            <div className="flex justify-between text-sm">
-                              <span className="text-emerald-600">Harga Normal:</span>
-                              <span className="text-emerald-600 line-through">
-                                {formatIDRCurrency(currentPrice)}
-                              </span>
-                            </div>
-                            <div className="flex justify-between text-sm font-bold mt-1">
-                              <span className="text-emerald-700">Harga Anda:</span>
-                              <span className="text-emerald-700">
-                                {formatIDRCurrency(
-                                  Math.round(
-                                    currentPrice *
-                                      (1 - referralValidation.discountInfo.discountPercentage)
-                                  )
-                                )}
-                              </span>
-                            </div>
-                            <div className="flex justify-between text-sm mt-1 text-emerald-600">
-                              <span>Cicilan/bulan:</span>
-                              <span>
-                                {formatIDRCurrency(
-                                  Math.ceil(
-                                    (currentPrice *
-                                      (1 - referralValidation.discountInfo.discountPercentage)) /
-                                      getInstallmentCount(selectedTermDetails?.period || "Per Bulan")
-                                  )
-                                )}
-                              </span>
-                            </div>
-                          </div>
+                        <div>
+                          {(() => {
+                            // Convert display period to API term
+                            const paymentTermMap: Record<string, string> = {
+                              'Per Bulan': 'monthly',
+                              'Per Tahun': 'annual'
+                            };
+                            const apiTerm = paymentTermMap[selectedTermDetails?.period || ''];
+                            const isEligible = referralValidation.discountInfo?.eligiblePaymentTerms?.includes(apiTerm);
+                            
+                            if (!isEligible) {
+                              return (
+                                <div className="mt-3 p-4 bg-gray-50 border border-gray-200 rounded-xl">
+                                  <div className="flex items-center gap-2 mb-2">
+                                    <span className="text-gray-600">ℹ️</span>
+                                    <span className="font-bold text-gray-700">Kode Mitra Valid</span>
+                                  </div>
+                                  <p className="text-sm text-gray-600">
+                                    Kode mitra valid, namun diskon tidak berlaku untuk pembayaran {selectedTermDetails?.period}.
+                                  </p>
+                                </div>
+                              );
+                            }
+                            
+                            // Show discount display when eligible
+                            return (
+                              <div className="mt-3 p-4 bg-gradient-to-r from-emerald-50 to-green-50 border border-emerald-200 rounded-xl">
+                                <div className="flex items-center gap-2 mb-2">
+                                  <span className="text-emerald-600 text-lg">🎉</span>
+                                  <span className="font-bold text-emerald-700">Diskon Anggota Aktif!</span>
+                                </div>
+                                <p className="text-sm text-emerald-600 mb-2">
+                                  Anda mendapatkan diskon khusus:
+                                </p>
+                                <div className="flex items-baseline gap-2">
+                                  <span className="text-2xl font-bold text-emerald-600">
+                                    {referralValidation.discountInfo.discountLabel}
+                                  </span>
+                                  <span className="text-sm text-emerald-600">diskon</span>
+                                </div>
+                                <div className="mt-3 pt-3 border-t border-emerald-200">
+                                  <div className="flex justify-between text-sm">
+                                    <span className="text-emerald-600">Harga Normal:</span>
+                                    <span className="text-emerald-600 line-through">
+                                      {formatIDRCurrency(currentPrice)}
+                                    </span>
+                                  </div>
+                                  <div className="flex justify-between text-sm font-bold mt-1">
+                                    <span className="text-emerald-700">Harga Anda:</span>
+                                    <span className="text-emerald-700">
+                                      {formatIDRCurrency(
+                                        Math.round(
+                                          currentPrice *
+                                            (1 - referralValidation.discountInfo.discountPercentage)
+                                        )
+                                      )}
+                                    </span>
+                                  </div>
+                                  <div className="flex justify-between text-sm mt-1 text-emerald-600">
+                                    <span>Cicilan/bulan:</span>
+                                    <span>
+                                      {formatIDRCurrency(
+                                        Math.ceil(
+                                          (currentPrice *
+                                            (1 - referralValidation.discountInfo.discountPercentage)) /
+                                            getInstallmentCount(selectedTermDetails?.period || "Per Bulan")
+                                        )
+                                      )}
+                                    </span>
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })()}
                         </div>
                       )}
                     </div>
