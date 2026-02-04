@@ -1,5 +1,6 @@
 import dbConnect from '@/lib/mongodb';
 import { validateReferralCode } from '@/lib/referral';
+import Settings from '@/models/Settings';
 import User from '@/models/User';
 import { NextRequest, NextResponse } from 'next/server';
 
@@ -72,10 +73,15 @@ export async function POST(req: NextRequest) {
         const discountPercentage = Math.max(0, commissionRate - companyCutRate);
         
         if (discountPercentage > 0) {
+          // Fetch mitra discount settings
+          const settings = await Settings.findOne({ type: 'system' });
+          const eligiblePaymentTerms = settings?.config?.mitraDiscountEligiblePaymentTerms || ['monthly', 'annual'];
+
           discountInfo = {
             isSppgUser: true, // Keep field name for backward compatibility
             discountPercentage: discountPercentage, // e.g., 0.30 = 30%
-            discountLabel: `${Math.round(discountPercentage * 100)}%`
+            discountLabel: `${Math.round(discountPercentage * 100)}%`,
+            eligiblePaymentTerms: eligiblePaymentTerms
           };
         }
       }

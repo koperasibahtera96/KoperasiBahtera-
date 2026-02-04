@@ -2,6 +2,7 @@ import { generateInvoiceNumber } from "@/lib/invoiceNumberGenerator";
 import { midtransService } from "@/lib/midtrans";
 import dbConnect from "@/lib/mongodb";
 import Contract from "@/models/Contract";
+import Settings from "@/models/Settings";
 import User from "@/models/User";
 import { getServerSession } from "next-auth/next";
 import { NextRequest, NextResponse } from "next/server";
@@ -123,33 +124,42 @@ export async function POST(req: NextRequest) {
          lockedCommissionRate = marketingUser.customCommissionRate;
        }
 
-       if (
-         paymentType === 'cicilan' &&
-         marketingUser.role === 'mitra' &&
-         marketingUser.customCommissionRate !== undefined &&
-         marketingUser.customCommissionRate > 0
-       ) {
-         isSppgDiscount = true;
-         
-         const companyCut = marketingUser.companyCutRate || 0;
-         discountPercentage = Math.max(0, marketingUser.customCommissionRate - companyCut);
-         
-         if (discountPercentage > 0) {
-           lockedCompanyCutRate = companyCut;
-           discountAmount = Math.round(originalAmount * discountPercentage);
-           finalAmount = originalAmount - discountAmount;
-           
-           console.log(`[Mitra Discount] User: ${user.email}, Original: ${originalAmount}, Commission: ${(marketingUser.customCommissionRate * 100).toFixed(1)}%, Company Cut: ${(companyCut * 100).toFixed(1)}%, Discount: ${(discountPercentage * 100).toFixed(1)}% (${discountAmount}), Final: ${finalAmount}`);
-         } else {
-           isSppgDiscount = false;
-           discountPercentage = undefined;
-           discountAmount = undefined;
-           finalAmount = originalAmount;
-           lockedCompanyCutRate = undefined;
-           
-           console.log(`[Mitra No Discount] User: ${user.email}, Commission: ${(marketingUser.customCommissionRate * 100).toFixed(1)}%, Company Cut: ${(companyCut * 100).toFixed(1)}%, Calculated discount would be 0%`);
-         }
-       } else {
+        if (
+          paymentType === 'cicilan' &&
+          marketingUser.role === 'mitra' &&
+          marketingUser.customCommissionRate !== undefined &&
+          marketingUser.customCommissionRate > 0
+        ) {
+          const settings = await Settings.findOne({ type: 'system' });
+          const eligiblePaymentTerms = settings?.config?.mitraDiscountEligiblePaymentTerms || ['monthly', 'annual'];
+
+          if (!eligiblePaymentTerms.includes(paymentTerm)) {
+            console.log(`[Mitra Discount] Payment term '${paymentTerm}' not eligible for discount. Eligible terms: ${eligiblePaymentTerms.join(', ')}`);
+            isSppgDiscount = false;
+            lockedCompanyCutRate = undefined;
+          } else {
+            isSppgDiscount = true;
+
+            const companyCut = marketingUser.companyCutRate || 0;
+            discountPercentage = Math.max(0, marketingUser.customCommissionRate - companyCut);
+
+            if (discountPercentage > 0) {
+              lockedCompanyCutRate = companyCut;
+              discountAmount = Math.round(originalAmount * discountPercentage);
+              finalAmount = originalAmount - discountAmount;
+
+              console.log(`[Mitra Discount] User: ${user.email}, Original: ${originalAmount}, Commission: ${(marketingUser.customCommissionRate * 100).toFixed(1)}%, Company Cut: ${(companyCut * 100).toFixed(1)}%, Discount: ${(discountPercentage * 100).toFixed(1)}% (${discountAmount}), Final: ${finalAmount}`);
+            } else {
+              isSppgDiscount = false;
+              discountPercentage = undefined;
+              discountAmount = undefined;
+              finalAmount = originalAmount;
+              lockedCompanyCutRate = undefined;
+
+              console.log(`[Mitra No Discount] User: ${user.email}, Commission: ${(marketingUser.customCommissionRate * 100).toFixed(1)}%, Company Cut: ${(companyCut * 100).toFixed(1)}%, Calculated discount would be 0%`);
+            }
+          }
+        } else {
          lockedCompanyCutRate = undefined;
          
          if (paymentType !== 'cicilan') {
