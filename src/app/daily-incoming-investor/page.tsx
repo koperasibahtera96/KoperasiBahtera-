@@ -642,57 +642,11 @@ export default function DailyIncomingInvestorPage() {
 
         {/* ===== KPI ===== */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-8 items-stretch">
-          {/* Total pemasukan */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.2 }}
-            className="h-full"
-          >
-            <Card
-              className={getThemeClasses(
-                "bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl border-[#324D3E]/10 dark:border-gray-700 shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300 h-full",
-                "!bg-white/80 !border-[#FFC1CC]/30"
-              )}
-            >
-              <CardContent className="p-6 h-full flex flex-col justify-between">
-                <div>
-                  <div
-                    className={getThemeClasses(
-                      "text-sm text-[#889063] dark:text-gray-200 mb-4",
-                      "!text-[#6b7280]"
-                    )}
-                  >
-                    Total pemasukan
-                  </div>
-                  <div
-                    className={getThemeClasses(
-                      "text-2xl font-bold text-green-600 dark:text-emerald-400",
-                      "!text-[#4c1d1d]"
-                    )}
-                  >
-                    {formatCurrency(summary.totalPemasukan)}
-                  </div>
-                </div>
-                <div className="flex justify-end mt-4">
-                  <div
-                    className={getThemeClasses(
-                      "flex h-10 w-10 items-center justify-center rounded-2xl bg-green-500/10 text-green-600",
-                      "!bg-[#FFC1CC]/20 !text-[#4c1d1d]"
-                    )}
-                  >
-                    <TrendingUp className="h-5 w-5" />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </motion.div>
-
           {/* Jumlah transaksi */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.3 }}
+            transition={{ duration: 0.6, delay: 0.2 }}
             className="h-full"
           >
             <Card
@@ -728,6 +682,52 @@ export default function DailyIncomingInvestorPage() {
                     )}
                   >
                     <BarChart3 className="h-5 w-5" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+
+          {/* Total pemasukan */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.3 }}
+            className="h-full"
+          >
+            <Card
+              className={getThemeClasses(
+                "bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl border-[#324D3E]/10 dark:border-gray-700 shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-300 h-full",
+                "!bg-white/80 !border-[#FFC1CC]/30"
+              )}
+            >
+              <CardContent className="p-6 h-full flex flex-col justify-between">
+                <div>
+                  <div
+                    className={getThemeClasses(
+                      "text-sm text-[#889063] dark:text-gray-200 mb-4",
+                      "!text-[#6b7280]"
+                    )}
+                  >
+                    Total pemasukan
+                  </div>
+                  <div
+                    className={getThemeClasses(
+                      "text-2xl font-bold text-green-600 dark:text-emerald-400",
+                      "!text-[#4c1d1d]"
+                    )}
+                  >
+                    {formatCurrency(summary.totalPemasukan)}
+                  </div>
+                </div>
+                <div className="flex justify-end mt-4">
+                  <div
+                    className={getThemeClasses(
+                      "flex h-10 w-10 items-center justify-center rounded-2xl bg-green-500/10 text-green-600",
+                      "!bg-[#FFC1CC]/20 !text-[#4c1d1d]"
+                    )}
+                  >
+                    <TrendingUp className="h-5 w-5" />
                   </div>
                 </div>
               </CardContent>

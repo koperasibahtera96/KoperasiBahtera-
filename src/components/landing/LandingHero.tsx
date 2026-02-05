@@ -187,8 +187,8 @@ export default function LandingHero() {
         >
           <div className="relative rounded-2xl overflow-hidden shadow-2xl w-full">
             <Image
-              src="/assets/brosur-umum-web.jpg"
-              alt="Brosur Umum Investasi Hijau"
+              src="/assets/referral-brochure-1.jpg"
+              alt="Referral Brochure Investasi Hijau"
               width={480}
               height={640}
               className="w-full h-auto block"

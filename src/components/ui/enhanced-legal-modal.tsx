@@ -15,8 +15,9 @@ interface EnhancedLegalModalProps {
   triggerText: string;
   title: string;
   children: React.ReactNode;
-  onConfirm: () => void;
+  onConfirm?: () => void;
   triggerElement?: React.ReactNode;
+  viewOnly?: boolean;
 }
 
 export const EnhancedLegalModal: React.FC<EnhancedLegalModalProps> = ({
@@ -25,6 +26,7 @@ export const EnhancedLegalModal: React.FC<EnhancedLegalModalProps> = ({
   children,
   onConfirm,
   triggerElement,
+  viewOnly = false,
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [hasScrolledToEnd, setHasScrolledToEnd] = useState(false);
@@ -54,8 +56,14 @@ export const EnhancedLegalModal: React.FC<EnhancedLegalModalProps> = ({
   };
 
   const handleConfirm = () => {
+    if (viewOnly) {
+      onConfirm?.();
+      setIsOpen(false);
+      return;
+    }
+
     if (hasScrolledToEnd) {
-      onConfirm();
+      onConfirm?.();
       setIsOpen(false);
     }
   };
@@ -116,27 +124,31 @@ export const EnhancedLegalModal: React.FC<EnhancedLegalModalProps> = ({
           <div className="relative z-10">{children}</div>
         </div>
         <DialogFooter className="mt-4 flex gap-2 relative z-10">
-          <DialogClose asChild>
+          {!viewOnly && (
+            <DialogClose asChild>
+              <Button
+                type="button"
+                variant="outline"
+                className="border-2 border-gray-300 text-gray-700 px-6 py-2 rounded-full font-semibold hover:bg-gray-50 transition-all duration-300"
+              >
+                Batal
+              </Button>
+            </DialogClose>
+          )}
+          {!viewOnly && (
             <Button
               type="button"
-              variant="outline"
-              className="border-2 border-gray-300 text-gray-700 px-6 py-2 rounded-full font-semibold hover:bg-gray-50 transition-all duration-300"
+              onClick={handleConfirm}
+              disabled={!hasScrolledToEnd}
+              className={`px-8 py-3 rounded-full font-semibold transition-all duration-300 shadow-lg font-[family-name:var(--font-poppins)] ${
+                hasScrolledToEnd
+                  ? "bg-gradient-to-r from-[#364D32] to-[#889063] text-white hover:from-[#889063] hover:to-[#364D32]"
+                  : "bg-gray-300 text-gray-500 cursor-not-allowed"
+              }`}
             >
-              Batal
+              {hasScrolledToEnd ? "Saya Setuju" : "Baca Hingga Akhir"}
             </Button>
-          </DialogClose>
-          <Button
-            type="button"
-            onClick={handleConfirm}
-            disabled={!hasScrolledToEnd}
-            className={`px-8 py-3 rounded-full font-semibold transition-all duration-300 shadow-lg font-[family-name:var(--font-poppins)] ${
-              hasScrolledToEnd
-                ? "bg-gradient-to-r from-[#364D32] to-[#889063] text-white hover:from-[#889063] hover:to-[#364D32]"
-                : "bg-gray-300 text-gray-500 cursor-not-allowed"
-            }`}
-          >
-            {hasScrolledToEnd ? "Saya Setuju" : "Baca Hingga Akhir"}
-          </Button>
+          )}
         </DialogFooter>
       </DialogContent>
     </Dialog>

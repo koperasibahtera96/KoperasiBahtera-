@@ -1,9 +1,9 @@
 import { authOptions } from '@/lib/auth';
 import dbConnect from '@/lib/mongodb';
 import User from '@/models/User';
+import fs from 'fs';
 import { getServerSession } from 'next-auth';
 import { NextRequest, NextResponse } from 'next/server';
-import fs from 'fs';
 import path from 'path';
 import QRCode from 'qrcode';
 
@@ -225,7 +225,7 @@ const generateFrontHTML = (user: any, logoBase64: string | null, qrCodeDataUrl: 
           <div class="footer-title">Bintaro Business Center</div>
           <div>Jl RC Veteran Raya No 1i, Bintaro - Kec Pesanggrahan</div>
           <div>Kota Jakarta Selatan DKI Jakarta 12330</div>
-          <div>Telp: 081118893679 Email: koperasibintangmerahsejahtera@gmail.com</div>
+          <div>Telp: 081118893679 Email: koperasiadmin@koperasibahtera.org</div>
         </div>
       </div>
     </body>

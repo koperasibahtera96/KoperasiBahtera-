@@ -78,13 +78,13 @@ const translations = {
     "hero.title.line1": "Pembiayaan Pengembangan",
     "hero.title.line2": "Usaha Pertanian Berkelanjutan yang Mudah",
     "hero.description":
-      "Solusi tepat bagi Anda yang ingin meraih keuntungan sekaligus memberikan dampak positif bagi lingkungan dan masyarakat. Melalui sistem investasi yang sederhana dan transparan, Anda dapat ikut mendukung petani lokal untuk meningkatkan hasil panen.",
+      "Solusi tepat bagi Anda yang ingin meraih manfaat ekonomi sekaligus memberikan dampak positif bagi lingkungan dan masyarakat. Melalui sistem investasi yang sederhana dan transparan, Anda dapat ikut mendukung petani lokal untuk meningkatkan hasil panen.",
     "hero.cta": "Mulai Sekarang",
     "hero.scrollMore": "Selengkapnya",
 
     // Benefits Section
     "benefits.title": "Dampak dan Manfaat",
-    "benefits.financial.title": "Keuntungan Finansial",
+    "benefits.financial.title": "Manfaat Ekonomi",
     "benefits.financial.description":
       "Tanaman produktif yang memberikan hasil bernilai tinggi setelah masa permanen",
     "benefits.longterm.title": "Aset Jangka Panjang",
@@ -102,15 +102,15 @@ const translations = {
 
     // Rules Section
     "rules.title": "Panduan Berpartisipasi!",
-    "rules.package.title": "Pembiayaan Paket",
+    "rules.package.title": "Simpanan Wajib",
     "rules.package.description":
       "Setiap Anggota dapat mengikuti program ini dengan minimal membeli 1 paket (10 Pohon) Tanaman.",
     "rules.duration.title": "Jangka Waktu",
     "rules.duration.description":
       "Program ini bersifat jangka menengah/panjang (5-7 tahun, tergantung jenis tanaman)",
-    "rules.profit.title": "Bagi Hasil",
+    "rules.profit.title": "SHU",
     "rules.profit.description":
-      "Hasil panen akan diberikan setelah dikurangi biaya-biaya lainnya",
+      "SHU akan diberikan setelah dikurangi biaya-biaya lainnya",
     "rules.transparency.title": "Transparansi",
     "rules.transparency.description":
       "Anggota mendapat laporan berkala mengenai pertumbuhan tanaman, perawatan tanaman, kondisi lahan, dan proyeksi keuntungan",
@@ -145,7 +145,7 @@ const translations = {
     "plants.sellPrice": "Harga Jual Pohon",
     "plants.buyWithInstallment": "💳 Beli dengan Cicilan",
     "plants.installmentDuration": "*Selama {years} tahun masa tanam",
-    "plants.profitTitle": "Dapatkan KEUNTUNGAN Hingga",
+    "plants.profitTitle": "Dapatkan Sisa Hasil Usaha Hingga",
     "plants.profitPerYear": "/tahun",
     "plants.monthly": "Bulanan",
     "plants.weekly": "Mingguan",
@@ -169,8 +169,8 @@ const translations = {
     "plants.processing2": "Memproses...",
     "plants.cancel": "Batal",
     "plants.orderDetails": "Rincian Pesanan",
-    "plants.contractDetails": "Detail Kontrak",
-    "plants.contractNumber": "No. Kontrak:",
+    "plants.contractDetails": "Detail Persetujuan",
+    "plants.contractNumber": "No. Persetujuan:",
     "plants.packageType": "Jenis Paket:",
     "plants.packagePrice": "Harga Paket:",
     "plants.paymentType": "Tipe Pembayaran:",
@@ -181,21 +181,21 @@ const translations = {
       "Kode referral 6 karakter hurif kapital dan angka",
     "plants.confirmationTitle": "Konfirmasi Pesanan",
     "plants.confirmationMessage":
-      'Dengan menekan "Lanjutkan", kontrak akan dibuat dan Anda akan diarahkan ke halaman penandatanganan kontrak.',
+      'Dengan menekan "Lanjutkan", persetujuan pengelolaan simpanan anggota akan dibuat dan Anda akan diarahkan ke halaman penandatanganan Persetujuan.',
     "plants.back": "Kembali",
     "plants.continue": "Lanjutkan",
-    "plants.creatingContract": "Membuat Kontrak...",
-    "plants.contractCreated": "Kontrak Berhasil Dibuat!",
+    "plants.creatingContract": "Membuat Persejutuan...",
+    "plants.contractCreated": "Persetujuan Berhasil Dibuat!",
     "plants.contractCreatedMessage":
-      "Kontrak {contractNumber} telah dibuat. Anda akan diarahkan untuk menandatangani kontrak.",
-    "plants.contractError": "Kesalahan Kontrak",
-    "plants.contractErrorMessage": "Terjadi kesalahan saat membuat kontrak.",
+      "Persetujuan {contractNumber} telah dibuat. Anda akan diarahkan untuk menandatangani Persetujuan.",
+    "plants.contractError": "Kesalahan Persetujuan",
+    "plants.contractErrorMessage": "Terjadi kesalahan saat membuat Persetujuan.",
     "plants.invalidReferralCode": "Kode Referral Tidak Valid",
     "plants.invalidReferralCodeMessage":
       "Kode referral harus 6 karakter huruf kapital dan angka",
-    "plants.contractCreationError": "Gagal Membuat Kontrak",
+    "plants.contractCreationError": "Gagal Membuat Persetujuan",
     "plants.contractCreationErrorMessage":
-      "Gagal membuat kontrak. Silakan coba lagi.",
+      "Gagal membuat Persetujuan. Silakan coba lagi.",
     "plants.validatingReferral": "Memvalidasi...",
     "plants.verificationRequired": "Verifikasi Diperlukan",
     "plants.verificationRequiredMessage":
@@ -237,18 +237,18 @@ const translations = {
     "plants.disabled": "DINONAKTIFKAN",
     "plants.installmentNumber": "Cicilan ke-",
     "plants.dueDate": "Jatuh tempo",
-    "plants.contractRejectedPermanent": "Kontrak Ditolak Permanen",
+    "plants.contractRejectedPermanent": "Persetujuan Ditolak Permanen",
     "plants.maxAttemptsReached":
-      "Maksimal percobaan kontrak telah tercapai ({maxAttempts}x)",
+      "Maksimal percobaan Persetujuan telah tercapai ({maxAttempts}x)",
     "plants.paymentDisabled": "Pembayaran dan akses tanaman dinonaktifkan",
-    "plants.contractNeedsReview": "Kontrak Memerlukan Review",
-    "plants.contractAttempts": "Percobaan kontrak",
+    "plants.contractNeedsReview": "Persetujuan Memerlukan Review",
+    "plants.contractAttempts": "Percobaan Persetujuan",
     "plants.contactAdmin": "Silakan hubungi admin untuk bantuan",
-    "plants.contractNeedsResubmission": "Kontrak Perlu Diajukan Ulang",
+    "plants.contractNeedsResubmission": "Persetujuan Perlu Diajukan Ulang",
     "plants.visitPaymentPage":
-      "Kunjungi halaman pembayaran untuk mengajukan ulang kontrak",
+      "Kunjungi halaman pembayaran untuk mengajukan ulang Persetujuan",
     "plants.plantAllocationDisabled":
-      "Alokasi tanaman dinonaktifkan - Kontrak ditolak permanen",
+      "Alokasi tanaman dinonaktifkan - Persetujuan ditolak permanen",
     "plants.plantWillBeAllocated":
       "Tanaman akan dialokasikan setelah pembayaran dikonfirmasi",
     "plants.plantDetails": "Detail Tanaman",
@@ -258,12 +258,12 @@ const translations = {
     // Additional plants page (EN keys will be added in the en section)
 
     // Review Section
-    "reviews.title": "Review Investor",
+    "reviews.title": "Review Anggota",
     "reviews.subtitle":
-      "Apa kata para investor tentang pengalaman investasi mereka bersama kami",
+      "Apa kata para anggota tentang pengalaman investasi mereka bersama kami",
     "reviews.videoError": "Video testimonial tidak dapat diputar",
     "reviews.featuredTestimonial": "Featured Testimonial",
-    "reviews.investorPhoto": "Investor Photo",
+    "reviews.investorPhoto": "Foto Anggota",
     "reviews.stars": "{rating}/5 Bintang",
     "reviews.ratingTitle": "Rating Kami",
     "reviews.ratingsCount": "{count} rating",
@@ -333,23 +333,23 @@ const translations = {
     "faq.questions.howItWorks.answer":
       "Sistem kami bekerja melalui platform digital yang mudah diakses. Anda dapat memilih jenis tanaman, menentukan jumlah paket, dan memantau perkembangan tanaman Anda secara real-time melalui dashboard yang disediakan.",
     "faq.questions.fundSafety.question":
-      "Seberapa Amankah Dana Saya Setelah Pengajuan?",
+      "Seberapa Amankah Simpanan Saya Setelah Pengajuan?",
     "faq.questions.fundSafety.answer":
-      "Dana Anda akan dikelola secara transparan dan aman melalui sistem kami yang telah terintegrasi dengan standar keamanan tingkat tinggi. Setiap dana akan dialokasikan ke proyek-proyek yang telah melalui proses seleksi ketat, dan Anda akan mendapat laporan berkala mengenai penggunaan dana dan perkembangan proyek. Selain itu, kami menggunakan sistem perbankan digital yang aman dan terpercaya. Kami berkomitmen untuk menjaga kepercayaan Anda dengan memastikan setiap operasi mengikuti prosedur audit yang ketat sesuai tujuan pembelian paket tanaman Anda.",
+      "Simpanan Anda akan dikelola secara transparan dan aman melalui sistem kami yang telah terintegrasi dengan standar keamanan tingkat tinggi. Setiap simpanan akan dialokasikan ke proyek-proyek yang telah melalui proses seleksi ketat, dan Anda akan mendapat laporan berkala mengenai penggunaan simpanan dan perkembangan proyek. Selain itu, kami menggunakan sistem perbankan digital yang aman dan terpercaya. Kami berkomitmen untuk menjaga kepercayaan Anda dengan memastikan setiap operasi mengikuti prosedur audit yang ketat sesuai tujuan pembelian paket tanaman Anda.",
     "faq.questions.longTermGuarantee.question":
       "Apakah Pertanian Ini Dijamin untuk Jangka Panjang?",
     "faq.questions.longTermGuarantee.answer":
       "Ya, paket pertanian kami dirancang untuk jangka panjang dengan jaminan keberlanjutan. Kami bekerja sama dengan petani berpengalaman dan menggunakan teknologi modern untuk memastikan produktivitas yang optimal sepanjang periode pembelian paket.",
     "faq.questions.purchaseProcess.question":
-      "Bagaimana Proses Pembelian Paket Pertanian Berkelanjutan?",
+      "Bagaimana Proses Kontribusi Anggota Dalam Paket Pertanian Berkelanjutan?",
     "faq.questions.purchaseProcess.answer":
-      "Proses pembelian paket dimulai dengan pendaftaran akun, pemilihan paket tanaman, pembayaran, dan kemudian monitoring berkala. Kami menyediakan laporan transparan mengenai perkembangan tanaman, estimasi hasil panen, dan proyeksi keuntungan yang akan Anda terima.",
+      "Keikutsertaan paket dimulai dengan pendaftaran akun, pemilihan paket tanaman, pembayaran, dan kemudian monitoring berkala. Kami menyediakan laporan transparan mengenai perkembangan tanaman, estimasi hasil panen, dan proyeksi sisa hasil usaha yang akan Anda terima.",
 
     // Footer Section
     "footer.company.name": "Koperasi Bintang Merah Sejahtera",
     "footer.company.abbreviation": "(BAHTERA)",
     "footer.company.description":
-      "Solusi tepat bagi Anda yang ingin meraih keuntungan sekaligus memberikan dampak positif bagi lingkungan dan masyarakat melalui pertanian berkelanjutan.",
+      "Solusi tepat bagi Anda yang ingin meraih manfaat ekonomi sekaligus memberikan dampak positif bagi lingkungan dan masyarakat melalui pertanian berkelanjutan.",
     "footer.navigation.title": "Navigasi",
     "footer.navigation.home": "Beranda",
     "footer.navigation.program": "Program",
@@ -360,9 +360,9 @@ const translations = {
     "footer.contact.address":
       "Bintaro Business Center Jl RC Veteran Raya No 1i, Bintaro - Kec Pesanggrahan Kota Jakarta Selatan DKI Jakarta 12330",
     "footer.contact.phone": "+62 81118893679",
-    "footer.contact.email": "bintangmerahsejahtera@gmail.com",
+    "footer.contact.email": "admin@koperasibahtera.org",
     "footer.copyright":
-      "© 2024 Koperasi Bintang Merah Sejahtera (BAHTERA). All rights reserved.",
+      "© 2026 Koperasi Bintang Merah Sejahtera (BAHTERA). All rights reserved.",
     "footer.links.privacy": "Privacy Policy",
     "footer.links.terms": "Terms of Service",
     "footer.links.conditions": "Syarat & Ketentuan",
@@ -392,13 +392,13 @@ const translations = {
     "payments.errors.contractDownloadError":
       "An error occurred while downloading the contract",
     "payments.errors.contractNotAvailable": "Contract data not available",
-    "payments.errors.pdfGenerationFailed": "Gagal membuat PDF kontrak",
+    "payments.errors.pdfGenerationFailed": "Gagal membuat PDF Persetujuan",
     "payments.errors.paymentProcessError":
       "Terjadi kesalahan saat memproses pembayaran. Silakan coba lagi.",
     "payments.errors.uploadImageFailed": "Gagal Mengunggah Gambar",
-    "payments.form.contractInfo": "Informasi Kontrak",
+    "payments.form.contractInfo": "Informasi Persetujuan",
     "payments.form.product": "Produk:",
-    "payments.form.contractId": "ID Kontrak:",
+    "payments.form.contractId": "ID Persetujuan:",
     "payments.form.type": "Jenis:",
     "payments.form.typeInstallment": "Cicilan",
     "payments.form.typeFullPayment": "Pembayaran Penuh",
@@ -406,7 +406,7 @@ const translations = {
     "payments.form.attempt": "Percobaan:",
     "payments.form.lastRejectionReason": "Alasan penolakan terakhir:",
     "payments.signature.instructions":
-      "Buat tanda tangan Anda di area yang disediakan|Pastikan tanda tangan jelas dan sesuai dengan identitas Anda|Tanda tangan yang sama dengan pengajuan sebelumnya lebih direkomendasikan|Kontrak akan direview ulang oleh admin setelah pengajuan",
+      "Buat tanda tangan Anda di area yang disediakan|Pastikan tanda tangan jelas dan sesuai dengan identitas Anda|Tanda tangan yang sama dengan pengajuan sebelumnya lebih direkomendasikan|Persetujuan akan direview ulang oleh admin setelah pengajuan",
     "signature.drawSignature": "Gambar Tanda Tangan",
     "signature.uploadImage": "Unggah Tanda Tangan",
     "signature.drawInstructions": "Gambar tanda tangan Anda di area di atas",
@@ -437,7 +437,7 @@ const translations = {
     "payments.cards.created": "• Dibuat:",
     "payments.cards.paymentStatus": "Status Pembayaran",
     "payments.cards.contractPendingApproval":
-      "Kontrak Menunggu Persetujuan Admin",
+      "Persetujuan Menunggu Persetujuan Admin",
     "payments.cards.canMakePayment":
       "Anda sudah dapat melakukan pembayaran sekarang",
     "payments.cards.referralCodeRegistered": "Kode Referral Terdaftar",
@@ -447,9 +447,9 @@ const translations = {
     "payments.cards.fullPayment": "Pembayaran Penuh",
     "payments.cards.contractId": "Contract ID:",
     "payments.contract.rejectedByAdmin": "Ditolak oleh Admin",
-    "payments.contract.download": "Unduh Kontrak",
+    "payments.contract.download": "Unduh Persetujuan",
     "payments.contract.rejectedByAdminMessage": "{current} dari {max} ditolak",
-    "payments.contract.resubmit": "Submit Ulang Kontrak",
+    "payments.contract.resubmit": "Submit Ulang Persetujuan",
     "payments.retry.resubmissionStatus": "Status Pengajuan Ulang:",
     "payments.retry.attempts": "Percobaan:",
     "payments.retry.lastRejectionReason": "Alasan penolakan terakhir:",
@@ -473,7 +473,7 @@ const translations = {
     "payments.empty.viewPackages": "Lihat Paket Tanaman",
     "payments.success.title": "Berhasil!",
     "payments.success.contractResubmitted":
-      "Kontrak berhasil diajukan ulang dan sedang menunggu review admin",
+      "Persetujuan berhasil diajukan ulang dan sedang menunggu review admin",
     "payments.buttons.payNow": "Bayar Sekarang",
     "payments.buttons.selectPaymentMethod": "Pilih Metode Pembayaran",
     "payments.buttons.uploadProof": "Upload Bukti Bayar",
@@ -495,13 +495,13 @@ const translations = {
     "payments.filters.fullPayment": "Pembayaran Penuh",
     "payments.installments.scheduleTitle": "Jadwal Angsuran ({count} angsuran)",
     "payments.installments.installmentNumber": "Angsuran #",
-    "payments.approval.contractApproved": "Kontrak Telah Disetujui Admin",
+    "payments.approval.contractApproved": "Persetujuan Telah Disetujui Admin",
     "payments.approval.approvedOn": "Disetujui pada:",
     "payments.willBeDetermined": "Akan ditentukan",
-    "payments.contract.notSigned": "Kontrak Belum Ditandatangani",
+    "payments.contract.notSigned": "Persetujuan Belum Ditandatangani",
     "payments.contract.notSignedMessage":
-      "Silakan tandatangani kontrak sebelum melakukan pembayaran",
-    "payments.contract.signHere": "Tandatangani Kontrak",
+      "Silakan tandatangani Persetujuan sebelum melakukan pembayaran",
+    "payments.contract.signHere": "Tandatangani Persetujuan",
 
     // Payment Method Modal
     "paymentMethod.title": "Pilih Metode Pembayaran",
@@ -611,17 +611,17 @@ const translations = {
     "cicilan.timesPayment": "kali bayar",
     "cicilan.perInstallment": "per angsuran",
     "cicilan.howItWorks": "Cara Kerja Cicilan",
-    "cicilan.step1": "Buat dan tandatangani kontrak investasi terlebih dahulu",
-    "cicilan.step2": "Menunggu persetujuan admin untuk kontrak Anda",
+    "cicilan.step1": "Buat dan tandatangani persetujuan pengelolaan simpanan anggota investasi terlebih dahulu",
+    "cicilan.step2": "Menunggu persetujuan admin untuk persetujuan pengelolaan simpanan anggota Anda",
     "cicilan.step3": "Setelah disetujui, Anda dapat mulai cicilan pembayaran",
     "cicilan.step4": "Upload bukti pembayaran setiap periode cicilan",
     "cicilan.step5": "Investasi dimulai setelah pembayaran pertama disetujui",
     "cicilan.cancel": "Batal",
-    "cicilan.createContract": "Buat Kontrak",
+    "cicilan.createContract": "Buat Persetujuan",
     "cicilan.processing": "Memproses...",
     "cicilan.orderDetails": "Rincian Pesanan",
-    "cicilan.contractDetails": "Detail Kontrak",
-    "cicilan.contractNumber": "No. Kontrak:",
+    "cicilan.contractDetails": "Detail Persetujuan",
+    "cicilan.contractNumber": "No. Persetujuan:",
     "cicilan.packageType": "Jenis Paket:",
     "cicilan.packagePrice": "Harga Paket:",
     "cicilan.paymentType": "Tipe Pembayaran:",
@@ -632,21 +632,21 @@ const translations = {
       "Kode referral 6 karakter huruf kapital dan angka",
     "cicilan.orderConfirmation": "Konfirmasi Pesanan",
     "cicilan.orderConfirmationMessage":
-      'Dengan menekan "Lanjutkan", kontrak akan dibuat dan Anda akan diarahkan ke halaman penandatanganan kontrak.',
+      'Dengan menekan "Lanjutkan", persetujuan pengelolaan simpanan anggota akan dibuat dan Anda akan diarahkan ke halaman penandatanganan Persetujuan.',
     "cicilan.back": "Kembali",
     "cicilan.continue": "Lanjutkan",
-    "cicilan.creatingContract": "Membuat Kontrak...",
+    "cicilan.creatingContract": "Membuat Persetujuan...",
     "cicilan.invalidReferralCode": "Kode Referral Tidak Valid",
     "cicilan.invalidReferralCodeMessage":
       "Kode referral harus 6 karakter huruf kapital dan angka",
-    "cicilan.contractCreated": "Kontrak Berhasil Dibuat!",
+    "cicilan.contractCreated": "Persetujuan Berhasil Dibuat!",
     "cicilan.contractCreatedMessage":
-      "Kontrak {contractNumber} telah dibuat. Anda akan diarahkan untuk menandatangani kontrak.",
-    "cicilan.contractError": "Gagal Membuat Kontrak",
+      "Persetujuan {contractNumber} telah dibuat. Anda akan diarahkan untuk menandatangani Persetujuan.",
+    "cicilan.contractError": "Gagal Membuat Persetujuan",
     "cicilan.error": "Error",
-    "cicilan.errorCreatingContract": "Terjadi kesalahan saat membuat kontrak",
+    "cicilan.errorCreatingContract": "Terjadi kesalahan saat membuat Persetujuan",
     "cicilan.errorPreparingContract":
-      "Terjadi kesalahan saat menyiapkan kontrak",
+      "Terjadi kesalahan saat menyiapkan Persetujuan",
     "cicilan.validatingReferral": "Memvalidasi...",
     "signature.clear": "Bersihkan",
 
@@ -740,15 +740,15 @@ const translations = {
 
     // Rules Section
     "rules.title": "Participation Guidelines!",
-    "rules.package.title": "Package Financing",
+    "rules.package.title": "Mandatory Savings",
     "rules.package.description":
       "Each member can join this program by purchasing a minimum of 1 package (10 trees).",
     "rules.duration.title": "Duration",
     "rules.duration.description":
       "This program is medium/long-term (5-7 years, depending on plant type)",
-    "rules.profit.title": "Profit Sharing",
+    "rules.profit.title": "SHU",
     "rules.profit.description":
-      "Harvest results will be given after deducting other costs",
+      "SHU will be distributed to members based on their investment",
     "rules.transparency.title": "Transparency",
     "rules.transparency.description":
       "Members receive regular reports on plant growth, plant care, land conditions, and profit projections",
@@ -894,12 +894,12 @@ const translations = {
     "plants.recentFinancialActivity": "Recent Financial Activity",
 
     // Review Section
-    "reviews.title": "Investor Reviews",
+    "reviews.title": "Member Reviews",
     "reviews.subtitle":
-      "What our investors say about their investment experience with us",
+      "What our members say about their investment experience with us",
     "reviews.videoError": "Video testimonial cannot be played",
     "reviews.featuredTestimonial": "Featured Testimonial",
-    "reviews.investorPhoto": "Investor Photo",
+    "reviews.investorPhoto": "Member Photo",
     "reviews.stars": "{rating}/5 Stars",
     "reviews.ratingTitle": "Our Rating",
     "reviews.ratingsCount": "{count} ratings",
@@ -996,9 +996,9 @@ const translations = {
     "footer.contact.address":
       "Bintaro Business Center Jl RC Veteran Raya No 1i, Bintaro - Kec Pesanggrahan Kota Jakarta Selatan DKI Jakarta 12330",
     "footer.contact.phone": "+62 81118893679",
-    "footer.contact.email": "bintangmerahsejahtera@gmail.com",
+    "footer.contact.email": "admin@koperasibahtera.org",
     "footer.copyright":
-      "© 2024 Koperasi Bintang Merah Sejahtera (BAHTERA). All rights reserved.",
+      "© 2026 Koperasi Bintang Merah Sejahtera (BAHTERA). All rights reserved.",
     "footer.links.privacy": "Privacy Policy",
     "footer.links.terms": "Terms of Service",
     "footer.links.conditions": "Terms & Conditions",
@@ -1103,7 +1103,6 @@ const translations = {
     "payments.retry.cancel": "Cancel",
     "payments.retry.instructionsTitle": "Resubmission Instructions",
     "payments.retry.submit": "Submit Resubmission",
-    "payments.retry.uploading": "Uploading...",
     "payments.retry.of": "of",
     "payments.empty.noPayments": "No package payments yet",
     "payments.empty.startPurchase": "Start purchasing now!",

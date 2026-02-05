@@ -3,6 +3,9 @@
 import Image from 'next/image';
 import { motion } from 'framer-motion';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { EnhancedLegalModal } from '@/components/ui/enhanced-legal-modal';
+import { KebijakanPrivasiContent } from '@/components/legal/kebijakan-privasi';
+import { SyaratDanKetentuanContent } from '@/components/legal/syarat-dan-ketentuan';
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -53,9 +56,14 @@ export default function LandingFooter() {
   const { t } = useLanguage();
 
   const footerLinks = [
-    { key: 'footer.links.privacy', href: '#' },
-    { key: 'footer.links.terms', href: '#' },
-    { key: 'footer.links.conditions', href: '#' }
+    {
+      key: 'footer.links.privacy',
+      content: <KebijakanPrivasiContent />
+    },
+    {
+      key: 'footer.links.conditions',
+      content: <SyaratDanKetentuanContent />
+    }
   ];
 
   return (
@@ -226,16 +234,25 @@ export default function LandingFooter() {
             className="flex space-x-6 text-sm text-gray-400"
             variants={containerVariants}
           >
-            {footerLinks.map((link, index) => (
-              <motion.a
-                key={index}
-                href={link.href}
-                className="hover:text-white transition-colors"
-                variants={itemVariants}
-                whileHover={{ color: "#E5D7C4" }}
+            {footerLinks.map((link) => (
+              <EnhancedLegalModal
+                key={link.key}
+                triggerText={t(link.key)}
+                title={t(link.key)}
+                viewOnly
+                triggerElement={
+                  <motion.button
+                    type="button"
+                    className="hover:text-white transition-colors"
+                    variants={itemVariants}
+                    whileHover={{ color: "#E5D7C4" }}
+                  >
+                    {t(link.key)}
+                  </motion.button>
+                }
               >
-                {t(link.key)}
-              </motion.a>
+                {link.content}
+              </EnhancedLegalModal>
             ))}
           </motion.div>
         </motion.div>

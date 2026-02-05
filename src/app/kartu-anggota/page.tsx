@@ -395,7 +395,7 @@ export default function KartuAnggotaPage() {
               Bintaro Business Center<br />
               Jl RC Veteran Raya No 1i, Bintaro – Kec Pesanggrahan<br />
               Kota Jakarta Selatan DKI Jakarta 12330<br />
-              Telp: 0811 1889 3679 | Email: bintangmerahsejahtera@gmail.com
+              Telp: 0811 1889 3679 | Email: admin@koperasibahtera.org
             </div>
           </div>
 
@@ -470,7 +470,7 @@ export default function KartuAnggotaPage() {
               Bintaro Business Center<br />
               Jl RC Veteran Raya No 1i, Bintaro – Kec Pesanggrahan<br />
               Kota Jakarta Selatan DKI Jakarta 12330<br />
-              Telp: 0811 1889 3679 | Email: bintangmerahsejahtera@gmail.com
+              Telp: 0811 1889 3679 | Email: admin@koperasibahtera.org
             </div>
           </div>
         </div>

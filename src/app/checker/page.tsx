@@ -8,14 +8,14 @@ import { Button } from "@/components/ui-staff/button";
 import { Input } from "@/components/ui-staff/input";
 import type { PlantHistory, PlantInstance } from "@/types/checker";
 import {
-  Calendar,
-  ChevronLeft,
-  ChevronRight,
-  Download,
-  Leaf,
-  MapPin,
-  Search,
-  User,
+    Calendar,
+    ChevronLeft,
+    ChevronRight,
+    Download,
+    Leaf,
+    MapPin,
+    Search,
+    User,
 } from "lucide-react";
 import { useSession } from "next-auth/react";
 import Image from "next/image";
@@ -621,7 +621,7 @@ export default function StaffDashboard() {
       let r = 0;
       setCell(0, r++, "KOPERASI BINTANG MERAH SEJAHTERA", styleTitle);
       setCell(0, r++, "Bintaro Business Center Jl RC Veteran Raya No 1i, Bintaro - Kec Pesanggrahan Kota Jakarta Selatan DKI Jakarta 12330", styleTitle);
-      setCell(0, r++, "Tel: +62 81118893679 | Email: bintangmerahsejahtera@gmail.com", styleTitle);
+      setCell(0, r++, "Tel: +62 81118893679 | Email: admin@koperasibahtera.org", styleTitle);
       r++; // empty
       setCell(0, r++, "Laporan Staff Lapangan", styleTitle);
       setCell(0, r++, `Dibuat pada: ${new Date().toLocaleDateString("id-ID")}`, styleTitle);

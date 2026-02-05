@@ -105,11 +105,11 @@ export async function stampContractAfterPayment(
       pdfBuffer,
       `contract-${contractId}.pdf`,
       {
-        x: 230,
-        xr: 385 * 0.9, // 20mm width
-        y: 220, // At signature height (297 - 85 = 212mm from bottom)
-        yr: 365 * 0.9, // 20mm height
-        page: 6, // Signature is on page 5
+        x: 105,
+        xr: 215,
+        y: 235,
+        yr: 345,
+        page: 6,
       }
     );
 

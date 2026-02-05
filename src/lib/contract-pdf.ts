@@ -47,21 +47,21 @@ function renderNumberedTextWithIndent(
 ): number {
   // Check if text starts with a number pattern like "1. ", "2. ", etc.
   const numberMatch = text.match(/^(\d+\.\s)/);
-  
+
   if (!numberMatch) {
     // Not a numbered item, render normally
     return renderTextWithFormatting(pdf, text, x, y, maxWidth, lineHeight);
   }
-  
+
   const numberPart = numberMatch[1];
   const textPart = text.substring(numberPart.length);
   const numberWidth = pdf.getTextWidth(numberPart);
   const indentX = x + numberWidth;
   const textMaxWidth = maxWidth - numberWidth;
-  
+
   // Render the number
   pdf.text(numberPart, x, y);
-  
+
   // Render the text with hanging indent
   const heightUsed = renderTextWithFormatting(
     pdf,
@@ -71,7 +71,7 @@ function renderNumberedTextWithIndent(
     textMaxWidth,
     lineHeight
   );
-  
+
   return heightUsed;
 }
 
@@ -86,7 +86,7 @@ function renderTextWithFormatting(
 ): number {
   // Split text by formatting markers
   const parts: { text: string; bold?: boolean; italic?: boolean }[] = [];
-  
+
   // Replace special terms with markers
   let processedText = text;
   const forceMajeureRegex = /Force Majeure/g;
@@ -97,7 +97,7 @@ function renderTextWithFormatting(
   const pihakKeduaLabelRegex = /(?<=disebut sebagai )(Pihak Kedua)/g;
   const priceRegex = /(Rp[\d\.,]+-)/g;
   const plantRegex = /\b(GAHARU|ALPUKAT|JENGKOL|AREN|KELAPA)\b/g;
-  
+
   // Mark Force Majeure for italic
   processedText = processedText.replace(forceMajeureRegex, '{{ITALIC:Force Majeure}}');
   // Mark bold items
@@ -107,12 +107,12 @@ function renderTextWithFormatting(
   processedText = processedText.replace(pihakKeduaLabelRegex, '{{BOLD:Pihak Kedua}}');
   processedText = processedText.replace(priceRegex, '{{BOLD:$1}}');
   processedText = processedText.replace(plantRegex, '{{BOLD:$1}}');
-  
+
   // Parse the markers
   const markerRegex = /\{\{(BOLD|ITALIC):([^}]+)\}\}/g;
   let lastIndex = 0;
   let match;
-  
+
   while ((match = markerRegex.exec(processedText)) !== null) {
     if (match.index > lastIndex) {
       parts.push({ text: processedText.substring(lastIndex, match.index) });
@@ -124,42 +124,42 @@ function renderTextWithFormatting(
     });
     lastIndex = match.index + match[0].length;
   }
-  
+
   if (lastIndex < processedText.length) {
     parts.push({ text: processedText.substring(lastIndex) });
   }
-  
+
   // If no formatting, just render normally
   if (parts.length === 0 || (parts.length === 1 && !parts[0].bold && !parts[0].italic)) {
     const lines = pdf.splitTextToSize(text, maxWidth);
     pdf.text(lines, x, y);
     return lineHeight * lines.length;
   }
-  
+
   // Render with mixed formatting
   let currentY = y;
   let currentX = x;
   const pageWidth = maxWidth;
-  
+
   parts.forEach(part => {
     const style = part.italic ? 'italic' : (part.bold ? 'bold' : 'normal');
     pdf.setFont('helvetica', style);
-    
+
     const words = part.text.split(' ');
     words.forEach((word, idx) => {
       const wordWithSpace = idx < words.length - 1 ? word + ' ' : word;
       const wordWidth = pdf.getTextWidth(wordWithSpace);
-      
+
       if (currentX + wordWidth > x + pageWidth && currentX > x) {
         currentY += lineHeight;
         currentX = x;
       }
-      
+
       pdf.text(wordWithSpace, currentX, currentY);
       currentX += wordWidth;
     });
   });
-  
+
   pdf.setFont('helvetica', 'normal');
   return currentY - y + lineHeight;
 }
@@ -314,10 +314,7 @@ export async function generateContractPDFBuffer(
   pdf.setFontSize(12);
   pdf.setTextColor(0, 0, 0);
   pdf.setFont("helvetica", "bold");
-  pdf.text("SURAT PERJANJIAN KERJASAMA", 105, headerYPosition, {
-    align: "center",
-  });
-  pdf.text("(KONTRAK)", 105, headerYPosition + 8, {
+  pdf.text("PERSETUJUAN PENGELOLAAN SIMPANAN ANGGOTA", 105, headerYPosition, {
     align: "center",
   });
 
@@ -700,7 +697,7 @@ export async function generateContractPDFBuffer(
       content: [
         "Hal-hal yang belum diatur atau belum cukup diatur dalam perjanjian ini apabila dikemudian hari dibutuhkan dan dipandang perlu akan ditetapkan tersendiri secara musyawarah dan selanjutnya akan ditetapkan dalam suatu ADDENDUM yang berlaku mengikat bagi kedua belah pihak, yang akan direkatkan dan merupakan bagian yang tidak terpisahkan dari Perjanjian ini.",
         "",
-        "Demikianlah surat perjanjian kerjasama ini dibuat, untuk masing-masing pihak, yang ditandatangani dan bermaterai cukup, yang masing-masing mempunyai kekuatan hukum yang sama dan berlaku sejak ditandatangani.",
+        "Demikianlah persetujuan pengelolaan simpanan anggota ini dibuat, untuk masing-masing pihak, yang ditandatangani dan bermaterai cukup, yang masing-masing mempunyai kekuatan hukum yang sama dan berlaku sejak ditandatangani.",
       ],
     },
   ];
@@ -773,43 +770,39 @@ export async function generateContractPDFBuffer(
     pdf.addPage();
   }
 
-  // Position signature section at bottom of page (start at ~220mm from top)
-  yPosition = 200;
+  // Position signature section at bottom of page
+  yPosition = 195;
 
   pdf.setFontSize(10);
   pdf.setFont("helvetica", "normal");
-  pdf.text(`Jakarta, ${closingDateStr}`, leftMargin, yPosition);
+  const pageWidth = pdf.internal.pageSize.width;
+  pdf.text(`Jakarta, ${closingDateStr}`, pageWidth - leftMargin, yPosition, { align: "right" });
   yPosition += lineHeight * 2;
 
   pdf.setFontSize(10);
   pdf.setFont("helvetica", "normal");
 
-  // Main signature headers - align them properly
-  // const pihakPertamaX = leftMargin + 30;
-  const pihakKeduaX = leftMargin + 120;
+  const centerX = pageWidth / 2;
 
-  pdf.text("Pihak Pertama", leftMargin, yPosition);
-  pdf.text("Pihak Kedua", pihakKeduaX, yPosition);
+  pdf.text("Pihak Kedua", centerX, yPosition, { align: "center" });
 
   yPosition += lineHeight * 2;
 
-  // Define the signature area dimensions and position
-  const signatureAreaWidth = 80;
+  // Define the signature area dimensions and position - centered
   const signatureAreaHeight = 25;
-  const signatureAreaX = pihakKeduaX - 25;
   const signatureStartY = yPosition;
 
   // Names position
   const nameYPosition = signatureStartY + signatureAreaHeight + lineHeight * 1;
 
-  // Right side - Investor signature
+  // Investor signature - centered
   if (contractData.signatureDataURL) {
     try {
       if (!contractData.signatureDataURL.startsWith("data:image/png;base64,")) {
         throw new Error("signatureDataURL is not a valid PNG base64 string");
       }
 
-      const signatureCenterX = signatureAreaX + signatureAreaWidth / 2 - 60 / 2;
+      const signatureCenterX = centerX - 30; // Center the 60px wide signature
       const signatureCenterY =
         signatureStartY + signatureAreaHeight / 2 - 15 / 2;
 
@@ -826,22 +819,17 @@ export async function generateContractPDFBuffer(
     }
   } else {
     // Show placeholder line if no signature
-    const placeholderX = signatureAreaX + signatureAreaWidth / 2 - 40;
+    const placeholderX = centerX - 40;
     const placeholderY = signatureStartY + signatureAreaHeight / 2;
     pdf.text("_________________", placeholderX, placeholderY);
   }
 
-  // Names under signatures
-  // const halimX = leftMargin + 5;
-  pdf.setFont("helvetica", "bold");
-  pdf.text("Halim Perdana Kusuma, S.H., M.H.", leftMargin, nameYPosition);
+  // Name under signature - centered
   pdf.setFont("helvetica", "normal");
-  pdf.text(`${contractData.investor.name}`, pihakKeduaX, nameYPosition);
+  pdf.text(`${contractData.investor.name}`, centerX, nameYPosition, { align: "center" });
 
   yPosition = nameYPosition;
   yPosition += lineHeight;
-
-  pdf.text("Ketua Koperasi", leftMargin, yPosition);
 
   yPosition += 50;
 

@@ -447,7 +447,7 @@ export default function ProfilePage() {
       margin-top: -10px;
     `;
     frontFooter.innerHTML =
-      "Bintaro Business Center<br />Jl RC Veteran Raya No 1i, Bintaro – Kec Pesanggrahan<br />Kota Jakarta Selatan DKI Jakarta 12330<br />Telp: 0811 1889 3679 | Email: bintangmerahsejahtera@gmail.com";
+      "Bintaro Business Center<br />Jl RC Veteran Raya No 1i, Bintaro – Kec Pesanggrahan<br />Kota Jakarta Selatan DKI Jakarta 12330<br />Telp: 0811 1889 3679 | Email: admin@koperasibahtera.org";
 
     frontCard.appendChild(frontHeader);
     frontCard.appendChild(frontBody);
@@ -530,7 +530,7 @@ export default function ProfilePage() {
       margin-top: -10px;
     `;
     backFooter.innerHTML =
-      "Bintaro Business Center<br />Jl RC Veteran Raya No 1i, Bintaro – Kec Pesanggrahan<br />Kota Jakarta Selatan DKI Jakarta 12330<br />Telp: 0811 1889 3679 | Email: bintangmerahsejahtera@gmail.com";
+      "Bintaro Business Center<br />Jl RC Veteran Raya No 1i, Bintaro – Kec Pesanggrahan<br />Kota Jakarta Selatan DKI Jakarta 12330<br />Telp: 0811 1889 3679 | Email: admin@koperasibahtera.org";
 
     backCard.appendChild(backHeader);
     backCard.appendChild(backBody);

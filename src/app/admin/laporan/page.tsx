@@ -1,23 +1,23 @@
 "use client";
 
 import { AdminLayout } from "@/components/admin/AdminLayout";
-import { KetuaLayout } from "@/components/ketua/KetuaLayout";
 import { LaporanDataSection } from "@/components/admin/LaporanDataSection";
+import { KetuaLayout } from "@/components/ketua/KetuaLayout";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
-import * as XLSX from "xlsx-js-style";
 import {
-  RefreshCw,
-  Download,
-  FileText,
-  Users,
-  Trees as TreeIcon,
-  UserCheck,
-  UserX,
+    Download,
+    FileText,
+    RefreshCw,
+    Trees as TreeIcon,
+    UserCheck,
+    Users,
+    UserX,
 } from "lucide-react";
-import { useTheme } from "next-themes";
 import { useSession } from "next-auth/react";
+import { useTheme } from "next-themes";
 import { useEffect, useState } from "react";
+import * as XLSX from "xlsx-js-style";
 
 interface Tree {
   _id: string;
@@ -121,7 +121,7 @@ export default function LaporanPage() {
       [
         "Bintaro Business Center\nJl RC Veteran Raya No 1i, Bintaro - Kec Pesanggrahan Kota Jakarta Selatan DKI Jakarta 12330",
       ],
-      ["Tel: 081118893679 | Email: bintangmerahsejahtera@gmail.com"],
+      ["Tel: 081118893679 | Email: admin@koperasibahtera.org"],
       [""],
       ["LAPORAN ADMIN - SEMUA INVESTOR"],
       [
@@ -518,7 +518,7 @@ export default function LaporanPage() {
       [
         "Bintaro Business Center\nJl RC Veteran Raya No 1i, Bintaro - Kec Pesanggrahan Kota Jakarta Selatan DKI Jakarta 12330",
       ],
-      ["Tel: 081118893679 | Email: bintangmerahsejahtera@gmail.com"],
+      ["Tel: 081118893679 | Email: admin@koperasibahtera.org"],
       [""],
       [`LAPORAN INVESTOR - ${firstReport.investor.name.toUpperCase()}`],
       [
@@ -1134,7 +1134,7 @@ export default function LaporanPage() {
       38
     );
     doc.text(
-      "Tel: 081118893679 | Email: bintangmerahsejahtera@gmail.com",
+      "Tel: 081118893679 | Email: admin@koperasibahtera.org",
       55,
       44
     );

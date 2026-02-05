@@ -22,7 +22,7 @@ import {
   TrendingUp,
 } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   CartesianGrid,
   Cell,
@@ -117,7 +117,7 @@ export default function LaporanPengeluaranPage() {
   }, []);
 
   // Load total amountPaid from daily-incoming-investor (use summary if provided, fallback sum rows)
-  async function loadTotalIncomingPaid() {
+  const loadTotalIncomingPaid = useCallback(async () => {
     try {
       const qs = new URLSearchParams();
       if (startDate) qs.set("startDate", startDate);
@@ -161,10 +161,10 @@ export default function LaporanPengeluaranPage() {
       console.error("loadTotalIncomingPaid:", e);
       setTotalIncomingPaid(0);
     }
-  }
+  }, [startDate, endDate]);
 
   // Load total biaya pendaftaran (registration fees) — prefer summary, fallback sum payments.amount
-  async function loadTotalPendaftaran() {
+  const loadTotalPendaftaran = useCallback(async () => {
     try {
       const qs = new URLSearchParams();
       if (startDate) qs.set("startDate", startDate);
@@ -214,14 +214,14 @@ export default function LaporanPengeluaranPage() {
       console.error("loadTotalPendaftaran:", e);
       setTotalPendaftaran(0);
     }
-  }
+  }, [startDate, endDate]);
 
   useEffect(() => {
     // load both totals when date filters change
     loadTotalIncomingPaid();
     loadTotalPendaftaran();
     // reload when filter range changes
-  }, [startDate, endDate]);
+  }, [loadTotalIncomingPaid, loadTotalPendaftaran]);
 
   const loadData = async () => {
     try {

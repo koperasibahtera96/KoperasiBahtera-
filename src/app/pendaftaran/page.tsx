@@ -1,12 +1,12 @@
 "use client";
 
-import * as React from "react";
-import { Suspense, useState, useEffect } from "react";
-import { useSearchParams, useRouter, usePathname } from "next/navigation";
-import Link from "next/link"; // <-- tambah untuk toggle navigasi
 import { FinanceSidebar } from "@/components/finance/FinanceSidebar";
 import { Download, Search } from "lucide-react";
 import { useTheme } from "next-themes";
+import Link from "next/link"; // <-- tambah untuk toggle navigasi
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import * as React from "react";
+import { Suspense, useEffect, useState } from "react";
 
 // ============== XLSX dynamic import ==============
 let XLSXMod: any;
@@ -209,7 +209,7 @@ function Content() {
     name: "KOPERASI BINTANG MERAH SEJAHTERA",
     address:
       "Bintaro Business Center Jl RC Veteran Raya No 1i, Bintaro - Kec Pesanggrahan Kota Jakarta Selatan DKI Jakarta 12330",
-    contact: "Tel: +62 81118893679 | Email: bintangmerahsejahtera@gmail.com",
+    contact: "Tel: +62 81118893679 | Email: admin@koperasibahtera.org",
   };
 
   function buildRowsForExcel(all: PaymentData[]) {

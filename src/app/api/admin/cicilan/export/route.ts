@@ -1,11 +1,11 @@
-import { NextResponse } from "next/server";
-import * as XLSX from "xlsx-js-style";
+import { authOptions } from "@/lib/auth";
 import dbConnect from "@/lib/mongodb";
+import Contract from "@/models/Contract";
 import Payment from "@/models/Payment";
 import User from "@/models/User";
-import Contract from "@/models/Contract";
 import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { NextResponse } from "next/server";
+import * as XLSX from "xlsx-js-style";
 
 export async function GET() {
   try {
@@ -174,7 +174,7 @@ export async function GET() {
       [
         "Bintaro Business Center Jl RC Veteran Raya No 1i, Bintaro - Kec Pesanggrahan Kota Jakarta Selatan DKI Jakarta 12330",
       ],
-      ["Tel: +62 81118893679 | Email: bintangmerahsejahtera@gmail.com"],
+      ["Tel: +62 81118893679 | Email: admin@koperasibahtera.org"],
       ["LAPORAN CICILAN"],
       [
         `Dibuat pada: ${new Date().toLocaleDateString("id-ID", {

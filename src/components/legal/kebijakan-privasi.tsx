@@ -1,5 +1,4 @@
 
-import React from 'react';
 
 export const KebijakanPrivasiContent = () => (
   <div className="prose prose-sm max-w-none text-gray-700">
@@ -117,7 +116,7 @@ export const KebijakanPrivasiContent = () => (
     </p>
     <ul className="list-none space-y-1">
       <li><strong>Nomor Telepon:</strong> 081118893679</li>
-      <li><strong>Email:</strong> koperasibintangmerahsejahtera@gmail.com</li>
+      <li><strong>Email:</strong> koperasiadmin@koperasibahtera.org</li>
     </ul>
 
     <p className="mt-4">

@@ -242,7 +242,7 @@ export async function GET(req: NextRequest) {
       [
         "Bintaro Business Center Jl RC Veteran Raya No 1i, Bintaro - Kec Pesanggrahan Kota Jakarta Selatan DKI Jakarta 12330",
       ],
-      ["Tel: +62 81118893679 | Email: bintangmerahsejahtera@gmail.com"],
+      ["Tel: +62 81118893679 | Email: admin@koperasibahtera.org"],
       ["LAPORAN MARKETING"],
       [
         `Dibuat pada: ${new Date().toLocaleDateString("id-ID", {

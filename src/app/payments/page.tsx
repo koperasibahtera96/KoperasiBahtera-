@@ -642,10 +642,9 @@ export default function PaymentsPage() {
       pdf.setFontSize(12);
       pdf.setTextColor(0, 0, 0);
       pdf.setFont("helvetica", "bold");
-      pdf.text("SURAT PERJANJIAN KERJASAMA", 105, headerYPosition, {
+      pdf.text("PERSETUJUAN PENGELOLAAN SIMPANAN ANGGOTA", 105, headerYPosition, {
         align: "center",
       });
-      pdf.text("(KONTRAK)", 105, headerYPosition + 8, { align: "center" });
 
       pdf.setFontSize(10);
       pdf.setFont("helvetica", "normal");
@@ -971,7 +970,7 @@ export default function PaymentsPage() {
           content: [
             "Hal-hal yang belum diatur atau belum cukup diatur dalam perjanjian ini apabila dikemudian hari dibutuhkan dan dipandang perlu akan ditetapkan tersendiri secara musyawarah dan selanjutnya akan ditetapkan dalam suatu ADDENDUM yang berlaku mengikat bagi kedua belah pihak, yang akan direkatkan dan merupakan bagian yang tidak terpisahkan dari Perjanjian ini.",
             "",
-            "Demikianlah surat perjanjian kerjasama ini dibuat dalam rangkap 2 (dua), untuk masing-masing pihak, yang ditandatangani di atas kertas bermaterai cukup, yang masing-masing mempunyai kekuatan hukum yang sama dan berlaku sejak ditandatangani.",
+            "Demikianlah persetujuan pengelolaan simpanan anggota ini dibuat dalam rangkap 2 (dua), untuk masing-masing pihak, yang ditandatangani di atas kertas bermaterai cukup, yang masing-masing mempunyai kekuatan hukum yang sama dan berlaku sejak ditandatangani.",
           ],
         },
       ];
@@ -1037,7 +1036,8 @@ export default function PaymentsPage() {
 
       pdf.setFontSize(10);
       pdf.setFont("helvetica", "normal");
-      pdf.text(`Jakarta, ${closingDateStr}`, leftMargin, yPosition);
+      const pageWidth = pdf.internal.pageSize.width;
+      pdf.text(`Jakarta, ${closingDateStr}`, pageWidth - leftMargin, yPosition, { align: "right" });
       yPosition += lineHeight * 2;
 
       if (yPosition > 180) {
@@ -1049,17 +1049,13 @@ export default function PaymentsPage() {
       pdf.setFontSize(10);
       pdf.setFont("helvetica", "normal");
 
-      const pihakPertamaX = leftMargin + 30;
-      const pihakKeduaX = leftMargin + 120;
+      const centerX = pageWidth / 2;
 
-      pdf.text("Pihak Pertama", pihakPertamaX, yPosition);
-      pdf.text("Pihak Kedua", pihakKeduaX, yPosition);
+      pdf.text("Pihak Kedua", centerX, yPosition, { align: "center" });
 
       yPosition += lineHeight * 2;
 
-      const signatureAreaWidth = 80;
       const signatureAreaHeight = 25;
-      const signatureAreaX = pihakKeduaX - 25;
       const signatureStartY = yPosition;
 
       const nameYPosition =
@@ -1071,8 +1067,7 @@ export default function PaymentsPage() {
             throw new Error("signatureData is not a valid PNG base64 string");
           }
 
-          const signatureCenterX =
-            signatureAreaX + signatureAreaWidth / 2 - 60 / 2;
+          const signatureCenterX = centerX - 30;
           const signatureCenterY =
             signatureStartY + signatureAreaHeight / 2 - 15 / 2;
 
@@ -1091,19 +1086,15 @@ export default function PaymentsPage() {
           );
         }
       } else {
-        const placeholderX = signatureAreaX + signatureAreaWidth / 2 - 40;
+        const placeholderX = centerX - 40;
         const placeholderY = signatureStartY + signatureAreaHeight / 2;
         pdf.text("_________________", placeholderX, placeholderY);
       }
 
-      const halimX = leftMargin + 5;
-      pdf.text("Halim Perdana Kusuma, S.H., M.H.", halimX, nameYPosition);
-      pdf.text(`${contractData.investor.name}`, pihakKeduaX, nameYPosition);
+      pdf.text(`${contractData.investor.name}`, centerX, nameYPosition, { align: "center" });
 
       yPosition = nameYPosition;
       yPosition += lineHeight;
-
-      pdf.text("Ketua Koperasi", halimX, yPosition);
 
       yPosition += 50;
 

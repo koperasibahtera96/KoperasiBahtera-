@@ -520,15 +520,12 @@ export default function ContractPage() {
         console.warn("Could not load logo:", logoError);
         headerYPosition += 10; // Small space if no logo
       }
-
+      // Persetujuan Pengelolaan Simpanan Anggota
       // Header text positioned below logo
       pdf.setFontSize(12);
       pdf.setTextColor(0, 0, 0);
       pdf.setFont("helvetica", "bold");
-      pdf.text("SURAT PERJANJIAN KERJASAMA", 105, headerYPosition, {
-        align: "center",
-      });
-      pdf.text("(KONTRAK)", 105, headerYPosition + 8, {
+      pdf.text("PERSETUJUAN PENGELOLAAN SIMPANAN ANGGOTA", 105, headerYPosition, {
         align: "center",
       });
 
@@ -909,7 +906,7 @@ export default function ContractPage() {
           content: [
             "Hal-hal yang belum diatur atau belum cukup diatur dalam perjanjian ini apabila dikemudian hari dibutuhkan dan dipandang perlu akan ditetapkan tersendiri secara musyawarah dan selanjutnya akan ditetapkan dalam suatu ADDENDUM yang berlaku mengikat bagi kedua belah pihak, yang akan direkatkan dan merupakan bagian yang tidak terpisahkan dari Perjanjian ini.",
             "",
-            "Demikianlah surat perjanjian kerjasama ini dibuat, untuk masing-masing pihak, yang ditandatangani dan bermaterai cukup, yang masing-masing mempunyai kekuatan hukum yang sama dan berlaku sejak ditandatangani.",
+            "Demikianlah persetujuan pengelolaan simpanan anggota ini dibuat, untuk masing-masing pihak, yang ditandatangani dan bermaterai cukup, yang masing-masing mempunyai kekuatan hukum yang sama dan berlaku sejak ditandatangani.",
           ],
         },
       ];
@@ -978,46 +975,38 @@ export default function ContractPage() {
       });
 
       if (yPosition > 220) {
-        addPageNumber(); // Add page number to current page before adding new page
+        addPageNumber();
         pdf.addPage();
         yPosition = 20;
       }
 
-      pdf.setFontSize(10); // Ensure consistent font size
+      pdf.setFontSize(10);
       pdf.setFont("helvetica", "normal");
-      pdf.text(`Jakarta, ${closingDateStr}`, leftMargin, yPosition);
+      const pageWidth = pdf.internal.pageSize.width;
+      pdf.text(`Jakarta, ${closingDateStr}`, pageWidth - leftMargin, yPosition, { align: "right" });
       yPosition += lineHeight * 2;
 
-      // Signature Section (updated format)
       if (yPosition > 180) {
-        addPageNumber(); // Add page number to current page before adding new page
+        addPageNumber();
         pdf.addPage();
         yPosition = 20;
       }
 
-      pdf.setFontSize(10); // Ensure consistent font size
+      pdf.setFontSize(10);
       pdf.setFont("helvetica", "normal");
 
-      // Main signature headers - align them properly
-      const pihakPertamaX = leftMargin + 30;
-      const pihakKeduaX = leftMargin + 120;
+      const centerX = pageWidth / 2;
 
-      pdf.text("Pihak Pertama", pihakPertamaX, yPosition);
-      pdf.text("Pihak Kedua", pihakKeduaX, yPosition);
+      pdf.text("Pihak Kedua", centerX, yPosition, { align: "center" });
 
-      yPosition += lineHeight * 2; // Space after headers
+      yPosition += lineHeight * 2;
 
-      // Define the signature area dimensions and position
-      const signatureAreaWidth = 80;
       const signatureAreaHeight = 25;
-      const signatureAreaX = pihakKeduaX - 25; // Move more to the left
       const signatureStartY = yPosition;
 
-      // Names position (will be placed after signature area)
       const nameYPosition =
         signatureStartY + signatureAreaHeight + lineHeight * 1;
 
-      // Right side - Investor signature (centered in the allocated space)
       if (signatureDataURL) {
         try {
           if (!signatureDataURL.startsWith("data:image/png;base64,")) {
@@ -1026,20 +1015,17 @@ export default function ContractPage() {
             );
           }
 
-          // Center the signature both horizontally and vertically in the allocated space
-          // The signature should maintain its canvas positioning but be centered in the area
-          const signatureCenterX =
-            signatureAreaX + signatureAreaWidth / 2 - 60 / 2; // 60 is signature width
+          const signatureCenterX = centerX - 30;
           const signatureCenterY =
-            signatureStartY + signatureAreaHeight / 2 - 15 / 2; // 15 is signature height
+            signatureStartY + signatureAreaHeight / 2 - 15 / 2;
 
           pdf.addImage(
             signatureDataURL,
             "PNG",
             signatureCenterX,
             signatureCenterY,
-            60, // Reasonable signature width
-            15 // Reasonable signature height
+            60,
+            15
           );
         } catch (err: any) {
           showError(
@@ -1048,27 +1034,16 @@ export default function ContractPage() {
           );
         }
       } else {
-        // Show placeholder line if no signature
-        const placeholderX = signatureAreaX + signatureAreaWidth / 2 - 40;
+        const placeholderX = centerX - 40;
         const placeholderY = signatureStartY + signatureAreaHeight / 2;
         pdf.text("_________________", placeholderX, placeholderY);
       }
 
-      // Names under signatures - left aligned for Halim, aligned for investor with "Pihak Kedua"
-      const halimX = leftMargin + 5;
-      pdf.setFont("helvetica", "bold");
-      pdf.text("Halim Perdana Kusuma, S.H., M.H.", halimX, nameYPosition);
-      pdf.setFont("helvetica", "normal");
-
-      // Align investor name to start at the same position as "Pihak Kedua" text
-      pdf.text(`${contractData.investor.name}`, pihakKeduaX, nameYPosition);
+      pdf.text(`${contractData.investor.name}`, centerX, nameYPosition, { align: "center" });
 
       yPosition = nameYPosition;
 
       yPosition += lineHeight;
-
-      // Align "Ketua Koperasi" with the Halim text (same left position)
-      pdf.text("Ketua Koperasi", halimX, yPosition);
 
       yPosition += 50;
 
@@ -1094,7 +1069,6 @@ export default function ContractPage() {
 
       // Add page number to the final page
       addPageNumber();
-
 
       // Call API to mark contract as signed in database
       const response = await fetch(`/api/contract/${contractId}`, {
@@ -1204,7 +1178,7 @@ export default function ContractPage() {
             />
           </div>
           <h1 className="text-3xl font-bold text-[#324D3E] mb-2">
-            Surat Perjanjian Hak Kepemilikan Pohon
+          Persetujuan Pengelolaan Simpanan Anggota
           </h1>
           <p className="text-[#889063]">Koperasi Bintang Merah Sejahtera</p>
         </div>
@@ -1215,11 +1189,8 @@ export default function ContractPage() {
             {/* Contract Header */}
             <div className="text-center mb-8">
               <h1 className="text-2xl font-bold text-[#324D3E] mb-2">
-                SURAT PERJANJIAN KERJASAMA
+                PERSETUJUAN PENGELOLAAN SIMPANAN ANGGOTA
               </h1>
-              <h2 className="text-xl font-bold text-[#324D3E] mb-2">
-                (KONTRAK)
-              </h2>
               <p className="text-[#889063] mb-4">
                 Nomor: {contractData.contractNumber}
               </p>
@@ -1556,7 +1527,7 @@ export default function ContractPage() {
                         content: [
                           "Hal-hal yang belum diatur atau belum cukup diatur dalam perjanjian ini apabila dikemudian hari dibutuhkan dan dipandang perlu akan ditetapkan tersendiri secara musyawarah dan selanjutnya akan ditetapkan dalam suatu ADDENDUM yang berlaku mengikat bagi kedua belah pihak, yang akan direkatkan dan merupakan bagian yang tidak terpisahkan dari Perjanjian ini.",
                           "",
-                          "Demikianlah surat perjanjian kerjasama ini dibuat, untuk masing-masing pihak, yang ditandatangani dan bermaterai cukup, yang masing-masing mempunyai kekuatan hukum yang sama dan berlaku sejak ditandatangani.",
+                          "Demikianlah persetujuan pengelolaan simpanan anggota ini dibuat, untuk masing-masing pihak, yang ditandatangani dan bermaterai cukup, yang masing-masing mempunyai kekuatan hukum yang sama dan berlaku sejak ditandatangani.",
                         ],
                       },
                     ];
@@ -1586,7 +1557,7 @@ export default function ContractPage() {
 
                 {/* Closing */}
                 <div className="mt-8 pt-6 border-t border-gray-300">
-                  <p className="text-center text-sm">
+                  <p className="text-right text-sm">
                     Jakarta,{" "}
                     {new Date(contractData.contractDate).toLocaleDateString(
                       "id-ID",
@@ -1598,18 +1569,10 @@ export default function ContractPage() {
                     )}
                   </p>
 
-                  <div className="mt-8 grid grid-cols-2 gap-8">
-                    <div className="text-center">
-                      <p className="font-medium">Pihak Pertama</p>
-                      <div className="h-16 mb-2"></div>
-                      <p className="text-sm">
-                        Halim Perdana Kusuma, S.H., M.H.
-                      </p>
-                      <p className="text-xs text-gray-600">Ketua Koperasi</p>
-                    </div>
+                  <div className="mt-8 flex justify-center">
                     <div className="text-center">
                       <p className="font-medium">Pihak Kedua</p>
-                      <div className="h-16 mb-2 bg-yellow-50 border-2 border-dashed border-yellow-300 rounded flex items-center justify-center">
+                      <div className="h-16 mb-2 bg-yellow-50 border-2 border-dashed border-yellow-300 rounded flex items-center justify-center px-8">
                         <span className="text-xs text-yellow-600">
                           Area Tanda Tangan
                         </span>

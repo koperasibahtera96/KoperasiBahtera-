@@ -290,7 +290,7 @@ export function Footer() {
               </div>
               <div>
                 <p className="text-gray-300 mb-1">Email:</p>
-                <p className="text-green-400 font-medium">bintangmerahsejahtera@gmail.com</p>
+                <p className="text-green-400 font-medium">admin@koperasibahtera.org</p>
               </div>
               <div>
                 <p className="text-gray-300 mb-1">Alamat:</p>

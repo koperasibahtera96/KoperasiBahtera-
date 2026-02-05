@@ -1,9 +1,9 @@
+import dbConnect from "@/lib/mongodb";
+import Investor from "@/models/Investor";
+import PlantInstance from "@/models/PlantInstance";
+import User from "@/models/User";
 import { NextResponse } from "next/server";
 import * as XLSX from "xlsx-js-style";
-import dbConnect from "@/lib/mongodb";
-import PlantInstance from "@/models/PlantInstance";
-import Investor from "@/models/Investor";
-import User from "@/models/User";
 
 export async function GET() {
   try {
@@ -38,7 +38,7 @@ export async function GET() {
       [
         "Bintaro Business Center Jl RC Veteran Raya No 1i, Bintaro - Kec Pesanggrahan Kota Jakarta Selatan DKI Jakarta 12330",
       ],
-      ["Tel: +62 81118893679 | Email: bintangmerahsejahtera@gmail.com"],
+      ["Tel: +62 81118893679 | Email: admin@koperasibahtera.org"],
       ["LAPORAN DATA POHON"],
       [
         `Dibuat pada: ${new Date().toLocaleDateString("id-ID", {
