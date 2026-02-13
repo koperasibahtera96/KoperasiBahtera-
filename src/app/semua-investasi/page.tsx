@@ -115,7 +115,7 @@ export default function SemuaInvestasiPage() {
             <p className={getThemeClasses(
               "text-[#324D3E] dark:text-white text-lg font-medium mt-4 transition-colors duration-300",
               "!text-[#4c1d1d]"
-            )}>Memuat data investasi...</p>
+            )}>Memuat data simpanan...</p>
           </div>
         </div>
       </FinanceSidebar>
@@ -149,11 +149,11 @@ export default function SemuaInvestasiPage() {
             <h1 className={getThemeClasses(
               "text-2xl sm:text-3xl lg:text-4xl font-bold text-[#324D3E] dark:text-white mb-1 sm:mb-2 transition-colors duration-300",
               "!text-[#4c1d1d]"
-            )}>Semua Investasi Tanaman</h1>
+            )}>Semua Simpanan Tanaman</h1>
             <p className={getThemeClasses(
               "text-[#889063] dark:text-gray-300 text-sm sm:text-base lg:text-lg transition-colors duration-300",
               "!text-[#6b7280]"
-            )}>Daftar lengkap semua jenis tanaman investasi</p>
+            )}>Daftar lengkap semua jenis tanaman simpanan</p>
           </div>
         </motion.div>
 
@@ -204,7 +204,7 @@ export default function SemuaInvestasiPage() {
                   <span className={getThemeClasses(
                     "text-[#889063] dark:text-gray-200 font-medium text-sm sm:text-base transition-colors duration-300",
                     "!text-[#6b7280]"
-                  )}>Total Investasi</span>
+                  )}>Total Simpanan</span>
                   <span className={getThemeClasses(
                     "text-[#324D3E] dark:text-white font-bold text-sm sm:text-base break-all text-right transition-colors duration-300",
                     "!text-[#4c1d1d]"
@@ -251,7 +251,7 @@ export default function SemuaInvestasiPage() {
                   )}>
                     <Users className="h-3 w-3 sm:h-4 sm:w-4" />
                   </div>
-                  <span className="font-medium text-sm sm:text-base">{plant.investorCount} investor</span>
+                  <span className="font-medium text-sm sm:text-base">{plant.investorCount} anggota</span>
                 </div>
                 <Link href={`/tanaman/${plant.plantType.toLowerCase()}`} className="w-full sm:w-auto">
                   <motion.button
@@ -297,7 +297,7 @@ export default function SemuaInvestasiPage() {
               <p className={getThemeClasses(
                 "text-[#889063] dark:text-gray-200 transition-colors duration-300",
                 "!text-[#6b7280]"
-              )}>Tidak ada data investasi tanaman saat ini</p>
+              )}>Tidak ada data simpanan tanaman saat ini</p>
             </div>
           </motion.div>
         )}

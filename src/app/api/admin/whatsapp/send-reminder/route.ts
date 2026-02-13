@@ -50,8 +50,8 @@ export async function POST(req: NextRequest) {
     }
 
     // Generate WhatsApp message
-    const investorName = userInfo.fullName || "Investor";
-    const productName = payment.productName || "Investasi Hijau";
+    const investorName = userInfo.fullName || "Anggota";
+    const productName = payment.productName || "Simpanan Hijau";
     const dueDate = payment.dueDate.toLocaleDateString("id-ID");
     const amount = payment.installmentAmount || payment.amount;
 

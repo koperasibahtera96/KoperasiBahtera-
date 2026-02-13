@@ -3,28 +3,28 @@
 export function InvestmentRules() {
   const investmentRules = [
     {
-      title: "Investasi Hijau",
-      description: "Setiap Anggota dapat mengikuti program ini dengan min membeli 1 paket (10 pohon) investasi",
+      title: "Simpanan Hijau",
+      description: "Setiap Anggota dapat mengikuti program ini dengan mengkonversi simpanan wajib dengan 1 paket (10 pohon) tanaman",
       icon: "🌱"
     },
     {
       title: "Jangka Waktu",
-      description: "Investasi bersifat jangka menengah/panjang (5 – 7 tahun, tergantung jenis tanaman)",
+      description: "Simpanan bersifat jangka menengah/panjang (5 – 7 tahun, tergantung jenis tanaman)",
       icon: "⏰"
     },
     {
-      title: "Bagi Hasil",
-      description: "Hasil panen akan diberikan setelah dikurangi biaya – biaya lainnya",
+      title: "SHU",
+      description: "Sisa hasil usaha akan diberikan setelah dikurangi biaya – biaya lainnya",
       icon: "💰"
     },
     {
       title: "Transparansi",
-      description: "Investor mendapat laporan berkala mengenai pertumbuhan tanaman, perawatan tanaman, kondisi lahan, dan proyeksi keuntungan",
+      description: "Anggota mendapat laporan berkala mengenai pertumbuhan tanaman, perawatan tanaman, kondisi lahan, dan proyeksi keuntungan",
       icon: "📊"
     },
     {
       title: "Risiko",
-      description: "Investor menyadari bahwa investasi tanaman bergantung pada faktor alam, perawatan, serta pasar",
+      description: "Anggota menyadari bahwa simpanan tanaman bergantung pada faktor alam, perawatan, serta pasar",
       icon: "⚠️"
     },
     {
@@ -43,7 +43,7 @@ export function InvestmentRules() {
             <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
               <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd"/>
             </svg>
-            Aturan Investasi
+            Aturan Simpanan
           </div>
           <h2 className="text-4xl lg:text-5xl font-bold text-gray-900 mb-6 leading-tight">
             Ketentuan & <span className="text-emerald-600 relative">
@@ -52,16 +52,16 @@ export function InvestmentRules() {
             </span>
           </h2>
           <p className="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
-            Pahami dengan baik ketentuan dan aturan investasi kami untuk memastikan 
-            investasi Anda berjalan sesuai harapan dan memberikan hasil optimal.
+            Pahami dengan baik ketentuan dan aturan simpanan kami untuk memastikan
+            simpanan Anda berjalan sesuai harapan dan memberikan hasil optimal.
           </p>
         </div>
 
         {/* Rules Grid */}
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
           {investmentRules.map((rule, index) => (
-            <div 
-              key={index} 
+            <div
+              key={index}
               className="bg-white p-8 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-100 hover:border-red-200 hover:transform hover:scale-105"
             >
               <div className="flex items-start gap-4">
@@ -94,8 +94,8 @@ export function InvestmentRules() {
                 Penting untuk Diperhatikan
               </h3>
               <p className="text-gray-700 leading-relaxed">
-                Investasi tanaman adalah investasi jangka panjang yang memerlukan kesabaran dan pemahaman tentang risiko. 
-                Pastikan Anda membaca dan memahami seluruh ketentuan sebelum memulai investasi. 
+                Simpanan tanaman adalah simpanan jangka panjang yang memerlukan kesabaran dan pemahaman tentang risiko.
+                Pastikan Anda membaca dan memahami seluruh ketentuan sebelum memulai simpanan.
                 Konsultasikan dengan tim kami jika ada hal yang perlu diperjelas.
               </p>
             </div>

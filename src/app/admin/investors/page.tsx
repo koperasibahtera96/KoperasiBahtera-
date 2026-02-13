@@ -143,7 +143,7 @@ export default function InvestorsPage() {
       } else {
         showError(
           "Gagal memuat data",
-          "Tidak dapat mengambil data investor dari server"
+          "Tidak dapat mengambil data anggota dari server"
         );
       }
     } catch (error) {
@@ -218,7 +218,7 @@ export default function InvestorsPage() {
     if (!editingInvestor && !selectedUserId) {
       showError(
         "User Required",
-        "Please select a user to create an investor account"
+        "Please select a user to create a member account"
       );
       return;
     }
@@ -235,12 +235,12 @@ export default function InvestorsPage() {
         if (response.ok) {
           // Refresh the investors list
           fetchInvestors();
-          showSuccess("Berhasil!", "Data investor berhasil diperbarui");
+          showSuccess("Berhasil!", "Data anggota berhasil diperbarui");
         } else {
           const errorData = await response.json();
           showError(
             "Gagal memperbarui",
-            errorData.error || "Terjadi kesalahan saat memperbarui investor"
+            errorData.error || "Terjadi kesalahan saat memperbarui anggota"
           );
         }
       } else {
@@ -256,12 +256,12 @@ export default function InvestorsPage() {
         if (response.ok) {
           // Refresh the investors list
           fetchInvestors();
-          showSuccess("Berhasil!", "Investor baru berhasil ditambahkan");
+          showSuccess("Berhasil!", "Anggota baru berhasil ditambahkan");
         } else {
           const errorData = await response.json();
           showError(
             "Gagal menambahkan",
-            errorData.error || "Terjadi kesalahan saat menambahkan investor"
+            errorData.error || "Terjadi kesalahan saat menambahkan anggota"
           );
         }
       }
@@ -315,12 +315,12 @@ export default function InvestorsPage() {
         if (response.ok) {
           // Refresh the investors list
           fetchInvestors();
-          showSuccess("Berhasil!", `Investor "${name}" berhasil dihapus`);
+          showSuccess("Berhasil!", `Anggota "${name}" berhasil dihapus`);
         } else {
           const errorData = await response.json();
           showError(
             "Gagal menghapus",
-            errorData.error || "Terjadi kesalahan saat menghapus investor"
+            errorData.error || "Terjadi kesalahan saat menghapus anggota"
           );
         }
       } catch (error) {
@@ -433,7 +433,7 @@ export default function InvestorsPage() {
 
         // Generate filename with current date
         const date = new Date().toISOString().split("T")[0];
-        link.download = `data-investor-${date}.xlsx`;
+        link.download = `data-anggota-${date}.xlsx`;
 
         document.body.appendChild(link);
         link.click();
@@ -442,7 +442,7 @@ export default function InvestorsPage() {
         // Clean up the blob URL
         window.URL.revokeObjectURL(url);
 
-        showSuccess("Berhasil!", "Data investor berhasil diekspor!");
+        showSuccess("Berhasil!", "Data anggota berhasil diekspor!");
       } else {
         const result = await response.json();
         showError("Gagal Export", result.error || "Gagal mengekspor data");
@@ -471,7 +471,7 @@ export default function InvestorsPage() {
                 "!text-[#4c1d1d]"
               )}
             >
-              Manajemen Investor
+              Manajemen Anggota
             </h1>
             <p
               className={getThemeClasses(
@@ -479,7 +479,7 @@ export default function InvestorsPage() {
                 "!text-[#6b7280]"
               )}
             >
-              Kelola data investor dan portfolio mereka
+              Kelola data anggota dan portfolio mereka
             </p>
           </div>
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3">
@@ -532,7 +532,7 @@ export default function InvestorsPage() {
                   "!text-[#6b7280]"
                 )}
               >
-                <Users className="inline-block w-4 h-4 mr-2" /> Total Investor
+                <Users className="inline-block w-4 h-4 mr-2" /> Total Anggota
               </p>
               <p
                 className={getThemeClasses(
@@ -558,7 +558,7 @@ export default function InvestorsPage() {
                   "!text-[#6b7280]"
                 )}
               >
-                <CheckCircle className="inline-block w-4 h-4 mr-2" /> Investor
+                <CheckCircle className="inline-block w-4 h-4 mr-2" /> Anggota
                 Aktif
               </p>
               <p
@@ -612,7 +612,7 @@ export default function InvestorsPage() {
                 )}
               >
                 <DollarSign className="inline-block w-4 h-4 mr-2" /> Total
-                Investasi
+                Simpanan
               </p>
               <div className="flex flex-col">
                 <p
@@ -637,7 +637,7 @@ export default function InvestorsPage() {
             <div className="flex-1">
               <input
                 type="text"
-                placeholder="Cari investor berdasarkan nama atau email..."
+                placeholder="Cari anggota berdasarkan nama atau email..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full px-4 py-2 border border-[#324D3E]/20 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 focus:ring-2 focus:ring-[#324D3E]/20 focus:border-[#324D3E] text-[#324D3E] dark:text-white placeholder-[#889063] dark:placeholder-gray-300 transition-colors duration-300"
@@ -663,13 +663,13 @@ export default function InvestorsPage() {
               <thead className="bg-[#324D3E]/5 dark:bg-gray-700/50 transition-colors duration-300">
                 <tr>
                   <th className="px-3 lg:px-6 py-4 text-left text-xs font-medium text-[#324D3E] dark:text-white uppercase tracking-wider transition-colors duration-300">
-                    Investor
+                    Anggota
                   </th>
                   <th className="hidden md:table-cell px-3 lg:px-6 py-4 text-left text-xs font-medium text-[#324D3E] dark:text-white uppercase tracking-wider transition-colors duration-300">
                     Email
                   </th>
                   <th className="px-3 lg:px-6 py-4 text-left text-xs font-medium text-[#324D3E] dark:text-white uppercase tracking-wider transition-colors duration-300">
-                    Investasi
+                    Simpanan
                   </th>
                   <th className="hidden lg:table-cell px-3 lg:px-6 py-4 text-left text-xs font-medium text-[#324D3E] dark:text-white uppercase tracking-wider transition-colors duration-300">
                     Pohon
@@ -692,7 +692,7 @@ export default function InvestorsPage() {
                       <div className="flex items-center justify-center">
                         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-500"></div>
                         <span className="ml-2 text-gray-600 dark:text-gray-200 transition-colors duration-300">
-                          Memuat data investor...
+                          Memuat data anggota...
                         </span>
                       </div>
                     </td>
@@ -703,7 +703,7 @@ export default function InvestorsPage() {
                       colSpan={7}
                       className="px-6 py-12 text-center text-gray-500 dark:text-gray-200 transition-colors duration-300"
                     >
-                      Belum ada data investor
+                      Belum ada data anggota
                     </td>
                   </tr>
                 ) : (
@@ -847,7 +847,7 @@ export default function InvestorsPage() {
                   "!text-[#4c1d1d]"
                 )}
               >
-                {editingInvestor ? "Edit Investor" : "Tambah Investor Baru"}
+                {editingInvestor ? "Edit Anggota" : "Tambah Anggota Baru"}
               </h2>
             </div>
 
@@ -863,14 +863,14 @@ export default function InvestorsPage() {
                     options={[
                       {
                         value: "",
-                        label: "Pilih user untuk dijadikan investor...",
+                        label: "Pilih user untuk dijadikan anggota...",
                       },
                       ...users.map((user) => ({
                         value: user._id,
                         label: `${user.fullName} (${user.email})`,
                       })),
                     ]}
-                    placeholder="Pilih user untuk dijadikan investor..."
+                    placeholder="Pilih user untuk dijadikan anggota..."
                   />
                   <p className="text-sm text-gray-500 dark:text-gray-200 mt-1 transition-colors duration-300">
                     Nama dan email akan otomatis terisi setelah memilih user
@@ -908,14 +908,14 @@ export default function InvestorsPage() {
                       setFormData({ ...formData, email: e.target.value })
                     }
                     className="w-full px-3 py-2 border border-[#324D3E]/20 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 focus:ring-2 focus:ring-[#324D3E]/20 focus:border-[#324D3E] text-[#324D3E] dark:text-white placeholder-[#889063] dark:placeholder-gray-300 transition-colors duration-300"
-                    placeholder="investor@email.com"
+                    placeholder="anggota@email.com"
                     readOnly={!editingInvestor && selectedUserId !== ""}
                   />
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-[#324D3E] dark:text-white mb-2 transition-colors duration-300">
-                    Total Investasi (IDR)
+                    Total Simpanan (IDR)
                   </label>
                   <input
                     type="text"
@@ -979,7 +979,7 @@ export default function InvestorsPage() {
                     "!bg-gradient-to-r !from-[#FFC1CC] !to-[#FFDEE9] !text-[#4c1d1d] !shadow-md"
                   )}
                 >
-                  {editingInvestor ? "Update Investor" : "Tambah Investor"}
+                  {editingInvestor ? "Update Anggota" : "Tambah Anggota"}
                 </button>
                 <button
                   type="button"

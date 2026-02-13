@@ -111,10 +111,10 @@ function exportAllAsXls(args: {
     <div class="header">RINGKASAN</div>
     <table>
       <tr><th>Keterangan</th><th>Nilai</th></tr>
-      <tr><td>Total Investasi</td><td class="right">${fmtIDR(totalInvestAll)}</td></tr>
+      <tr><td>Total Simpanan</td><td class="right">${fmtIDR(totalInvestAll)}</td></tr>
       <tr><td>Total Profit (Net)</td><td class="right">${fmtIDR(totalNet)}</td></tr>
       <tr><td>ROI (Profit/Invest)</td><td class="right">${roiPct.toFixed(2)}%</td></tr>
-      <tr><td>Jumlah Investor</td><td class="right">${investorCount}</td></tr>
+      <tr><td>Jumlah Anggota</td><td class="right">${investorCount}</td></tr>
       <tr><td>Jumlah Kontrak</td><td class="right">${contractsCount}</td></tr>
     </table>
 
@@ -154,9 +154,9 @@ function exportAllAsXls(args: {
       <tr>
         <th>No</th>
         <th>No Anggota</th>
-        <th>Nama Investor</th>
+        <th>Nama Anggota</th>
         <th>Kode Blok/Paket</th>
-        <th>Total Investasi</th>
+        <th>Total Simpanan</th>
         <th>Total Profit</th>
         <th>ROI Individu</th>
       </tr>
@@ -391,7 +391,7 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
               "text-[#324D3E] dark:text-white text-lg font-medium mt-4 transition-colors duration-300",
               "!text-[#4c1d1d]"
             )}>
-              Memuat ringkasan investasi...
+              Memuat ringkasan simpanan...
             </p>
           </div>
         </div>
@@ -423,7 +423,7 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
                     "text-2xl sm:text-3xl lg:text-4xl font-bold text-[#324D3E] dark:text-white mb-1 transition-colors duration-300",
                     "!text-[#4c1d1d]"
                   )}>
-                    Ringkasan Investasi {plantTypeMeta.name}
+                    Ringkasan Simpanan {plantTypeMeta.name}
                   </h1>
                   <p className={getThemeClasses(
                     "text-[#889063] dark:text-gray-200 text-sm sm:text-base transition-colors duration-300",
@@ -510,7 +510,7 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
             transition={{ duration: 0.6, delay: 0.2 }}
           >
             <SummaryCard
-              title="Total Investasi"
+              title="Total Simpanan"
               value={fmtIDR(perInvestor.totalInvestAll)}
               icon={<DollarSign className="h-5 w-5" />}
               colorClass="text-chart-1"
@@ -535,7 +535,7 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
               colorClass="text-chart-3"
             />
             <SummaryCard
-              title="Jumlah Investor"
+              title="Jumlah Anggota"
               value={`${perInvestor.rows.length}`}
               icon={<Users className="h-5 w-5" />}
               colorClass="text-chart-4"
@@ -614,7 +614,7 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
               </div>
             </div>
 
-            {/* Distribusi Investasi Per Investor */}
+            {/* Distribusi Simpanan Per Anggota */}
             <div className={getThemeClasses(
               "bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl rounded-3xl p-6 sm:p-8 shadow-xl border border-[#324D3E]/10 dark:border-gray-700 transition-colors duration-300",
               "!bg-white/95 !border-[#FFC1CC]/30 "
@@ -623,7 +623,7 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
                 "text-lg sm:text-xl font-bold text-[#324D3E] dark:text-white mb-6 text-center border-b-2 border-[#324D3E]/10 dark:border-gray-600 pb-4 transition-colors duration-300",
                 "!text-[#4c1d1d] !border-[#FFC1CC]/30"
               )}>
-                Distribusi Investasi per Investor
+                Distribusi Simpanan per Anggota
               </h3>
               <div className="h-64 sm:h-80">
                 <ResponsiveContainer width="100%" height="100%">
@@ -655,7 +655,7 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
                       ))}
                     </Pie>
                     <Tooltip
-                      formatter={(v: number | undefined) => [fmtIDR(v ?? 0), "Investasi"]}
+                      formatter={(v: number | undefined) => [fmtIDR(v ?? 0), "Simpanan"]}
                       contentStyle={mounted && theme === "pink" ? {
                         backgroundColor: "#ffffff",
                         border: "2px solid #FFC1CC",
@@ -685,7 +685,7 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
                     "!bg-white/95 !border-[#FFC1CC]/30 !text-[#4c1d1d] hover:!bg-[#FFC1CC] hover:!text-black "
                   )}
                 >
-                  {showInvestorList ? "Tutup Daftar Investor" : "Tampilkan Daftar Investor"}
+                  {showInvestorList ? "Tutup Daftar Anggota" : "Tampilkan Daftar Anggota"}
                 </button>
               </div>
               {showInvestorList && (
@@ -706,7 +706,7 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
                         <p className={getThemeClasses(
                           "text-sm text-[#889063] dark:text-gray-300 text-center",
                           "!text-[#6b7280]"
-                        )}>Belum ada data investor.</p>
+                        )}>Belum ada data anggota.</p>
                       );
                     }
                     return (
@@ -930,7 +930,7 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
               "text-xl font-bold text-[#324D3E] dark:text-white transition-colors duration-300",
               "!text-[#4c1d1d]"
             )}>
-              Rincian Per Investor
+              Rincian Per Anggota
             </h2>
           </div>
 
@@ -951,7 +951,7 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
                     "py-3 pr-4 text-right font-semibold text-[#324D3E] dark:text-white transition-colors duration-300",
                     "!text-[#4c1d1d]"
                   )}>
-                    Total Investasi
+                    Total Simpanan
                   </th>
                   <th className={getThemeClasses(
                     "py-3 pr-4 text-right font-semibold text-[#324D3E] dark:text-white transition-colors duration-300",
@@ -977,7 +977,7 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
                         "!text-[#6b7280]"
                       )}
                     >
-                      Belum ada data investasi untuk tipe ini.
+                      Belum ada data simpanan untuk tipe ini.
                     </td>
                   </tr>
                 ) : (

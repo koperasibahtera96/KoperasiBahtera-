@@ -7,7 +7,7 @@ import { cn } from '@/lib/utils';
 const heroSlides = [
   {
     id: 1,
-    title: "Investasi Hijau, Hijaukan Bumi Sejahterakan Hati",
+    title: "Simpanan Hijau, Hijaukan Bumi Sejahterakan Hati",
     subtitle: "Koperasi Bintang Merah Sejahtera",
     description: "Bersama membangun masa depan hijau dan berkontribusi pada kelestarian lingkungan. Investasi tanaman berkelanjutan dengan sistem koperasi terpercaya.",
     image: "https://images.unsplash.com/photo-1416879595882-3373a0480b5b?ixlib=rb-4.0.3&auto=format&fit=crop&w=2340&q=80",
@@ -17,13 +17,13 @@ const heroSlides = [
     id: 2,
     title: "Tanaman Multi-Komoditas Premium",
     subtitle: "Aren, Jengkol, Gaharu, Alpukat",
-    description: "Investasi pada tanaman produktif bernilai tinggi. Dari Rp 500.000 per pohon dengan sistem cicilan mulai Rp 8.333 per bulan.",
+    description: "Simpanan pada tanaman produktif bernilai tinggi. Dari Rp 500.000 per pohon dengan sistem cicilan mulai Rp 8.333 per bulan.",
     image: "https://images.unsplash.com/photo-1574323347407-f5e1ad6d020b?ixlib=rb-4.0.3&auto=format&fit=crop&w=2340&q=80",
     cta: "Lihat Paket Investasi"
   },
   {
     id: 3,
-    title: "Investasi Jangka Panjang Menguntungkan",
+    title: "Simpanan Jangka Panjang Menguntungkan",
     subtitle: "5-7 Tahun, Hasil Berlipat",
     description: "Program penghijauan berbasis tanaman multi-komoditas di kawasan Hutan Produksi. Transparansi penuh dengan laporan berkala.",
     image: "https://images.unsplash.com/photo-1465146344425-f00d5f5c8f07?ixlib=rb-4.0.3&auto=format&fit=crop&w=2340&q=80",
@@ -186,7 +186,7 @@ export function HeroCarousel() {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
             <div>
               <div className="text-2xl lg:text-3xl font-bold text-green-600 mb-1">5000+</div>
-              <div className="text-gray-600 text-sm">Investor Terpercaya</div>
+              <div className="text-gray-600 text-sm">Anggota Terpercaya</div>
             </div>
             <div>
               <div className="text-2xl lg:text-3xl font-bold text-green-600 mb-1">25%</div>

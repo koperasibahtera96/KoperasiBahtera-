@@ -20,7 +20,7 @@ interface KetuaLayoutProps {
 
 // Only the 3 pages that Ketua can access (read-only)
 const navigation = [
-  { name: "Manajemen Investor", href: "/admin/investors", icon: Users, color: "text-purple-600" },
+  { name: "Manajemen Anggota", href: "/admin/investors", icon: Users, color: "text-purple-600" },
   { name: "Data Pohon", href: "/admin/trees", icon: Trees, color: "text-emerald-600" },
   { name: "Laporan", href: "/admin/laporan", icon: TrendingUp, color: "text-cyan-600" },
 ];

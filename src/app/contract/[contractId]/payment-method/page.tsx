@@ -102,7 +102,7 @@ export default function PaymentMethodPage() {
           </div>
           <p className="text-gray-600 text-sm sm:text-base font-[family-name:var(--font-poppins)] max-w-2xl mx-auto">
             Silakan pilih metode pembayaran yang Anda inginkan untuk
-            menyelesaikan investasi Anda
+            menyelesaikan simpanan Anda
           </p>
         </div>
 

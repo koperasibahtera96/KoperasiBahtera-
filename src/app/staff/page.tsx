@@ -766,7 +766,7 @@ export default function StaffPage() {
                   "!text-[#6b7280]"
                 )}
               >
-                Investasi sekali bayar
+                Simpanan sekali bayar
               </p>
             </div>
           </motion.div>

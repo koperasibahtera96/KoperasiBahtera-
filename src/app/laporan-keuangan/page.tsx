@@ -75,22 +75,22 @@ export default function LaporanKeuanganPage() {
         <body>
       `
 
-      html += `<div class="title">Ringkasan Investasi - Semua Tanaman</div>`
+      html += `<div class="title">Ringkasan Simpanan - Semua Tanaman</div>`
 
       // RINGKASAN KESELURUHAN Section
       html += `<div class="header">RINGKASAN KESELURUHAN</div>`
       html += `<table>`
       html += `<tr><th>Keterangan</th><th>Nilai</th></tr>`
-      html += `<tr><td>Total Investasi</td><td>Rp ${overallTotals.invest.toLocaleString("id-ID")}</td></tr>`
+      html += `<tr><td>Total Simpanan</td><td>Rp ${overallTotals.invest.toLocaleString("id-ID")}</td></tr>`
       html += `<tr><td>Total Keuntungan</td><td>Rp ${overallTotals.profit.toLocaleString("id-ID")}</td></tr>`
       html += `<tr><td>ROI Keseluruhan</td><td>${overallROI.toFixed(2)}%</td></tr>`
-      html += `<tr><td>Jumlah Investor</td><td>${overallTotals.investors}</td></tr>`
+      html += `<tr><td>Jumlah Anggota</td><td>${overallTotals.investors}</td></tr>`
       html += `</table>`
 
       // DETAIL PER TANAMAN Section
       html += `<div class="header">DETAIL PER TANAMAN</div>`
       html += `<table>`
-      html += `<tr><th>Nama Tanaman</th><th>Total Investasi</th><th>Total Keuntungan</th><th>ROI Rata-rata</th><th>Jumlah Investor</th><th>Jumlah Pohon</th></tr>`
+      html += `<tr><th>Nama Tanaman</th><th>Total Simpanan</th><th>Total Keuntungan</th><th>ROI Rata-rata</th><th>Jumlah Anggota</th><th>Jumlah Pohon</th></tr>`
       plantsSummary.forEach((plant: any) => {
         html += `<tr><td>${plant.name}</td><td>Rp ${plant.totalInvestment.toLocaleString("id-ID")}</td><td>Rp ${plant.totalProfit.toLocaleString("id-ID")}</td><td>${(plant.averageROI * 100).toFixed(2)}%</td><td>${plant.totalInvestors}</td><td>${plant.instanceCount}</td></tr>`
       })
@@ -104,7 +104,7 @@ export default function LaporanKeuanganPage() {
       const url = URL.createObjectURL(blob)
 
       link.setAttribute("href", url)
-      link.setAttribute("download", "ringkasan-investasi.xls")
+      link.setAttribute("download", "ringkasan-simpanan.xls")
       link.style.visibility = "hidden"
 
       document.body.appendChild(link)
@@ -140,13 +140,13 @@ export default function LaporanKeuanganPage() {
 
         <div className="mb-6">
           <h1 className="text-2xl font-bold text-white mb-2">Laporan Keuangan</h1>
-          <p className="text-slate-400">Investasi per Jenis Tanaman</p>
+          <p className="text-slate-400">Simpanan per Jenis Tanaman</p>
         </div>
 
         {/* Summary Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
           <SummaryCard
-            title="Total Investasi"
+            title="Total Simpanan"
             value={fmtIDR(overallTotals.invest)}
             icon={<DollarSign className="h-5 w-5" />}
             bgColor="from-blue-500 to-blue-600"
@@ -238,7 +238,7 @@ export default function LaporanKeuanganPage() {
                   <div className="rounded-xl bg-slate-700 p-4">
                     <div className="flex items-center gap-2 mb-2">
                       <DollarSign className="h-4 w-4 text-blue-400" />
-                      <span className="text-sm font-medium text-slate-300">Total Investasi</span>
+                      <span className="text-sm font-medium text-slate-300">Total Simpanan</span>
                     </div>
                     <div className="text-lg font-bold text-white">{fmtIDR(plant.totalInvestment)}</div>
                   </div>
@@ -262,7 +262,7 @@ export default function LaporanKeuanganPage() {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2 text-sm text-slate-400">
                     <Users className="h-4 w-4" />
-                    <span>{plant.totalInvestors} investor aktif</span>
+                    <span>{plant.totalInvestors} anggota aktif</span>
                   </div>
                   <Link
                     href={`/tanaman/${plant.id}`}

@@ -2,9 +2,9 @@
 
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import { motion } from 'framer-motion';
-import { RefreshCw, Users, TreePine, DollarSign, TrendingUp, Sprout, CreditCard, CheckCircle, UserCog, Stamp, Percent } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { CheckCircle, CreditCard, DollarSign, Percent, RefreshCw, Sprout, Stamp, TreePine, TrendingUp, UserCog, Users } from 'lucide-react';
 import { useTheme } from 'next-themes';
+import { useEffect, useState } from 'react';
 
 interface DashboardData {
   stats: {
@@ -212,7 +212,7 @@ export default function AdminDashboard() {
 
   const stats = [
     {
-      name: 'Total Investor',
+      name: 'Total Anggota',
       value: dashboardData.stats.totalInvestors.toLocaleString('id-ID'),
       change: dashboardData.stats.monthlyGrowth.investors,
       changeType: dashboardData.stats.monthlyGrowth.investors.startsWith('+') || dashboardData.stats.monthlyGrowth.investors === '0%' ? 'positive' : 'negative',
@@ -228,7 +228,7 @@ export default function AdminDashboard() {
       color: 'green'
     },
     {
-      name: 'Investasi Aktif',
+      name: 'Simpanan Aktif',
       value: dashboardData.stats.activeInvestment,
       change: dashboardData.stats.monthlyGrowth.investment,
       changeType: dashboardData.stats.monthlyGrowth.investment.startsWith('+') || dashboardData.stats.monthlyGrowth.investment === '0%' ? 'positive' : 'negative',
@@ -338,7 +338,7 @@ export default function AdminDashboard() {
           >
             <div className={getThemeClasses("p-6 border-b border-[#324D3E]/10 dark:border-gray-700 transition-colors duration-300", "!border-[#FFC1CC]/30")}>
               <div className="flex items-center justify-between">
-                <h2 className={getThemeClasses("text-xl font-bold text-[#324D3E] dark:text-white font-[family-name:var(--font-poppins)] transition-colors duration-300", "!text-[#4c1d1d] dark:!text-white")}>Investor Terbaru</h2>
+                <h2 className={getThemeClasses("text-xl font-bold text-[#324D3E] dark:text-white font-[family-name:var(--font-poppins)] transition-colors duration-300", "!text-[#4c1d1d] dark:!text-white")}>Anggota Terbaru</h2>
                 <button
                   onClick={() => window.location.href = '/admin/investors'}
                   className={getThemeClasses("text-[#4C3D19] dark:text-green-400 hover:text-[#324D3E] dark:hover:text-green-300 font-medium text-sm transition-colors", "!text-[#6b7280] hover:!text-[#831843] dark:!text-green-400 dark:hover:!text-green-300")}
@@ -350,7 +350,7 @@ export default function AdminDashboard() {
             <div className="p-6">
               <div className="space-y-4">
                 {dashboardData.recentInvestors.length === 0 ? (
-                  <div className={getThemeClasses("text-center py-8 text-gray-500 dark:text-gray-400 transition-colors duration-300", "!text-[#6b7280]")}>                    Belum ada investor
+                  <div className={getThemeClasses("text-center py-8 text-gray-500 dark:text-gray-400 transition-colors duration-300", "!text-[#6b7280]")}>                    Belum ada anggota
                   </div>
                 ) : (
                   dashboardData.recentInvestors.map((investor) => (
@@ -547,8 +547,8 @@ export default function AdminDashboard() {
                 <UserCog className={getThemeClasses("w-5 h-5 text-[#324D3E]", "!text-[#4c1d1d]")} />
               </div>
               <div className="text-left">
-                <p className={getThemeClasses("font-medium text-[#324D3E] dark:text-white", "!text-[#4c1d1d] dark:!text-white")}>Kelola Investor</p>
-                <p className={getThemeClasses("text-sm text-[#889063] dark:text-gray-300", "!text-[#6b7280] dark:!text-gray-300")}>Lihat dan kelola investor</p>
+                <p className={getThemeClasses("font-medium text-[#324D3E] dark:text-white", "!text-[#4c1d1d] dark:!text-white")}>Kelola Anggota</p>
+                <p className={getThemeClasses("text-sm text-[#889063] dark:text-gray-300", "!text-[#6b7280] dark:!text-gray-300")}>Lihat dan kelola anggotainvestor</p>
               </div>
             </button>
 

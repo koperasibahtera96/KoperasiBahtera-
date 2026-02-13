@@ -472,7 +472,7 @@ export function exportAllPlantsCSV() {
   const plantsSummary = getPlantTypesSummary();
 
   const csvContent = [
-    "Jenis Tanaman;Total Investasi;Total Keuntungan;ROI;Jumlah Investor;Jumlah Pohon",
+    "Jenis Tanaman;Total Simpanan;Total Keuntungan;ROI;Jumlah Anggota;Jumlah Pohon",
     ...plantsSummary.map(
       (plant: any) =>
         `${plant.name};${plant.totalInvestment};${plant.totalProfit};${(
@@ -504,13 +504,13 @@ export function exportCompleteReportCSV(plantTypeId: string) {
   const csvContent = [
     "Laporan Lengkap;Nilai",
     `Jenis Tanaman;${report.plantType}`,
-    `Total Investasi;${report.totalInvestment}`,
+    `Total Simpanan;${report.totalInvestment}`,
     `Total Keuntungan;${report.totalProfit}`,
     `Total Biaya Operasional;${report.totalOperationalCosts}`,
     `Keuntungan Bersih;${report.netProfit}`,
     `ROI;${report.roi.toFixed(2)}%`,
     `Jumlah Pohon;${report.instances}`,
-    `Jumlah Investor;${report.investors}`,
+    `Jumlah Anggota;${report.investors}`,
   ].join("\n");
 
   downloadCSV(
@@ -580,13 +580,13 @@ export function exportYearlyReportCSV(plantTypeId: string) {
   const csvContent = [
     "Laporan Tahunan;2024",
     `Jenis Tanaman;${report.plantType}`,
-    `Total Investasi;${report.totalInvestment}`,
+    `Total Simpanan;${report.totalInvestment}`,
     `Total Pendapatan;${report.totalProfit}`,
     `Total Pengeluaran;${report.totalOperationalCosts}`,
     `Keuntungan Bersih;${report.netProfit}`,
     `ROI Tahunan;${report.roi.toFixed(2)}%`,
     `Jumlah Pohon Aktif;${report.instances}`,
-    `Total Investor;${report.investors}`,
+    `Total Anggota;${report.investors}`,
   ].join("\n");
 
   downloadCSV(csvContent, `laporan-tahunan-${plantTypeId}-2024.csv`);
@@ -629,7 +629,7 @@ export function exportInvestorReportCSV(plantTypeId: string) {
   );
 
   const csvContent = [
-    "Nama Investor;Pohon;Investasi;Tanggal Investasi;Keuntungan;ROI",
+    "Nama Anggota;Pohon;Simpanan;Tanggal Simpanan;Keuntungan;ROI",
     ...investorData.map(
       (data) =>
         `${data.name};${data.plantInstance};${data.investment};${data.investDate};${data.profit};${data.roi}%`
@@ -666,12 +666,12 @@ export function exportMemberDetailCSV(memberId: string) {
     `Telepon;${member.phone}`,
     `Lokasi;${member.location}`,
     `Tanggal Bergabung;${member.joinDate}`,
-    `Total Investasi;${member.totalInvestment}`,
+    `Total Simpanan;${member.totalInvestment}`,
     `Total Keuntungan;${member.totalProfit}`,
     `ROI Keseluruhan;${member.overallROI.toFixed(2)}%`,
     "",
-    "Investasi Detail;",
-    "Nama Pohon;Jumlah Investasi;Keuntungan;ROI;Tanggal Investasi",
+    "Simpanan Detail;",
+    "Nama Pohon;Jumlah Simpanan;Keuntungan;ROI;Tanggal Simpanan",
     ...member.investments.map(
       (inv) =>
         `${inv.plantName};${inv.amount};${inv.profit.toFixed(

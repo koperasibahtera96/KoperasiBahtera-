@@ -55,7 +55,7 @@ const navigation = [
   //   color: "text-orange-600",
   // },
   {
-    name: "Manajemen Investor",
+    name: "Manajemen Anggota",
     href: "/admin/investors",
     icon: Users,
     color: "text-purple-600",

@@ -271,7 +271,7 @@ export function LaporanDataSection({
           <div className="text-sm text-[#889063] dark:text-gray-200">
             Menampilkan {reportData.pagination.startIndex}-
             {reportData.pagination.endIndex} dari{" "}
-            {reportData.pagination.totalItems} investor
+            {reportData.pagination.totalItems} anggota
             {searchTerm && ` (hasil pencarian untuk "${searchTerm}")`}
           </div>
         </div>
@@ -287,8 +287,8 @@ export function LaporanDataSection({
             )}
           >
             {searchTerm
-              ? "Tidak ada investor yang sesuai dengan pencarian"
-              : "Belum ada data investor"}
+              ? "Tidak ada anggota yang sesuai dengan pencarian"
+              : "Belum ada data anggota"}
           </div>
         ) : (
           Object.values(
@@ -515,7 +515,7 @@ export function LaporanDataSection({
                     {groupedReport.trees.length === 0 ? (
                       <p className="text-center py-4 text-gray-500 dark:text-gray-200 transition-colors duration-300">
                         Tidak ada instansi tanaman yang ditugaskan untuk
-                        investor ini
+                        anggota ini
                       </p>
                     ) : (
                       <>

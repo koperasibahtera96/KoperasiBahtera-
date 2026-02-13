@@ -74,8 +74,8 @@ export async function POST(req: NextRequest) {
         }
 
         const template = emailTemplates.dueDateReminder(
-          installment.userId.fullName || "Investor",
-          installment.productName || "Investasi Hijau",
+          installment.userId.fullName || "Anggota",
+          installment.productName || "Simpanan Hijau",
           installment.dueDate.toLocaleDateString("id-ID"),
           installment.installmentAmount || installment.amount
         );
@@ -114,8 +114,8 @@ export async function POST(req: NextRequest) {
         }
 
         const template = emailTemplates.weeklyReminder(
-          installment.userId.fullName || "Investor",
-          installment.productName || "Investasi Hijau",
+          installment.userId.fullName || "Anggota",
+          installment.productName || "Simpanan Hijau",
           installment.dueDate.toLocaleDateString("id-ID"),
           installment.installmentAmount || installment.amount
         );

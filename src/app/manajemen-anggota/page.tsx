@@ -950,7 +950,7 @@ export default function ManajemenAnggotaPage() {
                 "!text-[#6b7280]"
               )}
             >
-              Kelola data investor dan kontrak investasi
+              Kelola data anggota dan kontrak simpanan
             </p>
           </div>
 
@@ -977,7 +977,7 @@ export default function ManajemenAnggotaPage() {
                 colorClass="text-chart-1"
               />
               <SummaryCard
-                title="Total Investasi"
+                title="Total Simpanan"
                 value={kpi.loading ? "…" : formatCurrency(kpi.totalInvestment)}
                 icon={<DollarSign className="h-5 w-5" />}
                 colorClass="text-chart-2"
@@ -1325,7 +1325,7 @@ function MemberCard({ member }: { member: Member }) {
                 "!text-[#6b7280]"
               )}
             >
-              Investasi
+              Simpanan
             </p>
             <p
               className={getThemeClasses(
@@ -1371,7 +1371,7 @@ function MemberCard({ member }: { member: Member }) {
             "!text-[#4c1d1d]"
           )}
         >
-          Portfolio Investasi ({member.investments.length} tanaman)
+          Portfolio Simpanan ({member.investments.length} tanaman)
         </h4>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
           {member.investments.map((investment, index) => (
@@ -1406,7 +1406,7 @@ function MemberCard({ member }: { member: Member }) {
                   "!text-[#6b7280]"
                 )}
               >
-                <div>Investasi: {formatCurrency(investment.amount)}</div>
+                <div>Simpanan: {formatCurrency(investment.amount)}</div>
                 <div>
                   Profit:{" "}
                   <span

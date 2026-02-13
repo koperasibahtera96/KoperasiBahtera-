@@ -87,7 +87,7 @@ export async function GET(
         },
         investment: {
           investmentId: contract.contractId || contractId,
-          productName: contract.productName || "Investasi",
+          productName: contract.productName || "Simpanan",
           totalAmount: contract.totalAmount || 0,
           amountPaid: contract.amountPaid || 0,
           paymentType: contract.paymentType || "full",

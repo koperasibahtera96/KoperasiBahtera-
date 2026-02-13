@@ -333,11 +333,11 @@ export default function FinancePage() {
 
       // Bangun sheet mulai kolom C (A,B kosong)
       const S: (string | number)[][] = [
-        ["", "", "RINGKASAN INVESTASI KESELURUHAN", ""],
+        ["", "", "RINGKASAN SIMPANAN KESELURUHAN", ""],
         ["", "", "Tanggal Laporan:", new Date().toLocaleDateString("id-ID")],
         ["", "", "", ""],
         ["", "", "METRIK UTAMA", ""],
-        ["", "", "Total Investasi", totals.invest],
+        ["", "", "Total Simpanan", totals.invest],
         ["", "", "Total Keuntungan", totals.profit],
         ["", "", "Total Pengeluaran", totalExpensesAll],
         ["", "", "", ""],
@@ -349,7 +349,7 @@ export default function FinancePage() {
           "",
           "No",
           "Jenis Tanaman",
-          "Total Investasi",
+          "Total Simpanan",
           "Total Pemasukan",
           "Total Pengeluaran",
         ],
@@ -435,7 +435,7 @@ export default function FinancePage() {
       XLSX.utils.book_append_sheet(wb, ws, "Ringkasan");
       XLSX.writeFile(
         wb,
-        `Ringkasan_Investasi_${new Date().toISOString().slice(0, 10)}.xlsx`
+        `Ringkasan_Simpanan_${new Date().toISOString().slice(0, 10)}.xlsx`
       );
     } catch (error) {
       console.error("[finance] export error:", error);
@@ -460,7 +460,7 @@ export default function FinancePage() {
         style={{ padding: "8px 10px", fontWeight: 600 }}
       >
         <div style={{ marginBottom: 4 }}>{p?.name}</div>
-        <div>Investasi : {formatCurrency(Number(p?.value) || 0)}</div>
+        <div>Simpanan : {formatCurrency(Number(p?.value) || 0)}</div>
       </div>
     );
   }
@@ -513,7 +513,7 @@ export default function FinancePage() {
                     "!text-[#4c1d1d]"
                   )}
                 >
-                  Ringkasan Investasi
+                  Ringkasan Simpanan
                 </h2>
                 <p
                   className={getThemeClasses(
@@ -553,7 +553,7 @@ export default function FinancePage() {
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
                 <SummaryCard
-                  title="Total Investasi"
+                  title="Total Simpanan"
                   value={formatCurrency(totals.invest)}
                   icon={<DollarSign className="h-5 w-5" />}
                   colorClass="card-a"
@@ -590,7 +590,7 @@ export default function FinancePage() {
                   "!text-[#4c1d1d]"
                 )}
               >
-                Distribusi Investasi
+                Distribusi Simpanan
               </h3>
               {loading ? (
                 <div className="h-80 flex items-center justify-center">
@@ -667,7 +667,7 @@ export default function FinancePage() {
                 "!text-[#4c1d1d]"
               )}
             >
-              Top Investasi Tanaman
+              Top Tanaman
             </h2>
             <Link
               href="/semua-investasi"
@@ -898,7 +898,7 @@ function PlantCard({
                   "!text-[#6b7280]"
                 )}
               >
-                Total Investasi
+                Total Simpanan
               </span>
             </div>
             <div
@@ -970,7 +970,7 @@ function PlantCard({
               )}
             />
             <span className="font-medium">
-              {plant.investorCount} investor aktif
+              {plant.investorCount} anggota aktif
             </span>
           </div>
         </div>

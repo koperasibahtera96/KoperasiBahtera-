@@ -1553,7 +1553,7 @@ export default function LaporanPengeluaranPage() {
                         "!text-[#6b7280]"
                       )}
                     >
-                       Simpanan Wajib (Total Pendapatan , Pendaftaran , Daily Pemasukan Investor)
+                       Simpanan Wajib (Total Pendapatan , Pendaftaran , Daily Pemasukan Anggota)
                     </div>
                     <div
                       className={getThemeClasses(

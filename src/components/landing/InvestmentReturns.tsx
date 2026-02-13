@@ -48,7 +48,7 @@ const moneyFeatures = [
   },
   {
     icon: "🛡️",
-    title: "Investasi Aman",
+    title: "Simpanan Aman",
     description: "Risiko rendah dengan asuransi dan jaminan hasil 100%"
   }
 ];

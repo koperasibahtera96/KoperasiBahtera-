@@ -483,7 +483,7 @@ export default function RegisterPage() {
               Buat Akun Baru
             </h2>
             <p className="text-sm sm:text-base text-white/80">
-              Daftar untuk mulai berinvestasi tanaman
+              Daftar untuk mengikuti simpanan tanaman
             </p>
           </div>
         </div>

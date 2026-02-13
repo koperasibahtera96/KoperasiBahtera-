@@ -235,10 +235,10 @@ export default function ExportBukuBesarButton() {
       const now = new Date();
 
       const wsCover = aoaToSheet(XLSX, [
-        ["BUKU BESAR — Investasi Hijau"],
+        ["BUKU BESAR — Simpanan Hijau"],
         [""],
         ["Dibuat pada", now.toLocaleString()],
-        ["Sumber Data", "Ringkasan (/finance JSON), Pengeluaran (export), Invoice (admin export), Incoming Investor (JSON)"],
+        ["Sumber Data", "Ringkasan (/finance JSON), Pengeluaran (export), Invoice (admin export), Incoming Anggota (JSON)"],
         [""],
         ["Endpoint Pengeluaran"], [expensesURL],
         ["Endpoint Invoice"], [FIXED.invoiceExport],
@@ -260,7 +260,7 @@ export default function ExportBukuBesarButton() {
 
       const wsIncoming = objArrayToSheet(XLSX, incoming, ["No","Tanggal","TotalMasuk","JumlahTransaksi","Catatan"]);
       autoFitColumns(wsIncoming);
-      XLSX.utils.book_append_sheet(wb, wsIncoming, "IncomingInvestor_Daily");
+      XLSX.utils.book_append_sheet(wb, wsIncoming, "IncomingAnggota_Daily");
 
       XLSX.writeFile(wb, `Buku-Besar_${now.toISOString().slice(0,10)}.xlsx`);
     } catch (err: any) {

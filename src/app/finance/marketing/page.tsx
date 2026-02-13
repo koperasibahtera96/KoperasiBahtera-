@@ -2068,14 +2068,14 @@ export default function MarketingHeadPage() {
                               </span>
                             </div>
                             <p className="text-sm text-gray-600">
-                              {commission.productName || "Produk Investasi"}
+                              {commission.productName || "Produk Simpanan"}
                             </p>
                           </div>
 
                           {commission.paymentType === "full-investment" && (
                             <div>
                               <p className="text-xs font-medium text-gray-600 uppercase tracking-wide mb-1">
-                                Total Investasi
+                                Total Simpanan
                               </p>
                               <p className="text-sm font-semibold text-gray-900">
                                 {formatCurrency(commission.contractValue)}

@@ -59,7 +59,7 @@ export default function PlantShowcasePage() {
       {
         treeCount: 1,
         name: "1 Pohon",
-        description: "Investasi Kecil",
+        description: "Simpanan Kecil",
         price: Math.ceil((oldPlant.investmentPlan?.price || 0) / 10),
         installmentPrice:
           oldPlant.investmentPlan?.installmentOptions?.[0]?.perTree || 0,

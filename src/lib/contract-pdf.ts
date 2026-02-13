@@ -574,7 +574,7 @@ export async function generateContractPDFBuffer(
         "Dalam perjanjian ini, istilah-istilah berikut mempunyai arti sebagai berikut:",
         "",
         `1. Paket Penanaman adalah unit usaha yang terdiri dari 10 (sepuluh) pohon (${plantTypesText}) yang ditanam, dirawat, dan dipanen oleh Pihak Pertama.`,
-        `2. Dana Investasi adalah sejumlah uang yang diserahkan Pihak Kedua kepada Pihak Pertama untuk mendanai pembelian bibit, penanaman, perawatan, serta biaya operasional hingga pemanenan pohon.`,
+        `2. Dana Simpanan adalah sejumlah uang yang diserahkan Pihak Kedua kepada Pihak Pertama untuk mendanai pembelian bibit, penanaman, perawatan, serta biaya operasional hingga pemanenan pohon.`,
         `3. Keuntungan adalah hasil bersih dari penjualan panen setelah dikurangi biaya operasional yang sah.`,
         `4. Kerugian adalah nilai minus yang timbul akibat berkurangnya hasil panen atau biaya operasional yang lebih besar daripada pendapatan.`,
         `5. Laporan Usaha adalah laporan tertulis dan/atau elektronik yang disampaikan Pihak Pertama kepada Pihak Kedua secara periodik.`,

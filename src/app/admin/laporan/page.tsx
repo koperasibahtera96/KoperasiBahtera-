@@ -123,7 +123,7 @@ export default function LaporanPage() {
       ],
       ["Tel: 081118893679 | Email: admin@koperasibahtera.org"],
       [""],
-      ["LAPORAN ADMIN - SEMUA INVESTOR"],
+      ["LAPORAN ADMIN - SEMUA ANGGOTA"],
       [
         `Dibuat pada: ${new Date().toLocaleDateString("id-ID", {
           weekday: "long",
@@ -140,12 +140,12 @@ export default function LaporanPage() {
     const summarySheetData = [
       ...headerInfo,
       ["Metrik", "Jumlah"],
-      ["Total Investor", reportData.summary.totalInvestors.toString()],
+      ["Total Anggota", reportData.summary.totalInvestors.toString()],
       ["Total Instansi Tanaman", reportData.summary.totalTrees.toString()],
-      ["Investor Aktif", reportData.summary.activeInvestors.toString()],
-      ["Investor Tidak Aktif", reportData.summary.inactiveInvestors.toString()],
+      ["Anggota Aktif", reportData.summary.activeInvestors.toString()],
+      ["Anggota Tidak Aktif", reportData.summary.inactiveInvestors.toString()],
       [""],
-      ["DETAIL INVESTOR"],
+      ["DETAIL ANGGOTA"],
       [
         "No.",
         "No. Invoice",
@@ -371,7 +371,7 @@ export default function LaporanPage() {
         // Section headers with background color - use subtle gray
         if (
           summarySheetData[row][0] === "RINGKASAN UMUM" ||
-          summarySheetData[row][0] === "DETAIL INVESTOR" ||
+          summarySheetData[row][0] === "DETAIL ANGGOTA" ||
           summarySheetData[row][0] === "Metrik" ||
           summarySheetData[row][0] === "Nama"
         ) {
@@ -479,7 +479,7 @@ export default function LaporanPage() {
 
     XLSX.writeFile(
       wb,
-      `Laporan-Admin-Semua-Investor-${
+      `Laporan-Admin-Semua-Anggota-${
         new Date().toISOString().split("T")[0]
       }.xlsx`
     );
@@ -520,7 +520,7 @@ export default function LaporanPage() {
       ],
       ["Tel: 081118893679 | Email: admin@koperasibahtera.org"],
       [""],
-      [`LAPORAN INVESTOR - ${firstReport.investor.name.toUpperCase()}`],
+      [`LAPORAN ANGGOTA - ${firstReport.investor.name.toUpperCase()}`],
       [
         `Dibuat pada: ${new Date().toLocaleDateString("id-ID", {
           weekday: "long",
@@ -530,7 +530,7 @@ export default function LaporanPage() {
         })}`,
       ],
       [""],
-      ["INFORMASI INVESTOR"],
+      ["INFORMASI ANGGOTA"],
     ];
 
     // Get investor data for the new metrics
@@ -948,7 +948,7 @@ export default function LaporanPage() {
         // Force styling for specific header cells regardless of skip border logic
         const isHeaderCell =
           investorInfo[row] &&
-          (investorInfo[row][0] === "INFORMASI INVESTOR" ||
+          (investorInfo[row][0] === "INFORMASI ANGGOTA" ||
             investorInfo[row][0] === "RINCIAN JENIS TANAMAN" ||
             investorInfo[row][0] === "INSTANSI TANAMAN INDIVIDUAL" ||
             investorInfo[row][0] === "Bidang" ||
@@ -963,7 +963,7 @@ export default function LaporanPage() {
             fgColor: { rgb: "E5E7EB" },
           };
           // INFORMASI INVESTOR should be left aligned, others center aligned
-          if (investorInfo[row][0] === "INFORMASI INVESTOR") {
+          if (investorInfo[row][0] === "INFORMASI ANGGOTA") {
             infoSheet[cellRef].s.alignment = { horizontal: "left" };
           } else {
             infoSheet[cellRef].s.alignment = { horizontal: "center" };
@@ -1065,11 +1065,11 @@ export default function LaporanPage() {
       // ignore
     }
 
-    XLSX.utils.book_append_sheet(wb, infoSheet, "Laporan Investor");
+    XLSX.utils.book_append_sheet(wb, infoSheet, "Laporan Anggota");
 
     XLSX.writeFile(
       wb,
-      `Laporan-Investor-${firstReport.investor.name.replace(/\s+/g, "-")}-${
+      `Laporan-Anggota-${firstReport.investor.name.replace(/\s+/g, "-")}-${
         new Date().toISOString().split("T")[0]
       }.xlsx`
     );
@@ -1166,7 +1166,7 @@ export default function LaporanPage() {
     if (!reportData) return;
 
     const doc = new jsPDF();
-    const startY = await addPDFHeader(doc, "LAPORAN ADMIN - SEMUA INVESTOR");
+    const startY = await addPDFHeader(doc, "LAPORAN ADMIN - SEMUA ANGGOTA");
 
     // Summary section
     doc.setFontSize(14);
@@ -1174,10 +1174,10 @@ export default function LaporanPage() {
     doc.text("RINGKASAN UMUM", 20, startY);
 
     const summaryData = [
-      ["Total Investor", reportData.summary.totalInvestors.toString()],
+      ["Total Anggota", reportData.summary.totalInvestors.toString()],
       ["Total Instansi Tanaman", reportData.summary.totalTrees.toString()],
-      ["Investor Aktif", reportData.summary.activeInvestors.toString()],
-      ["Investor Tidak Aktif", reportData.summary.inactiveInvestors.toString()],
+      ["Anggota Aktif", reportData.summary.activeInvestors.toString()],
+      ["Anggota Tidak Aktif", reportData.summary.inactiveInvestors.toString()],
     ];
 
     autoTable(doc, {
@@ -1194,7 +1194,7 @@ export default function LaporanPage() {
     const finalY = (doc as any).lastAutoTable.finalY + 15;
     doc.setFontSize(14);
     doc.setFont("helvetica", "bold");
-    doc.text("DETAIL INVESTOR", 20, finalY);
+    doc.text("DETAIL ANGGOTA", 20, finalY);
 
     // Create payment table data matching XLSX structure
     const investmentTableData = reportData.reports.map((report, reportIdx) => {
@@ -1374,7 +1374,7 @@ export default function LaporanPage() {
     }
 
     doc.save(
-      `Laporan-Admin-Semua-Investor-${
+      `Laporan-Admin-Semua-Anggota-${
         new Date().toISOString().split("T")[0]
       }.pdf`
     );
@@ -1404,7 +1404,7 @@ export default function LaporanPage() {
     const doc = new jsPDF();
     const startY = await addPDFHeader(
       doc,
-      `LAPORAN INVESTOR - ${firstReport.investor.name.toUpperCase()}`
+      `LAPORAN ANGGOTA - ${firstReport.investor.name.toUpperCase()}`
     );
 
     // Ensure we have detailed plant data for accurate age calculations
@@ -1469,7 +1469,7 @@ export default function LaporanPage() {
     // Investor info
     doc.setFontSize(14);
     doc.setFont("helvetica", "bold");
-    doc.text("INFORMASI INVESTOR", 20, startY);
+    doc.text("INFORMASI ANGGOTA", 20, startY);
 
     const investorInfo = [
       ["No. Anggota", (investorData as any).userCode || "BMS-..."],
@@ -1856,7 +1856,7 @@ export default function LaporanPage() {
     }
 
     doc.save(
-      `Laporan-Investor-${firstReport.investor.name.replace(/\s+/g, "-")}-${
+      `Laporan-Anggota-${firstReport.investor.name.replace(/\s+/g, "-")}-${
         new Date().toISOString().split("T")[0]
       }.pdf`
     );
@@ -1924,7 +1924,7 @@ export default function LaporanPage() {
         <div className="space-y-6">
           <div>
             <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white transition-colors duration-300">
-              Laporan Investasi
+              Laporan Simpanan
             </h1>
             <p className="text-gray-600 dark:text-gray-200 mt-2 transition-colors duration-300">
               Memuat laporan...
@@ -1952,7 +1952,7 @@ export default function LaporanPage() {
         <div className="space-y-6">
           <div>
             <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white transition-colors duration-300">
-              Laporan Investasi
+              Laporan Simpanan
             </h1>
             <p className="text-gray-600 dark:text-gray-200 mt-2 transition-colors duration-300">
               Gagal memuat data laporan
@@ -1982,7 +1982,7 @@ export default function LaporanPage() {
               Laporan Admin
             </h1>
             <p className="text-[#889063] dark:text-gray-200 mt-1 sm:mt-2 text-sm sm:text-base transition-colors duration-300">
-              Ringkasan manajemen investor dan pelacakan instansi tanaman
+              Ringkasan manajemen anggota dan pelacakan instansi tanaman
             </p>
           </div>
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3">
@@ -2034,7 +2034,7 @@ export default function LaporanPage() {
             <div>
               <p className="text-sm font-medium text-[#889063] dark:text-gray-200 transition-colors duration-300 flex items-center gap-2">
                 <Users className="w-4 h-4 text-[#889063] dark:text-gray-200" />
-                <span>Total Investor</span>
+                <span>Total Anggota</span>
               </p>
               <p className="text-2xl font-bold text-[#324D3E] dark:text-white transition-colors duration-300">
                 {reportData.summary.totalInvestors}
@@ -2068,7 +2068,7 @@ export default function LaporanPage() {
             <div>
               <p className="text-sm font-medium text-[#889063] dark:text-gray-200 transition-colors duration-300 flex items-center gap-2">
                 <UserX className="w-4 h-4 text-red-600 dark:text-red-400" />
-                <span>Investor Tidak Aktif</span>
+                <span>Anggota Tidak Aktif</span>
               </p>
               <p className="text-2xl font-bold text-[#889063] dark:text-gray-200 transition-colors duration-300">
                 {reportData.summary.inactiveInvestors || 0}
@@ -2085,7 +2085,7 @@ export default function LaporanPage() {
             <div>
               <p className="text-sm font-medium text-[#889063] dark:text-gray-200 transition-colors duration-300 flex items-center gap-2">
                 <UserCheck className="w-4 h-4 text-green-600 dark:text-green-400" />
-                <span>Investor Aktif</span>
+                <span>Anggota Aktif</span>
               </p>
               <p className="text-2xl font-bold text-[#4C3D19] dark:text-emerald-300 transition-colors duration-300">
                 {reportData.summary.activeInvestors}
@@ -2104,7 +2104,7 @@ export default function LaporanPage() {
           <div className="flex-1 w-full">
             <input
               type="text"
-              placeholder="Cari investor berdasarkan nama atau email..."
+              placeholder="Cari anggota berdasarkan nama atau email..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className={getThemeClasses(

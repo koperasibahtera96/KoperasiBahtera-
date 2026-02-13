@@ -204,7 +204,7 @@ Yth. *${investorName}*,
 • Tanggal Pembayaran: *${dueDate}*
 • Jumlah: *Rp ${amount.toLocaleString("id-ID")}*
 
-Mohon segera lakukan pembayaran untuk menyelesaikan investasi Anda.
+Mohon segera lakukan pembayaran untuk menyelesaikan simpanan Anda.
 
 🔗 *AKSES DASHBOARD:*
 ${process.env.NEXTAUTH_URL}/payments

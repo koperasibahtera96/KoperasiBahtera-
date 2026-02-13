@@ -19,16 +19,16 @@ export function ContactSection() {
             <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
               <path fillRule="evenodd" d="M18 10c0 3.866-3.582 7-8 7a8.841 8.841 0 01-4.083-.98L2 17l1.338-3.123C2.493 12.767 2 11.434 2 10c0-3.866 3.582-7 8-7s8 3.134 8 7zM7 9H5v2h2V9zm8 0h-2v2h2V9zM9 9h2v2H9V9z" clipRule="evenodd"/>
             </svg>
-            Testimoni Investor
+            Testimoni Anggota
           </div>
           <h2 className="text-4xl lg:text-5xl font-bold text-white mb-8 leading-tight">
             Apa Kata <span className="text-emerald-300 relative">
-              Investor Kami
+              Anggota Kami
               <div className="absolute -bottom-2 left-0 right-0 h-1 bg-emerald-300 rounded-full"></div>
             </span>
           </h2>
           <p className="text-xl text-emerald-100 max-w-4xl mx-auto leading-relaxed">
-            Dengarkan pengalaman langsung dari investor yang telah merasakan keuntungan investasi tanaman nusantara
+            Dengarkan pengalaman langsung dari anggota yang telah merasakan keuntungan simpanan tanaman nusantara
           </p>
         </div>
 
@@ -42,7 +42,7 @@ export function ContactSection() {
               </div>
               <div>
                 <div className="font-bold text-gray-900 text-lg">Ahmad Santoso</div>
-                <div className="text-emerald-600 font-medium">Investor Gaharu</div>
+                <div className="text-emerald-600 font-medium">Anggota Gaharu</div>
               </div>
             </div>
             <div className="flex gap-1 mb-4">
@@ -51,7 +51,7 @@ export function ContactSection() {
               ))}
             </div>
             <p className="text-gray-700 leading-relaxed">
-              &ldquo;Investasi gaharu memberikan return yang luar biasa! Dalam 8 tahun, saya sudah mendapatkan keuntungan 400%.
+              &ldquo;Simpanan gaharu memberikan return yang luar biasa! Dalam 8 tahun, saya sudah mendapatkan keuntungan 400%.
               Tim sangat profesional dan monitoring 24/7 membuat saya tenang.&rdquo;
             </p>
           </div>
@@ -64,7 +64,7 @@ export function ContactSection() {
               </div>
               <div>
                 <div className="font-bold text-gray-900 text-lg">Sarah Mulyani</div>
-                <div className="text-yellow-600 font-medium">Investor Alpukat</div>
+                <div className="text-yellow-600 font-medium">Anggota Alpukat</div>
               </div>
             </div>
             <div className="flex gap-1 mb-4">
@@ -73,7 +73,7 @@ export function ContactSection() {
               ))}
             </div>
             <p className="text-gray-700 leading-relaxed">
-              &ldquo;Alpukat mentega adalah investasi yang sangat menguntungkan. Pasar ekspor yang stabil dan permintaan
+              &ldquo;Alpukat mentega adalah simpanan yang sangat menguntungkan. Pasar ekspor yang stabil dan permintaan
               yang terus meningkat. ROI yang konsisten setiap tahunnya.&rdquo;
             </p>
           </div>
@@ -86,7 +86,7 @@ export function ContactSection() {
               </div>
               <div>
                 <div className="font-bold text-gray-900 text-lg">Rizki Jaya</div>
-                <div className="text-blue-600 font-medium">Investor Jengkol</div>
+                <div className="text-blue-600 font-medium">Anggota Jengkol</div>
               </div>
             </div>
             <div className="flex gap-1 mb-4">
@@ -95,8 +95,8 @@ export function ContactSection() {
               ))}
             </div>
             <p className="text-gray-700 leading-relaxed">
-              &ldquo;Jengkol tidak hanya investasi yang menguntungkan, tapi juga berkontribusi pada kesehatan.
-              Pasar farmasi yang berkembang pesat membuat nilai investasi semakin tinggi.&rdquo;
+              &ldquo;Jengkol tidak hanya simpanan yang menguntungkan, tapi juga berkontribusi pada kesehatan.
+              Pasar farmasi yang berkembang pesat membuat nilai simpanan semakin tinggi.&rdquo;
             </p>
           </div>
         </div>
@@ -121,10 +121,10 @@ export function ContactSection() {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Jenis Investasi
+                    Jenis Simpanan
                   </label>
                   <select className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all duration-200">
-                    <option>Pilih jenis investasi</option>
+                    <option>Pilih jenis simpanan</option>
                     <option>Gaharu</option>
                     <option>Alpukat Mentega</option>
                     <option>Jengkol</option>
@@ -156,7 +156,7 @@ export function ContactSection() {
                 <textarea
                   rows={4}
                   className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all duration-200 resize-none"
-                  placeholder="Bagikan pengalaman investasi Anda, tips, atau saran untuk investor lain..."
+                  placeholder="Bagikan pengalaman simpanan Anda, tips, atau saran untuk anggota lain..."
                 ></textarea>
               </div>
 
@@ -182,16 +182,16 @@ export function Footer() {
   const quickLinks = [
     { href: '#beranda', label: 'Beranda' },
     { href: '#tentang', label: 'Tentang Kami' },
-    { href: '#program', label: 'Paket Investasi' },
+    { href: '#program', label: 'Paket Simpanan' },
     { href: '#manfaat', label: 'Manfaat' },
     { href: '#kontak', label: 'Kontak' },
   ];
 
   const services = [
-    'Investasi Sayuran Organik',
-    'Investasi Buah Premium',
-    'Investasi Kayu Berkualitas',
-    'Konsultasi Investasi',
+    'Simpanan Sayuran Organik',
+    'Simpanan Buah Premium',
+    'Simpanan Kayu Berkualitas',
+    'Konsultasi Simpanan',
     'Monitoring & Laporan',
   ];
 
@@ -206,13 +206,13 @@ export function Footer() {
                 <span className="text-white font-bold text-lg">IH</span>
               </div>
               <div>
-                <h3 className="text-xl font-bold">Investasi Hijau</h3>
+                <h3 className="text-xl font-bold">Simpanan Hijau</h3>
                 <p className="text-sm text-gray-400">Tanaman Berkualitas</p>
               </div>
             </div>
             <p className="text-gray-300 mb-6 leading-relaxed">
-              Platform investasi tanaman terpercaya dengan pengalaman lebih dari 10 tahun.
-              Memberikan kesempatan investasi yang menguntungkan dan ramah lingkungan.
+              Platform simpanan tanaman terpercaya dengan pengalaman lebih dari 10 tahun.
+              Memberikan kesempatan simpanan yang menguntungkan dan ramah lingkungan.
             </p>
             <div className="flex gap-4">
               <a
@@ -306,7 +306,7 @@ export function Footer() {
         <div className="border-t border-gray-800 pt-8 mt-12">
           <div className="flex flex-col md:flex-row justify-between items-center gap-4">
             <p className="text-gray-400 text-sm">
-              © {currentYear} Investasi Hijau. Semua hak cipta dilindungi.
+              © {currentYear} Simpanan Hijau. Semua hak cipta dilindungi.
             </p>
             <div className="flex gap-6 text-sm">
               <a href="#" className="text-gray-400 hover:text-green-400 transition-colors">

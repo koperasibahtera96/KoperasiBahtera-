@@ -112,7 +112,7 @@ export function AboutUs() {
             </h3>
             <p className="text-lg text-gray-600 max-w-2xl mx-auto">
               Dipimpin oleh tim berpengalaman dengan dedikasi tinggi untuk 
-              kesuksesan program investasi hijau berkelanjutan.
+              kesuksesan program simpanan hijau berkelanjutan.
             </p>
           </div>
 
@@ -152,7 +152,7 @@ export function AboutUs() {
               Ingin Mengetahui Lebih Lanjut?
             </h3>
             <p className="text-yellow-100 mb-6 max-w-2xl mx-auto">
-              Hubungi tim kami untuk konsultasi mengenai program investasi hijau 
+              Hubungi tim kami untuk konsultasi mengenai program simpanan hijau 
               dan bagaimana Anda dapat bergabung dengan misi pelestarian lingkungan.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">

@@ -147,7 +147,7 @@ export default function DailyIncomingInvestorPage() {
       setPage(1);
     } catch (e) {
       console.error(e);
-      showError("Error", "Gagal memuat data Daily Incoming Investor.");
+      showError("Error", "Gagal memuat data Daily Incoming Anggota.");
       setRows([]);
       setSummary({
         totalPemasukan: 0,
@@ -357,7 +357,7 @@ export default function DailyIncomingInvestorPage() {
       <body>
       `;
 
-      html += `<div class="title">Daily Incoming Investor</div>`;
+      html += `<div class="title">Daily Incoming Anggota</div>`;
       html += `<div class="period">Periode: ${periodLabel}</div>`;
 
       html += `<div class="header">RINGKASAN</div>`;
@@ -389,7 +389,7 @@ export default function DailyIncomingInvestorPage() {
       html += `<tr class="tight">
         <th>No</th>
         <th>Tanggal</th>
-        <th>Nama Investor</th>
+        <th>Nama Anggota</th>
         <th>Harga Dasar</th>
         <th>Harga Diskon</th>
         <th>Diskon %</th>
@@ -446,7 +446,7 @@ export default function DailyIncomingInvestorPage() {
       });
       const a = document.createElement("a");
       a.href = URL.createObjectURL(blob);
-      a.download = "daily-incoming-investor.xls";
+      a.download = "daily-incoming-anggota.xls";
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -473,7 +473,7 @@ export default function DailyIncomingInvestorPage() {
                 "!text-[#6b7280]"
               )}
             >
-              Memuat Daily Incoming Investor...
+              Memuat Daily Incoming Anggota...
             </p>
           </div>
         </div>
@@ -512,7 +512,7 @@ export default function DailyIncomingInvestorPage() {
                   "!text-[#4c1d1d]"
                 )}
               >
-                Daily Incoming Investor
+                Daily Incoming Anggota
               </h1>
               <p
                 className={getThemeClasses(
@@ -520,7 +520,7 @@ export default function DailyIncomingInvestorPage() {
                   "!text-[#6b7280]"
                 )}
               >
-                Ringkasan pemasukan harian dari investasi baru
+                Ringkasan pemasukan harian dari simpanan baru
               </p>
             </div>
           </div>

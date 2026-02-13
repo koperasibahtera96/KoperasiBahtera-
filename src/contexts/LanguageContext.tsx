@@ -44,7 +44,7 @@ const translations = {
     // Payment messages
     "payment.success.title": "Pembayaran Berhasil!",
     "payment.success.message":
-      "Terima kasih! Pembayaran investasi Anda telah berhasil diproses. Order ID: {orderId}. Tim kami akan segera memproses investasi Anda.",
+      "Terima kasih! Pembayaran simpanan Anda telah berhasil diproses. Order ID: {orderId}. Tim kami akan segera memproses simpanan Anda.",
     "payment.error.title": "Pembayaran Gagal",
     "payment.error.message":
       "Maaf, terjadi kesalahan dalam proses pembayaran. Silakan coba lagi atau hubungi customer service kami.",
@@ -78,7 +78,7 @@ const translations = {
     "hero.title.line1": "Pembiayaan Pengembangan",
     "hero.title.line2": "Usaha Pertanian Berkelanjutan yang Mudah",
     "hero.description":
-      "Solusi tepat bagi Anda yang ingin meraih manfaat ekonomi sekaligus memberikan dampak positif bagi lingkungan dan masyarakat. Melalui sistem investasi yang sederhana dan transparan, Anda dapat ikut mendukung petani lokal untuk meningkatkan hasil panen.",
+      "Solusi tepat bagi anda yang ingin memperoleh manfaat ekonomi sekaligus berkontribusi nyata bagi pelestarian lingkungan dan kesejahteraan anggota masyarakat melalui sistem kolaborasi yang sederhana dan terbuka, anggota dapat mendukung petani lokal dalam meningkatkan produktivitas hasil panen.",
     "hero.cta": "Mulai Sekarang",
     "hero.scrollMore": "Selengkapnya",
 
@@ -153,10 +153,10 @@ const translations = {
     "plants.profitDisclaimer":
       "*Selama ± 7 tahun masa panen",
     "plants.processingProducts": "Produk Olahan dari {name}:",
-    "plants.chooseInvestment": "Pilih Investasi",
-    "plants.choosePackage": "Pilih Paket Investasi",
-    "plants.noPackagesAvailable": "Belum ada paket investasi yang tersedia",
-    "plants.investmentDetails": "Detail Investasi",
+    "plants.chooseInvestment": "Pilih Simpanan",
+    "plants.choosePackage": "Pilih Paket Simpanan",
+    "plants.noPackagesAvailable": "Belum ada paket simpanan yang tersedia",
+    "plants.investmentDetails": "Detail Simpanan",
     "plants.plantType": "Jenis Tanaman:",
     "plants.duration": "Durasi:",
     "plants.treeCount": "Jumlah Pohon:",
@@ -260,7 +260,7 @@ const translations = {
     // Review Section
     "reviews.title": "Review Anggota",
     "reviews.subtitle":
-      "Apa kata para anggota tentang pengalaman investasi mereka bersama kami",
+      "Apa kata para anggota tentang pengalaman simpanan mereka bersama kami",
     "reviews.videoError": "Video testimonial tidak dapat diputar",
     "reviews.featuredTestimonial": "Featured Testimonial",
     "reviews.investorPhoto": "Foto Anggota",
@@ -506,7 +506,7 @@ const translations = {
     // Payment Method Modal
     "paymentMethod.title": "Pilih Metode Pembayaran",
     "paymentMethod.description":
-      "Silakan pilih metode pembayaran yang Anda inginkan untuk menyelesaikan investasi Anda",
+      "Silakan pilih metode pembayaran yang Anda inginkan untuk menyelesaikan simpanan Anda",
     "paymentMethod.paymentFor": "Pembayaran untuk",
     "paymentMethod.installment": "Cicilan",
     "paymentMethod.onlinePayment": "Pembayaran Online",
@@ -599,23 +599,23 @@ const translations = {
 
     // Cicilan Modal
     "cicilan.title": "Cicilan {plantName}",
-    "cicilan.choosePackage": "Pilih Paket Investasi",
-    "cicilan.noPackagesAvailable": "Belum ada paket investasi yang tersedia",
+    "cicilan.choosePackage": "Pilih Paket Simpanan",
+    "cicilan.noPackagesAvailable": "Belum ada paket simpanan yang tersedia",
     "cicilan.packageDetails": "Detail Paket",
     "cicilan.selectedPackage": "Paket Terpilih:",
     "cicilan.treeCount": "Jumlah Pohon:",
     "cicilan.trees": "Pohon",
-    "cicilan.totalInvestment": "Total Investasi:",
+    "cicilan.totalInvestment": "Total Simpanan:",
     "cicilan.estimatedReturn": "Estimasi Keuntungan Per Bulan:",
     "cicilan.chooseInstallmentPeriod": "Pilih Jangka Waktu Cicilan",
     "cicilan.timesPayment": "kali bayar",
     "cicilan.perInstallment": "per angsuran",
     "cicilan.howItWorks": "Cara Kerja Cicilan",
-    "cicilan.step1": "Buat dan tandatangani persetujuan pengelolaan simpanan anggota investasi terlebih dahulu",
+    "cicilan.step1": "Buat dan tandatangani persetujuan pengelolaan simpanan anggota terlebih dahulu",
     "cicilan.step2": "Menunggu persetujuan admin untuk persetujuan pengelolaan simpanan anggota Anda",
     "cicilan.step3": "Setelah disetujui, Anda dapat mulai cicilan pembayaran",
     "cicilan.step4": "Upload bukti pembayaran setiap periode cicilan",
-    "cicilan.step5": "Investasi dimulai setelah pembayaran pertama disetujui",
+    "cicilan.step5": "Simpanan dimulai setelah pembayaran pertama disetujui",
     "cicilan.cancel": "Batal",
     "cicilan.createContract": "Buat Persetujuan",
     "cicilan.processing": "Memproses...",
@@ -683,7 +683,7 @@ const translations = {
     // Payment messages
     "payment.success.title": "Payment Successful!",
     "payment.success.message":
-      "Thank you! Your investment payment has been successfully processed. Order ID: {orderId}. Our team will process your investment shortly.",
+      "Thank you! Your savings payment has been successfully processed. Order ID: {orderId}. Our team will process your savings shortly.",
     "payment.error.title": "Payment Failed",
     "payment.error.message":
       "Sorry, there was an error processing your payment. Please try again or contact our customer service.",
@@ -716,7 +716,7 @@ const translations = {
     "hero.title.line1": "Sustainable Agricultural",
     "hero.title.line2": "Business Development Financing Made Easy",
     "hero.description":
-      "The perfect solution for those who want to achieve profits while providing positive impact for the environment and society. Through a simple and transparent investment system, you can support local farmers to improve their harvest yields.",
+      "The perfect solution for those who want to achieve profits while providing positive impact for the environment and society. Through a simple and transparent savings system, you can support local farmers to improve their harvest yields.",
     "hero.cta": "Start Now",
     "hero.scrollMore": "Learn More",
 
@@ -748,7 +748,7 @@ const translations = {
       "This program is medium/long-term (5-7 years, depending on plant type)",
     "rules.profit.title": "SHU",
     "rules.profit.description":
-      "SHU will be distributed to members based on their investment",
+      "SHU will be distributed to members based on their savings",
     "rules.transparency.title": "Transparency",
     "rules.transparency.description":
       "Members receive regular reports on plant growth, plant care, land conditions, and profit projections",
@@ -791,10 +791,10 @@ const translations = {
     "plants.profitDisclaimer":
       "*For ± 7 years harvest period",
     "plants.processingProducts": "Processed Products from {name}:",
-    "plants.chooseInvestment": "Choose Investment",
-    "plants.choosePackage": "Choose Investment Package",
-    "plants.noPackagesAvailable": "No investment packages available yet",
-    "plants.investmentDetails": "Investment Details",
+    "plants.chooseInvestment": "Choose Savings",
+    "plants.choosePackage": "Choose Savings Package",
+    "plants.noPackagesAvailable": "No savings packages available yet",
+    "plants.investmentDetails": "Savings Details",
     "plants.plantType": "Plant Type:",
     "plants.duration": "Duration:",
     "plants.treeCount": "Number of Trees:",
@@ -896,7 +896,7 @@ const translations = {
     // Review Section
     "reviews.title": "Member Reviews",
     "reviews.subtitle":
-      "What our members say about their investment experience with us",
+      "What our members say about their savings experience with us",
     "reviews.videoError": "Video testimonial cannot be played",
     "reviews.featuredTestimonial": "Featured Testimonial",
     "reviews.investorPhoto": "Member Photo",
@@ -1143,7 +1143,7 @@ const translations = {
     // Payment Method Modal
     "paymentMethod.title": "Select Payment Method",
     "paymentMethod.description":
-      "Please select the payment method you want to complete your investment",
+      "Please select the payment method you want to complete your savings",
     "paymentMethod.paymentFor": "Payment for",
     "paymentMethod.installment": "Installment",
     "paymentMethod.onlinePayment": "Online Payment",
@@ -1236,23 +1236,23 @@ const translations = {
 
     // Cicilan Modal
     "cicilan.title": "Installment {plantName}",
-    "cicilan.choosePackage": "Choose Investment Package",
-    "cicilan.noPackagesAvailable": "No investment packages available yet",
+    "cicilan.choosePackage": "Choose Savings Package",
+    "cicilan.noPackagesAvailable": "No savings packages available yet",
     "cicilan.packageDetails": "Package Details",
     "cicilan.selectedPackage": "Selected Package:",
     "cicilan.treeCount": "Number of Trees:",
     "cicilan.trees": "Trees",
-    "cicilan.totalInvestment": "Total Investment:",
+    "cicilan.totalInvestment": "Total Savings:",
     "cicilan.estimatedReturn": "Estimated Return:",
     "cicilan.chooseInstallmentPeriod": "Choose Installment Period",
     "cicilan.timesPayment": "payments",
     "cicilan.perInstallment": "per installment",
     "cicilan.howItWorks": "How Installments Work",
-    "cicilan.step1": "Create and sign the investment contract first",
+    "cicilan.step1": "Create and sign the savings agreement first",
     "cicilan.step2": "Wait for admin approval for your contract",
     "cicilan.step3": "Once approved, you can start installment payments",
     "cicilan.step4": "Upload payment proof for each installment period",
-    "cicilan.step5": "Investment starts after first payment is approved",
+    "cicilan.step5": "Savings starts after first payment is approved",
     "cicilan.cancel": "Cancel",
     "cicilan.createContract": "Create Contract",
     "cicilan.processing": "Processing...",

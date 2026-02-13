@@ -2,12 +2,12 @@
 
 const rules = [
   {
-    title: "Investasi Hijau",
+    title: "Simpanan Hijau",
     description: "Setiap Anggota dapat mengikuti program ini dengan min membeli 1 paket (10 pohon) Investasi"
   },
   {
     title: "Jangka Waktu",
-    description: "Investasi bersifat jangka menengah/panjang (5 - 7 tahun, tergantung jenis tanaman)"
+    description: "Simpanan bersifat jangka menengah/panjang (5 - 7 tahun, tergantung jenis tanaman)"
   },
   {
     title: "Bagi Hasil",
@@ -15,11 +15,11 @@ const rules = [
   },
   {
     title: "Transparansi",
-    description: "Investor mendapat laporan berkala mengenai pertumbuhan tanaman, perawatan tanaman, kondisi lahan, dan proyeksi keuntungan"
+    description: "Anggota mendapat laporan berkala mengenai pertumbuhan tanaman, perawatan tanaman, kondisi lahan, dan proyeksi keuntungan"
   },
   {
     title: "Risiko",
-    description: "Investor menyadari bahwa investasi tanaman bergantung pada faktor alam, perawatan, serta pasar"
+    description: "Anggota menyadari bahwa simpanan tanaman bergantung pada faktor alam, perawatan, serta pasar"
   }
 ];
 

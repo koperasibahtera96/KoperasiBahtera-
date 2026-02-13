@@ -45,7 +45,7 @@ export async function POST(req: Request) {
 
     // Send test email
     const _info = await transporter.sendMail({
-      from: `"Investasi Hijau" <${email}>`,
+      from: `"Simpanan Hijau" <${email}>`,
       to: email,
       subject: "Test Email dari Investasi Hijau",
       text: "Ini adalah email percobaan untuk memverifikasi pengaturan email Anda.",

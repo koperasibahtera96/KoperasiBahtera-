@@ -508,21 +508,21 @@ const ReviewSection = () => {
                     city: "Jakarta",
                     rating: 4,
                     description:
-                      "Awalnya Saya Ragu Untuk Mencoba Investasi Ini. Tapi Setelah Bergabung Beberapa Saat Dan Merasakan Keuntungan Yang Stabil, Saya Terima Rutin Setiap Bulan Sangat Membantu Sebagai Tambahan Pemasukan. Yang Saya Suka, Sistemnya Jelas Dan Transparan. Sehingga Saya Tidak Merasa Khawatir Soal Pengelolaan Investasi ini Memberikan Keuntungan Finansial Yang Stabil.",
+                      "Awalnya Saya Ragu Untuk Mencoba Simpanan Ini. Tapi Setelah Bergabung Beberapa Saat Dan Merasakan Keuntungan Yang Stabil, Saya Terima Rutin Setiap Bulan Sangat Membantu Sebagai Tambahan Pemasukan. Yang Saya Suka, Sistemnya Jelas Dan Transparan. Sehingga Saya Tidak Merasa Khawatir Soal Pengelolaan Simpanan ini Memberikan Keuntungan Finansial Yang Stabil.",
                   },
                   {
                     name: "Timothy Krysiek",
                     city: "Jakarta",
                     rating: 5,
                     description:
-                      "Awalnya Saya Ragu Untuk Mencoba Investasi Ini. Tapi Setelah Bergabung Beberapa Saat Dan Merasakan Keuntungan Yang Stabil, Saya Terima Rutin Setiap Bulan Sangat Membantu Sebagai Tambahan Pemasukan. Yang Saya Suka, Sistemnya Jelas Dan Transparan. Sehingga Saya Tidak Merasa Khawatir Soal Pengelolaan Investasi ini Memberikan Keuntungan Finansial Yang Stabil.",
+                      "Awalnya Saya Ragu Untuk Mencoba Simpanan Ini. Tapi Setelah Bergabung Beberapa Saat Dan Merasakan Keuntungan Yang Stabil, Saya Terima Rutin Setiap Bulan Sangat Membantu Sebagai Tambahan Pemasukan. Yang Saya Suka, Sistemnya Jelas Dan Transparan. Sehingga Saya Tidak Merasa Khawatir Soal Pengelolaan Simpanan ini Memberikan Keuntungan Finansial Yang Stabil.",
                   },
                   {
                     name: "Timothy Krysiek",
                     city: "Jakarta",
                     rating: 4,
                     description:
-                      "Awalnya Saya Ragu Untuk Mencoba Investasi Ini. Tapi Setelah Bergabung Beberapa Saat Dan Merasakan Keuntungan Yang Stabil, Saya Terima Rutin Setiap Bulan Sangat Membantu Sebagai Tambahan Pemasukan. Yang Saya Suka, Sistemnya Jelas Dan Transparan. Sehingga Saya Tidak Merasa Khawatir Soal Pengelolaan Investasi ini Memberikan Keuntungan Finansial Yang Stabil.",
+                      "Awalnya Saya Ragu Untuk Mencoba Simpanan Ini. Tapi Setelah Bergabung Beberapa Saat Dan Merasakan Keuntungan Yang Stabil, Saya Terima Rutin Setiap Bulan Sangat Membantu Sebagai Tambahan Pemasukan. Yang Saya Suka, Sistemnya Jelas Dan Transparan. Sehingga Saya Tidak Merasa Khawatir Soal Pengelolaan Simpanan ini Memberikan Keuntungan Finansial Yang Stabil.",
                   },
                 ]
                   .slice(
@@ -555,7 +555,7 @@ const ReviewSection = () => {
                                 </span>
                               </div>
                               <p className="text-gray-500 text-sm">
-                                Investor Photo
+                                Foto Anggota
                               </p>
                             </div>
                           </div>

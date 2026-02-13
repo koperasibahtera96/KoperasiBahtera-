@@ -111,7 +111,7 @@ export default function FinancePaymentsPage() {
               "text-[#889063] dark:text-gray-300 mt-2",
               "!text-[#7d4b4b]"
             )}>
-              Kelola pembayaran manual BCA dari investor
+              Kelola pembayaran manual BCA dari anggota
             </p>
           </div>
         </div>
@@ -127,7 +127,7 @@ export default function FinancePaymentsPage() {
                 "block text-sm font-medium text-[#324D3E] dark:text-white mb-2 font-[family-name:var(--font-poppins)]",
                 "!text-[#4c1d1d]"
               )}>
-                Cari Investor
+                Cari Anggota
               </label>
               <input
                 type="text"
@@ -151,7 +151,7 @@ export default function FinancePaymentsPage() {
                 "block text-sm font-medium text-[#324D3E] dark:text-white mb-2 font-[family-name:var(--font-poppins)]",
                 "!text-[#4c1d1d]"
               )}>
-                Status Investasi
+                Status Simpanan
               </label>
               <select
                 value={filters.status}
@@ -225,7 +225,7 @@ export default function FinancePaymentsPage() {
                   "text-sm text-[#889063] dark:text-gray-300 font-[family-name:var(--font-poppins)]",
                   "!text-[#7d4b4b]"
                 )}>
-                  Total Investor
+                  Total Anggota
                 </p>
                 <p className={getThemeClasses(
                   "text-2xl font-bold text-[#324D3E] dark:text-white",
@@ -288,7 +288,7 @@ export default function FinancePaymentsPage() {
                   "text-sm text-[#889063] dark:text-gray-300 font-[family-name:var(--font-poppins)]",
                   "!text-[#6b6227]"
                 )}>
-                  Total Investasi
+                  Total Simpanan
                 </p>
                 <p className={getThemeClasses(
                   "text-2xl font-bold text-[#4C3D19] dark:text-yellow-400",
@@ -361,7 +361,7 @@ export default function FinancePaymentsPage() {
                 "text-[#889063] dark:text-gray-300 font-[family-name:var(--font-poppins)] text-sm sm:text-base",
                 "!text-[#7d4b4b]"
               )}>
-                Memuat data investor...
+                Memuat data anggota...
               </p>
             </div>
           ) : investorGroups.length === 0 ? (
@@ -374,13 +374,13 @@ export default function FinancePaymentsPage() {
                 "text-lg font-semibold text-[#324D3E] dark:text-white mb-2 font-[family-name:var(--font-poppins)]",
                 "!text-[#4c1d1d]"
               )}>
-                Belum ada data investor
+                Belum ada data anggota
               </h3>
               <p className={getThemeClasses(
                 "text-[#889063] dark:text-gray-300",
                 "!text-[#7d4b4b]"
               )}>
-                Data investor akan muncul di sini ketika ada pembayaran manual
+                Data anggota akan muncul di sini ketika ada pembayaran manual
                 BCA
               </p>
             </div>
@@ -538,7 +538,7 @@ export default function FinancePaymentsPage() {
                             "text-xs sm:text-sm text-[#889063] dark:text-gray-300 mb-2 font-[family-name:var(--font-poppins)]",
                             "!text-[#7d4b4b]"
                           )}>
-                            Investasi Aktif:
+                            Simpanan Aktif:
                           </div>
                           <div className="flex flex-wrap gap-2">
                             {investor.investments
@@ -631,7 +631,7 @@ export default function FinancePaymentsPage() {
                       pagination.page * pagination.limit,
                       pagination.totalCount
                     )}{" "}
-                    dari {pagination.totalCount} investor
+                    dari {pagination.totalCount} anggota
                   </div>
                   <div className="flex gap-2 items-center">
                     <button

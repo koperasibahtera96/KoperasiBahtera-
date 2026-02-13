@@ -76,7 +76,7 @@ export function FinanceSidebar({ children }: FinanceSidebarProps) {
       name: "Dashboard",
       href: "/finance",
       icon: BarChart3,
-      description: "Ringkasan investasi",
+      description: "Ringkasan simpanan",
       gradient: "from-[#324D3E] to-[#4C3D19]",
     },
     // {
@@ -90,7 +90,7 @@ export function FinanceSidebar({ children }: FinanceSidebarProps) {
       name: "Manajemen Anggota",
       href: "/manajemen-anggota",
       icon: Users,
-      description: "Data investor",
+      description: "Data anggota",
       gradient: "from-purple-500 to-pink-600",
     },
     {
@@ -122,10 +122,10 @@ export function FinanceSidebar({ children }: FinanceSidebarProps) {
       gradient: "from-blue-500 to-indigo-600",
     },
     {
-      name: "Daily Income Investor",
+      name: "Pendapatan Harian Anggota",
       href: "/daily-incoming-investor",
       icon: Receipt,
-      description: "Pendapatan dari investor ",
+      description: "Pendapatan dari anggota",
       gradient: "from-indigo-500 to-purple-600",
     },
     //     {

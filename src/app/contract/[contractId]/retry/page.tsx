@@ -309,7 +309,7 @@ export default function ContractRetryPage() {
                     <span className="ml-2 font-medium">{contractInfo.paymentType.toUpperCase()}</span>
                   </div>
                   <div>
-                    <span className="text-[#889063]">Investor:</span>
+                    <span className="text-[#889063]">Anggota:</span>
                     <span className="ml-2 font-medium">{contractInfo.userFullName}</span>
                   </div>
                 </div>

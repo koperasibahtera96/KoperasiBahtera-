@@ -125,18 +125,18 @@ function buildSheetRingkasan(XLSX: any, summary: any, extra: any) {
   const totalExpensesAll = perTypeRows.reduce((s, r) => s + (r.totalExpenses || 0), 0);
 
   const S: (string | number)[][] = [
-    ["", "", "RINGKASAN INVESTASI KESELURUHAN", ""],
+    ["", "", "RINGKASAN SIMPANAN KESELURUHAN", ""],
     ["", "", "Tanggal Laporan:", new Date().toLocaleDateString("id-ID")],
     ["", "", "", ""],
     ["", "", "METRIK UTAMA", ""],
-    ["", "", "Total Investasi", totals.invest],
+    ["", "", "Total Simpanan", totals.invest],
     ["", "", "Total Keuntungan", totals.profit],
     ["", "", "Total Pengeluaran", totalExpensesAll],
     ["", "", "", ""],
     ["", "", "Jumlah Anggota", totals.investors],
     ["", "", "Jumlah Kontrak", toNum(summary?.contractsCount)],
     ["", "", "", ""],
-    ["", "", "No", "Jenis Tanaman", "Total Investasi", "Total Pemasukan", "Total Pengeluaran"],
+    ["", "", "No", "Jenis Tanaman", "Total Simpanan", "Total Pemasukan", "Total Pengeluaran"],
   ];
 
   let no = 1;
@@ -275,7 +275,7 @@ function buildSheetDailyIncoming(raw: any) {
   const ws: any = {};
   let r = 0;
 
-  setCell(ws, 0, r, "Daily Incoming Investor", STYLE.title); r++;
+  setCell(ws, 0, r, "Daily Incoming Anggota", STYLE.title); r++;
   setCell(ws, 0, r, "Periode:", STYLE.subBold); setCell(ws, 1, r, String(raw?.range ?? `Tahun ${raw?.year ?? ""}`).trim(), STYLE.cell); r += 2;
 
   // RINGKASAN
@@ -310,7 +310,7 @@ function buildSheetDailyIncoming(raw: any) {
 
   // HEADER BLUE BAR + DETAIL (seperti HTML)
   setCell(ws, 0, r, "Detail Tarikan Repot Harian", STYLE.blueBar); merge(ws, A1(0, r), A1(8, r)); r++;
-  const head = ["No", "Tanggal", "Nama Investor", "Kode Blok/Paket", "Kode Transaksi/INV ID", "Jenis Transaksi", "Tanaman/Produk", "Jumlah", "Status"];
+  const head = ["No", "Tanggal", "Nama Anggota", "Kode Blok/Paket", "Kode Transaksi/INV ID", "Jenis Transaksi", "Tanaman/Produk", "Jumlah", "Status"];
   head.forEach((h, i) => setCell(ws, i, r, h, STYLE.headGreen)); r++;
 
   // rows
@@ -480,7 +480,7 @@ export default function FinanceSettingsPage() {
       const wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, wsRingkasan, "Ringkasan");
       XLSX.utils.book_append_sheet(wb, wsPengeluaran, "Laporan Pengeluaran");
-      XLSX.utils.book_append_sheet(wb, wsDaily, "Daily Incoming Investor");
+      XLSX.utils.book_append_sheet(wb, wsDaily, "Daily Incoming Anggota");
       XLSX.utils.book_append_sheet(wb, wsInvoice, "Laporan Invoice");
 
       XLSX.writeFile(wb, `Buku-Besar_${new Date().toISOString().slice(0, 10)}.xlsx`);
@@ -557,7 +557,7 @@ export default function FinanceSettingsPage() {
             <div>
               <h2 className="text-2xl font-bold text-[#324D3E] dark:text-white">Export Buku Besar (Satukan 4 Template)</h2>
               {/* <p className="text-[#889063] dark:text-gray-300 text-sm">
-                Hasilnya 1 file XLSX dengan 4 sheet: <b>Ringkasan</b>, <b>Laporan Pengeluaran</b>, <b>Daily Incoming Investor</b>, dan <b>Laporan Invoice</b>.
+                Hasilnya 1 file XLSX dengan 4 sheet: <b>Ringkasan</b>, <b>Laporan Pengeluaran</b>, <b>Daily Incoming Anggota</b>, dan <b>Laporan Invoice</b>.
               </p> */}
             </div>
             <Button onClick={handleExportBukuBesar} disabled={exporting} className="gap-2">

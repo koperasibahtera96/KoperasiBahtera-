@@ -133,7 +133,7 @@ export default function PengeluaranOperasionalPage() {
               Laporan Pengeluaran Operasional
             </h1>
             <p className="text-slate-400 mt-1">
-              Overview pengeluaran operasional semua kontrak investasi
+              Overview pengeluaran operasional semua kontrak simpanan
             </p>
           </div>
         </div>
