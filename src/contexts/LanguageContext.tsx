@@ -86,7 +86,7 @@ const translations = {
     "benefits.title": "Dampak dan Manfaat",
     "benefits.financial.title": "Manfaat Ekonomi",
     "benefits.financial.description":
-      "Tanaman produktif yang memberikan hasil bernilai tinggi setelah masa permanen",
+      "Tanaman produktif yang memberikan hasil bernilai tinggi setelah masa panen",
     "benefits.longterm.title": "Aset Jangka Panjang",
     "benefits.longterm.description":
       "Nilai Tanaman bertambah seiring usia, cocok untuk tabungan masa depan",
