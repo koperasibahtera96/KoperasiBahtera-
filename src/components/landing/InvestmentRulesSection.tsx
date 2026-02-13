@@ -3,15 +3,15 @@
 const rules = [
   {
     title: "Simpanan Hijau",
-    description: "Setiap Anggota dapat mengikuti program ini dengan min membeli 1 paket (10 pohon) Investasi"
+    description: "Setiap Anggota dapat mengikuti program ini dengan mengkonversi simpanan wajib dengan 1 paket (10 pohon) tanaman"
   },
   {
     title: "Jangka Waktu",
     description: "Simpanan bersifat jangka menengah/panjang (5 - 7 tahun, tergantung jenis tanaman)"
   },
   {
-    title: "Bagi Hasil",
-    description: "Hasil panen akan diberikan setelah dikurangi biaya-biaya lainnya"
+    title: "SHU",
+    description: "Sisa hasil usaha akan diberikan setelah dikurangi biaya-biaya lainnya"
   },
   {
     title: "Transparansi",
@@ -25,7 +25,7 @@ const rules = [
 
 export default function InvestmentRulesSection() {
   return (
-    <section 
+    <section
       className="py-16 px-6 bg-cover bg-center bg-no-repeat"
       style={{
         backgroundImage: 'url(/landing/kenapa-perlu-investasi-bg.png)',

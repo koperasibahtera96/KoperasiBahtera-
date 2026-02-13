@@ -104,13 +104,13 @@ const translations = {
     "rules.title": "Panduan Berpartisipasi!",
     "rules.package.title": "Simpanan Wajib",
     "rules.package.description":
-      "Setiap Anggota dapat mengikuti program ini dengan minimal membeli 1 paket (10 Pohon) Tanaman.",
+      "Setiap Anggota dapat mengikuti program ini dengan mengkonversi simpanan wajib dengan 1 paket (10 pohon) tanaman.",
     "rules.duration.title": "Jangka Waktu",
     "rules.duration.description":
       "Program ini bersifat jangka menengah/panjang (5-7 tahun, tergantung jenis tanaman)",
     "rules.profit.title": "SHU",
     "rules.profit.description":
-      "SHU akan diberikan setelah dikurangi biaya-biaya lainnya",
+      "Sisa hasil usaha akan diberikan setelah dikurangi biaya-biaya lainnya",
     "rules.transparency.title": "Transparansi",
     "rules.transparency.description":
       "Anggota mendapat laporan berkala mengenai pertumbuhan tanaman, perawatan tanaman, kondisi lahan, dan proyeksi keuntungan",

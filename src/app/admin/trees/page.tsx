@@ -4,10 +4,10 @@ import { AdminLayout } from "@/components/admin/AdminLayout";
 import { KetuaLayout } from "@/components/ketua/KetuaLayout";
 import { useAlert } from "@/components/ui/Alert";
 import { Select } from "@/components/ui/Select";
-import { RefreshCw, Download } from "lucide-react";
+import { Download, RefreshCw } from "lucide-react";
 import { useSession } from "next-auth/react";
-import { useEffect, useState } from "react";
 import { useTheme } from "next-themes";
+import { useEffect, useState } from "react";
 
 interface PlantInstance {
   _id: string;
@@ -238,7 +238,7 @@ export default function TreesPage() {
               Data Pohon Berdasarkan Tipe
             </h1>
             <p className="text-[#889063] dark:text-gray-300 mt-1 sm:mt-2 text-sm sm:text-base">
-              Kelompokkan pohon berdasarkan tipe dengan data investor terkait
+              Kelompokkan pohon berdasarkan tipe dengan data anggota terkait
             </p>
           </div>
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3">
@@ -461,7 +461,7 @@ export default function TreesPage() {
                       <div className="hidden sm:flex items-center gap-6 text-sm">
                         <div>
                           <span className="text-[#889063] dark:text-gray-400">
-                            Investor:{" "}
+                            Anggota:{" "}
                           </span>
                           <span className="font-semibold text-[#324D3E] dark:text-white">
                             {group.totalInvestors}
@@ -469,7 +469,7 @@ export default function TreesPage() {
                         </div>
                         <div>
                           <span className="text-[#889063] dark:text-gray-400">
-                            Investasi:{" "}
+                            Simpanan:{" "}
                           </span>
                           <span className="font-semibold text-[#324D3E] dark:text-white">
                             {formatCurrency(group.totalInvestment)}
@@ -492,7 +492,7 @@ export default function TreesPage() {
                   <div className="sm:hidden mt-2 space-y-1 text-sm">
                     <div>
                       <span className="text-[#889063] dark:text-gray-400">
-                        Investor:{" "}
+                        Anggota:{" "}
                       </span>
                       <span className="font-semibold text-[#324D3E] dark:text-white">
                         {group.totalInvestors}
@@ -500,7 +500,7 @@ export default function TreesPage() {
                     </div>
                     <div>
                       <span className="text-[#889063] dark:text-gray-400">
-                        Investasi:{" "}
+                        Simpanan:{" "}
                       </span>
                       <span className="font-semibold text-[#324D3E] dark:text-white">
                         {formatCurrency(group.totalInvestment)}
@@ -545,7 +545,7 @@ export default function TreesPage() {
                                 </span>
                                 {!ownerGroup.relatedInvestor && (
                                   <span className="bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300 text-xs px-2 py-1 rounded-full">
-                                    No Investor Data
+                                    No Anggota Data
                                   </span>
                                 )}
                               </div>
