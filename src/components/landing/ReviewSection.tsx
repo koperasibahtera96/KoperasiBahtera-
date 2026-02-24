@@ -60,11 +60,11 @@ const ReviewSection = () => {
 
   // Hardcoded rating data
   const ratingData = {
-    averageRating: 4.5,
-    totalReviews: 2808,
+    averageRating: 4.9,
+    totalReviews: 565,
     breakdown: {
-      5: 2800,
-      4: 8,
+      5: 550,
+      4: 15,
       3: 0,
       2: 0,
       1: 0,
@@ -201,16 +201,25 @@ const ReviewSection = () => {
   };
 
   const renderStars = (rating: number) => {
-    return Array.from({ length: 5 }, (_, i) => (
-      <span
-        key={i}
-        className={`text-base md:text-lg lg:text-xl ${
-          i < Math.floor(rating) ? "text-yellow-400" : "text-gray-300"
-        }`}
-      >
-        ★
+    return (
+      <span className="relative inline-flex">
+        {Array.from({ length: 5 }, (_, i) => (
+          <span key={i} className="text-base md:text-lg lg:text-xl text-gray-300">
+            ★
+          </span>
+        ))}
+        <span
+          className="absolute inset-0 flex overflow-hidden text-base md:text-lg lg:text-xl"
+          style={{ width: `${(rating / 5) * 100}%` }}
+        >
+          {Array.from({ length: 5 }, (_, i) => (
+            <span key={i} className="text-yellow-400 flex-shrink-0">
+              ★
+            </span>
+          ))}
+        </span>
       </span>
-    ));
+    );
   };
 
   const renderInteractiveStars = () => {
