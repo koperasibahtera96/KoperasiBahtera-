@@ -10,6 +10,7 @@ import { useEffect, useState } from "react";
 interface ContractData {
   investor: {
     name: string;
+    memberNumber?: string;
     email: string;
     phoneNumber?: string;
     nik?: string;
@@ -27,6 +28,9 @@ interface ContractData {
     totalAmount: number;
     amountPaid: number;
     paymentType: "full" | "cicilan";
+    paymentTerm?: "monthly" | "quarterly" | "semiannual" | "annual";
+    totalInstallments?: number;
+    durationYears?: number;
     plantInstanceId: string;
     investmentDate: string;
   };
@@ -251,6 +255,105 @@ function convertNumberToWords(num: number): string {
   }
 
   return result + " rupiah";
+}
+
+type PlantMetadata = {
+  label: string;
+  family: string;
+  alias: string;
+  scientificName: string;
+  usesText: string;
+};
+
+function getPlantMetadata(productName?: string): PlantMetadata {
+  const normalized = (productName || "").toLowerCase();
+  if (normalized.includes("alpukat")) {
+    return {
+      label: "Alpukat",
+      family: "Lauraceae",
+      alias: "avokad",
+      scientificName: "Persea americana",
+      usesText: "buahnya untuk konsumsi, serta daunnya untuk pemanfaatan tertentu",
+    };
+  }
+  if (normalized.includes("gaharu")) {
+    return {
+      label: "Gaharu",
+      family: "Thymelaeaceae",
+      alias: "agarwood",
+      scientificName: "Aquilaria malaccensis",
+      usesText: "resinnya untuk bahan baku parfum, dupa, dan produk turunannya",
+    };
+  }
+  if (normalized.includes("jengkol")) {
+    return {
+      label: "Jengkol",
+      family: "Fabaceae",
+      alias: "jering",
+      scientificName: "Archidendron pauciflorum",
+      usesText: "bijinya sebagai bahan pangan dan bagian tanamannya untuk pemanfaatan pendukung",
+    };
+  }
+  if (normalized.includes("kelapa")) {
+    return {
+      label: "Kelapa",
+      family: "Arecaceae",
+      alias: "nyiur",
+      scientificName: "Cocos nucifera",
+      usesText: "buah, air, sabut, dan bagian lainnya untuk kebutuhan pangan maupun turunan usaha",
+    };
+  }
+
+  return {
+    label: "Aren",
+    family: "Arecaceae",
+    alias: "enau",
+    scientificName: "Arenga pinnata",
+    usesText: "nira untuk gula aren, ijuk dan lidi, serta buahnya (kolang-kaling)",
+  };
+}
+
+function getPlantTypesText(productName?: string): string {
+  const normalized = (productName || "").toLowerCase();
+  if (normalized.includes("alpukat")) return "ALPUKAT";
+  if (normalized.includes("gaharu")) return "GAHARU";
+  if (normalized.includes("jengkol")) return "JENGKOL";
+  if (normalized.includes("aren")) return "AREN";
+  if (normalized.includes("kelapa")) return "KELAPA";
+  return "GAHARU, ALPUKAT, JENGKOL, AREN, KELAPA";
+}
+
+function convertNumberToUnitWords(num: number): string {
+  return convertNumberToWords(num).replace(/\s+rupiah$/i, "").trim();
+}
+
+function getPaymentClauseText(params: {
+  paymentType: "full" | "cicilan";
+  paymentTerm?: "monthly" | "quarterly" | "semiannual" | "annual";
+  totalAmountText: string;
+  totalAmountWords: string;
+  totalInstallments?: number;
+  durationYears?: number;
+  wrapValue?: (value: string) => string;
+}): string {
+  const wrap = params.wrapValue || ((value: string) => value);
+  const amountWords = params.totalAmountWords.toLowerCase();
+
+  if (params.paymentType === "full") {
+    return `1. Membayar sebesar ${wrap(params.totalAmountText)} (${wrap(amountWords)}) sekali bayar;`;
+  }
+
+  if (params.paymentTerm === "annual" && params.durationYears) {
+    const yearsWords = convertNumberToUnitWords(params.durationYears).toLowerCase();
+    return `1. Membayar sebesar ${wrap(params.totalAmountText)} (${wrap(amountWords)}) dengan cara dicicil selama ${wrap(String(params.durationYears))} (${wrap(yearsWords)}) tahun, dibayar setiap tahun di tanggal dan bulan yang sama pada saat melakukan pembayaran pertama;`;
+  }
+
+  if (params.totalInstallments) {
+    const monthsWords = convertNumberToUnitWords(params.totalInstallments).toLowerCase();
+    return `1. Membayar sebesar ${wrap(params.totalAmountText)} (${wrap(amountWords)}) dengan cara dicicil selama ${wrap(String(params.totalInstallments))} (${wrap(monthsWords)}) bulan dibayar setiap bulan pada tanggal yang sama saat pembayaran pertama;`;
+  }
+
+  return `1. Membayar sebesar ${wrap(params.totalAmountText)} (${wrap(amountWords)}) dengan cara dicicil selama ${wrap("60")} (${wrap("enam puluh")}) bulan dibayar setiap bulan pada tanggal yang sama saat pembayaran pertama;`;
 }
 
 export default function ContractPage() {
@@ -660,57 +763,7 @@ export default function ContractPage() {
       pdf.text(addressLines, colonPosition + 5, yPosition);
       yPosition += lineHeight * addressLines.length + 8;
 
-      const pihakPertamaText =
-        "Bertindak untuk dan atas nama diri sendiri. selanjutnya disebut sebagai Pihak Pertama.";
-      const pihakPertamaLines = pdf.splitTextToSize(
-        pihakPertamaText,
-        rightMargin - leftMargin - 10
-      );
-      pdf.text(pihakPertamaLines, leftMargin + 10, yPosition);
-      yPosition += lineHeight * pihakPertamaLines.length + 8;
-
-    // Pihak Kedua - numbered section 2
-    pdf.setFont("helvetica", "bold");
-    pdf.text("2.", leftMargin, yPosition);
-    pdf.setFont("helvetica", "normal");
-    pdf.text("Nama", leftMargin + 10, yPosition);
-      pdf.text(":", colonPosition, yPosition);
-      pdf.setFont("helvetica", "bold");
-      pdf.text("Halim Perdana Kusuma, S.H., M.H.", colonPosition + 5, yPosition);
-      pdf.setFont("helvetica", "normal");
-      pdf.text(
-        "Halim Perdana Kusuma, S.H., M.H.",
-        colonPosition + 5,
-        yPosition
-      );
-      yPosition += lineHeight;
-
-      pdf.text("Tempat/Tgl Lahir", leftMargin + 10, yPosition);
-      pdf.text(":", colonPosition, yPosition);
-      pdf.text("Sukaraja, 11 September 1986", colonPosition + 5, yPosition);
-      yPosition += lineHeight;
-
-      pdf.text("Alamat", leftMargin + 10, yPosition);
-      pdf.text(":", colonPosition, yPosition);
-      const koprasi_address =
-        "Komplek Taman Mutiara Indah blok J3 No.17 RT004 RW017 Kaligandu, Kota Serang, Banten";
-      const koperasiAddressLines = pdf.splitTextToSize(
-        koprasi_address,
-        rightMargin - colonPosition - 5
-      );
-      pdf.text(koperasiAddressLines, colonPosition + 5, yPosition);
-      yPosition += lineHeight * koperasiAddressLines.length + 5;
-
-      const pihakKeduaText =
-        "Bertindak untuk dan atas nama KOPERASI BINTANG MERAH SEJAHTERA, selanjutnya disebut sebagai Pihak Kedua.";
-      const pihakKeduaLines = pdf.splitTextToSize(
-        pihakKeduaText,
-        rightMargin - leftMargin - 10
-      );
-      pdf.text(pihakKeduaLines, leftMargin + 10, yPosition);
-      yPosition += lineHeight * pihakKeduaLines.length + 6;
-
-      // Contract preamble with exact formatting
+      // Contract preamble with revised wording
       const totalAmountText = `Rp${contractData.investment.totalAmount.toLocaleString(
         "id-ID"
       )},-`;
@@ -718,28 +771,15 @@ export default function ContractPage() {
         contractData.investment.totalAmount
       );
 
-      // Extract plant type from productName (e.g., "Paket 10 Pohon Alpukat - 10 Pohon" -> "ALPUKAT")
-      let plantTypesText = "GAHARU, ALPUKAT, JENGKOL, AREN, KELAPA"; // Default fallback
-      if (contractData.investment.productName) {
-        const productName = contractData.investment.productName.toLowerCase();
-        if (productName.includes("alpukat")) {
-          plantTypesText = "ALPUKAT";
-        } else if (productName.includes("gaharu")) {
-          plantTypesText = "GAHARU";
-        } else if (productName.includes("jengkol")) {
-          plantTypesText = "JENGKOL";
-        } else if (productName.includes("aren")) {
-          plantTypesText = "AREN";
-        } else if (productName.includes("kelapa")) {
-          plantTypesText = "KELAPA";
-        }
-      }
+      const plantTypesText = getPlantTypesText(contractData.investment.productName);
+      const plantMetadata = getPlantMetadata(contractData.investment.productName);
+      const memberNumber = contractData.investor.memberNumber || "-";
 
       // Helper function to wrap dynamic values in bold markers
       const wrapBold = (text: string) => `{{BOLD:${text}}}`;
 
       const preambleIntroText =
-        "Bahwa sebelum ditandatanganinya Surat Perjanjian ini, Para pihak terlebih dahulu menerangkan hal–hal sebagai berikut:";
+        `Bahwa sebelum ditandatanganinya Surat Persetujuan ini, saya selaku anggota koperasi dengan nomor anggota ${wrapBold(memberNumber)} menerangkan hal–hal sebagai berikut:`;
       const preambleIntroLines = pdf.splitTextToSize(
         preambleIntroText,
         rightMargin - leftMargin
@@ -747,11 +787,10 @@ export default function ContractPage() {
       pdf.text(preambleIntroLines, leftMargin, yPosition);
       yPosition += lineHeight * preambleIntroLines.length + 3;
 
-    const preambleTexts = [
-      `1. Bahwa Pihak Pertama adalah selaku yang memiliki modal sebesar ${wrapBold(totalAmountText)} (${wrapBold(totalAmountWords.toLowerCase())}) untuk selanjutnya disebut sebagai MODAL KERJASAMA untuk project (${wrapBold(plantTypesText)});`,
-        `2. Bahwa Pihak Kedua adalah Pengelola Dana Kerjasama untuk project (${wrapBold(plantTypesText)}) berlokasi di Kabupten Musi Rawas Utara Provinsi Sumatera Selatan;`,
-        `3. Bahwa Pihak Pertama dan Pihak Kedua setuju untuk saling mengikatkan diri dalam suatu perjanjian Kerjasama di project (${wrapBold(plantTypesText)}) sesuai dengan ketentuan hukum yang berlaku.`,
-        `4. Bahwa berdasarkan hal-hal tersebut di atas, kedua belah pihak menyatakan sepakat dan setuju untuk mengadakan Perjanjian Kerjasama ini yang dilaksanakan dengan ketentuan dan syarat-syarat sebagai berikut:`,
+      const preambleTexts = [
+        `1. Bahwa saya anggota dari Koperasi Bintang Merah Sejahtera dan selaku yang memiliki simpanan anggota sebesar ${wrapBold(totalAmountText)} (${wrapBold(totalAmountWords.toLowerCase())}) untuk selanjutnya disebut sebagai Simpanan Anggota untuk project (${wrapBold(plantTypesText)});`,
+        `2. Bahwa Koperasi adalah Koperasi Pengelola untuk project (${wrapBold(plantTypesText)}) berlokasi di Kabupten Musi Rawas Utara Provinsi Sumatera Selatan;`,
+        `3. Bahwa Anggota Koperasi dan Koperasi setuju untuk pengelolaan simpanan anggota dalam usaha (${wrapBold(plantTypesText)}) sesuai dengan ketentuan hukum yang berlaku.`,
       ];
 
       preambleTexts.forEach((text) => {
@@ -773,140 +812,113 @@ export default function ContractPage() {
         yPosition += lineHeight * lines.length + 2;
       });
 
-      yPosition += 4;
+      const agreementIntro =
+        "Persetujuan Pengelolaan Simpanan Anggota ini yang dilaksanakan dengan ketentuan dan syarat-syarat sebagai berikut:";
+      const agreementIntroLines = pdf.splitTextToSize(
+        agreementIntro,
+        rightMargin - leftMargin
+      );
+      pdf.text(agreementIntroLines, leftMargin, yPosition);
+      yPosition += lineHeight * agreementIntroLines.length + 8;
 
-      // Complete Legal Articles
+      const paymentClause = getPaymentClauseText({
+        paymentType: contractData.investment.paymentType,
+        paymentTerm: contractData.investment.paymentTerm,
+        totalAmountText,
+        totalAmountWords,
+        totalInstallments: contractData.investment.totalInstallments,
+        durationYears: contractData.investment.durationYears,
+        wrapValue: wrapBold,
+      });
+
+      // Revised contract points
       const articles = [
         {
-          title: "PASAL I\nDEFINISI",
+          title: "POIN I (DEFINISI)",
           content: [
-            "Dalam perjanjian ini, istilah-istilah berikut mempunyai arti sebagai berikut:",
+            "Dalam persetujuan ini, istilah-istilah berikut mempunyai arti sebagai berikut:",
+            "1. Koperasi adalah Koperasi Bintang Merah Sejahtera;",
+            "2. Pengurus Koperasi adalah organ koperasi yang sah sesuai Anggaran Dasar dan Anggaran Rumah Tangga;",
+            "3. Simpanan Anggota adalah simpanan pokok, simpanan wajib, dan/atau simpanan sukarela yang dinilai dalam rupiah;",
+            "4. Sisa Hasil Usaha (SHU) adalah hasil yang diperoleh masing-masing anggota setelah satu tahun buku setelah seluruh pendapatan dikurangi biaya, penyusutan, dan kewajiban lainnya, termasuk pajak;",
+            "5. Diskon adalah pengurangan harga, potongan nominal, atau persentase yang diberikan;",
+            `6. ${wrapBold(plantMetadata.label)} adalah nama pohon dari keluarga ${wrapBold(plantMetadata.family)} yang juga dikenal sebagai ${wrapBold(plantMetadata.alias)}, dengan nama ilmiah ${wrapBold(plantMetadata.scientificName)}. Pohon ini sangat serbaguna dan hampir seluruh bagiannya dapat dimanfaatkan, termasuk ${wrapBold(plantMetadata.usesText)};`,
+            `7. Paket Penanaman adalah unit usaha penanaman 10 (sepuluh) pohon (${wrapBold(plantTypesText)}) yang dikelola oleh koperasi;`,
+            "8. Masa Panen adalah periode waktu di mana hasil dipanen dan dikumpulkan dari lahan;",
+            "9. Laporan Usaha adalah laporan tertulis dan/atau elektronik yang disampaikan Koperasi kepada Anggota Koperasi secara periodik;",
+            "10. Masa Perawatan adalah periode sejak bibit ditanam hingga pohon siap dipanen;",
+            "11. Force Majeure adalah keadaan di luar kemampuan yang menyebabkan tidak dapat melaksanakan kewajibannya;",
+          ],
+        },
+        {
+          title: "POIN II (RUANG LINGKUP)",
+          content: [
+            `1. Dalam persetujuan pengelolaan simpanan anggota ini menyatakan agar Koperasi Bintang Merah sebagai Pengelola simpanan wajib anggota sebesar ${wrapBold(totalAmountText)} (${wrapBold(totalAmountWords.toLowerCase())}) untuk 1 (satu) paket penanaman (${wrapBold(plantTypesText)}) dan Koperasi dengan ini telah menerima penyerahan simpanan tersebut dari Anggota Koperasi serta menyanggupi untuk melaksanakan pengelolaan simpanan anggota;`,
+            `2. Koperasi melaksanakan pengelolaan simpanan anggota pada Usaha Peningkatan Modal di project (${wrapBold(plantTypesText)}) yang berlokasi di Kabupten Musi Rawas Utara Provinsi Sumatera Selatan setelah ditandatanganinya persetujuan ini;`,
+            "3. Koperasi dengan ini akan membagikan Sisa Hasil Usaha (SHU) kepada Anggota Koperasi di mulai dari setelah masa panen pertama atau setelah tanaman dapat menghasilkan;",
+          ],
+        },
+        {
+          title: "POIN III (TATA CARA SIMPANAN ANGGOTA)",
+          content: [
+            "Mengenai tata cara Simpanan Anggota dengan cara sebagai berikut:",
+            paymentClause,
+          ],
+        },
+        {
+          title: "POIN IV (JANGKA WAKTU)",
+          content: [
+            "Persetujuan ini dilakukan dan diterima untuk jangka waktu 12 (dua belas) tahun, terhitung sejak tanggal di tanda tanganinya persetujuan ini;",
+          ],
+        },
+        {
+          title: "POIN V (SISA HASIL USAHA (SHU))",
+          content: [
+            "Dalam Persetujuan ini, didalam hal pembagian hasil penyertaan simpanan anggota sebagai berikut:",
+            `1. Persetujuan ini dilakukan dengan cara pemberian Sisa Hasil Usaha (SHU) yang diperoleh dalam Usaha Peningkatan Modal Usaha di project (${wrapBold(plantTypesText)}) berlokasi di Kabupten Musi Rawas Utara Provinsi Sumatera Selatan;`,
+            "2. Sisa Hasil Usaha (SHU) yang akan di bagikan kepada Anggota Koperasi adalah:",
+            "2.1. Sebesar 100% (seratus persen) dari hasil yang di dapatkan koperasi;",
+            "2.2. Perhitungan Sisa Hasil Usaha (SHU) koperasi didasarkan pada pendapatan dikurangi biaya operasional dan kewajiban selama satu tahun buku;",
+            "3. Pembagian Sisa Hasil Usaha (SHU) dilakukan paling lambat 7 (tujuh) hari Kerja setelah masa panen dan penjualan telah selesai dilaksanakan;",
+            "4. Pembayaran Sisa Hasil Usaha (SHU) dilakukan melalui transfer ke rekening ANGGOTA KOPERASI.",
+          ],
+        },
+        {
+          title: "POIN VI (PENGALIHAN)",
+          content: [
+            "1. Anggota Koperasi dilarang menyerahkan sebagian atau keseluruhan hak atau kewajibannya dalam persetujuan ini kepada Pihak Ketiga atau Pihak Lain tanpa terlebih dahulu mendapatkan persetujuan tertulis dari Koperasi.",
+            "2. Apabila Anggota Koperasi meninggal dunia, maka ahli waris dapat melanjutkan dengan terlebih dahulu mendapatkan persetujuan tertulis dari Koperasi dan dibuktikan dengan surat pernyataan waris yang berlaku;",
+          ],
+        },
+        {
+          title: "POIN VII (PENGAKHIRAN DAN PENGHENTIAN)",
+          content: [
+            "Bahwa Persetujuan ini dapat berakhir apabila terjadi hal-hal sebagai berikut:",
+            "1. Anggota Koperasi tidak lagi menjadi anggota Koperasi Bintang Merah Sejahtera;",
+            "2. Berakhirnya masa sesuai yang tertuang dalam Persetujuan ini.",
             "",
-            `1. Paket Penanaman adalah unit usaha yang terdiri dari 10 (sepuluh) pohon (${wrapBold(plantTypesText)}) yang ditanam, dirawat, dan dipanen oleh Pihak Pertama.`,
-            `2. Dana Investasi adalah sejumlah uang yang diserahkan Pihak Kedua kepada Pihak Pertama untuk mendanai pembelian bibit, penanaman, perawatan, serta biaya operasional hingga pemanenan pohon.`,
-            `3. Keuntungan adalah hasil bersih dari penjualan panen setelah dikurangi biaya operasional yang sah.`,
-            `4. Kerugian adalah nilai minus yang timbul akibat berkurangnya hasil panen atau biaya operasional yang lebih besar daripada pendapatan.`,
-            `5. Laporan Usaha adalah laporan tertulis dan/atau elektronik yang disampaikan Pihak Pertama kepada Pihak Kedua secara periodik.`,
-            `6. Masa Perawatan adalah periode sejak bibit ditanam hingga pohon siap dipanen.`,
-            `7. Force Majeure adalah keadaan di luar kemampuan Para Pihak yang menyebabkan salah satu pihak tidak dapat melaksanakan kewajibannya.`,
-            `8. Para Pihak adalah Pihak Pertama dan Pihak Kedua yang menandatangani perjanjian ini.`,
+            "Apabila Anggota Koperasi berhenti sebelum jangka waktu yang ada tanpa persetujuan tertulis dari Koperasi, maka:",
+            "1. Simpanan anggota yang telah disetorkan tidak dapat dikembalikan secara penuh.",
+            "2. Pengembalian simpanan anggota hanya akan dilakukan setelah dikurangi dengan biaya administrasi, biaya operasional yang telah dikeluarkan, serta potongan lain.",
+            "3. Apabila Anggota Koperasi menunjuk atau menghadirkan pengganti yang disetujui oleh Koperasi untuk melanjutkan kerjasama, maka yang dikembalikan kepada Anggota Koperasi hanya sebesar selisih nilai setelah memperhitungkan kewajiban dan/atau biaya-biaya yang timbul.",
+            "4. Koperasi berhak menunjuk atau menghadirkan pengganti;",
+            "5. Koperasi berhak menahan Sebagian dan/atau keseluruhan simpanan anggota sebagai bentuk kompensasi atas kerugian, biaya, maupun potensi kehilangan manfaat akibat penghentian tersebut.",
           ],
         },
         {
-          title: "PASAL II\nMAKSUD DAN TUJUAN",
+          title: "POIN XI (KEADAAN MEMAKSA (FORCE MAJEURE))",
           content: [
-            `Pihak Pertama dalam perjanjian ini memberi dana kerjasama kepada Pihak Kedua sebesar ${wrapBold(totalAmountText)} (${wrapBold(totalAmountWords.toLowerCase())}) untuk 1 (satu) paket penanaman dan Pihak Kedua dengan ini telah menerima penyerahan DANA KERJASAMA tersebut dari Pihak Pertama serta menyanggupi untuk melaksanakan pengelolaan DANA KERJASAMA tersebut.`,
+            "1. Yang termasuk dalam Force Majeure adalah akibat dari kejadian-kejadian diluar kuasa dan kehendak dari Koperasi diantaranya termasuk tidak terbatas bencana alam, banjir, badai, topan, gempa bumi, kebakaran, perang, huru-hara, pemberontakan, demonstrasi, pemogokan, kegagalan koperasi.",
+            "2. Apabila terjadi Force Majeure wajib memberitahukan secara tertulis kepada anggota selambat-lambatnya 7 (tujuh) hari sejak terjadinya keadaan tersebut dengan bukti pendukung yang sah.",
+            "3. Apabila Force Majeure berlangsung tidak lebih dari 30 (tiga puluh) hari, kewajiban koperasi ditunda hingga keadaan berakhir.",
+            "4. Apabila Force Majeure berlangsung lebih dari 90 (Sembilan puluh) hari sehingga pelaksanaan tidak mungkin dilanjutkan, maka untuk membicarakan kembali atau mengakhiri tanpa tuntutan ganti rugi.",
           ],
         },
         {
-          title: "PASAL III\nRUANG LINGKUP",
+          title: "POIN XIV (PENUTUP)",
           content: [
-            `1. Dalam pelaksanaan perjanjian ini, Pihak Pertama memberi dana kepada Pihak Kedua sebesar ${wrapBold(totalAmountText)} (${wrapBold(totalAmountWords.toLowerCase())}) untuk 1 (satu) paket penanaman dan Pihak Kedua dengan ini telah menerima penyerahan dana tersebut dari Pihak Pertama serta menyanggupi untuk melaksanakan pengelolaan dana.`,
-            `2. Pihak Kedua dengan ini berjanji dan mengikatkan diri untuk melaksanakan perputaran dana pada Usaha Peningkatan Modal di project (${wrapBold(plantTypesText)}) yang berlokasi di Kabupten Musi Rawas Utara Provinsi Sumatera Selatan setelah ditandatanganinya perjanjian ini.`,
-            `3. Pihak Kedua dengan ini berjanji dan mengikatkan diri untuk memberikan keuntungan kepada Pihak Pertama di mulai dari setelah masa panen pertama;`,
-          ],
-        },
-        {
-          title: "PASAL IV\nTATA CARA PEMBAYARAN",
-          content: [
-            "Bahwa Para Pihak sepakat mengenai tata cara pembayaran terhadap Kerjasama dengan cara:",
-            "",
-            `1. Pihak Pertama membayar sebesar ${wrapBold(totalAmountText)} (${wrapBold(totalAmountWords.toLowerCase())}) ${wrapBold(contractData.investment.paymentType === 'full' ? 'sekali bayar' : 'dengan cara dicicil')};`,
-          ],
-        },
-        {
-          title: "PASAL V\nJANGKA WAKTU KERJASAMA",
-          content: [
-            "Perjanjian kerjasama ini dilakukan dan diterima untuk jangka waktu 20 (dua puluh) tahun, terhitung sejak tanggal di tanda tanganinya perjanjian ini;",
-          ],
-        },
-        {
-          title: "PASAL VI\nHAK DAN KEWAJIBAN PIHAK PERTAMA",
-          content: [
-            "Dalam Perjanjian Kerjasama ini, Pihak Pertama memiliki Hak dan Kewajiban sebagai berikut:",
-            `1. Memberikan dana kepada Pihak Kedua sebesar ${wrapBold(totalAmountText)} (${wrapBold(totalAmountWords.toLowerCase())}) untuk 1 (satu) paket penanaman;`,
-            `2. Menerima hasil keuntungan atas pengelolaan dana;`,
-            `3. Menerima laporan perkembangan usaha secara berkala;`,
-            `4. Melakukan pengawasan terhadap usaha dengan pemberitahuan terlebih dahulu;`,
-            `5. Tidak melakukan intervensi teknis dalam pengelolaan usaha;`,
-            `6. Menjaga kerahasiaan informasi terkait operasional usaha.`,
-          ],
-        },
-        {
-          title: "PASAL VII\nHAK DAN KEWAJIBAN PIHAK KEDUA",
-          content: [
-            "Dalam Perjanjian Kerjasama ini, Pihak Kedua memiliki Hak dan Kewajiban sebagai berikut :",
-            `1. Menerima dana dari Pihak Pertama sebesar ${wrapBold(totalAmountText)} (${wrapBold(totalAmountWords.toLowerCase())}) untuk 1 (satu) paket penanaman;`,
-            `2. Memberikan bagian hasil keuntungan kepada Pihak Pertama;`,
-            `3. Memperoleh bagian keuntungan dari pengelolaan usaha;`,
-            `4. Menentukan metode teknis penanaman, perawatan, dan pemanenan pohon;`,
-            `5. Menyediakan bibit pohon sesuai jumlah paket yang dibeli Pihak Pertama;`,
-            `6. Melaksanakan penanaman, perawatan, hingga pemanenan pohon sesuai standar;`,
-            `7. Memberikan laporan perkembangan usaha;`,
-            `8. Membagi keuntungan kepada Pihak Pertama sesuai dengan jadwal yang ditentukan;`,
-            `9. Menjaga transparansi penggunaan dana dan membuka akses audit.`,
-          ],
-        },
-        {
-          title: "PASAL VIII\nPEMBAGIAN HASIL",
-          content: [
-            "Dalam Perjanjian Kerjasama ini, kedua belah pihak sepakat didalam hal pembagian hasil penyertaan dana sebagai berikut:",
-            `1. Kedua belah pihak sepakat dan setuju bahwa perjanjian kerjasama ini dilakukan dengan cara pemberian keuntungan yang diperoleh dalam Usaha Peningkatan Modal Usaha di project (${wrapBold(plantTypesText)}) berlokasi di Kabupten Musi Rawas Utara Provinsi Sumatera Selatan;`,
-            `2. Keuntungan yang akan di Terima Pihak Pertama dibagi dengan skema: 30% (tiga puluh persen) untuk Pihak Pertama dan 70% (tujuh puluh persen) untuk Pihak Kedua;`,
-            `3. Pembagian keuntungan dilakukan paling lambat 7 (tujuh) hari Kerja setelah masa panen dan penjualan telah selesai dilaksanakan.`,
-            `4. Pembayaran keuntungan dilakukan melalui transfer ke rekening Pihak Pertama.`,
-          ],
-        },
-        {
-          title: "PASAL IX\nPENGALIHAN",
-          content: [
-            `1. Pihak Pertama dilarang menyerahkan sebagian atau keseluruhan hak atau kewajibannya dalam perjanjian ini kepada Pihak Ketiga atau Pihak Lain tanpa terlebih dahulu mendapatkan persetujuan tertulis dari Pihak Kedua.`,
-            `2. Apabila Pihak Pertama meninggal dunia ahli waris dapat melanjutkan perjanjian ini dengan terlebih dahulu mendapatkan persetujuan tertulis dari Pihak Kedua;`,
-          ],
-        },
-        {
-          title: "PASAL X\nPENGAKHIRAN dan PENGHENTIAN PERJANJIAN",
-          content: [
-            "Para Pihak setuju bahwa perjanjian ini dapat diakhiri apabila terjadi hal-hal sebagai berikut:",
-            `1. Berakhirnya masa kontrak kerjasama para pihak sesuai perjanjian yang tertuang dalam Perjanjian Kerjasama ini.`,
-            `2. Kesepakatan bersama yang dilakukan sewaktu-waktu oleh Para Pihak baik secara tertulis untuk mengakhiri perjanjian ini.`,
-            "",
-            "Apabila Pihak Pertama menghentikan kerja sama sebelum jangka waktu yang telah disepakati tanpa persetujuan tertulis dari Pihak Kedua, maka:",
-            `1. Dana yang telah disetorkan tidak dapat dikembalikan secara penuh.`,
-            `2. Pengembalian dana hanya akan dilakukan setelah dikurangi dengan biaya administrasi, biaya operasional yang telah dikeluarkan, serta potongan lain.`,
-            `3. Apabila Pihak Pertama menunjuk atau menghadirkan pihak pengganti yang disetujui oleh Pihak Kedua untuk melanjutkan kerja sama, maka dana yang dikembalikan kepada Pihak Pertama hanya sebesar selisih nilai setelah memperhitungkan kewajiban dan/atau biaya-biaya yang timbul.`,
-            `4. Pihak kedua berhak menunjuk atau menghadirkan Pihak pengganti untuk melanjutkan kerja sama.`,
-            `5. Pihak Kedua berhak menahan Sebagian dan/atau keseluruhan dana sebagai bentuk kompensasi atas kerugian, biaya, maupun potensi kehilangan manfaat akibat penghentian sepihak tersebut.`,
-          ],
-        },
-        {
-          title: "PASAL XI\nKEADAAN MEMAKSA (FORCE MAJEURE)",
-          content: [
-            `1. Yang termasuk dalam Force Majeure adalah akibat dari kejadian-kejadian diluar kuasa dan kehendak dari kedua belah pihak diantaranya termasuk tidak terbatas bencana alam, banjir, badai, topan, gempa bumi, kebakaran, perang, huru-hara, pemberontakan, demonstrasi, pemogokan, kegagalan koperasi.`,
-            `2. Pihak yang mengalami Force Majeure wajib memberitahukan secara tertulis kepada pihak lainnya selambat-lambatnya 7 (tujuh) hari sejak terjadinya keadaan tersebut dengan bukti pendukung yang sah.`,
-            `3. Apabila Force Majeure berlangsung tidak lebih dari 30 (tiga puluh) hari, kewajiban para pihak ditunda hingga keadaan berakhir.`,
-            `4. Apabila Force Majeure berlangsung lebih dari 90 (Sembilan puluh) hari sehingga pelaksanaan perjanjian tidak mungkin dilanjutkan, maka para pihak sepakat untuk membicarakan kembali atau mengakhiri perjanjian tanpa tuntutan ganti rugi.`,
-          ],
-        },
-        {
-          title: "PASAL XII\nWANPRESTASI",
-          content: [
-            `1. Dalam hal salah satu pihak telah melanggar kewajibannya yang tercantum dalam salah satu Pasal perjanjian ini, telah cukup bukti dan tanpa perlu dibuktikan lebih lanjut, bahwa pihak yang melanggar tersebut telah melakukan tindakan Wanprestasi.`,
-            `2. Pihak yang merasa dirugikan atas tindakan Wanprestasi tersebut dalam ayat 1 diatas, berhak meminta ganti kerugian dari pihak yang melakukan wanprestasi tersebut atas sejumlah kerugian yang dideritanya, kecuali dalam hal kerugian tersebut disebabkan karena adanya suatu keadaan memaksa, seperti tercantum dalam Pasal VIII.`,
-          ],
-        },
-        {
-          title: "PASAL XIII\nPERSELISIHAN",
-          content: [
-            "Bilamana dalam pelaksanaan perjanjian Kerjasama ini terdapat perselisihan antara kedua belah pihak baik dalam pelaksanaannya ataupun dalam penafsiran salah satu Pasal dalam perjanjian ini, maka kedua belah pihak sepakat untuk sedapat mungkin menyelesaikan perselisihan tersebut dengan cara musyawarah. Apabila musyawarah telah dilakukan oleh kedua belah pihak, namun ternyata tidak berhasil mencapai suatu kemufakatan maka Para Pihak sepakat bahwa semua sengketa yang timbul dari perjanjian ini akan diselesaikan pada Kantor Kepaniteraan Pengadilan Negeri Jakarta Selatan.",
-          ],
-        },
-        {
-          title: "PASAL XIV\nATURAN PENUTUP",
-          content: [
-            "Hal-hal yang belum diatur atau belum cukup diatur dalam perjanjian ini apabila dikemudian hari dibutuhkan dan dipandang perlu akan ditetapkan tersendiri secara musyawarah dan selanjutnya akan ditetapkan dalam suatu ADDENDUM yang berlaku mengikat bagi kedua belah pihak, yang akan direkatkan dan merupakan bagian yang tidak terpisahkan dari Perjanjian ini.",
-            "",
-            "Demikianlah persetujuan pengelolaan simpanan anggota ini dibuat, untuk masing-masing pihak, yang ditandatangani dan bermaterai cukup, yang masing-masing mempunyai kekuatan hukum yang sama dan berlaku sejak ditandatangani.",
+            "Segala ketentuan yang ada dalam persetujuan ini tunduk pada ketentuan terkait Koperasi dan peraturan perundang-undangan yang berlaku.",
+            "Demikianlah surat Persetujuan Pengelolaan Simpanan Anggota ini dibuat, yang ditandatangani dan bermaterai cukup dan berlaku sejak ditandatangani.",
           ],
         },
       ];
@@ -997,7 +1009,7 @@ export default function ContractPage() {
 
       const centerX = pageWidth / 2;
 
-      pdf.text("Pihak Kedua", centerX, yPosition, { align: "center" });
+      pdf.text("Anggota Koperasi", centerX, yPosition, { align: "center" });
 
       yPosition += lineHeight * 2;
 
@@ -1274,41 +1286,13 @@ export default function ContractPage() {
                   </div>
                 </div>
 
-                <p className="mb-4">
-                  Bertindak untuk dan atas nama diri sendiri. selanjutnya
-                  disebut sebagai <strong>Pihak Pertama</strong>.
-                </p>
-
-                {/* Pihak Kedua - Koperasi */}
-                <div className="mb-6 space-y-1">
-                  <div className="grid grid-cols-[120px_1fr]">
-                    <span className="font-medium">Nama</span>
-                    <span>: Halim Perdana Kusuma, S.H., M.H.</span>
-                  </div>
-                  <div className="grid grid-cols-[120px_1fr]">
-                    <span className="font-medium">Tempat/Tgl Lahir</span>
-                    <span>: Sukaraja, 11 September 1986</span>
-                  </div>
-                  <div className="grid grid-cols-[120px_1fr]">
-                    <span className="font-medium">Alamat</span>
-                    <span>
-                      : Komplek Taman Mutiara Indah blok J3 No.17 RT004 RW017
-                      Kaligandu, Kota Serang, Banten
-                    </span>
-                  </div>
-                </div>
-
-                <p className="mb-6">
-                  Bertindak untuk dan atas nama{" "}
-                  <strong>KOPERASI BINTANG MERAH SEJAHTERA</strong>, selanjutnya
-                  disebut sebagai <strong>Pihak Kedua</strong>.
-                </p>
-
                 {/* Preamble */}
                 <div className="space-y-4">
                   <p>
-                    Bahwa sebelum ditandatanganinya Surat Perjanjian ini, Para
-                    pihak terlebih dahulu menerangkan hal–hal sebagai berikut:
+                    Bahwa sebelum ditandatanganinya Surat Persetujuan ini, saya
+                    selaku anggota koperasi dengan nomor anggota{" "}
+                    <strong>{contractData.investor.memberNumber || "-"}</strong>{" "}
+                    menerangkan hal–hal sebagai berikut:
                   </p>
 
                   {(() => {
@@ -1318,47 +1302,34 @@ export default function ContractPage() {
                     const totalAmountWords = convertNumberToWords(
                       contractData.investment.totalAmount
                     );
-                    let plantTypesText =
-                      "GAHARU, ALPUKAT, JENGKOL, AREN, KELAPA";
-                    if (contractData.investment.productName) {
-                      const productName =
-                        contractData.investment.productName.toLowerCase();
-                      if (productName.includes("alpukat"))
-                        plantTypesText = "ALPUKAT";
-                      else if (productName.includes("gaharu"))
-                        plantTypesText = "GAHARU";
-                      else if (productName.includes("jengkol"))
-                        plantTypesText = "JENGKOL";
-                      else if (productName.includes("aren"))
-                        plantTypesText = "AREN";
-                      else if (productName.includes("kelapa"))
-                        plantTypesText = "KELAPA";
-                    }
+                    const plantTypesText = getPlantTypesText(
+                      contractData.investment.productName
+                    );
 
                     return (
                       <div className="space-y-3">
                         <p>
-                          1. Bahwa Pihak Pertama adalah selaku yang memiliki
-                          modal sebesar {totalAmountText} ({totalAmountWords.toLowerCase()})
-                          untuk selanjutnya disebut sebagai MODAL KERJASAMA
+                          1. Bahwa saya anggota dari Koperasi Bintang Merah
+                          Sejahtera dan selaku yang memiliki simpanan anggota
+                          sebesar {totalAmountText} ({totalAmountWords.toLowerCase()})
+                          untuk selanjutnya disebut sebagai Simpanan Anggota
                           untuk project ({plantTypesText});
                         </p>
                         <p>
-                          2. Bahwa Pihak Kedua adalah Pengelola Dana Kerjasama
-                          untuk project ({plantTypesText}) berlokasi di Kabupten
-                          Musi Rawas Utara Provinsi Sumatera Selatan;
+                          2. Bahwa Koperasi adalah Koperasi Pengelola untuk
+                          project ({plantTypesText}) berlokasi di Kabupten Musi
+                          Rawas Utara Provinsi Sumatera Selatan;
                         </p>
                         <p>
-                          3. Bahwa Pihak Pertama dan Pihak Kedua setuju untuk
-                          saling mengikatkan diri dalam suatu perjanjian
-                          Kerjasama di project ({plantTypesText}) sesuai dengan
-                          ketentuan hukum yang berlaku.
+                          3. Bahwa Anggota Koperasi dan Koperasi setuju untuk
+                          pengelolaan simpanan anggota dalam usaha (
+                          {plantTypesText}) sesuai dengan ketentuan hukum yang
+                          berlaku.
                         </p>
                         <p>
-                          4. Bahwa berdasarkan hal-hal tersebut di atas, kedua
-                          belah pihak menyatakan sepakat dan setuju untuk
-                          mengadakan Perjanjian Kerjasama ini yang dilaksanakan
-                          dengan ketentuan dan syarat-syarat sebagai berikut:
+                          Persetujuan Pengelolaan Simpanan Anggota ini yang
+                          dilaksanakan dengan ketentuan dan syarat-syarat
+                          sebagai berikut:
                         </p>
                       </div>
                     );
@@ -1377,157 +1348,114 @@ export default function ContractPage() {
                     const totalAmountWords = convertNumberToWords(
                       contractData.investment.totalAmount
                     );
-                    let plantTypesText =
-                      "GAHARU, ALPUKAT, JENGKOL, AREN, KELAPA";
-                    if (contractData.investment.productName) {
-                      const productName =
-                        contractData.investment.productName.toLowerCase();
-                      if (productName.includes("alpukat"))
-                        plantTypesText = "ALPUKAT";
-                      else if (productName.includes("gaharu"))
-                        plantTypesText = "GAHARU";
-                      else if (productName.includes("jengkol"))
-                        plantTypesText = "JENGKOL";
-                      else if (productName.includes("aren"))
-                        plantTypesText = "AREN";
-                      else if (productName.includes("kelapa"))
-                        plantTypesText = "KELAPA";
-                    }
+                    const plantTypesText = getPlantTypesText(
+                      contractData.investment.productName
+                    );
+                    const plantMetadata = getPlantMetadata(
+                      contractData.investment.productName
+                    );
 
                     // Helper function to wrap dynamic values in strong tags for HTML preview
                     const wrapStrong = (text: string) => `<strong>${text}</strong>`;
 
+                    const paymentClause = getPaymentClauseText({
+                      paymentType: contractData.investment.paymentType,
+                      paymentTerm: contractData.investment.paymentTerm,
+                      totalAmountText,
+                      totalAmountWords,
+                      totalInstallments:
+                        contractData.investment.totalInstallments,
+                      durationYears: contractData.investment.durationYears,
+                      wrapValue: wrapStrong,
+                    });
+
                     const articles = [
                       {
-                        title: "PASAL I\nDEFINISI",
+                        title: "POIN I (DEFINISI)",
                         content: [
-                          "Dalam perjanjian ini, istilah-istilah berikut mempunyai arti sebagai berikut:",
+                          "Dalam persetujuan ini, istilah-istilah berikut mempunyai arti sebagai berikut:",
+                          "1. Koperasi adalah Koperasi Bintang Merah Sejahtera;",
+                          "2. Pengurus Koperasi adalah organ koperasi yang sah sesuai Anggaran Dasar dan Anggaran Rumah Tangga;",
+                          "3. Simpanan Anggota adalah simpanan pokok, simpanan wajib, dan/atau simpanan sukarela yang dinilai dalam rupiah;",
+                          "4. Sisa Hasil Usaha (SHU) adalah hasil yang diperoleh masing-masing anggota setelah satu tahun buku setelah seluruh pendapatan dikurangi biaya, penyusutan, dan kewajiban lainnya, termasuk pajak;",
+                          "5. Diskon adalah pengurangan harga, potongan nominal, atau persentase yang diberikan;",
+                          `6. ${wrapStrong(plantMetadata.label)} adalah nama pohon dari keluarga ${wrapStrong(plantMetadata.family)} yang juga dikenal sebagai ${wrapStrong(plantMetadata.alias)}, dengan nama ilmiah ${wrapStrong(plantMetadata.scientificName)}. Pohon ini sangat serbaguna dan hampir seluruh bagiannya dapat dimanfaatkan, termasuk ${wrapStrong(plantMetadata.usesText)};`,
+                          `7. Paket Penanaman adalah unit usaha penanaman 10 (sepuluh) pohon (${wrapStrong(plantTypesText)}) yang dikelola oleh koperasi;`,
+                          "8. Masa Panen adalah periode waktu di mana hasil dipanen dan dikumpulkan dari lahan;",
+                          "9. Laporan Usaha adalah laporan tertulis dan/atau elektronik yang disampaikan Koperasi kepada Anggota Koperasi secara periodik;",
+                          "10. Masa Perawatan adalah periode sejak bibit ditanam hingga pohon siap dipanen;",
+                          "11. Force Majeure adalah keadaan di luar kemampuan yang menyebabkan tidak dapat melaksanakan kewajibannya;",
+                        ],
+                      },
+                      {
+                        title: "POIN II (RUANG LINGKUP)",
+                        content: [
+                          `1. Dalam persetujuan pengelolaan simpanan anggota ini menyatakan agar Koperasi Bintang Merah sebagai Pengelola simpanan wajib anggota sebesar ${wrapStrong(totalAmountText)} (${wrapStrong(totalAmountWords.toLowerCase())}) untuk 1 (satu) paket penanaman (${wrapStrong(plantTypesText)}) dan Koperasi dengan ini telah menerima penyerahan simpanan tersebut dari Anggota Koperasi serta menyanggupi untuk melaksanakan pengelolaan simpanan anggota;`,
+                          `2. Koperasi melaksanakan pengelolaan simpanan anggota pada Usaha Peningkatan Modal di project (${wrapStrong(plantTypesText)}) yang berlokasi di Kabupten Musi Rawas Utara Provinsi Sumatera Selatan setelah ditandatanganinya persetujuan ini;`,
+                          "3. Koperasi dengan ini akan membagikan Sisa Hasil Usaha (SHU) kepada Anggota Koperasi di mulai dari setelah masa panen pertama atau setelah tanaman dapat menghasilkan;",
+                        ],
+                      },
+                      {
+                        title: "POIN III (TATA CARA SIMPANAN ANGGOTA)",
+                        content: [
+                          "Mengenai tata cara Simpanan Anggota dengan cara sebagai berikut:",
+                          paymentClause,
+                        ],
+                      },
+                      {
+                        title: "POIN IV (JANGKA WAKTU)",
+                        content: [
+                          "Persetujuan ini dilakukan dan diterima untuk jangka waktu 12 (dua belas) tahun, terhitung sejak tanggal di tanda tanganinya persetujuan ini;",
+                        ],
+                      },
+                      {
+                        title: "POIN V (SISA HASIL USAHA (SHU))",
+                        content: [
+                          "Dalam Persetujuan ini, didalam hal pembagian hasil penyertaan simpanan anggota sebagai berikut:",
+                          `1. Persetujuan ini dilakukan dengan cara pemberian Sisa Hasil Usaha (SHU) yang diperoleh dalam Usaha Peningkatan Modal Usaha di project (${wrapStrong(plantTypesText)}) berlokasi di Kabupten Musi Rawas Utara Provinsi Sumatera Selatan;`,
+                          "2. Sisa Hasil Usaha (SHU) yang akan di bagikan kepada Anggota Koperasi adalah:",
+                          "2.1. Sebesar 100% (seratus persen) dari hasil yang di dapatkan koperasi;",
+                          "2.2. Perhitungan Sisa Hasil Usaha (SHU) koperasi didasarkan pada pendapatan dikurangi biaya operasional dan kewajiban selama satu tahun buku;",
+                          "3. Pembagian Sisa Hasil Usaha (SHU) dilakukan paling lambat 7 (tujuh) hari Kerja setelah masa panen dan penjualan telah selesai dilaksanakan.",
+                          "4. Pembayaran Sisa Hasil Usaha (SHU) dilakukan melalui transfer ke rekening ANGGOTA KOPERASI.",
+                        ],
+                      },
+                      {
+                        title: "POIN VI (PENGALIHAN)",
+                        content: [
+                          "1. Anggota Koperasi dilarang menyerahkan sebagian atau keseluruhan hak atau kewajibannya dalam persetujuan ini kepada Pihak Ketiga atau Pihak Lain tanpa terlebih dahulu mendapatkan persetujuan tertulis dari Koperasi.",
+                          "2. Apabila Anggota Koperasi meninggal dunia, maka ahli waris dapat melanjutkan dengan terlebih dahulu mendapatkan persetujuan tertulis dari Koperasi dan dibuktikan dengan surat pernyataan waris yang berlaku;",
+                        ],
+                      },
+                      {
+                        title: "POIN VII (PENGAKHIRAN DAN PENGHENTIAN)",
+                        content: [
+                          "Bahwa Persetujuan ini dapat berakhir apabila terjadi hal-hal sebagai berikut:",
+                          "1. Anggota Koperasi tidak lagi menjadi anggota Koperasi Bintang Merah Sejahtera;",
+                          "2. Berakhirnya masa sesuai yang tertuang dalam Persetujuan ini.",
                           "",
-                          `1. Paket Penanaman adalah unit usaha yang terdiri dari 10 (sepuluh) pohon (${wrapStrong(plantTypesText)}) yang ditanam, dirawat, dan dipanen oleh Pihak Pertama.`,
-                          `2. Dana Investasi adalah sejumlah uang yang diserahkan Pihak Kedua kepada Pihak Pertama untuk mendanai pembelian bibit, penanaman, perawatan, serta biaya operasional hingga pemanenan pohon.`,
-                          `3. Keuntungan adalah hasil bersih dari penjualan panen setelah dikurangi biaya operasional yang sah.`,
-                          `4. Kerugian adalah nilai minus yang timbul akibat berkurangnya hasil panen atau biaya operasional yang lebih besar daripada pendapatan.`,
-                          `5. Laporan Usaha adalah laporan tertulis dan/atau elektronik yang disampaikan Pihak Pertama kepada Pihak Kedua secara periodik.`,
-                          `6. Masa Perawatan adalah periode sejak bibit ditanam hingga pohon siap dipanen.`,
-                          `7. Force Majeure adalah keadaan di luar kemampuan Para Pihak yang menyebabkan salah satu pihak tidak dapat melaksanakan kewajibannya.`,
-                          `8. Para Pihak adalah Pihak Pertama dan Pihak Kedua yang menandatangani perjanjian ini.`,
+                          "Apabila Anggota Koperasi berhenti sebelum jangka waktu yang ada tanpa persetujuan tertulis dari Koperasi, maka:",
+                          "1. Simpanan anggota yang telah disetorkan tidak dapat dikembalikan secara penuh.",
+                          "2. Pengembalian simpanan anggota hanya akan dilakukan setelah dikurangi dengan biaya administrasi, biaya operasional yang telah dikeluarkan, serta potongan lain.",
+                          "3. Apabila Anggota Koperasi menunjuk atau menghadirkan pengganti yang disetujui oleh Koperasi untuk melanjutkan kerjasama, maka yang dikembalikan kepada Anggota Koperasi hanya sebesar selisih nilai setelah memperhitungkan kewajiban dan/atau biaya-biaya yang timbul.",
+                          "4. Koperasi berhak menunjuk atau menghadirkan pengganti;",
+                          "5. Koperasi berhak menahan Sebagian dan/atau keseluruhan simpanan anggota sebagai bentuk kompensasi atas kerugian, biaya, maupun potensi kehilangan manfaat akibat penghentian tersebut.",
                         ],
                       },
                       {
-                        title: "PASAL II\nMAKSUD DAN TUJUAN",
+                        title: "POIN XI (KEADAAN MEMAKSA (FORCE MAJEURE))",
                         content: [
-                          `Pihak Pertama dalam perjanjian ini memberi dana kerjasama kepada Pihak Kedua sebesar ${wrapStrong(totalAmountText)} (${wrapStrong(totalAmountWords.toLowerCase())}) untuk 1 (satu) paket penanaman dan Pihak Kedua dengan ini telah menerima penyerahan DANA KERJASAMA tersebut dari Pihak Pertama serta menyanggupi untuk melaksanakan pengelolaan DANA KERJASAMA tersebut.`,
+                          "1. Yang termasuk dalam Force Majeure adalah akibat dari kejadian-kejadian diluar kuasa dan kehendak dari Koperasi diantaranya termasuk tidak terbatas bencana alam, banjir, badai, topan, gempa bumi, kebakaran, perang, huru-hara, pemberontakan, demonstrasi, pemogokan, kegagalan koperasi.",
+                          "2. Apabila terjadi Force Majeure wajib memberitahukan secara tertulis kepada anggota selambat-lambatnya 7 (tujuh) hari sejak terjadinya keadaan tersebut dengan bukti pendukung yang sah.",
+                          "3. Apabila Force Majeure berlangsung tidak lebih dari 30 (tiga puluh) hari, kewajiban koperasi ditunda hingga keadaan berakhir.",
+                          "4. Apabila Force Majeure berlangsung lebih dari 90 (Sembilan puluh) hari sehingga pelaksanaan tidak mungkin dilanjutkan, maka untuk membicarakan kembali atau mengakhiri tanpa tuntutan ganti rugi.",
                         ],
                       },
                       {
-                        title: "PASAL III\nRUANG LINGKUP",
+                        title: "POIN XIV (PENUTUP)",
                         content: [
-                          `1. Dalam pelaksanaan perjanjian ini, Pihak Pertama memberi dana kepada Pihak Kedua sebesar ${wrapStrong(totalAmountText)} (${wrapStrong(totalAmountWords.toLowerCase())}) untuk 1 (satu) paket penanaman dan Pihak Kedua dengan ini telah menerima penyerahan dana tersebut dari Pihak Pertama serta menyanggupi untuk melaksanakan pengelolaan dana.`,
-                          `2. Pihak Kedua dengan ini berjanji dan mengikatkan diri untuk melaksanakan perputaran dana pada Usaha Peningkatan Modal di project (${wrapStrong(plantTypesText)}) yang berlokasi di Kabupten Musi Rawas Utara Provinsi Sumatera Selatan setelah ditandatanganinya perjanjian ini.`,
-                          `3. Pihak Kedua dengan ini berjanji dan mengikatkan diri untuk memberikan keuntungan kepada Pihak Pertama di mulai dari setelah masa panen pertama;`,
-                        ],
-                      },
-                      {
-                        title: "PASAL IV\nTATA CARA PEMBAYARAN",
-                        content: [
-                          "Bahwa Para Pihak sepakat mengenai tata cara pembayaran terhadap Kerjasama dengan cara:",
-                          "",
-                          `1. Pihak Pertama membayar sebesar ${wrapStrong(totalAmountText)} (${wrapStrong(totalAmountWords.toLowerCase())}) ${wrapStrong(contractData.investment.paymentType === 'full' ? 'sekali bayar' : 'dengan cara dicicil')};`,
-                        ],
-                      },
-                      {
-                        title: "PASAL V\nJANGKA WAKTU KERJASAMA",
-                        content: [
-                          "Perjanjian kerjasama ini dilakukan dan diterima untuk jangka waktu 20 (dua puluh) tahun, terhitung sejak tanggal di tanda tanganinya perjanjian ini;",
-                        ],
-                      },
-                      {
-                        title: "PASAL VI\nHAK DAN KEWAJIBAN PIHAK PERTAMA",
-                        content: [
-                          "Dalam Perjanjian Kerjasama ini, Pihak Pertama memiliki Hak dan Kewajiban sebagai berikut:",
-                          `1. Memberikan dana kepada Pihak Kedua sebesar ${wrapStrong(totalAmountText)} (${wrapStrong(totalAmountWords.toLowerCase())}) untuk 1 (satu) paket penanaman;`,
-                          `2. Menerima hasil keuntungan atas pengelolaan dana;`,
-                          `3. Menerima laporan perkembangan usaha secara berkala;`,
-                          `4. Melakukan pengawasan terhadap usaha dengan pemberitahuan terlebih dahulu;`,
-                          `5. Tidak melakukan intervensi teknis dalam pengelolaan usaha;`,
-                          `6. Menjaga kerahasiaan informasi terkait operasional usaha.`,
-                        ],
-                      },
-                      {
-                        title: "PASAL VII\nHAK DAN KEWAJIBAN PIHAK KEDUA",
-                        content: [
-                          "Dalam Perjanjian Kerjasama ini, Pihak Kedua memiliki Hak dan Kewajiban sebagai berikut :",
-                          `1. Menerima dana dari Pihak Pertama sebesar ${wrapStrong(totalAmountText)} (${wrapStrong(totalAmountWords.toLowerCase())}) untuk 1 (satu) paket penanaman;`,
-                          `2. Memberikan bagian hasil keuntungan kepada Pihak Pertama;`,
-                          `3. Memperoleh bagian keuntungan dari pengelolaan usaha;`,
-                          `4. Menentukan metode teknis penanaman, perawatan, dan pemanenan pohon;`,
-                          `5. Menyediakan bibit pohon sesuai jumlah paket yang dibeli Pihak Pertama;`,
-                          `6. Melaksanakan penanaman, perawatan, hingga pemanenan pohon sesuai standar;`,
-                          `7. Memberikan laporan perkembangan usaha;`,
-                          `8. Membagi keuntungan kepada Pihak Pertama sesuai dengan jadwal yang ditentukan;`,
-                          `9. Menjaga transparansi penggunaan dana dan membuka akses audit.`,
-                        ],
-                      },
-                      {
-                        title: "PASAL VIII\nPEMBAGIAN HASIL",
-                        content: [
-                          "Dalam Perjanjian Kerjasama ini, kedua belah pihak sepakat didalam hal pembagian hasil penyertaan dana sebagai berikut:",
-                          `1. Kedua belah pihak sepakat dan setuju bahwa perjanjian kerjasama ini dilakukan dengan cara pemberian keuntungan yang diperoleh dalam Usaha Peningkatan Modal Usaha di project (${wrapStrong(plantTypesText)}) berlokasi di Kabupten Musi Rawas Utara Provinsi Sumatera Selatan;`,
-                          `2. Keuntungan yang akan di Terima Pihak Pertama dibagi dengan skema: 30% (tiga puluh persen) untuk Pihak Pertama dan 70% (tujuh puluh persen) untuk Pihak Kedua;`,
-                          `3. Pembagian keuntungan dilakukan paling lambat 7 (tujuh) hari Kerja setelah masa panen dan penjualan telah selesai dilaksanakan.`,
-                          `4. Pembayaran keuntungan dilakukan melalui transfer ke rekening Pihak Pertama.`,
-                        ],
-                      },
-                      {
-                        title: "PASAL IX\nPENGALIHAN",
-                        content: [
-                          `1. Pihak Pertama dilarang menyerahkan sebagian atau keseluruhan hak atau kewajibannya dalam perjanjian ini kepada Pihak Ketiga atau Pihak Lain tanpa terlebih dahulu mendapatkan persetujuan tertulis dari Pihak Kedua.`,
-                          `2. Apabila Pihak Pertama meninggal dunia ahli waris dapat melanjutkan perjanjian ini dengan terlebih dahulu mendapatkan persetujuan tertulis dari Pihak Kedua;`,
-                        ],
-                      },
-                      {
-                        title: "PASAL X\nPENGAKHIRAN dan PENGHENTIAN PERJANJIAN",
-                        content: [
-                          "Para Pihak setuju bahwa perjanjian ini dapat diakhiri apabila terjadi hal-hal sebagai berikut:",
-                          `1. Berakhirnya masa kontrak kerjasama para pihak sesuai perjanjian yang tertuang dalam Perjanjian Kerjasama ini.`,
-                          `2. Kesepakatan bersama yang dilakukan sewaktu-waktu oleh Para Pihak baik secara tertulis untuk mengakhiri perjanjian ini.`,
-                          "",
-                          "Apabila Pihak Pertama menghentikan kerja sama sebelum jangka waktu yang telah disepakati tanpa persetujuan tertulis dari Pihak Kedua, maka:",
-                          `1. Dana yang telah disetorkan tidak dapat dikembalikan secara penuh.`,
-                          `2. Pengembalian dana hanya akan dilakukan setelah dikurangi dengan biaya administrasi, biaya operasional yang telah dikeluarkan, serta potongan lain.`,
-                          `3. Apabila Pihak Pertama menunjuk atau menghadirkan pihak pengganti yang disetujui oleh Pihak Kedua untuk melanjutkan kerja sama, maka dana yang dikembalikan kepada Pihak Pertama hanya sebesar selisih nilai setelah memperhitungkan kewajiban dan/atau biaya-biaya yang timbul.`,
-                          `4. Pihak kedua berhak menunjuk atau menghadirkan Pihak pengganti untuk melanjutkan kerja sama.`,
-                          `5. Pihak Kedua berhak menahan Sebagian dan/atau keseluruhan dana sebagai bentuk kompensasi atas kerugian, biaya, maupun potensi kehilangan manfaat akibat penghentian sepihak tersebut.`,
-                        ],
-                      },
-                      {
-                        title: "PASAL XI\nKEADAAN MEMAKSA (FORCE MAJEURE)",
-                        content: [
-                          `1. Yang termasuk dalam Force Majeure adalah akibat dari kejadian-kejadian diluar kuasa dan kehendak dari kedua belah pihak diantaranya termasuk tidak terbatas bencana alam, banjir, badai, topan, gempa bumi, kebakaran, perang, huru-hara, pemberontakan, demonstrasi, pemogokan, kegagalan koperasi.`,
-                          `2. Pihak yang mengalami Force Majeure wajib memberitahukan secara tertulis kepada pihak lainnya selambat-lambatnya 7 (tujuh) hari sejak terjadinya keadaan tersebut dengan bukti pendukung yang sah.`,
-                          `3. Apabila Force Majeure berlangsung tidak lebih dari 30 (tiga puluh) hari, kewajiban para pihak ditunda hingga keadaan berakhir.`,
-                          `4. Apabila Force Majeure berlangsung lebih dari 90 (Sembilan puluh) hari sehingga pelaksanaan perjanjian tidak mungkin dilanjutkan, maka para pihak sepakat untuk membicarakan kembali atau mengakhiri perjanjian tanpa tuntutan ganti rugi.`,
-                        ],
-                      },
-                      {
-                        title: "PASAL XII\nWANPRESTASI",
-                        content: [
-                          `1. Dalam hal salah satu pihak telah melanggar kewajibannya yang tercantum dalam salah satu Pasal perjanjian ini, telah cukup bukti dan tanpa perlu dibuktikan lebih lanjut, bahwa pihak yang melanggar tersebut telah melakukan tindakan Wanprestasi.`,
-                          `2. Pihak yang merasa dirugikan atas tindakan Wanprestasi tersebut dalam ayat 1 diatas, berhak meminta ganti kerugian dari pihak yang melakukan wanprestasi tersebut atas sejumlah kerugian yang dideritanya, kecuali dalam hal kerugian tersebut disebabkan karena adanya suatu keadaan memaksa, seperti tercantum dalam Pasal VIII.`,
-                        ],
-                      },
-                      {
-                        title: "PASAL XIII\nPERSELISIHAN",
-                        content: [
-                          "Bilamana dalam pelaksanaan perjanjian Kerjasama ini terdapat perselisihan antara kedua belah pihak baik dalam pelaksanaannya ataupun dalam penafsiran salah satu Pasal dalam perjanjian ini, maka kedua belah pihak sepakat untuk sedapat mungkin menyelesaikan perselisihan tersebut dengan cara musyawarah. Apabila musyawarah telah dilakukan oleh kedua belah pihak, namun ternyata tidak berhasil mencapai suatu kemufakatan maka Para Pihak sepakat bahwa semua sengketa yang timbul dari perjanjian ini akan diselesaikan pada Kantor Kepaniteraan Pengadilan Negeri Jakarta Selatan.",
-                        ],
-                      },
-                      {
-                        title: "PASAL XIV\nATURAN PENUTUP",
-                        content: [
-                          "Hal-hal yang belum diatur atau belum cukup diatur dalam perjanjian ini apabila dikemudian hari dibutuhkan dan dipandang perlu akan ditetapkan tersendiri secara musyawarah dan selanjutnya akan ditetapkan dalam suatu ADDENDUM yang berlaku mengikat bagi kedua belah pihak, yang akan direkatkan dan merupakan bagian yang tidak terpisahkan dari Perjanjian ini.",
-                          "",
-                          "Demikianlah persetujuan pengelolaan simpanan anggota ini dibuat, untuk masing-masing pihak, yang ditandatangani dan bermaterai cukup, yang masing-masing mempunyai kekuatan hukum yang sama dan berlaku sejak ditandatangani.",
+                          "Segala ketentuan yang ada dalam persetujuan ini tunduk pada ketentuan terkait Koperasi dan peraturan perundang-undangan yang berlaku.",
+                          "Demikianlah surat Persetujuan Pengelolaan Simpanan Anggota ini dibuat, yang ditandatangani dan bermaterai cukup dan berlaku sejak ditandatangani.",
                         ],
                       },
                     ];
@@ -1571,7 +1499,7 @@ export default function ContractPage() {
 
                   <div className="mt-8 flex justify-center">
                     <div className="text-center">
-                      <p className="font-medium">Pihak Kedua</p>
+                      <p className="font-medium">Anggota Koperasi</p>
                       <div className="h-16 mb-2 bg-yellow-50 border-2 border-dashed border-yellow-300 rounded flex items-center justify-center px-8">
                         <span className="text-xs text-yellow-600">
                           Area Tanda Tangan

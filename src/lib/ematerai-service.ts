@@ -2,6 +2,7 @@
  * E-Materai Service
  * Service for stamping contracts with electronic stamp (e-materai) using MeteraIku API
  */
+import { createHash } from "crypto";
 
 const EMATERAI_CONFIG = {
   staging: {
@@ -46,6 +47,68 @@ interface StampDocumentResponse {
   };
 }
 
+function toSingleLineSnippet(input: string, maxLength = 180): string {
+  const compact = input.replace(/\s+/g, " ").trim();
+  return compact.length > maxLength
+    ? `${compact.slice(0, maxLength)}...`
+    : compact;
+}
+
+function buildNonJsonDiagnostics(params: {
+  body: string;
+  contentType: string;
+  status: number;
+  statusText: string;
+  url: string;
+  redirected: boolean;
+  contentLength: string;
+}) {
+  const {
+    body,
+    contentType,
+    status,
+    statusText,
+    url,
+    redirected,
+    contentLength,
+  } = params;
+
+  const lowered = contentType.toLowerCase();
+  const isHtml = lowered.includes("text/html");
+  const titleMatch = isHtml ? body.match(/<title[^>]*>([^<]+)<\/title>/i) : null;
+  const htmlTitle = titleMatch?.[1]?.trim() || null;
+  const snippet = toSingleLineSnippet(body, 320);
+  const hasPasswordField = /type=["']password["']/i.test(body);
+  const hasLoginKeywords = /(login|masuk|sign in)/i.test(body);
+  const firstFormActionMatch = isHtml
+    ? body.match(/<form[^>]*action=["']([^"']+)["']/i)
+    : null;
+  const formAction = firstFormActionMatch?.[1] || null;
+
+  let reason = "Response is not JSON.";
+  if (isHtml && (hasPasswordField || hasLoginKeywords)) {
+    reason =
+      "Received HTML login/auth page instead of JSON API response (possible wrong endpoint, expired session, or API key issue).";
+  } else if (isHtml) {
+    reason = "Received HTML page instead of JSON API response.";
+  } else if (redirected) {
+    reason = "Request was redirected and returned non-JSON content.";
+  }
+
+  return {
+    status,
+    statusText,
+    url,
+    redirected,
+    contentType,
+    contentLength,
+    htmlTitle,
+    formAction,
+    reason,
+    snippet,
+  };
+}
+
 /**
  * Stamp a PDF document with e-materai
  * @param pdfBuffer - PDF file as Buffer
@@ -59,8 +122,15 @@ export async function stampContract(
   coordinates?: StampCoordinates
 ): Promise<StampDocumentResponse> {
   try {
+    const keyHash = createHash("sha256")
+      .update(CONFIG.apiKey || "")
+      .digest("hex")
+      .slice(0, 12);
     console.log(
       `[E-Materai] Stamping contract: ${filename} (${ENV} environment)`
+    );
+    console.log(
+      `[E-Materai] Runtime config: stampUrl="${CONFIG.stampUrl}" keyLen=${CONFIG.apiKey?.length || 0} keyHash=${keyHash}`
     );
 
     const stampCoords = coordinates;
@@ -85,17 +155,62 @@ export async function stampContract(
       method: "POST",
       headers: {
         "X-API-KEY": CONFIG.apiKey,
+        Accept: "application/json",
+        "X-Requested-With": "XMLHttpRequest",
       },
+      redirect: "manual",
       body: formData,
     });
 
+    if (response.status >= 300 && response.status < 400) {
+      const location = response.headers.get("location") || "unknown";
+      console.error(
+        `[E-Materai] Redirect response: status=${response.status} location="${location}" endpoint="${CONFIG.stampUrl}"`
+      );
+      throw new Error(
+        `E-Materai stamp endpoint redirected (${response.status}) to ${location}. This usually means auth/scope failed for this endpoint.`
+      );
+    }
+
     // Get response text first to check if it's valid JSON
     const responseText = await response.text();
+    const contentType = response.headers.get("content-type") || "unknown";
+    const diagnostics = buildNonJsonDiagnostics({
+      body: responseText,
+      contentType,
+      status: response.status,
+      statusText: response.statusText,
+      url: response.url,
+      redirected: response.redirected,
+      contentLength: response.headers.get("content-length") || "unknown",
+    });
 
     if (!response.ok) {
-      console.error(`[E-Materai] API error (${response.status}):`, responseText);
+      let providerErrorDetail = "";
+      try {
+        const parsed = JSON.parse(responseText) as {
+          message?: string;
+          errors?: Record<string, string[] | string>;
+        };
+        const messagePart = parsed?.message
+          ? `message="${parsed.message}"`
+          : "";
+        const errorsPart = parsed?.errors
+          ? `errors=${JSON.stringify(parsed.errors)}`
+          : "";
+        providerErrorDetail = [messagePart, errorsPart]
+          .filter(Boolean)
+          .join(" ");
+      } catch {
+        // Keep diagnostics-only logging for non-JSON error bodies.
+      }
+
+      console.error(
+        `[E-Materai] API error diagnostics: ${JSON.stringify(diagnostics)}${providerErrorDetail ? ` providerError=${providerErrorDetail}` : ""}`
+      );
+
       throw new Error(
-        `E-Materai API failed: ${response.status} ${response.statusText} - ${responseText.substring(0, 200)}`
+        `E-Materai API failed: ${response.status} ${response.statusText} (${contentType})${providerErrorDetail ? ` - ${providerErrorDetail}` : ""}`
       );
     }
 
@@ -104,23 +219,24 @@ export async function stampContract(
     try {
       result = JSON.parse(responseText);
     } catch (parseError) {
-      console.error(`[E-Materai] API response parsing error:`, parseError);
-      console.error(`[E-Materai] Failed to parse response as JSON:`, responseText.substring(0, 500));
+      const parseMessage =
+        parseError instanceof Error ? parseError.message : String(parseError);
+      console.error(
+        `[E-Materai] Non-JSON response: parseError="${parseMessage}" diagnostics=${JSON.stringify(diagnostics)}`
+      );
       throw new Error(
-        `E-Materai API returned non-JSON response: ${responseText.substring(0, 200)}`
+        `E-Materai API returned non-JSON response: ${response.status} ${response.statusText} (${contentType}); reason=${diagnostics.reason}; url=${diagnostics.url}; title=${diagnostics.htmlTitle || "n/a"}`
       );
     }
 
-    // Log the full API response
-    console.log('[E-Materai] Full stampContract API Response:', JSON.stringify(result, null, 2));
-    
     console.log(
-      `[E-Materai] Success! UUID: ${result.data.uuid}, File: ${result.data.file_stamp}`
+      `[E-Materai] Success! UUID: ${result.data.uuid}, status=${result.data.status_text}, file=${result.data.file_stamp}`
     );
 
     return result;
   } catch (error) {
-    console.error("[E-Materai] Error stamping contract:", error);
+    const message = error instanceof Error ? error.message : String(error);
+    console.error(`[E-Materai] Error stamping contract: ${message}`);
     throw error;
   }
 }

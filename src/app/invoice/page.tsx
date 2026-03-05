@@ -207,6 +207,8 @@ function InvoicePageContent() {
   // --- Status badge with proof upload detection ---
   const renderStatus = (p: PaymentData) => {
     const t = (p.paymentType || "").toLowerCase();
+    const transactionStatus = (p.transactionStatus || "").toLowerCase();
+    const fraudStatus = (p.fraudStatus || "").toLowerCase();
     const adminStatus = (p.adminStatus || "").toLowerCase();
     const generalStatus = (p.status || "").toLowerCase();
     const hasProof = !!(p as any).proofImageUrl;
@@ -269,7 +271,14 @@ function InvoicePageContent() {
     }
 
     // For non-cicilan payments (full, registration) - fallback
-    if (adminStatus === "approved" || generalStatus === "approved" || generalStatus === "completed") {
+    if (
+      transactionStatus === "settlement" ||
+      (transactionStatus === "capture" && fraudStatus === "accept") ||
+      (!transactionStatus &&
+        (adminStatus === "approved" ||
+          generalStatus === "approved" ||
+          generalStatus === "completed"))
+    ) {
       return (
         <span
           className={getThemeClasses(
@@ -278,6 +287,23 @@ function InvoicePageContent() {
           )}
         >
           Lunas
+        </span>
+      );
+    }
+
+    if (
+      ["cancel", "deny", "expire", "failure"].includes(transactionStatus) ||
+      generalStatus === "rejected" ||
+      generalStatus === "cancelled"
+    ) {
+      return (
+        <span
+          className={getThemeClasses(
+            "inline-flex rounded-full bg-red-100 text-red-700 px-2 py-1 text-xs font-semibold",
+            "!bg-[#FFDEE9]/50 !text-[#dc2626]"
+          )}
+        >
+          Belum Dibayar
         </span>
       );
     }

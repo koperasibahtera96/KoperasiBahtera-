@@ -74,6 +74,7 @@ export async function GET(
     const contractData = {
         investor: {
           name: user.fullName || user.email.split('@')[0],
+          memberNumber: user.userCode || user.memberNumber || undefined,
           email: user.email,
           phoneNumber: user.phoneNumber || undefined,
           nik: user.nik || undefined,
@@ -91,6 +92,9 @@ export async function GET(
           totalAmount: contract.totalAmount || 0,
           amountPaid: contract.amountPaid || 0,
           paymentType: contract.paymentType || "full",
+          paymentTerm: contract.paymentTerm || undefined,
+          totalInstallments: contract.totalInstallments || undefined,
+          durationYears: contract.durationYears || undefined,
           plantInstanceId: contract.plantInstanceId?.toString() || "",
           investmentDate: contract.createdAt?.toISOString() || new Date().toISOString(),
         },

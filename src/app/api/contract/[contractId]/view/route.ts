@@ -65,6 +65,7 @@ export async function GET(
     const contractData = {
       investor: {
         name: investor.name,
+        memberNumber: (investor as any).userCode || (investor as any).memberNumber || undefined,
         email: investor.email,
         phoneNumber: investor.phoneNumber,
         address: investor.address || undefined,
@@ -75,6 +76,13 @@ export async function GET(
         totalAmount: investment.totalAmount,
         amountPaid: investment.amountPaid,
         paymentType: investment.paymentType,
+        paymentTerm:
+          (investment as any).paymentTerm ||
+          (investment.paymentType === "cicilan" ? "monthly" : undefined),
+        totalInstallments: Array.isArray((investment as any).installments)
+          ? (investment as any).installments.length
+          : undefined,
+        durationYears: (investment as any).durationYears || undefined,
         plantInstanceId: investment.plantInstanceId?.toString() || "",
         investmentDate: investment.investmentDate,
       },

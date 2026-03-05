@@ -74,6 +74,7 @@ export async function stampContractAfterPayment(
       },
       investor: {
         name: user.fullName || user.name || "",
+        memberNumber: user.userCode || user.memberNumber || undefined,
         nik: user.nik,
         dateOfBirth: user.dateOfBirth,
         email: user.email,
@@ -127,7 +128,8 @@ export async function stampContractAfterPayment(
 
     return stampResponse.data.file_stamp;
   } catch (error) {
-    console.error(`[Contract Stamping] Error stamping contract:`, error);
+    const message = error instanceof Error ? error.message : String(error);
+    console.error(`[Contract Stamping] Error stamping contract: ${message}`);
     // Don't throw - stamping failure shouldn't fail the payment
     // We can retry later if needed
     return null;

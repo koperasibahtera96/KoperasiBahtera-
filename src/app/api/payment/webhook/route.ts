@@ -38,6 +38,25 @@ function extractTreeCount(productName: string): number {
   return 10;
 }
 
+function mapMidtransStatusToPaymentStatus(
+  transactionStatus: string,
+  fraudStatus?: string
+): "pending" | "completed" | "cancelled" {
+  if (transactionStatus === "settlement") {
+    return "completed";
+  }
+
+  if (transactionStatus === "capture") {
+    return fraudStatus === "accept" ? "completed" : "pending";
+  }
+
+  if (["cancel", "deny", "expire", "failure"].includes(transactionStatus)) {
+    return "cancelled";
+  }
+
+  return "pending";
+}
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
@@ -102,7 +121,10 @@ export async function POST(request: NextRequest) {
     payment.fraudStatus = fraudStatus;
     payment.transactionTime = new Date(body.transaction_time);
     payment.midtransResponse = body;
-    payment.status = "completed";
+    payment.status = mapMidtransStatusToPaymentStatus(
+      transactionStatus,
+      fraudStatus
+    );
 
     let message = "";
     let shouldCreateUser = false;

@@ -50,6 +50,7 @@ export async function GET(
     const contractData = {
       investor: {
         name: user.fullName || user.name || user.email.split("@")[0],
+        memberNumber: user.userCode || user.memberNumber || undefined,
         email: user.email,
         phoneNumber: user.phoneNumber || undefined,
         nik: user.nik || undefined,
@@ -67,6 +68,9 @@ export async function GET(
         totalAmount: contract.totalAmount,
         amountPaid: 0, // Contract hasn't been paid yet in new flow
         paymentType: contract.paymentType,
+        paymentTerm: contract.paymentTerm || undefined,
+        totalInstallments: contract.totalInstallments || undefined,
+        durationYears: contract.durationYears || undefined,
         plantInstanceId: contract.plantInstanceId?.toString() || "",
         investmentDate:
           contract.createdAt?.toISOString() || new Date().toISOString(),
