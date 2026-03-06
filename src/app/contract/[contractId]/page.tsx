@@ -935,13 +935,13 @@ export default function ContractPage() {
           pdf.setFontSize(10);
         }
 
-        // Article title - centered
+        // Article title - left aligned
         pdf.setFontSize(10); // Ensure consistent font size
         pdf.setFont("helvetica", "bold");
         pdf.setTextColor(0, 0, 0);
         const titleLines = article.title.split("\n");
         titleLines.forEach((titleLine) => {
-          pdf.text(titleLine, 105, yPosition, { align: "center" });
+          pdf.text(titleLine, leftMargin, yPosition);
           yPosition += lineHeight;
         });
         yPosition += lineHeight * 0.5;
@@ -1462,7 +1462,7 @@ export default function ContractPage() {
 
                     return articles.map((article, index) => (
                       <div key={index} className="mb-6">
-                        <h3 className="font-bold text-[#324D3E] mb-3 whitespace-pre-line text-center">
+                        <h3 className="font-bold text-[#324D3E] mb-3 whitespace-pre-line text-left">
                           {article.title}
                         </h3>
                         <div className="space-y-2">

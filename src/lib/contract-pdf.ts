@@ -713,13 +713,13 @@ export async function generateContractPDFBufferWithMeta(
       pdf.setFontSize(10);
     }
 
-    // Article title - centered
+    // Article title - left aligned
     pdf.setFontSize(10);
     pdf.setFont("helvetica", "bold");
     pdf.setTextColor(0, 0, 0);
     const titleLines = article.title.split("\n");
     titleLines.forEach((titleLine) => {
-      pdf.text(titleLine, 105, yPosition, { align: "center" });
+      pdf.text(titleLine, leftMargin, yPosition);
       yPosition += lineHeight;
     });
     yPosition += lineHeight * 1; // Increased spacing after title
