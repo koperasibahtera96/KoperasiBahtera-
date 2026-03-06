@@ -5,7 +5,7 @@
 
 import Contract from "@/models/Contract";
 import { stampContract } from "./ematerai-service";
-import { generateContractPDFBuffer } from "./contract-pdf";
+import { generateContractPDFBufferWithMeta } from "./contract-pdf";
 import mongoose from "mongoose";
 
 /**
@@ -98,7 +98,12 @@ export async function stampContractAfterPayment(
     console.log(
       `[Contract Stamping] Generating PDF for contract: ${contractId}`
     );
-    const pdfBuffer = await generateContractPDFBuffer(contractData);
+    const { buffer: pdfBuffer, totalPages } =
+      await generateContractPDFBufferWithMeta(contractData);
+    const stampPage = Math.max(1, totalPages);
+    console.log(
+      `[Contract Stamping] Using dynamic stamp page: ${stampPage} (totalPages=${totalPages})`
+    );
 
     // Stamp the contract with e-materai
     console.log(`[Contract Stamping] Stamping contract: ${contractId}`);
@@ -110,7 +115,7 @@ export async function stampContractAfterPayment(
         xr: 215,
         y: 235,
         yr: 345,
-        page: 6,
+        page: stampPage,
       }
     );
 

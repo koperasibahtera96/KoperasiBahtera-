@@ -18,10 +18,30 @@ export async function GET() {
     await dbConnect();
     
     const settings = await Settings.findOne({ type: 'whatsapp' });
+    let currentStatus = settings?.config?.status || 'disconnected';
+    const num = settings?.config?.whatsappNumber || '';
+
+    // If there is a number established, ask the cron service (which asks WAHA) for the real status
+    if (num) {
+      try {
+        const { getWhatsAppConnectionStatus } = await import('@/lib/whatsapp-client');
+        const res = await getWhatsAppConnectionStatus(num);
+        if (res.success && res.status) {
+          currentStatus = res.status.state;
+          // Sync it back to DB occasionally if it differs
+          if (currentStatus !== settings.config.status) {
+             settings.config.status = currentStatus;
+             await settings.save();
+          }
+        }
+      } catch (err) {
+        console.warn("Could not fetch remote WAHA status:", err);
+      }
+    }
     
     return NextResponse.json({
-      whatsappNumber: settings?.config?.whatsappNumber || '',
-      status: settings?.config?.status || 'disconnected',
+      whatsappNumber: num,
+      status: currentStatus,
     });
   } catch (error) {
     console.error("Error fetching WhatsApp settings:", error);

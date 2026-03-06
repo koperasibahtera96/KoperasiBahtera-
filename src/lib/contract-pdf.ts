@@ -358,13 +358,18 @@ function getPaymentClauseText(params: {
   return `1. Membayar sebesar ${params.totalAmountText} (${amountWords}) dengan cara dicicil selama 60 (enam puluh) bulan dibayar setiap bulan pada tanggal yang sama saat pembayaran pertama;`;
 }
 
+type GeneratedContractPDF = {
+  buffer: Buffer;
+  totalPages: number;
+};
+
 /**
- * Generate contract PDF buffer (server-side)
- * Returns PDF as Buffer that can be sent to e-materai API
+ * Generate contract PDF buffer with metadata (server-side)
+ * Returns PDF buffer and total page count for downstream stamp placement.
  */
-export async function generateContractPDFBuffer(
+export async function generateContractPDFBufferWithMeta(
   contractData: ContractData
-): Promise<Buffer> {
+): Promise<GeneratedContractPDF> {
   const pdf = new jsPDF();
 
   // Set font
@@ -849,7 +854,22 @@ export async function generateContractPDFBuffer(
   // Add page number to the final page
   addPageNumber();
 
-  // Return PDF as Buffer
+  const totalPages = (pdf.internal as any).getNumberOfPages();
+
+  // Return PDF as Buffer + metadata
   const pdfOutput = pdf.output("arraybuffer");
-  return Buffer.from(pdfOutput);
+  return {
+    buffer: Buffer.from(pdfOutput),
+    totalPages,
+  };
+}
+
+/**
+ * Backward-compatible helper when only the PDF buffer is needed.
+ */
+export async function generateContractPDFBuffer(
+  contractData: ContractData
+): Promise<Buffer> {
+  const { buffer } = await generateContractPDFBufferWithMeta(contractData);
+  return buffer;
 }
