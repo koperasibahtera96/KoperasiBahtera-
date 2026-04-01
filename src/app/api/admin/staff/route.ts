@@ -150,9 +150,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Generate referral code for marketing_head, marketing_admin, and mitra
+    // Generate referral code for marketing roles and mitra
     let referralCode;
-    if (dbRole === "marketing_head" || dbRole === "marketing_admin" || dbRole === "mitra") {
+    if (
+      dbRole === "marketing" ||
+      dbRole === "marketing_head" ||
+      dbRole === "marketing_admin" ||
+      dbRole === "mitra"
+    ) {
       let isUnique = false;
       while (!isUnique) {
         referralCode = generateReferralCode();
