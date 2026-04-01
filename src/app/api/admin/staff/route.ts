@@ -549,6 +549,11 @@ export async function PUT(request: NextRequest) {
         updatePrefix = "MKA";
         updateOccupation = "Marketing Admin";
         break;
+      case "Mitra":
+        updateDbRole = "mitra";
+        updatePrefix = "MTR";
+        updateOccupation = "Mitra";
+        break;
       default:
         updateDbRole = "staff";
         updatePrefix = "ST";
