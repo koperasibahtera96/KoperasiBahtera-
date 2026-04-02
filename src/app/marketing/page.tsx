@@ -406,11 +406,13 @@ export default function MarketingHeadPage() {
 
   // Commission settings handlers
   const handleOpenCommissionSettings = (staff: MarketingStaff) => {
+    const isMitra = staff.role === "mitra";
+
     setCommissionSettingsModal({
       show: true,
       staff,
       customCommissionRate: staff.customCommissionRate !== undefined ? (staff.customCommissionRate * 100).toString() : "",
-      companyCutRate: staff.companyCutRate !== undefined ? (staff.companyCutRate * 100).toString() : "",
+      companyCutRate: isMitra && staff.companyCutRate !== undefined ? (staff.companyCutRate * 100).toString() : "",
       loading: false,
       error: "",
     });
@@ -1658,7 +1660,9 @@ export default function MarketingHeadPage() {
                               ? `${Math.round(staff.customCommissionRate * 100)}%`
                               : "-"}
                           </span>
-                          {staff.companyCutRate !== undefined && staff.companyCutRate > 0 && (
+                          {staff.role === 'mitra' &&
+                            staff.companyCutRate !== undefined &&
+                            staff.companyCutRate > 0 && (
                             <span
                               className={getThemeClasses(
                                 "text-xs text-gray-500 dark:text-gray-400",

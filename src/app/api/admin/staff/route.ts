@@ -596,7 +596,12 @@ export async function PUT(request: NextRequest) {
       updateData.password = await bcrypt.hash(password.trim(), 12);
     }
 
-    const updatedUser = await User.findByIdAndUpdate(id, updateData, {
+    const updateOperation =
+      updateDbRole !== "mitra"
+        ? { $set: updateData, $unset: { companyCutRate: 1 } }
+        : { $set: updateData };
+
+    const updatedUser = await User.findByIdAndUpdate(id, updateOperation, {
       new: true,
     });
 
